@@ -181,4 +181,67 @@ export interface AppContextType {
   refreshEquipmentData: () => Promise<void>;
   forceUpdateEquipmentAvailability: () => Promise<void>;
   forceUpdateOverdueCheckouts: () => Promise<void>;
+  // Nouvelles fonctions pour les vues matérialisées
+  fetchCheckoutsWithStatus: () => Promise<CheckoutWithCalculatedStatus[]>;
+  fetchEquipmentWithStatus: () => Promise<EquipmentWithCalculatedStatus[]>;
+  refreshAllStatusViews: () => Promise<void>;
+  checkoutEquipmentWithAPI: (
+    equipmentId: string,
+    userId: string,
+    deliveryNoteId: string,
+    dueDate: string,
+    notes?: string
+  ) => Promise<string | null>;
+  returnEquipmentWithAPI: (
+    checkoutId: string,
+    notes?: string
+  ) => Promise<boolean>;
+  markEquipmentLostWithAPI: (
+    checkoutId: string,
+    notes?: string
+  ) => Promise<boolean>;
+}
+
+// Types pour les vues matérialisées
+export interface CheckoutWithCalculatedStatus {
+  id: string;
+  equipment_id: string;
+  user_id: string;
+  delivery_note_id?: string;
+  checkout_date: string;
+  due_date: string;
+  return_date?: string;
+  notes?: string;
+  status: string; // calculated_status
+  equipment_name: string;
+  total_quantity: number;
+  available_quantity: number;
+  first_name: string;
+  last_name: string;
+}
+
+export interface EquipmentWithCalculatedStatus {
+  id: string;
+  name: string;
+  description?: string;
+  category_id?: string;
+  supplier_id?: string;
+  group_id?: string;
+  subgroup_id?: string;
+  serial_number: string;
+  article_number?: string;
+  purchase_date?: string;
+  warranty_end?: string;
+  location?: string;
+  department_id?: string;
+  total_quantity: number;
+  qr_type?: string;
+  image_url?: string;
+  created_at: string;
+  updated_at?: string;
+  last_maintenance?: string;
+  checked_out_count: number;
+  maintenance_count: number;
+  available_quantity: number;
+  status: string; // calculated_status
 }

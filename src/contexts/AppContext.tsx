@@ -1,6 +1,22 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Equipment, Category, Supplier, EquipmentGroup, EquipmentSubgroup, EquipmentInstance, StatusConfig } from '../types';
+import { 
+  AppContextType, 
+  Category, 
+  CheckoutRecord, 
+  Department, 
+  DeliveryNote, 
+  Equipment, 
+  EquipmentGroup, 
+  EquipmentInstance, 
+  EquipmentMaintenance, 
+  EquipmentSubgroup, 
+  MaintenanceType, 
+  Supplier, 
+  User,
+  CheckoutWithCalculatedStatus,
+  EquipmentWithCalculatedStatus
+} from '../types';
 import toast from 'react-hot-toast';
 
 // Define notification type
@@ -22,34 +38,6 @@ interface Checkout {
   status: string;
   notes?: string;
   created_at: string;
-}
-
-interface AppContextType {
-  // Notifications
-  notifications: Notification[];
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
-  removeNotification: (id: string) => void;
-  
-  // Equipment data
-  equipment: Equipment[];
-  categories: Category[];
-  suppliers: Supplier[];
-  equipmentGroups: EquipmentGroup[];
-  equipmentSubgroups: EquipmentSubgroup[];
-  equipmentInstances: EquipmentInstance[];
-  statusConfigs: StatusConfig[];
-  checkouts: Checkout[];
-  
-  // Loading states
-  loadingAppData: boolean;
-  
-  // Equipment operations
-  addEquipment: (equipment: Omit<Equipment, 'id' | 'createdAt'>) => Promise<void>;
-  updateEquipment: (id: string, equipment: Partial<Equipment>) => Promise<void>;
-  deleteEquipment: (id: string) => Promise<void>;
-  refreshData: () => Promise<void>;
-  refreshEquipmentData: () => Promise<Equipment[]>;
-  forceUpdateEquipmentAvailability: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -74,7 +62,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [equipmentGroups, setEquipmentGroups] = useState<EquipmentGroup[]>([]);
   const [equipmentSubgroups, setEquipmentSubgroups] = useState<EquipmentSubgroup[]>([]);
   const [equipmentInstances, setEquipmentInstances] = useState<EquipmentInstance[]>([]);
-  const [statusConfigs, setStatusConfigs] = useState<StatusConfig[]>([]);
+  const [statusConfigs, setStatusConfigs] = useState<any[]>([]); // Assuming StatusConfig is now part of Equipment or handled differently
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
 
@@ -452,6 +440,161 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  // Fonction pour charger les emprunts avec leurs statuts calculés
+  const fetchCheckoutsWithStatus = async (): Promise<CheckoutWithCalculatedStatus[]> => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return [];
+    }
+    
+    try {
+      const { data, error } = await supabase.rpc('get_checkouts_with_status');
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des emprunts avec statuts:', error);
+      toast.error(`Erreur: ${error.message}`);
+      return [];
+    }
+  };
+
+  // Fonction pour charger les équipements avec leurs statuts calculés
+  const fetchEquipmentWithStatus = async (): Promise<EquipmentWithCalculatedStatus[]> => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return [];
+    }
+    
+    try {
+      const { data, error } = await supabase.rpc('get_equipment_with_status');
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des équipements avec statuts:', error);
+      toast.error(`Erreur: ${error.message}`);
+      return [];
+    }
+  };
+
+  // Fonction pour rafraîchir toutes les vues matérialisées
+  const refreshAllStatusViews = async () => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.rpc('refresh_all_status_views');
+      
+      if (error) throw error;
+      
+      // Rafraîchir les données
+      await refreshData();
+      
+      toast.success('Statuts mis à jour avec succès');
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour des statuts:', error);
+      toast.error(`Erreur: ${error.message}`);
+    }
+  };
+
+  // Fonction pour emprunter du matériel avec la nouvelle API
+  const checkoutEquipmentWithAPI = async (
+    equipmentId: string,
+    userId: string,
+    deliveryNoteId: string,
+    dueDate: string,
+    notes?: string
+  ) => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return null;
+    }
+    
+    try {
+      const { data, error } = await supabase.rpc('checkout_equipment', {
+        p_equipment_id: equipmentId,
+        p_user_id: userId,
+        p_delivery_note_id: deliveryNoteId,
+        p_due_date: dueDate,
+        p_notes: notes
+      });
+      
+      if (error) throw error;
+      
+      // Rafraîchir les données
+      await refreshData();
+      
+      return data;
+    } catch (error: any) {
+      console.error('Erreur lors de l\'emprunt:', error);
+      toast.error(`Erreur: ${error.message}`);
+      return null;
+    }
+  };
+
+  // Fonction pour retourner du matériel avec la nouvelle API
+  const returnEquipmentWithAPI = async (
+    checkoutId: string,
+    notes?: string
+  ) => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return false;
+    }
+    
+    try {
+      const { data, error } = await supabase.rpc('return_equipment', {
+        p_checkout_id: checkoutId,
+        p_notes: notes
+      });
+      
+      if (error) throw error;
+      
+      // Rafraîchir les données
+      await refreshData();
+      
+      return data;
+    } catch (error: any) {
+      console.error('Erreur lors du retour:', error);
+      toast.error(`Erreur: ${error.message}`);
+      return false;
+    }
+  };
+
+  // Fonction pour marquer un équipement comme perdu avec la nouvelle API
+  const markEquipmentLostWithAPI = async (
+    checkoutId: string,
+    notes?: string
+  ) => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return false;
+    }
+    
+    try {
+      const { data, error } = await supabase.rpc('mark_equipment_lost', {
+        p_checkout_id: checkoutId,
+        p_notes: notes
+      });
+      
+      if (error) throw error;
+      
+      // Rafraîchir les données
+      await refreshData();
+      
+      return data;
+    } catch (error: any) {
+      console.error('Erreur lors du marquage comme perdu:', error);
+      toast.error(`Erreur: ${error.message}`);
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchAppData();
   }, []);
@@ -484,7 +627,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         refreshData,
         refreshEquipmentData,
         forceUpdateEquipmentAvailability,
-        forceUpdateOverdueCheckouts
+        forceUpdateOverdueCheckouts,
+        // Nouvelles fonctions pour les vues matérialisées
+        fetchCheckoutsWithStatus,
+        fetchEquipmentWithStatus,
+        refreshAllStatusViews,
+        checkoutEquipmentWithAPI,
+        returnEquipmentWithAPI,
+        markEquipmentLostWithAPI
       }}
     >
       {children}
