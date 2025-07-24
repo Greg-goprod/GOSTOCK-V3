@@ -16,7 +16,7 @@ BEGIN
   SET status = 'overdue'
   WHERE 
     status = 'active' AND 
-    due_date < CURRENT_DATE; -- La date d'échéance est strictement antérieure à la date actuelle
+    due_date::timestamp + interval '23 hours 59 minutes 59 seconds' < CURRENT_TIMESTAMP; -- La date d'échéance est strictement antérieure à l'heure actuelle
     
   -- Update delivery notes status based on checkouts
   WITH checkout_counts AS (
@@ -44,7 +44,7 @@ $$ LANGUAGE plpgsql;
 
 -- Fonction pour forcer la mise à jour des statuts d'emprunt en retard avec une date spécifique
 -- Utile pour tester ou forcer la mise à jour avec une date différente
-CREATE OR REPLACE FUNCTION force_update_overdue_checkouts(reference_date DATE DEFAULT CURRENT_DATE)
+CREATE OR REPLACE FUNCTION force_update_overdue_checkouts(reference_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 RETURNS VOID AS $$
 BEGIN
   -- Mettre à jour les emprunts en retard en fonction de la date de référence
@@ -52,7 +52,7 @@ BEGIN
   SET status = 'overdue'
   WHERE 
     status = 'active' AND 
-    due_date < reference_date; -- La date d'échéance est strictement antérieure à la date de référence
+    due_date::timestamp + interval '23 hours 59 minutes 59 seconds' < reference_timestamp; -- La date d'échéance est strictement antérieure à la date de référence
     
   -- Mettre à jour le statut des bons de livraison en fonction des emprunts
   WITH checkout_counts AS (
@@ -77,7 +77,7 @@ BEGIN
   WHERE dn.id = cc.delivery_note_id;
   
   -- Retourner le nombre d'emprunts mis à jour
-  RAISE NOTICE 'Emprunts mis à jour avec la date de référence: %', reference_date;
+  RAISE NOTICE 'Emprunts mis à jour avec la date de référence: %', reference_timestamp;
 END;
 $$ LANGUAGE plpgsql;
 

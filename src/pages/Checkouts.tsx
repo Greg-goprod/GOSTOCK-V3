@@ -154,6 +154,17 @@ const Checkouts: React.FC = () => {
       const today = new Date();
       // Suppression de la mise à zéro des heures pour que le statut en retard apparaisse dès 00h01
       
+      // Logs de débogage pour comprendre le problème
+      if (checkout.equipment?.name?.toLowerCase().includes('accu 18v')) {
+        console.log('=== DEBUG RETARD CHECKOUTS ===');
+        console.log('Équipement:', checkout.equipment?.name);
+        console.log('Date d\'échéance:', dueDate.toISOString());
+        console.log('Date actuelle:', today.toISOString());
+        console.log('Date d\'échéance < Date actuelle?', dueDate < today);
+        console.log('Status actuel:', checkout.status);
+        console.log('Status calculé:', dueDate < today && checkout.status === 'active' ? 'overdue' : checkout.status);
+      }
+      
       // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
       const isOverdue = dueDate < today && checkout.status === 'active';
 

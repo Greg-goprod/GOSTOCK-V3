@@ -113,6 +113,16 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
           
           const today = new Date();
           
+          // Logs de débogage pour comprendre le problème
+          if (checkout.equipment?.name?.toLowerCase().includes('accu 18v')) {
+            console.log('=== DEBUG RETARD ===');
+            console.log('Équipement:', checkout.equipment?.name);
+            console.log('Date d\'échéance:', dueDate.toISOString());
+            console.log('Date actuelle:', today.toISOString());
+            console.log('Date d\'échéance < Date actuelle?', dueDate < today);
+            console.log('Status actuel:', checkout.status);
+          }
+          
           // Mark as overdue if the due date is before current time and status is active
           // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
           const isOverdue = dueDate < today && checkout.status === 'active';

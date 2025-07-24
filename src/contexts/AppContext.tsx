@@ -433,10 +433,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
+      console.log('Forçage de la mise à jour des statuts d\'emprunt en retard...');
+      
       // Appeler la fonction RPC pour forcer la mise à jour des statuts d'emprunt en retard
-      const { error } = await supabase.rpc('force_update_overdue_checkouts');
+      const { data, error } = await supabase.rpc('force_update_overdue_checkouts');
       
       if (error) throw error;
+      
+      console.log('Résultat de la mise à jour:', data);
       
       // Rafraîchir les données
       await refreshData();
