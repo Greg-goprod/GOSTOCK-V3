@@ -152,10 +152,9 @@ const Checkouts: React.FC = () => {
       dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
       
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Début de la journée d'aujourd'hui
+      // Suppression de la mise à zéro des heures pour que le statut en retard apparaisse dès 00h01
       
-      // Un emprunt est en retard uniquement si la date d'échéance est strictement antérieure à aujourd'hui
-      // (c'est-à-dire à partir du lendemain de la date d'échéance)
+      // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
       const isOverdue = dueDate < today && checkout.status === 'active';
 
       return {
@@ -215,9 +214,9 @@ const Checkouts: React.FC = () => {
         dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
         
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Début de la journée d'aujourd'hui
+        // Suppression de la mise à zéro des heures pour que le statut en retard apparaisse dès 00h01
         
-        // Un emprunt est en retard uniquement si la date d'échéance est strictement antérieure à aujourd'hui
+        // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
         const isOverdue = dueDate < today && checkout.status === 'active';
 
         return {

@@ -112,10 +112,9 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
           dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
           
           const today = new Date();
-          today.setHours(0, 0, 0, 0); // Début de la journée d'aujourd'hui
           
-          // Mark as overdue if the due date is before today and status is active
-          // Un emprunt est en retard uniquement si la date d'échéance est strictement antérieure à aujourd'hui
+          // Mark as overdue if the due date is before current time and status is active
+          // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
           const isOverdue = dueDate < today && checkout.status === 'active';
           
           return {

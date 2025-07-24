@@ -11,7 +11,7 @@
 CREATE OR REPLACE FUNCTION update_overdue_checkouts()
 RETURNS VOID AS $$
 BEGIN
-  -- Update checkouts to overdue status when due date has passed (lendemain de la date prévue)
+  -- Update checkouts to overdue status when due date has passed (dès 00h01 le lendemain)
   UPDATE checkouts
   SET status = 'overdue'
   WHERE 
