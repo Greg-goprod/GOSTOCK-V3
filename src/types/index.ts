@@ -180,4 +180,5 @@ export interface AppContextType {
   refreshData: () => Promise<void>;
   refreshEquipmentData: () => Promise<void>;
   forceUpdateEquipmentAvailability: () => Promise<void>;
+  forceUpdateOverdueCheckouts: () => Promise<void>;
 }

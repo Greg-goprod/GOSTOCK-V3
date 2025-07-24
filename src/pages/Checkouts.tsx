@@ -31,6 +31,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useApp } from '../contexts/AppContext';
 
 interface CheckoutWithDetails {
   id: string;
@@ -103,6 +104,13 @@ const Checkouts: React.FC = () => {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [showDirectReturnModal, setShowDirectReturnModal] = useState(false);
   const [selectedCheckout, setSelectedCheckout] = useState<any>(null);
+
+  const {
+    checkouts: appCheckouts,
+    deliveryNotes: appDeliveryNotes,
+    refreshData,
+    forceUpdateOverdueCheckouts
+  } = useApp();
 
   useEffect(() => {
     fetchData();
@@ -780,6 +788,14 @@ const Checkouts: React.FC = () => {
             className="font-bold"
           >
             RETOUR MATÉRIEL
+          </Button>
+          <Button
+            variant="outline"
+            icon={<RefreshCw size={18} />}
+            onClick={forceUpdateOverdueCheckouts}
+            className="font-bold"
+          >
+            METTRE À JOUR LES RETARDS
           </Button>
         </div>
       </div>

@@ -42,6 +42,45 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Fonction pour forcer la mise à jour des statuts d'emprunt en retard avec une date spécifique
+-- Utile pour tester ou forcer la mise à jour avec une date différente
+CREATE OR REPLACE FUNCTION force_update_overdue_checkouts(reference_date DATE DEFAULT CURRENT_DATE)
+RETURNS VOID AS $$
+BEGIN
+  -- Mettre à jour les emprunts en retard en fonction de la date de référence
+  UPDATE checkouts
+  SET status = 'overdue'
+  WHERE 
+    status = 'active' AND 
+    due_date < reference_date; -- La date d'échéance est strictement antérieure à la date de référence
+    
+  -- Mettre à jour le statut des bons de livraison en fonction des emprunts
+  WITH checkout_counts AS (
+    SELECT 
+      delivery_note_id,
+      COUNT(*) FILTER (WHERE status = 'overdue') AS overdue_count,
+      COUNT(*) FILTER (WHERE status = 'returned') AS returned_count,
+      COUNT(*) AS total_count
+    FROM checkouts
+    WHERE delivery_note_id IS NOT NULL
+    GROUP BY delivery_note_id
+  )
+  UPDATE delivery_notes dn
+  SET status = 
+    CASE 
+      WHEN cc.overdue_count > 0 THEN 'overdue'
+      WHEN cc.returned_count = cc.total_count THEN 'returned'
+      WHEN cc.returned_count > 0 AND cc.returned_count < cc.total_count THEN 'partial'
+      ELSE 'active'
+    END
+  FROM checkout_counts cc
+  WHERE dn.id = cc.delivery_note_id;
+  
+  -- Retourner le nombre d'emprunts mis à jour
+  RAISE NOTICE 'Emprunts mis à jour avec la date de référence: %', reference_date;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Function to update equipment availability counts
 CREATE OR REPLACE FUNCTION update_equipment_availability()
 RETURNS VOID AS $$

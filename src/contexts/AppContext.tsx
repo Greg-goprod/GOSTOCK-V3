@@ -425,38 +425,64 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  // Fonction pour forcer la mise à jour des statuts d'emprunt en retard
+  const forceUpdateOverdueCheckouts = async () => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
+    
+    try {
+      // Appeler la fonction RPC pour forcer la mise à jour des statuts d'emprunt en retard
+      const { error } = await supabase.rpc('force_update_overdue_checkouts');
+      
+      if (error) throw error;
+      
+      // Rafraîchir les données
+      await refreshData();
+      
+      toast.success('Statuts des emprunts mis à jour avec succès');
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour des statuts d\'emprunt:', error);
+      toast.error(`Erreur: ${error.message}`);
+    }
+  };
+
   useEffect(() => {
     fetchAppData();
   }, []);
 
   return (
-    <AppContext.Provider value={{
-      // Notifications
-      notifications,
-      addNotification,
-      removeNotification,
-      
-      // Equipment data
-      equipment,
-      categories,
-      suppliers,
-      equipmentGroups,
-      equipmentSubgroups,
-      equipmentInstances,
-      statusConfigs,
-      checkouts,
-      
-      // Loading states
-      loadingAppData,
-      
-      // Equipment operations
-      addEquipment,
-      updateEquipment,
-      deleteEquipment,
-      refreshData,
-      refreshEquipmentData,
-      forceUpdateEquipmentAvailability
-    }}>
+    <AppContext.Provider
+      value={{
+        // Notifications
+        notifications,
+        addNotification,
+        removeNotification,
+        
+        // Equipment data
+        equipment,
+        categories,
+        suppliers,
+        equipmentGroups,
+        equipmentSubgroups,
+        equipmentInstances,
+        statusConfigs,
+        checkouts,
+        
+        // Loading states
+        loadingAppData,
+        
+        // Equipment operations
+        addEquipment,
+        updateEquipment,
+        deleteEquipment,
+        refreshData,
+        refreshEquipmentData,
+        forceUpdateEquipmentAvailability,
+        forceUpdateOverdueCheckouts
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
