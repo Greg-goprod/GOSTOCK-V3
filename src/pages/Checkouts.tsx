@@ -152,21 +152,32 @@ const Checkouts: React.FC = () => {
       dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
       
       const today = new Date();
-      // Suppression de la mise à zéro des heures pour que le statut en retard apparaisse dès 00h01
       
       // Logs de débogage pour comprendre le problème
       if (checkout.equipment?.name?.toLowerCase().includes('accu 18v')) {
         console.log('=== DEBUG RETARD CHECKOUTS ===');
         console.log('Équipement:', checkout.equipment?.name);
-        console.log('Date d\'échéance:', dueDate.toISOString());
+        console.log('Date d\'échéance (due_date):', checkout.due_date);
+        console.log('Date d\'échéance formatée:', dueDate.toISOString());
         console.log('Date actuelle:', today.toISOString());
         console.log('Date d\'échéance < Date actuelle?', dueDate < today);
         console.log('Status actuel:', checkout.status);
         console.log('Status calculé:', dueDate < today && checkout.status === 'active' ? 'overdue' : checkout.status);
       }
       
-      // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
-      const isOverdue = dueDate < today && checkout.status === 'active';
+      // Comparaison des dates pour déterminer si l'emprunt est en retard
+      // Nous comparons uniquement les dates sans tenir compte de l'heure
+      const dueDateStr = checkout.due_date.split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0];
+      const isOverdue = dueDateStr < todayStr && checkout.status === 'active';
+      
+      // Logs supplémentaires pour la comparaison des dates
+      if (checkout.equipment?.name?.toLowerCase().includes('accu 18v')) {
+        console.log('Date d\'échéance (string):', dueDateStr);
+        console.log('Date actuelle (string):', todayStr);
+        console.log('dueDateStr < todayStr ?', dueDateStr < todayStr);
+        console.log('Status final calculé:', isOverdue ? 'overdue' : checkout.status);
+      }
 
       return {
         id: checkout.id,
@@ -225,10 +236,12 @@ const Checkouts: React.FC = () => {
         dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
         
         const today = new Date();
-        // Suppression de la mise à zéro des heures pour que le statut en retard apparaisse dès 00h01
         
-        // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
-        const isOverdue = dueDate < today && checkout.status === 'active';
+        // Comparaison des dates pour déterminer si l'emprunt est en retard
+        // Nous comparons uniquement les dates sans tenir compte de l'heure
+        const dueDateStr = checkout.due_date.split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+        const isOverdue = dueDateStr < todayStr && checkout.status === 'active';
 
         return {
           id: checkout.id,
@@ -726,7 +739,7 @@ const Checkouts: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Building size={14} className="text-gray-400" />
+                <Building2 size={14} className="text-gray-400" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {checkout.user.department}
                 </span>

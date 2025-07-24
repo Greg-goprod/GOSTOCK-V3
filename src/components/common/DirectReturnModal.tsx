@@ -38,10 +38,18 @@ const DirectReturnModal: React.FC<DirectReturnModalProps> = ({ isOpen, onClose, 
   dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
   
   const today = new Date();
-  // Suppression de la mise à zéro des heures pour que le statut en retard apparaisse dès 00h01
   
-  // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
-  const isOverdue = dueDate < today && checkout.status === 'active';
+  // Comparaison des dates pour déterminer si l'emprunt est en retard
+  // Nous comparons uniquement les dates sans tenir compte de l'heure
+  const dueDateStr = checkout.due_date.split('T')[0];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isOverdue = dueDateStr < todayStr && checkout.status === 'active';
+  
+  // Logs de débogage
+  console.log('DirectReturnModal - Date d\'échéance:', dueDateStr);
+  console.log('DirectReturnModal - Date actuelle:', todayStr);
+  console.log('DirectReturnModal - En retard?', isOverdue);
+  
   const isLost = checkout.status === 'lost';
 
   const handleReturnEquipment = async () => {

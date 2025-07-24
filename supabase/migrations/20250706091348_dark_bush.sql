@@ -12,11 +12,12 @@ CREATE OR REPLACE FUNCTION update_overdue_checkouts()
 RETURNS VOID AS $$
 BEGIN
   -- Update checkouts to overdue status when due date has passed (dès 00h01 le lendemain)
+  -- Nous comparons uniquement les dates sans tenir compte de l'heure
   UPDATE checkouts
   SET status = 'overdue'
   WHERE 
     status = 'active' AND 
-    due_date::timestamp + interval '23 hours 59 minutes 59 seconds' < CURRENT_TIMESTAMP; -- La date d'échéance est strictement antérieure à l'heure actuelle
+    DATE(due_date) < CURRENT_DATE; -- La date d'échéance est strictement antérieure à la date actuelle
     
   -- Update delivery notes status based on checkouts
   WITH checkout_counts AS (
@@ -48,11 +49,12 @@ CREATE OR REPLACE FUNCTION force_update_overdue_checkouts(reference_timestamp TI
 RETURNS VOID AS $$
 BEGIN
   -- Mettre à jour les emprunts en retard en fonction de la date de référence
+  -- Nous comparons uniquement les dates sans tenir compte de l'heure
   UPDATE checkouts
   SET status = 'overdue'
   WHERE 
     status = 'active' AND 
-    due_date::timestamp + interval '23 hours 59 minutes 59 seconds' < reference_timestamp; -- La date d'échéance est strictement antérieure à la date de référence
+    DATE(due_date) < DATE(reference_timestamp); -- La date d'échéance est strictement antérieure à la date de référence
     
   -- Mettre à jour le statut des bons de livraison en fonction des emprunts
   WITH checkout_counts AS (

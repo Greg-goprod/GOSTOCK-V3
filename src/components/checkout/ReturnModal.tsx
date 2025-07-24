@@ -117,15 +117,26 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
           if (checkout.equipment?.name?.toLowerCase().includes('accu 18v')) {
             console.log('=== DEBUG RETARD ===');
             console.log('Équipement:', checkout.equipment?.name);
-            console.log('Date d\'échéance:', dueDate.toISOString());
+            console.log('Date d\'échéance (due_date):', checkout.due_date);
+            console.log('Date d\'échéance formatée:', dueDate.toISOString());
             console.log('Date actuelle:', today.toISOString());
             console.log('Date d\'échéance < Date actuelle?', dueDate < today);
             console.log('Status actuel:', checkout.status);
           }
           
-          // Mark as overdue if the due date is before current time and status is active
-          // Un emprunt est en retard dès 00h01 le lendemain de la date d'échéance
-          const isOverdue = dueDate < today && checkout.status === 'active';
+          // Comparaison des dates pour déterminer si l'emprunt est en retard
+          // Nous comparons uniquement les dates sans tenir compte de l'heure
+          const dueDateStr = checkout.due_date.split('T')[0];
+          const todayStr = new Date().toISOString().split('T')[0];
+          const isOverdue = dueDateStr < todayStr && checkout.status === 'active';
+          
+          // Logs supplémentaires pour la comparaison des dates
+          if (checkout.equipment?.name?.toLowerCase().includes('accu 18v')) {
+            console.log('Date d\'échéance (string):', dueDateStr);
+            console.log('Date actuelle (string):', todayStr);
+            console.log('dueDateStr < todayStr ?', dueDateStr < todayStr);
+            console.log('Status final calculé:', isOverdue ? 'overdue' : checkout.status);
+          }
           
           return {
             ...checkout,
