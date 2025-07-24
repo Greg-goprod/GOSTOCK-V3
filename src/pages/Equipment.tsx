@@ -15,8 +15,10 @@ import ReturnModal from '../components/checkout/ReturnModal';
 import FilterPanel from '../components/common/FilterPanel';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ExcelImport from '../components/import/ExcelImport';
-import { Plus, QrCode, Wrench, History, LogOut, LogIn, Edit, Trash2, Download, Upload, Search, Filter, PenTool as Tool, Grid3X3, List } from 'lucide-react';
+import { Plus, QrCode, Wrench, History, LogOut, LogIn, Edit, Trash2, Download, Upload, Search, Filter, PenTool as Tool, Grid3X3, List, RefreshCw } from 'lucide-react';
 import { Equipment as EquipmentType, EquipmentInstance } from '../types';
+import toast from 'react-hot-toast';
+
 export default function Equipment() {
   const {
     equipment,
@@ -29,7 +31,9 @@ export default function Equipment() {
     addEquipment,
     updateEquipment,
     deleteEquipment,
-    refreshData
+    refreshData,
+    refreshEquipmentData,
+    forceUpdateEquipmentAvailability
   } = useApp();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -55,126 +59,41 @@ export default function Equipment() {
     group: '',
     subgroup: ''
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fonction pour calculer la disponibilité : disponible = stock - (emprunts + maintenance + perdu)
   const getAvailableQuantity = (eq: EquipmentType): number => {
+    // Si l'équipement a une valeur availableQuantity définie, l'utiliser directement
+    if (eq.availableQuantity !== undefined && eq.availableQuantity !== null) {
+      // Debug spécifique pour les accus 18V
+      const isDebugItem = eq.name.toLowerCase().includes('accu 18v');
+      
+      if (isDebugItem) {
+        console.log(`=== DEBUG ${eq.name} ===`);
+        console.log('Équipement complet:', eq);
+        console.log('Quantité disponible stockée:', eq.availableQuantity);
+        console.log('Quantité totale:', eq.totalQuantity);
+        console.log('Statut:', eq.status);
+      }
+      
+      return eq.availableQuantity;
+    }
+
     const totalQuantity = eq.totalQuantity || 1;
     
-    // Debug spécifique pour les transpalettes et le trepied
-    const isDebugItem = eq.name.includes('Trepied laser petit') || eq.name.toLowerCase().includes('transpalette');
-    
-    if (isDebugItem) {
-      console.log(`=== DEBUG ${eq.name} ===`);
-      console.log('Équipement complet:', JSON.stringify(eq, null, 2));
-      console.log('Statut:', eq.status);
-      console.log('Type QR:', eq.qrType);
-      console.log('Quantité totale:', totalQuantity);
-    }
-    
-    // Compter les emprunts actifs (sans date de retour)
-    const activeCheckouts = checkouts.filter(checkout => 
-      checkout.equipment_id === eq.id && 
-      !checkout.return_date && 
-      checkout.status === 'active'
+    // Compter les emprunts actifs et en retard
+    const activeCheckouts = checkouts.filter(
+      c => c.equipment_id === eq.id && 
+      (c.status === 'active' || c.status === 'overdue' || c.status === 'lost')
     ).length;
     
-    if (isDebugItem) {
-      console.log('Emprunts actifs:', activeCheckouts);
-      console.log('Détail des emprunts:', checkouts.filter(checkout => 
-        checkout.equipment_id === eq.id && 
-        !checkout.return_date && 
-        checkout.status === 'active'
-      ));
-    }
+    // Compter les équipements en maintenance
+    const inMaintenance = eq.status === 'maintenance' ? 1 : 0;
     
-    // Si tous les équipements sont empruntés, forcer la disponibilité à 0
-    if (activeCheckouts >= totalQuantity) {
-      if (isDebugItem) {
-        console.log('Tous les équipements sont empruntés, disponibilité forcée à 0');
-        console.log('=== FIN DEBUG ===');
-      }
-      return 0;
-    }
+    // Calculer la disponibilité
+    const available = Math.max(0, totalQuantity - activeCheckouts - inMaintenance);
     
-    // Si le statut est "checked-out", forcer la disponibilité à 0
-    if (eq.status === 'checked-out') {
-      if (isDebugItem) {
-        console.log('Statut checked-out, disponibilité forcée à 0');
-        console.log('=== FIN DEBUG ===');
-      }
-      return 0;
-    }
-    
-    // Pour les équipements de type batch
-    if (eq.qrType === 'batch') {
-      let inMaintenance = 0;
-      let lost = 0;
-      
-      // Si le statut global est maintenance ou perdu, tout le stock est concerné
-      if (eq.status === 'maintenance') {
-        inMaintenance = totalQuantity;
-      } else if (eq.status === 'lost') {
-        lost = totalQuantity;
-      }
-      
-      if (isDebugItem) {
-        console.log('Type batch - En maintenance:', inMaintenance, 'Perdus:', lost);
-      }
-      
-      const available = Math.max(0, totalQuantity - activeCheckouts - inMaintenance - lost);
-      if (isDebugItem) {
-        console.log('Disponible calculé:', available);
-        console.log('=== FIN DEBUG ===');
-      }
-      return available;
-    }
-    
-    // Pour les équipements de type individual
-    else if (eq.qrType === 'individual') {
-      const instances = getEquipmentInstances(eq.id);
-      const inMaintenance = instances.filter(instance => instance.status === 'maintenance').length;
-      const lost = instances.filter(instance => instance.status === 'lost').length;
-      
-      if (isDebugItem) {
-        console.log('Type individual - Instances:', instances);
-        console.log('En maintenance:', inMaintenance, 'Perdus:', lost);
-      }
-      
-      const available = Math.max(0, totalQuantity - activeCheckouts - inMaintenance - lost);
-      if (isDebugItem) {
-        console.log('Disponible calculé:', available);
-        console.log('=== FIN DEBUG ===');
-      }
-      return available;
-    }
-    
-    // Pour les équipements simples (sans type QR spécifié)
-    else {
-      // Si le statut est maintenance ou perdu, l'équipement n'est pas disponible
-      if (['maintenance', 'lost', 'retired'].includes(eq.status)) {
-        if (isDebugItem) {
-          console.log('Type simple - Équipement indisponible car en statut:', eq.status);
-          console.log('Disponible calculé: 0');
-          console.log('=== FIN DEBUG ===');
-        }
-        return 0;
-      }
-      
-      // Sinon, calculer la disponibilité normale
-      const inMaintenance = eq.status === 'maintenance' ? 1 : 0;
-      const lost = eq.status === 'lost' ? 1 : 0;
-      
-      if (isDebugItem) {
-        console.log('Type simple - En maintenance:', inMaintenance, 'Perdus:', lost);
-      }
-      
-      const available = Math.max(0, totalQuantity - activeCheckouts - inMaintenance - lost);
-      if (isDebugItem) {
-        console.log('Disponible calculé:', available);
-        console.log('=== FIN DEBUG ===');
-      }
-      return available;
-    }
+    return available;
   };
 
   const handleShowQR = (equipmentId: string, instance?: EquipmentInstance | null) => {
@@ -323,12 +242,12 @@ export default function Equipment() {
     // Calculer la quantité totale et disponible
     const totalQuantity = eq.totalQuantity || 1;
     
-    // Forcer la disponibilité à 0 si l'équipement est en maintenance, perdu ou retiré
+    // Calculer la disponibilité en utilisant la fonction getAvailableQuantity
     let availableQuantity = 0;
     if (['maintenance', 'lost', 'retired'].includes(eq.status)) {
       availableQuantity = 0;
       
-      if (eq.name.includes('Trepied laser petit')) {
+      if (eq.name.includes('Trepied laser petit') || eq.name.toLowerCase().includes('accu')) {
         console.log('=== BADGE DEBUG ===');
         console.log('Équipement en maintenance/perdu/retiré, disponibilité forcée à 0');
         console.log('Status:', eq.status);
@@ -338,7 +257,7 @@ export default function Equipment() {
       availableQuantity = getAvailableQuantity(eq);
     }
     
-    if (eq.name.includes('Trepied laser petit')) {
+    if (eq.name.includes('Trepied laser petit') || eq.name.toLowerCase().includes('accu')) {
       console.log('=== BADGE FINAL ===');
       console.log('Nom:', eq.name);
       console.log('Status:', eq.status);
@@ -588,11 +507,34 @@ export default function Equipment() {
     );
   };
 
+  // Fonction pour rafraîchir explicitement les données d'équipement
+  const handleRefreshEquipment = async () => {
+    setIsRefreshing(true);
+    await refreshEquipmentData();
+    setIsRefreshing(false);
+    toast.success('Données d\'équipement rafraîchies');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Équipements</h1>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefreshEquipment}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Rafraîchissement...' : 'Rafraîchir'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => forceUpdateEquipmentAvailability()}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Recalculer Disponibilité
+          </Button>
           <Button
             variant="outline"
             onClick={() => setShowImportModal(true)}

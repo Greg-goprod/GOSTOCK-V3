@@ -57,7 +57,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     try {
       setIsLoading(true);
       const [usersResult, equipmentResult] = await Promise.all([
-        supabase.from('users').select('*').order('last_name'),
+        // Récupérer tous les utilisateurs sans filtre
+        supabase
+          .from('users')
+          .select('*')
+          .order('last_name'),
         supabase
           .from('equipment')
           .select(`
@@ -73,8 +77,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           .order('name')
       ]);
 
-      if (usersResult.error) throw usersResult.error;
-      if (equipmentResult.error) throw equipmentResult.error;
+      if (usersResult.error) {
+        console.error('Erreur lors de la récupération des utilisateurs:', usersResult.error);
+        throw usersResult.error;
+      }
+      if (equipmentResult.error) {
+        console.error('Erreur lors de la récupération des équipements:', equipmentResult.error);
+        throw equipmentResult.error;
+      }
+
+      console.log('Utilisateurs récupérés:', usersResult.data?.length);
+      if (usersResult.data) {
+        // Vérifier si Benoit Kaelin est présent dans les résultats
+        const benoitKaelin = usersResult.data.find(u => 
+          u.first_name?.toLowerCase() === 'benoit' && 
+          u.last_name?.toLowerCase() === 'kaelin'
+        );
+        console.log('Benoit Kaelin trouvé:', benoitKaelin ? 'Oui' : 'Non');
+      }
 
       setUsers(usersResult.data || []);
       
@@ -124,15 +144,24 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
   const handleEquipmentScan = async (scannedId: string) => {
     try {
+      if (!scannedId) {
+        console.error("ID scanné invalide ou vide");
+        return;
+      }
+      
       setIsLoading(true);
       const normalizedId = scannedId.trim().toLowerCase();
       
       // D'abord chercher dans les équipements déjà chargés
-      let foundEquipment = equipment.find(eq => 
-        eq.serialNumber.toLowerCase() === normalizedId ||
-        eq.articleNumber?.toLowerCase() === normalizedId ||
-        (eq.articleNumber && normalizedId.includes(eq.articleNumber.toLowerCase()))
-      );
+      let foundEquipment = equipment.find(eq => {
+        if (!eq || !eq.serialNumber) return false;
+        
+        const serialMatches = eq.serialNumber.toLowerCase() === normalizedId;
+        const articleMatches = eq.articleNumber && eq.articleNumber.toLowerCase() === normalizedId;
+        const articleIncludes = eq.articleNumber && normalizedId.includes(eq.articleNumber.toLowerCase());
+        
+        return serialMatches || articleMatches || articleIncludes;
+      });
       
       // Si trouvé dans les équipements déjà chargés
       if (foundEquipment) {
@@ -777,18 +806,64 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-    user.department.toLowerCase().includes(userSearchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    // Vérifier que l'utilisateur existe
+    if (!user) {
+      return false;
+    }
+    
+    // Si le terme de recherche est vide, afficher tous les utilisateurs
+    if (!userSearchTerm.trim()) {
+      return true;
+    }
+    
+    // Vérifier de manière sécurisée les propriétés avant d'appeler toLowerCase()
+    const firstName = user.first_name ? user.first_name.toLowerCase() : '';
+    const lastName = user.last_name ? user.last_name.toLowerCase() : '';
+    const fullName = `${firstName} ${lastName}`;
+    const email = user.email ? user.email.toLowerCase() : '';
+    const department = user.department ? user.department.toLowerCase() : '';
+    const search = userSearchTerm.toLowerCase();
+    
+    return fullName.includes(search) || email.includes(search) || department.includes(search);
+  });
 
-  const filteredEquipment = equipment.filter(eq =>
-    eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    eq.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (eq.articleNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    eq.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Débogage pour vérifier si Benoit Kaelin est dans la liste filtrée
+  useEffect(() => {
+    if (users.length > 0) {
+      console.log('Nombre total d\'utilisateurs:', users.length);
+      console.log('Nombre d\'utilisateurs filtrés:', filteredUsers.length);
+      
+      // Rechercher Benoit Kaelin dans la liste complète
+      const benoitInUsers = users.find(u => 
+        u.first_name?.toLowerCase()?.includes('benoit') && 
+        u.last_name?.toLowerCase()?.includes('kaelin')
+      );
+      console.log('Benoit Kaelin dans users:', benoitInUsers ? 'Oui' : 'Non');
+      
+      // Rechercher Benoit Kaelin dans la liste filtrée
+      const benoitInFiltered = filteredUsers.find(u => 
+        u.first_name?.toLowerCase()?.includes('benoit') && 
+        u.last_name?.toLowerCase()?.includes('kaelin')
+      );
+      console.log('Benoit Kaelin dans filteredUsers:', benoitInFiltered ? 'Oui' : 'Non');
+    }
+  }, [users, filteredUsers, userSearchTerm]);
+
+  const filteredEquipment = equipment.filter(eq => {
+    // Vérifier que les propriétés existent avant d'appeler toLowerCase()
+    if (!eq || !eq.name || !eq.serialNumber || !eq.category) {
+      return false;
+    }
+    
+    const name = eq.name.toLowerCase();
+    const serialNumber = eq.serialNumber.toLowerCase();
+    const articleNumber = eq.articleNumber ? eq.articleNumber.toLowerCase() : '';
+    const category = eq.category.toLowerCase();
+    const search = searchTerm.toLowerCase();
+    
+    return name.includes(search) || serialNumber.includes(search) || articleNumber.includes(search) || category.includes(search);
+  });
 
   const totalItems = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -927,23 +1002,34 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 />
                 
                 <div className="max-h-64 overflow-y-auto border rounded-lg">
-                  {filteredEquipment.slice(0, 10).map((eq) => (
-                    <div
-                      key={eq.id}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
-                      onClick={() => addEquipmentToCheckout(eq)}
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-                          {eq.name}
-                        </h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {eq.serialNumber} • Dispo: {eq.availableQuantity}
-                        </p>
+                  {filteredEquipment.length > 0 ? (
+                    filteredEquipment.map((eq) => (
+                      <div
+                        key={eq.id}
+                        className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
+                        onClick={() => addEquipmentToCheckout(eq)}
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                            {eq.name}
+                          </h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {eq.serialNumber} • Dispo: {eq.availableQuantity}/{eq.totalQuantity}
+                          </p>
+                        </div>
+                        <Plus size={16} className="text-primary-600 dark:text-primary-400" />
                       </div>
-                      <Plus size={16} className="text-primary-600 dark:text-primary-400" />
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      {searchTerm ? "Aucun équipement trouvé" : "Commencez à taper pour rechercher du matériel"}
                     </div>
-                  ))}
+                  )}
+                  {filteredEquipment.length > 0 && (
+                    <div className="p-2 text-center text-xs text-gray-500 dark:text-gray-400">
+                      {filteredEquipment.length} équipement(s) trouvé(s)
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

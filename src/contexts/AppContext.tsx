@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Equipment, Category, Supplier, EquipmentGroup, EquipmentSubgroup, EquipmentInstance, StatusConfig } from '../types';
+import toast from 'react-hot-toast';
 
 // Define notification type
 interface Notification {
@@ -47,6 +48,8 @@ interface AppContextType {
   updateEquipment: (id: string, equipment: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  refreshEquipmentData: () => Promise<Equipment[]>;
+  forceUpdateEquipmentAvailability: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -334,6 +337,94 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  // Ajoutez cette fonction au contexte pour permettre un rafraîchissement explicite des données
+  const refreshEquipmentData = async () => {
+    try {
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('equipment')
+        .select('*')
+        .order('name');
+
+      if (equipmentError) throw equipmentError;
+      
+      // Transformer les données de snake_case en camelCase
+      const transformedEquipment = equipmentData.map(item => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        category: item.category,
+        serialNumber: item.serial_number,
+        status: item.status,
+        addedDate: item.added_date,
+        lastMaintenance: item.last_maintenance,
+        imageUrl: item.image_url,
+        supplier: item.supplier,
+        location: item.location,
+        articleNumber: item.article_number,
+        qrType: item.qr_type,
+        totalQuantity: item.total_quantity || 1,
+        availableQuantity: item.available_quantity || 0,
+        shortTitle: item.short_title,
+        group: item.group,
+        subgroup: item.subgroup
+      }));
+
+      setEquipment(transformedEquipment);
+      console.log('Données d\'équipement rafraîchies:', transformedEquipment);
+      
+      return transformedEquipment;
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement des données d\'équipement:', error);
+      return [];
+    }
+  };
+
+  // Fonction pour forcer la mise à jour des quantités disponibles
+  const forceUpdateEquipmentAvailability = async () => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
+    
+    try {
+      // Pour chaque équipement
+      for (const eq of equipment) {
+        // Compter les emprunts actifs, en retard et perdus
+        const { data: checkoutsData, error: checkoutsError } = await supabase
+          .from('checkouts')
+          .select('*')
+          .eq('equipment_id', eq.id)
+          .in('status', ['active', 'overdue', 'lost']);
+
+        if (checkoutsError) throw checkoutsError;
+        
+        const activeCount = checkoutsData?.length || 0;
+        const totalQuantity = eq.totalQuantity || 1;
+        const availableQuantity = Math.max(totalQuantity - activeCount, 0);
+        const newStatus = availableQuantity <= 0 ? 'checked-out' : 'available';
+        
+        // Mettre à jour la quantité disponible
+        const { error: updateError } = await supabase
+          .from('equipment')
+          .update({
+            available_quantity: availableQuantity,
+            status: newStatus
+          })
+          .eq('id', eq.id);
+          
+        if (updateError) throw updateError;
+      }
+      
+      // Rafraîchir les données
+      await refreshEquipmentData();
+      
+      toast.success('Quantités disponibles mises à jour avec succès');
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour des quantités:', error);
+      toast.error(`Erreur: ${error.message}`);
+    }
+  };
+
   useEffect(() => {
     fetchAppData();
   }, []);
@@ -363,6 +454,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       updateEquipment,
       deleteEquipment,
       refreshData,
+      refreshEquipmentData,
+      forceUpdateEquipmentAvailability
     }}>
       {children}
     </AppContext.Provider>

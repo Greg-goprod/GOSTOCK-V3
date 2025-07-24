@@ -139,10 +139,15 @@ const Checkouts: React.FC = () => {
     if (error) throw error;
 
     const transformedCheckouts: CheckoutWithDetails[] = data?.map(checkout => {
-      // Check if the checkout is overdue
+      // Check if the checkout is overdue - seulement à partir du lendemain de la date prévue
       const dueDate = new Date(checkout.due_date);
-      dueDate.setHours(23, 59, 59, 999);
+      dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
+      
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Début de la journée d'aujourd'hui
+      
+      // Un emprunt est en retard uniquement si la date d'échéance est strictement antérieure à aujourd'hui
+      // (c'est-à-dire à partir du lendemain de la date d'échéance)
       const isOverdue = dueDate < today && checkout.status === 'active';
 
       return {
@@ -197,10 +202,14 @@ const Checkouts: React.FC = () => {
 
     const transformedNotes: DeliveryNoteWithDetails[] = data?.map(note => {
       const checkouts = note.checkouts?.map((checkout: any) => {
-        // Check if the checkout is overdue
+        // Check if the checkout is overdue - seulement à partir du lendemain de la date prévue
         const dueDate = new Date(checkout.due_date);
-        dueDate.setHours(23, 59, 59, 999);
+        dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
+        
         const today = new Date();
+        today.setHours(0, 0, 0, 0); // Début de la journée d'aujourd'hui
+        
+        // Un emprunt est en retard uniquement si la date d'échéance est strictement antérieure à aujourd'hui
         const isOverdue = dueDate < today && checkout.status === 'active';
 
         return {

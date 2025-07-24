@@ -11,12 +11,12 @@
 CREATE OR REPLACE FUNCTION update_overdue_checkouts()
 RETURNS VOID AS $$
 BEGIN
-  -- Update checkouts to overdue status when due date has passed
+  -- Update checkouts to overdue status when due date has passed (lendemain de la date prévue)
   UPDATE checkouts
   SET status = 'overdue'
   WHERE 
     status = 'active' AND 
-    due_date < CURRENT_DATE;
+    due_date < CURRENT_DATE; -- La date d'échéance est strictement antérieure à la date actuelle
     
   -- Update delivery notes status based on checkouts
   WITH checkout_counts AS (
@@ -51,10 +51,10 @@ DECLARE
 BEGIN
   -- For each equipment item
   FOR eq IN SELECT id, total_quantity FROM equipment LOOP
-    -- Count active checkouts
+    -- Count active, overdue and lost checkouts
     SELECT COUNT(*) INTO active_count
     FROM checkouts
-    WHERE equipment_id = eq.id AND (status = 'active' OR status = 'overdue');
+    WHERE equipment_id = eq.id AND (status = 'active' OR status = 'overdue' OR status = 'lost');
     
     -- Update available quantity
     UPDATE equipment

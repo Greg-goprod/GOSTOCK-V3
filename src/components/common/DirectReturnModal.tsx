@@ -4,6 +4,7 @@ import Button from './Button';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { useApp } from '../../contexts/AppContext';
 
 interface DirectReturnModalProps {
   isOpen: boolean;
@@ -30,13 +31,16 @@ const DirectReturnModal: React.FC<DirectReturnModalProps> = ({ isOpen, onClose, 
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState('');
   const [success, setSuccess] = useState(false);
+  const { refreshEquipmentData } = useApp();
   
   // Check if the checkout is overdue
   const dueDate = new Date(checkout.due_date);
-  dueDate.setHours(23, 59, 59, 999); // Set to end of the due date
+  dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
   
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Set to start of today
+  today.setHours(0, 0, 0, 0); // Début de la journée d'aujourd'hui
+  
+  // Un emprunt est en retard uniquement si la date d'échéance est strictement antérieure à aujourd'hui
   const isOverdue = dueDate < today && checkout.status === 'active';
   const isLost = checkout.status === 'lost';
 
@@ -45,16 +49,72 @@ const DirectReturnModal: React.FC<DirectReturnModalProps> = ({ isOpen, onClose, 
       setIsLoading(true);
 
       if (isLost) {
-        // Use the recover_lost_equipment function for lost equipment
-        const { data, error } = await supabase.rpc('recover_lost_equipment', {
+        // Marquer l'équipement comme perdu
+        const { error: lostError } = await supabase.rpc('mark_equipment_lost', {
           checkout_id: checkout.id
         });
-
-        if (error) throw error;
         
-        toast.success('Matériel perdu retrouvé et remis en stock avec succès');
+        if (lostError) throw lostError;
+        
+        // Mettre à jour les notes
+        await supabase
+          .from('checkouts')
+          .update({ 
+            notes: `${checkout.notes || ''}\n${notes ? `Perdu: ${notes}` : 'Marqué comme perdu'}`.trim(),
+            status: 'lost'
+          })
+          .eq('id', checkout.id);
+          
+        // Rafraîchir les données d'équipement
+        await refreshEquipmentData();
+        
+        setSuccess(true);
+        toast.success('Équipement marqué comme perdu');
+      } else if (isRecovered) {
+        // Récupérer un équipement précédemment perdu
+        const { error: recoverError } = await supabase.rpc('recover_lost_equipment', {
+          checkout_id: checkout.id
+        });
+        
+        if (recoverError) throw recoverError;
+        
+        // Mettre à jour les notes
+        await supabase
+          .from('checkouts')
+          .update({ 
+            notes: `${checkout.notes || ''}\n${notes ? `Retrouvé: ${notes}` : 'Équipement retrouvé'}`.trim(),
+            status: 'returned',
+            return_date: new Date().toISOString()
+          })
+          .eq('id', checkout.id);
+          
+        // Mettre à jour le statut et la disponibilité de l'équipement
+        const { data: equipmentData } = await supabase
+          .from('equipment')
+          .select('available_quantity, total_quantity')
+          .eq('id', checkout.equipment.id)
+          .single();
+          
+        if (equipmentData) {
+          const newAvailableQuantity = (equipmentData.available_quantity || 0) + 1;
+          const newStatus = newAvailableQuantity >= (equipmentData.total_quantity || 1) ? 'available' : 'checked-out';
+          
+          await supabase
+            .from('equipment')
+            .update({ 
+              status: newStatus,
+              available_quantity: newAvailableQuantity
+            })
+            .eq('id', checkout.equipment.id);
+        }
+        
+        // Rafraîchir les données d'équipement
+        await refreshEquipmentData();
+        
+        setSuccess(true);
+        toast.success('Équipement marqué comme retrouvé et retourné');
       } else {
-        // Standard return process for normal checkouts
+        // Retour normal
         // 1. Mettre à jour le statut du checkout
         const { error: checkoutError } = await supabase
           .from('checkouts')
@@ -117,6 +177,9 @@ const DirectReturnModal: React.FC<DirectReturnModalProps> = ({ isOpen, onClose, 
 
         toast.success('Matériel retourné avec succès');
       }
+
+      // Rafraîchir les données d'équipement pour mettre à jour l'interface
+      await refreshEquipmentData();
 
       setSuccess(true);
       

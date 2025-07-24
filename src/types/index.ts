@@ -160,3 +160,24 @@ export interface EquipmentMaintenance {
   maintenanceType?: MaintenanceType;
   equipment?: Equipment;
 }
+
+export interface AppContextType {
+  equipment: Equipment[];
+  categories: Category[];
+  suppliers: Supplier[];
+  equipmentGroups: EquipmentGroup[];
+  equipmentSubgroups: EquipmentSubgroup[];
+  equipmentInstances: EquipmentInstance[];
+  checkouts: CheckoutRecord[];
+  departments: Department[];
+  users: User[];
+  deliveryNotes: DeliveryNote[];
+  maintenanceTypes: MaintenanceType[];
+  maintenanceRecords: EquipmentMaintenance[];
+  addEquipment: (equipmentData: Partial<Equipment>) => Promise<string | null>;
+  updateEquipment: (id: string, equipmentData: Partial<Equipment>) => Promise<void>;
+  deleteEquipment: (id: string) => Promise<void>;
+  refreshData: () => Promise<void>;
+  refreshEquipmentData: () => Promise<void>;
+  forceUpdateEquipmentAvailability: () => Promise<void>;
+}

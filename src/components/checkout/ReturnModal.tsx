@@ -6,6 +6,7 @@ import { User, CheckoutRecord, Equipment, DeliveryNote } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { Search, Package, Calendar, Printer, AlertTriangle, List, Filter, FileText, User as UserIcon, RefreshCw, CheckCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useApp } from '../../contexts/AppContext';
 
 interface ReturnModalProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
   const [showScanner, setShowScanner] = useState(false);
   const [returnSuccess, setReturnSuccess] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const { refreshEquipmentData } = useApp();
 
   useEffect(() => {
     if (isOpen) {
@@ -107,12 +109,13 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
         const checkouts = note.checkouts?.map(checkout => {
           // Check if the checkout is overdue
           const dueDate = new Date(checkout.due_date);
-          dueDate.setHours(23, 59, 59, 999);
+          dueDate.setHours(23, 59, 59, 999); // Fin de la journée de la date d'échéance
           
           const today = new Date();
-          today.setHours(0, 0, 0, 0); // Set to start of today
+          today.setHours(0, 0, 0, 0); // Début de la journée d'aujourd'hui
           
           // Mark as overdue if the due date is before today and status is active
+          // Un emprunt est en retard uniquement si la date d'échéance est strictement antérieure à aujourd'hui
           const isOverdue = dueDate < today && checkout.status === 'active';
           
           return {
@@ -361,6 +364,9 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
           .eq('id', item.checkout.id);
       }
 
+      // Rafraîchir les données d'équipement pour mettre à jour l'interface
+      await refreshEquipmentData();
+      
       // Rafraîchir les données pour voir si le bon est maintenant complètement retourné
       await fetchDeliveryNotes();
       

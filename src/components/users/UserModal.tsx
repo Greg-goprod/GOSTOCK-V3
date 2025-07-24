@@ -52,9 +52,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Validation supplémentaire
+    // Validation uniquement pour les champs obligatoires : nom, prénom et téléphone
     if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.phone.trim()) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error('Veuillez remplir tous les champs obligatoires (prénom, nom et téléphone)');
       setIsLoading(false);
       return;
     }
@@ -63,9 +63,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
       const dataToSubmit = {
         first_name: formData.first_name,
         last_name: formData.last_name,
-        email: formData.email,
-        phone: formData.phone || null,
-        department: formData.department,
+        email: formData.email || null, // Email peut être vide
+        phone: formData.phone,
+        department: formData.department || null, // Département peut être vide
         role: formData.role
       };
 
@@ -125,7 +125,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         <Accordion
           title="INFORMATIONS PERSONNELLES"
           icon={<UserIcon size={18} className="text-blue-600 dark:text-blue-400" />}
-          defaultOpen={false}
+          defaultOpen={true}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -180,12 +180,12 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         <Accordion
           title="CONTACT"
           icon={<Mail size={18} className="text-green-600 dark:text-green-400" />}
-          defaultOpen={false}
+          defaultOpen={true}
         >
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('email')} 
+                {t('email')}
               </label>
               <input
                 type="email"
@@ -221,12 +221,11 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('department')} *
+                {t('department')}
               </label>
               <input
                 type="text"
                 name="department"
-                required
                 value={formData.department}
                 onChange={handleChange}
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
@@ -235,11 +234,10 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('role')} *
+                {t('role')}
               </label>
               <select
                 name="role"
-                required
                 value={formData.role}
                 onChange={handleChange}
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"

@@ -250,3 +250,30 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql; 
+
+-- Fonction pour vérifier et mettre à jour les disponibilités des équipements
+CREATE OR REPLACE FUNCTION update_equipment_availability()
+RETURNS VOID AS $$
+DECLARE
+  eq RECORD;
+  active_count INT;
+BEGIN
+  -- Pour chaque équipement
+  FOR eq IN SELECT id, total_quantity FROM equipment LOOP
+    -- Compter les emprunts actifs, en retard et perdus
+    SELECT COUNT(*) INTO active_count
+    FROM checkouts
+    WHERE equipment_id = eq.id AND (status = 'active' OR status = 'overdue' OR status = 'lost');
+    
+    -- Mettre à jour la quantité disponible
+    UPDATE equipment
+    SET 
+      available_quantity = GREATEST(total_quantity - active_count, 0),
+      status = CASE 
+        WHEN total_quantity - active_count <= 0 THEN 'checked-out'
+        ELSE 'available'
+      END
+    WHERE id = eq.id;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql; 
