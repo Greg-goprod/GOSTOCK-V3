@@ -29,10 +29,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // État pour stocker le terme de recherche
   const [searchTerm, setSearchTerm] = useState('');
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [showUserModal, setShowUserModal] = useState(false);
   const [isManualSearchActive, setIsManualSearchActive] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -53,6 +55,249 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  // Effet pour rafraîchir les équipements lorsqu'on passe à l'étape 'equipment'
+  useEffect(() => {
+    if (step === 'equipment') {
+      // Rafraîchir la liste des équipements disponibles
+      refreshEquipmentList();
+      
+      // Rechercher spécifiquement des équipements problématiques
+      const specificItems = ["niveau bulle 100", "talkie walkie", "masse"];
+      specificItems.forEach(item => searchSpecificEquipment(item));
+    }
+  }, [step]);
+
+  // Effet pour effectuer une recherche en temps réel lorsque le terme de recherche change
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      if (searchTerm.trim() === '' && step === 'equipment') {
+        refreshEquipmentList();
+      } else if (searchTerm.trim().length > 2 && step === 'equipment') {
+        searchEquipmentFromServer(searchTerm);
+      }
+    }, 300);
+    return () => clearTimeout(debounceTimeout);
+  }, [searchTerm, step]);
+
+  // Fonction pour rafraîchir la liste des équipements
+  const refreshEquipmentList = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Rafraîchissement de la liste des équipements...');
+      
+      // Vérifier que supabase est initialisé
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+      
+      const equipmentResult = await supabase
+        .from('equipment')
+        .select(`
+          *,
+          categories(id, name, color),
+          suppliers(id, name),
+          equipment_groups(id, name, color)
+        `)
+        .order('name');
+
+      if (equipmentResult.error) {
+        console.error('Erreur lors de la récupération des équipements:', equipmentResult.error);
+        throw equipmentResult.error;
+      }
+
+      // Transform equipment data from snake_case to camelCase
+      const transformedEquipment: Equipment[] = (equipmentResult.data || []).map(eq => ({
+        id: eq.id,
+        name: eq.name,
+        description: eq.description || '',
+        category: eq.categories?.name || '',
+        serialNumber: eq.serial_number,
+        status: eq.status as Equipment['status'],
+        addedDate: eq.added_date || eq.created_at,
+        lastMaintenance: eq.last_maintenance,
+        imageUrl: eq.image_url,
+        supplier: eq.suppliers?.name || '',
+        location: eq.location || '',
+        articleNumber: eq.article_number,
+        qrType: eq.qr_type || 'individual',
+        totalQuantity: eq.total_quantity,
+        availableQuantity: eq.available_quantity,
+        shortTitle: eq.short_title,
+        group: eq.equipment_groups?.name || ''
+      }));
+
+      console.log(`${transformedEquipment.length} équipements disponibles chargés`);
+      setEquipment(transformedEquipment);
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement des équipements:', error);
+      toast.error('Erreur lors du chargement des équipements');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction pour rechercher des équipements côté serveur
+  const searchEquipmentFromServer = async (query: string) => {
+    if (!query.trim() || query.length < 3) return;
+    
+    try {
+      setIsSearching(true);
+      console.log(`Recherche serveur pour: "${query}"`);
+      
+      // Vérifier que supabase est initialisé
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+        return;
+      }
+      
+      const normalizedQuery = query.toLowerCase().trim();
+      
+      // Recherche plus permissive avec .ilike.%query% sur tous les champs pertinents
+      const { data: equipmentData, error } = await supabase
+        .from('equipment')
+        .select(`
+          *,
+          categories(id, name, color),
+          suppliers(id, name),
+          equipment_groups(id, name, color)
+        `)
+        .or(`name.ilike.%${normalizedQuery}%,description.ilike.%${normalizedQuery}%,serial_number.ilike.%${normalizedQuery}%,article_number.ilike.%${normalizedQuery}%`)
+        .neq('status', 'retired')
+        .order('name')
+        .limit(50); // Augmenter la limite pour trouver plus de résultats
+
+      if (error) throw error;
+      
+      // Log détaillé pour le débogage
+      console.log(`Résultats de recherche pour "${query}" :`, equipmentData);
+      
+      if (equipmentData && equipmentData.length > 0) {
+        console.log(`Trouvé ${equipmentData.length} équipements correspondant à "${query}":`, 
+          equipmentData.map(eq => `${eq.name} (${eq.serial_number || eq.article_number || 'sans réf.'})`));
+        
+        // Transformer les données et mettre à jour l'état
+        const transformedEquipment: Equipment[] = equipmentData.map(eq => ({
+          id: eq.id,
+          name: eq.name,
+          description: eq.description || '',
+          category: eq.categories?.name || '',
+          serialNumber: eq.serial_number,
+          status: eq.status as Equipment['status'],
+          addedDate: eq.added_date || eq.created_at,
+          lastMaintenance: eq.last_maintenance,
+          imageUrl: eq.image_url,
+          supplier: eq.suppliers?.name || '',
+          location: eq.location || '',
+          articleNumber: eq.article_number,
+          qrType: eq.qr_type || 'individual',
+          totalQuantity: eq.total_quantity,
+          availableQuantity: eq.available_quantity,
+          shortTitle: eq.short_title,
+          group: eq.equipment_groups?.name || ''
+        }));
+        
+        // Remplacer complètement la liste des équipements pour garantir que les nouveaux résultats sont visibles
+        setEquipment(transformedEquipment);
+      } else {
+        console.log(`Aucun équipement trouvé pour "${query}"`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche d\'équipements:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Fonction pour rechercher spécifiquement certains équipements problématiques
+  const searchSpecificEquipment = async (query: string) => {
+    if (!supabase) return;
+    
+    try {
+      console.log(`Recherche spécifique pour: "${query}"`);
+      
+      // Recherche directe par nom pour les équipements problématiques
+      const { data: nameData, error: nameError } = await supabase
+        .from('equipment')
+        .select(`
+          *,
+          categories(id, name, color),
+          suppliers(id, name),
+          equipment_groups(id, name, color)
+        `)
+        .ilike('name', `%${query}%`)
+        .neq('status', 'retired')
+        .order('name');
+        
+      if (nameError) {
+        console.error("Erreur lors de la recherche spécifique par nom:", nameError);
+        return;
+      }
+      
+      // Recherche directe dans la description pour les équipements problématiques
+      const { data: descData, error: descError } = await supabase
+        .from('equipment')
+        .select(`
+          *,
+          categories(id, name, color),
+          suppliers(id, name),
+          equipment_groups(id, name, color)
+        `)
+        .ilike('description', `%${query}%`)
+        .neq('status', 'retired')
+        .order('name');
+        
+      if (descError) {
+        console.error("Erreur lors de la recherche spécifique par description:", descError);
+        return;
+      }
+      
+      // Combiner les résultats sans doublons
+      const allData = [...(nameData || [])];
+      if (descData) {
+        for (const item of descData) {
+          if (!allData.some(d => d.id === item.id)) {
+            allData.push(item);
+          }
+        }
+      }
+      
+      if (allData.length > 0) {
+        console.log(`Trouvé ${allData.length} équipements spécifiques pour "${query}":`, 
+          allData.map(eq => `${eq.name} (${eq.serial_number || eq.article_number || 'sans réf.'})`));
+          
+        // Transformer les données
+        const transformedEquipment: Equipment[] = allData.map(eq => ({
+          id: eq.id,
+          name: eq.name,
+          description: eq.description || '',
+          category: eq.categories?.name || '',
+          serialNumber: eq.serial_number,
+          status: eq.status as Equipment['status'],
+          addedDate: eq.added_date || eq.created_at,
+          lastMaintenance: eq.last_maintenance,
+          imageUrl: eq.image_url,
+          supplier: eq.suppliers?.name || '',
+          location: eq.location || '',
+          articleNumber: eq.article_number,
+          qrType: eq.qr_type || 'individual',
+          totalQuantity: eq.total_quantity,
+          availableQuantity: eq.available_quantity,
+          shortTitle: eq.short_title,
+          group: eq.equipment_groups?.name || ''
+        }));
+        
+        // Ajouter à la liste des équipements sans doublons
+        setEquipment(prev => {
+          const existingIds = new Set(prev.map(e => e.id));
+          const newEquipment = transformedEquipment.filter(e => !existingIds.has(e.id));
+          return [...prev, ...newEquipment];
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche spécifique:", error);
+    }
+  };
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
@@ -70,10 +315,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
             suppliers(id, name),
             equipment_groups(id, name, color)
           `)
-          .eq('status', 'available')
-          .gt('available_quantity', 0)
-          // Exclure les équipements en maintenance
-          .neq('status', 'maintenance')
           .order('name')
       ]);
 
@@ -113,8 +354,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         location: eq.location || '',
         articleNumber: eq.article_number,
         qrType: eq.qr_type || 'individual',
-        totalQuantity: eq.total_quantity || 1,
-        availableQuantity: eq.available_quantity || 1,
+        totalQuantity: eq.total_quantity,
+        availableQuantity: eq.available_quantity,
         shortTitle: eq.short_title,
         group: eq.equipment_groups?.name || ''
       }));
@@ -196,11 +437,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           suppliers(id, name),
           equipment_groups(id, name)
         `)
-        .or(`serial_number.eq.${normalizedId},article_number.eq.${normalizedId},article_number.ilike.%${normalizedId}%`)
+        .or(`serial_number.eq.${normalizedId},article_number.eq.${normalizedId},article_number.ilike.%${normalizedId}%,name.ilike.%${normalizedId}%`)
         .neq('status', 'maintenance') // Exclure les équipements en maintenance
         .neq('status', 'retired')     // Exclure les équipements retirés
-        .gt('available_quantity', 0)
-        .limit(1);
+        .order('name')
+        .limit(10);
       
       if (equipmentError) throw equipmentError;
       
@@ -236,8 +477,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           location: eq.location || '',
           articleNumber: eq.article_number,
           qrType: eq.qr_type || 'individual',
-          totalQuantity: eq.total_quantity || 1,
-          availableQuantity: eq.available_quantity || 1,
+          totalQuantity: eq.total_quantity,
+          availableQuantity: eq.available_quantity,
           shortTitle: eq.short_title,
           group: eq.equipment_groups?.name || ''
         };
@@ -260,9 +501,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
   const addEquipmentToCheckout = (eq: Equipment) => {
     const existingItem = checkoutItems.find(item => item.equipment.id === eq.id);
+    const availableQty = eq.availableQuantity || 1; // Valeur par défaut si undefined
     
     if (existingItem) {
-      if (existingItem.quantity < eq.availableQuantity) {
+      const currentQty = existingItem.quantity || 0;
+      if (currentQty < availableQty) {
         setCheckoutItems(prev =>
           prev.map(item =>
             item.equipment.id === eq.id
@@ -293,8 +536,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    if (newQuantity > item.equipment.availableQuantity) {
-      toast.error(`Quantité maximale disponible: ${item.equipment.availableQuantity}`);
+    const availableQty = item.equipment.availableQuantity || 1; // Valeur par défaut si undefined
+    if (newQuantity > availableQty) {
+      toast.error(`Quantité maximale disponible: ${availableQty}`);
       return;
     }
 
@@ -432,282 +676,51 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Bon de Sortie ${deliveryNote.note_number} - GO-Mat</title>
+            <title>Bon de Sortie ${deliveryNote.note_number}</title>
             <meta charset="UTF-8">
             <style>
-              @page {
-                size: A4;
-                margin: 10mm;
-              }
-              body {
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 0;
-                color: #333;
-                font-size: 10pt;
-              }
-              .header {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 20px;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 10px;
-              }
-              .logo-container {
-                width: 40%;
-              }
-              .logo {
-                max-height: 60px;
-                max-width: 200px;
-              }
-              .company-info {
-                text-align: right;
-                width: 40%;
-              }
-              .company-name {
-                font-size: 18pt;
-                font-weight: bold;
-                color: #4CAF50;
-                margin-bottom: 5px;
-              }
-              .document-title {
-                font-size: 14pt;
-                font-weight: bold;
-                margin: 20px 0;
-                color: #333;
-                text-align: center;
-                text-transform: uppercase;
-              }
-              .document-number {
-                font-weight: bold;
-                color: #4CAF50;
-              }
-              .customer-info {
-                margin-bottom: 20px;
-                position: relative;
-              }
-              .customer-box {
-                border: 1px solid #ddd;
-                padding: 10px;
-                width: 50%;
-                float: left;
-              }
-              .date-info {
-                text-align: right;
-                margin-bottom: 10px;
-                clear: both;
-                margin-top: 10px;
-              }
-              table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-              }
-              th {
-                background-color: #4CAF50;
-                color: white;
-                font-weight: bold;
-                text-align: left;
-                padding: 8px;
-              }
-              td {
-                border: 1px solid #ddd;
-                padding: 8px;
-              }
-              tr:nth-child(even) {
-                background-color: #f2f2f2;
-              }
-              .total-row {
-                font-weight: bold;
-              }
-              .footer {
-                margin-top: 30px;
-                border-top: 1px solid #ddd;
-                padding-top: 10px;
-                font-size: 9pt;
-              }
-              .signatures {
-                display: flex;
-                justify-content: space-between;
-                margin-top: 40px;
-              }
-              .signature-box {
-                width: 45%;
-              }
-              .signature-line {
-                border-bottom: 1px solid #333;
-                margin-top: 50px;
-                margin-bottom: 5px;
-              }
-              .notes {
-                margin-top: 20px;
-                border: 1px solid #ddd;
-                padding: 10px;
-                background-color: #f9f9f9;
-              }
-              .page-number {
-                text-align: center;
-                font-size: 8pt;
-                color: #777;
-                margin-top: 20px;
-              }
-              .important-notice {
-                margin-top: 20px;
-                padding: 10px;
-                background-color: #fff3cd;
-                border: 1px solid #ffeeba;
-                color: #856404;
-              }
-              .contact-info {
-                display: flex;
-                justify-content: space-between;
-                font-size: 8pt;
-                color: #777;
-              }
-              .qr-icons {
-                display: flex;
-                justify-content: space-between;
-                margin-top: 10px;
-                max-width: 200px;
-              }
-              .qr-icon {
-                width: 30px;
-                height: 30px;
-                background-color: #333;
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 50%;
-                font-size: 8pt;
-                font-weight: bold;
-              }
-              .qr-label {
-                font-size: 6pt;
-                text-align: center;
-                margin-top: 2px;
-              }
-              .print-button {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 25px;
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 16px;
-                font-weight: bold;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                z-index: 1000;
-              }
-              .print-button:hover {
-                background-color: #45a049;
-              }
-              .print-icon {
-                width: 20px;
-                height: 20px;
-              }
-              @media print {
-                .print-button {
-                  display: none;
-                }
-              }
-              .qr-code-container {
-                position: absolute;
-                top: 10mm;
-                right: 10mm;
-                width: 100px;
-                height: 100px;
-                text-align: center;
-              }
-              .qr-code {
-                width: 100%;
-                height: 100%;
-              }
-              .qr-code-label {
-                text-align: center;
-                font-size: 8pt;
-                margin-top: 5px;
-                color: #333;
-                font-weight: bold;
-              }
+              @page { size: A4; margin: 18mm 12mm 14mm 12mm; }
+              body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #222; font-size: 11pt; background: #fafbfc; }
+              .header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+              .logo { max-width: 180px; max-height: 60px; margin: 0; display: block; }
+              .info-block { text-align: right; font-size: 0.92rem; color: #444; line-height: 1.4; min-width: 180px; }
+              .info-block .info-line { margin-bottom: 2px; }
+              .document-title { font-size: 1.25rem; font-weight: bold; margin: 18px 0 10px 0; color: #222; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+              table { width: 100%; border-collapse: collapse; margin: 18px 0 10px 0; background: #fff; }
+              th { background-color: #2563eb; color: white; font-weight: 600; text-align: left; padding: 9px; font-size: 1rem; letter-spacing: 0.5px; }
+              td { border: 1px solid #e5e7eb; padding: 9px; font-size: 0.98rem; }
+              tr:nth-child(even) { background-color: #f3f4f6; }
+              .total-row { font-weight: bold; background: #f1f5f9; }
+              .important-notice { margin-top: 18px; padding: 12px 14px; background: #fffbe6; border-left: 4px solid #facc15; color: #b45309; font-size: 1rem; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+              .important-notice .icon { font-size: 1.2rem; margin-right: 6px; }
+              .notes { margin-top: 16px; border: 1px solid #ddd; padding: 10px; background-color: #f9f9f9; border-radius: 5px; }
+              .signatures { display: flex; justify-content: space-between; margin-top: 38px; gap: 20px; }
+              .signature-box { width: 48%; }
+              .signature-label { font-weight: 600; margin-bottom: 18px; color: #222; }
+              .signature-line { border-bottom: 1.5px solid #333; margin-top: 44px; margin-bottom: 7px; height: 0; }
+              .footer { margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 0.95rem; color: #888; text-align: center; letter-spacing: 0.5px; }
             </style>
             <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
           </head>
           <body>
-            <button class="print-button" onclick="window.print()">
-              <svg class="print-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
-              </svg>
-              IMPRIMER
-            </button>
-            
-            <div class="header">
-              <div class="logo-container">
-                ${logoUrl ? `<img src="${logoUrl}" alt="Logo" class="logo" />` : `<div class="company-name">GO-Mat</div>`}
-                <div class="qr-icons">
-                  <div>
-                    <div class="qr-icon">QR</div>
-                    <div class="qr-label">SCAN MATÉRIEL</div>
-                  </div>
-                  <div>
-                    <div class="qr-icon">PDF</div>
-                    <div class="qr-label">TÉLÉCHARGER</div>
-                  </div>
-                  <div>
-                    <div class="qr-icon">WWW</div>
-                    <div class="qr-label">SITE WEB</div>
-                  </div>
-                </div>
-              </div>
-              <div class="company-info">
-                <div class="company-name">GO-Mat</div>
-                <div>Gestion de Matériel</div>
-                <div>123 Rue de l'Équipement</div>
-                <div>75000 Paris</div>
-                <div>Tél: 01 23 45 67 89</div>
-                <div>Email: contact@go-mat.fr</div>
+            <div class="header-flex">
+              <div>${logoUrl ? `<img src="${logoUrl}" alt="Logo" class="logo" />` : ''}</div>
+              <div class="info-block">
+                <div class="info-line">Bon N° ${deliveryNote.note_number}</div>
+                <div class="info-line">Émis le ${formattedDate}</div>
+                <div class="info-line">${user.first_name} ${user.last_name}</div>
+                <div class="info-line">${user.department}</div>
+                <div class="info-line">${user.email}${user.phone ? ' • ' + user.phone : ''}</div>
               </div>
             </div>
-            
-            <div class="qr-code-container">
-              <div id="qrcode" class="qr-code"></div>
-              <div class="qr-code-label">Bon N° ${deliveryNote.note_number}</div>
-            </div>
-            
-            <div class="date-info">
-              <div>Date d'émission: ${formattedDate}</div>
-              <div>Référence: ${deliveryNote.note_number}</div>
-            </div>
-            
-            <div class="customer-info">
-              <div class="customer-box">
-                <div><strong>Emprunteur:</strong></div>
-                <div>${user.first_name} ${user.last_name}</div>
-                <div>Département: ${user.department}</div>
-                <div>Email: ${user.email}</div>
-                ${user.phone ? `<div>Téléphone: ${user.phone}</div>` : ''}
-              </div>
-            </div>
-            
-            <div class="document-title">
-              Bon de Sortie <span class="document-number">N° ${deliveryNote.note_number}</span>
-            </div>
-            
+            <div class="document-title">Bon de Sortie de Matériel</div>
             <table>
               <thead>
                 <tr>
                   <th style="width: 5%;">N°</th>
                   <th style="width: 45%;">Désignation</th>
                   <th style="width: 20%;">Référence</th>
-                  <th style="width: 10%;">Quantité</th>
+                  <th style="width: 10%; text-align:right;">Quantité</th>
                   <th style="width: 20%;">Retour prévu</th>
                 </tr>
               </thead>
@@ -717,83 +730,65 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                     <td>${index + 1}</td>
                     <td>${item.equipment.name}</td>
                     <td>${item.equipment.serialNumber}</td>
-                    <td>${item.quantity}</td>
-                    <td>${new Date(dueDate).toLocaleDateString('fr-FR')}</td>
+                    <td style="text-align:right;">${item.quantity}</td>
+                    <td>${new Date(deliveryNote.due_date || '').toLocaleDateString('fr-FR')}</td>
                   </tr>
                 `).join('')}
                 <tr class="total-row">
                   <td colspan="3" style="text-align: right;">Total articles:</td>
-                  <td>${items.reduce((sum, item) => sum + item.quantity, 0)}</td>
+                  <td style="text-align:right;">${items.reduce((sum, item) => sum + item.quantity, 0)}</td>
                   <td></td>
                 </tr>
               </tbody>
             </table>
-            
             ${notes ? `
               <div class="notes">
                 <strong>Notes:</strong>
                 <p>${notes}</p>
               </div>
             ` : ''}
-            
-            <div class="important-notice">
-              <strong>Important:</strong> Ce bon de sortie doit être conservé et présenté lors du retour du matériel.
-              En cas de perte ou de dommage du matériel, veuillez contacter immédiatement le service de gestion.
+            <div class="important-notice"><span class="icon">⚠️</span>
+              <span>Ce bon de sortie doit être conservé et présenté lors du retour du matériel.<br />En cas de perte ou de dommage du matériel, veuillez contacter immédiatement le service de gestion.</span>
             </div>
-            
             <div class="signatures">
               <div class="signature-box">
-                <div><strong>Signature de l'emprunteur:</strong></div>
+                <div class="signature-label">Signature de l'emprunteur:</div>
                 <div class="signature-line"></div>
                 <div>Date: ___________________</div>
               </div>
               <div class="signature-box">
-                <div><strong>Signature du responsable:</strong></div>
+                <div class="signature-label">Signature du responsable:</div>
                 <div class="signature-line"></div>
                 <div>Date: ___________________</div>
               </div>
             </div>
-            
             <div class="footer">
-              <div class="contact-info">
-                <div>GO-Mat - Système de Gestion de Matériel</div>
-                <div>Tél: 01 23 45 67 89</div>
-                <div>Email: contact@go-mat.fr</div>
-              </div>
-              <div class="page-number">Page 1/1</div>
+              Bon généré par GO-Mat - ${new Date().toLocaleString('fr-FR')}
             </div>
-
-            <script>
-              // Générer le QR code
-              window.onload = function() {
-                QRCode.toCanvas(document.getElementById('qrcode'), '${noteQrCode}', {
-                  width: 100,
-                  height: 100,
-                  margin: 0,
-                  color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
-                  }
-                }, function(error) {
-                  if (error) console.error(error);
-                  console.log('QR code généré avec succès');
-                });
-              };
-            </script>
           </body>
         </html>
       `;
 
       // Créer un Blob avec le contenu HTML
       const blob = new Blob([printContent], { type: 'text/html' });
-      
-      // Créer une URL pour le blob
       const blobUrl = URL.createObjectURL(blob);
-      
-      // Ouvrir dans un nouvel onglet
-      window.open(blobUrl, '_blank');
-      
-      // Nettoyer l'URL après un délai
+
+      // Ouvrir dans un nouvel onglet et injecter le HTML + print auto
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.onload = function () {
+          setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+          }, 300);
+        };
+      } else {
+        // Fallback si window.open échoue
+        window.open(blobUrl, '_blank');
+      }
+
       setTimeout(() => {
         URL.revokeObjectURL(blobUrl);
       }, 1000);
@@ -860,9 +855,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     const serialNumber = eq.serialNumber.toLowerCase();
     const articleNumber = eq.articleNumber ? eq.articleNumber.toLowerCase() : '';
     const category = eq.category.toLowerCase();
+    const group = eq.group ? eq.group.toLowerCase() : '';
+    const description = eq.description ? eq.description.toLowerCase() : '';
     const search = searchTerm.toLowerCase();
     
-    return name.includes(search) || serialNumber.includes(search) || articleNumber.includes(search) || category.includes(search);
+    return name.includes(search) || 
+           serialNumber.includes(search) || 
+           articleNumber.includes(search) || 
+           category.includes(search) ||
+           group.includes(search) ||
+           description.includes(search);
   });
 
   const totalItems = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -991,38 +993,54 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
               {/* Manual Selection */}
               <div className="space-y-4">
                 <h3 className="font-bold text-gray-900 dark:text-white">Sélection manuelle</h3>
-                <input
-                  type="text"
-                  placeholder="Rechercher du matériel..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setIsManualSearchActive(true)}
-                  onBlur={() => setIsManualSearchActive(false)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-                />
+                <div className="relative flex">
+                  <input
+                    type="text"
+                    placeholder="Rechercher du matériel..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => setIsManualSearchActive(true)}
+                    onBlur={() => setIsManualSearchActive(false)}
+                    className="w-64 max-w-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                  />
+                  <Button 
+                    variant="primary" 
+                    className="ml-2" 
+                    onClick={() => searchEquipmentFromServer(searchTerm)}
+                    loading={isSearching}
+                  >
+                    <Search size={16} />
+                  </Button>
+                  {isSearching && (
+                    <div className="absolute right-12 top-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full"></div>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="max-h-64 overflow-y-auto border rounded-lg">
                   {filteredEquipment.length > 0 ? (
                     filteredEquipment.map((eq) => (
                       <div
                         key={eq.id}
-                        className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
-                        onClick={() => addEquipmentToCheckout(eq)}
+                        className={`flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 ${eq.availableQuantity > 0 ? 'bg-green-100 cursor-pointer' : 'bg-red-100 cursor-not-allowed opacity-60'}`}
+                        onClick={eq.availableQuantity > 0 ? () => addEquipmentToCheckout(eq) : undefined}
+                        title={eq.availableQuantity === 0 ? 'Aucune pièce disponible' : ''}
                       >
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900 dark:text-white text-sm">
                             {eq.name}
                           </h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {eq.serialNumber} • Dispo: {eq.availableQuantity}/{eq.totalQuantity}
+                            {eq.serialNumber} • <span className="font-bold text-black dark:text-white">Dispo : {eq.availableQuantity ?? 0}/{eq.totalQuantity ?? 0}</span>
                           </p>
                         </div>
-                        <Plus size={16} className="text-primary-600 dark:text-primary-400" />
+                        <Plus size={16} className={eq.availableQuantity > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'} />
                       </div>
                     ))
                   ) : (
                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                      {searchTerm ? "Aucun équipement trouvé" : "Commencez à taper pour rechercher du matériel"}
+                      {searchTerm ? (isSearching ? "Recherche en cours..." : "Aucun équipement trouvé") : "Commencez à taper pour rechercher du matériel"}
                     </div>
                   )}
                   {filteredEquipment.length > 0 && (
