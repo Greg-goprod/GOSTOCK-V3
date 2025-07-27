@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -15,9 +15,10 @@ import ReturnModal from '../components/checkout/ReturnModal';
 import FilterPanel from '../components/common/FilterPanel';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ExcelImport from '../components/import/ExcelImport';
-import { Plus, QrCode, Wrench, History, LogOut, LogIn, Edit, Trash2, Download, Upload, Search, Filter, PenTool as Tool, Grid3X3, List, RefreshCw } from 'lucide-react';
+import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, RefreshCw, Edit, Trash2, Download, Upload, Search, Filter } from 'lucide-react';
 import { Equipment as EquipmentType, EquipmentInstance } from '../types';
 import toast from 'react-hot-toast';
+import StatusBadge from '../components/common/StatusBadge';
 
 export default function Equipment() {
   const {
@@ -52,6 +53,9 @@ export default function Equipment() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortField, setSortField] = useState<'name' | 'category' | 'status'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
   const [filters, setFilters] = useState({
     status: '',
     category: '',
@@ -60,6 +64,7 @@ export default function Equipment() {
     subgroup: ''
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
 
   // Fonction pour calculer la disponibilité : disponible = stock - (emprunts + maintenance + perdu)
   const getAvailableQuantity = (eq: EquipmentType): number => {
@@ -200,10 +205,6 @@ export default function Equipment() {
   };
 
   const filteredEquipment = equipment.filter(eq => {
-    // Debug pour vérifier les URLs d'images
-    console.log(`Équipement: ${eq.name}, Image URL:`, eq.imageUrl);
-    console.log("Données équipement complètes:", eq);
-    
     const matchesSearch = eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          eq.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (eq.articleNumber && eq.articleNumber.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -215,6 +216,29 @@ export default function Equipment() {
     const matchesSubgroup = !filters.subgroup || eq.subgroup === filters.subgroup;
 
     return matchesSearch && matchesStatus && matchesCategory && matchesSupplier && matchesGroup && matchesSubgroup;
+  });
+
+  // Trier les équipements
+  const sortedEquipment = [...filteredEquipment].sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortField) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'category':
+        const categoryA = categories.find(c => c.id === a.category)?.name || '';
+        const categoryB = categories.find(c => c.id === b.category)?.name || '';
+        comparison = categoryA.localeCompare(categoryB);
+        break;
+      case 'status':
+        comparison = a.status.localeCompare(b.status);
+        break;
+      default:
+        comparison = 0;
+    }
+    
+    return sortDirection === 'asc' ? comparison : -comparison;
   });
 
   const getEquipmentInstances = (equipmentId: string) => {
@@ -309,7 +333,7 @@ export default function Equipment() {
               />
             ) : (
               <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
-                <Tool className="w-12 h-12 text-gray-400" />
+                <PenTool className="w-12 h-12 text-gray-400" />
               </div>
             )}
           </div>
@@ -319,7 +343,7 @@ export default function Equipment() {
             <div className="space-y-3">
               {/* Nom du matériel */}
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{eq.name}</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{eq.name.toUpperCase()}</h3>
                 {eq.shortTitle && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{eq.shortTitle}</p>
                 )}
@@ -379,9 +403,9 @@ export default function Equipment() {
 
   const renderEquipmentList = () => {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden w-full z-10 relative">
+        <div className="overflow-x-auto w-full">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -402,6 +426,9 @@ export default function Equipment() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Stock total
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Disponible
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
@@ -419,9 +446,11 @@ export default function Equipment() {
                         <div className="flex-shrink-0 h-12 w-12">
                           {eq.imageUrl ? (
                             <img
-                              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-700 p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative"
+                              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative"
                               src={eq.imageUrl}
                               alt={eq.name}
+                              onMouseEnter={() => setHoveredImageId(eq.id)}
+                              onMouseLeave={() => setHoveredImageId(null)}
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 const parent = e.currentTarget.parentElement;
@@ -438,13 +467,21 @@ export default function Equipment() {
                             />
                           ) : (
                             <div className="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
-                              <Tool className="w-6 h-6 text-gray-400" />
+                              <PenTool className="w-6 h-6 text-gray-400" />
                             </div>
                           )}
                         </div>
+                        {hoveredImageId === eq.id && (
+                          <img
+                            src={eq.imageUrl}
+                            alt={eq.name}
+                            className="absolute left-16 top-1/2 -translate-y-1/2 w-64 h-64 object-contain rounded-lg shadow-xl z-50 border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-900"
+                            style={{ pointerEvents: 'none' }}
+                          />
+                        )}
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {eq.name}
+                            {eq.name.toUpperCase()}
                           </div>
                           {eq.shortTitle && (
                             <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -458,9 +495,7 @@ export default function Equipment() {
                       {eq.serialNumber}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="outline">
-                        {eq.status}
-                      </Badge>
+                      <StatusBadge status={eq.status} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {category?.name || '-'}
@@ -470,6 +505,9 @@ export default function Equipment() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {eq.totalQuantity || 1}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-bold">
+                      {eq.availableQuantity ?? 0}/{eq.totalQuantity ?? 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-1">
@@ -522,21 +560,6 @@ export default function Equipment() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={handleRefreshEquipment}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Rafraîchissement...' : 'Rafraîchir'}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => forceUpdateEquipmentAvailability()}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Recalculer Disponibilité
-          </Button>
-          <Button
-            variant="outline"
             onClick={() => setShowImportModal(true)}
           >
             <Upload className="w-4 h-4 mr-2" />
@@ -569,7 +592,7 @@ export default function Equipment() {
         </div>
         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            variant={viewMode === 'grid' ? 'primary' : 'outline'}
             onClick={() => setViewMode('grid')}
             className="flex items-center gap-2 rounded-none border-0"
           >
@@ -577,12 +600,30 @@ export default function Equipment() {
             Grille
           </Button>
           <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
+            variant={viewMode === 'list' ? 'primary' : 'outline'}
             onClick={() => setViewMode('list')}
             className="flex items-center gap-2 rounded-none border-0"
           >
             <List className="w-4 h-4" />
             Liste
+          </Button>
+        </div>
+        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden ml-2">
+          <select 
+            value={sortField}
+            onChange={(e) => setSortField(e.target.value as 'name' | 'category' | 'status')}
+            className="px-3 py-2 border-0 focus:ring-0 focus:outline-none"
+          >
+            <option value="name">Nom</option>
+            <option value="category">Catégorie</option>
+            <option value="status">Statut</option>
+          </select>
+          <Button
+            variant="outline"
+            onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+            className="flex items-center gap-2 rounded-none border-0"
+          >
+            {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
           </Button>
         </div>
         <Button
@@ -646,9 +687,10 @@ export default function Equipment() {
         }}
       />
 
+      {/* Affichage conditionnel selon le mode de vue sélectionné */}
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredEquipment.map(renderEquipmentCard)}
+          {sortedEquipment.map(renderEquipmentCard)}
         </div>
       ) : (
         renderEquipmentList()
@@ -735,10 +777,11 @@ export default function Equipment() {
         <CheckoutModal
           equipmentId={selectedEquipment}
           instance={selectedInstance}
-          onClose={() => {
+          onClose={async () => {
             setShowCheckoutModal(false);
             setSelectedEquipment(null);
             setSelectedInstance(null);
+            await refreshEquipmentData();
           }}
         />
       )}
@@ -747,10 +790,11 @@ export default function Equipment() {
         <ReturnModal
           equipmentId={selectedEquipment}
           instance={selectedInstance}
-          onClose={() => {
+          onClose={async () => {
             setShowReturnModal(false);
             setSelectedEquipment(null);
             setSelectedInstance(null);
+            await refreshEquipmentData();
           }}
         />
       )}

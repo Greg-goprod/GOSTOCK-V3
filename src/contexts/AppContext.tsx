@@ -3,17 +3,12 @@ import { supabase } from '../lib/supabase';
 import { 
   AppContextType, 
   Category, 
-  CheckoutRecord, 
-  Department, 
   DeliveryNote, 
   Equipment, 
   EquipmentGroup, 
   EquipmentInstance, 
-  EquipmentMaintenance, 
   EquipmentSubgroup, 
-  MaintenanceType, 
   Supplier, 
-  User,
   CheckoutWithCalculatedStatus,
   EquipmentWithCalculatedStatus
 } from '../types';
@@ -27,19 +22,6 @@ interface Notification {
   timestamp: Date;
 }
 
-// Define checkout type
-interface Checkout {
-  id: string;
-  equipment_id: string;
-  user_id: string;
-  checkout_date: string;
-  due_date: string;
-  return_date?: string;
-  status: string;
-  notes?: string;
-  created_at: string;
-}
-
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const useApp = () => {
@@ -49,6 +31,9 @@ export const useApp = () => {
   }
   return context;
 };
+
+// Ajout de l'export pour useAppContext
+export const useAppContext = useApp;
 
 interface AppProviderProps {
   children: ReactNode;
@@ -63,7 +48,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [equipmentSubgroups, setEquipmentSubgroups] = useState<EquipmentSubgroup[]>([]);
   const [equipmentInstances, setEquipmentInstances] = useState<EquipmentInstance[]>([]);
   const [statusConfigs, setStatusConfigs] = useState<any[]>([]); // Assuming StatusConfig is now part of Equipment or handled differently
-  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
+  const [checkouts, setCheckouts] = useState<import('../types').CheckoutRecord[]>([]);
+  const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
 
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
@@ -80,10 +66,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const fetchAppData = async () => {
+    setLoadingAppData(true);
     try {
-      setLoadingAppData(true);
       
-      // Fetch all data in parallel
+      // Vérifier que supabase est initialisé
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+      }
+      
+      // Charger toutes les données nécessaires en parallèle
       const [
         equipmentResult,
         categoriesResult,
@@ -92,7 +84,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         subgroupsResult,
         instancesResult,
         statusConfigsResult,
-        checkoutsResult
+        checkoutsResult,
+        usersResult,
+        deliveryNotesResult
       ] = await Promise.all([
         supabase.from('equipment').select('*').order('created_at', { ascending: false }),
         supabase.from('categories').select('*').order('name'),
@@ -101,7 +95,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.from('equipment_subgroups').select('*').order('name'),
         supabase.from('equipment_instances').select('*').order('instance_number'),
         supabase.from('status_configs').select('*').order('name'),
-        supabase.from('checkouts').select('*').order('created_at', { ascending: false })
+        supabase.from('checkouts').select('*').order('created_at', { ascending: false }),
+        supabase.from('users').select('*').order('last_name'),
+        supabase.from('delivery_notes').select('*').order('created_at', { ascending: false })
       ]);
 
       if (equipmentResult.error) throw equipmentResult.error;
@@ -112,9 +108,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (instancesResult.error) throw instancesResult.error;
       if (statusConfigsResult.error) throw statusConfigsResult.error;
       if (checkoutsResult.error) throw checkoutsResult.error;
+      if (usersResult.error) throw usersResult.error;
+      if (deliveryNotesResult.error) throw deliveryNotesResult.error;
 
       // Transformer les données du snake_case vers le camelCase
-      const transformedEquipment = equipmentResult.data?.map(item => ({
+      const transformedEquipment = equipmentResult.data?.map((item: Record<string, any>) => ({
         id: item.id,
         name: item.name,
         description: item.description || '',
@@ -135,20 +133,118 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         subgroup: item.subgroup_id
       })) || [];
 
-      // Afficher les URLs d'image pour débogage
-      console.log("URLs des images dans les équipements transformés:");
-      transformedEquipment.forEach(eq => {
-        console.log(`${eq.name}: ${eq.imageUrl}`);
-      });
+      // Transformer les bons de livraison
+      const transformedDeliveryNotes = deliveryNotesResult.data?.map((item: Record<string, any>) => {
+        return {
+          id: item.id,
+          number: item.note_number, // Utiliser note_number comme propriété 'number'
+          noteNumber: item.note_number,
+          userId: item.user_id,
+          issueDate: item.issue_date,
+          dueDate: item.due_date,
+          status: item.status,
+          notes: item.notes,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at
+        };
+      }) || [];
 
+      // Si aucun bon de livraison n'est trouvé, essayer de les charger directement
+      if (transformedDeliveryNotes.length === 0) {
+        
+        const { data, error } = await supabase
+          .from('delivery_notes')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error("Erreur lors du chargement direct des bons de livraison:", error);
+        } else if (data && data.length > 0) {
+          
+          const directTransformedNotes = data.map((item: Record<string, any>) => ({
+            id: item.id,
+            number: item.note_number,
+            noteNumber: item.note_number,
+            userId: item.user_id,
+            issueDate: item.issue_date,
+            dueDate: item.due_date,
+            status: item.status,
+            notes: item.notes,
+            createdAt: item.created_at,
+            updatedAt: item.updated_at
+          }));
+          
+          setDeliveryNotes(directTransformedNotes);
+        }
+      } else {
+        setDeliveryNotes(transformedDeliveryNotes);
+      }
+      
+      // Charger les utilisateurs
       setEquipment(transformedEquipment);
-      setCategories(categoriesResult.data || []);
-      setSuppliers(suppliersResult.data || []);
-      setEquipmentGroups(groupsResult.data || []);
-      setEquipmentSubgroups(subgroupsResult.data || []);
-      setEquipmentInstances(instancesResult.data || []);
-      setStatusConfigs(statusConfigsResult.data || []);
-      setCheckouts(checkoutsResult.data || []);
+      // Mapping strict pour Category
+      setCategories(categoriesResult.data?.map((item: Record<string, any>) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        color: item.color
+      })) || []);
+      // Mapping strict pour Supplier
+      setSuppliers(suppliersResult.data?.map((item: Record<string, any>) => ({
+        id: item.id,
+        name: item.name,
+        contactPerson: item.contact_person,
+        email: item.email,
+        phone: item.phone,
+        website: item.website
+      })) || []);
+      // Mapping strict pour EquipmentGroup
+      setEquipmentGroups(groupsResult.data?.map((item: Record<string, any>) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        color: item.color,
+        createdAt: item.created_at
+      })) || []);
+      // Mapping strict pour EquipmentSubgroup
+      setEquipmentSubgroups(subgroupsResult.data?.map((item: Record<string, any>) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        color: item.color,
+        groupId: item.group_id,
+        createdAt: item.created_at
+      })) || []);
+      // Mapping strict pour EquipmentInstance
+      setEquipmentInstances(instancesResult.data?.map((item: Record<string, any>) => ({
+        id: item.id,
+        equipmentId: item.equipment_id,
+        instanceNumber: item.instance_number,
+        qrCode: item.qr_code,
+        status: item.status,
+        createdAt: item.created_at
+      })) || []);
+      // Mapping strict pour StatusConfig
+      setStatusConfigs(statusConfigsResult.data?.map((item: Record<string, any>) => ({
+        id: item.id,
+        name: item.name,
+        color: item.color,
+        created_at: item.created_at
+      })) || []);
+      // Correction : transformer les données pour correspondre à CheckoutRecord
+      setCheckouts((checkoutsResult.data || []).map((c: Record<string, any>) => ({
+        id: c.id,
+        equipmentId: c.equipment_id,
+        userId: c.user_id,
+        deliveryNoteId: c.delivery_note_id,
+        checkoutDate: c.checkout_date,
+        dueDate: c.due_date,
+        returnDate: c.return_date,
+        status: c.status,
+        notes: c.notes,
+        instanceId: c.instance_id
+      })));
+      
     } catch (error) {
       console.error('Error fetching app data:', error);
       addNotification({
@@ -161,9 +257,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const refreshData = async () => {
-    console.log('=== REFRESH DATA APPELÉ ===');
     await fetchAppData();
-    console.log('=== REFRESH DATA TERMINÉ ===');
   };
 
   const addEquipment = async (equipmentData: Omit<Equipment, 'id' | 'createdAt'>) => {
@@ -253,8 +347,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (equipmentData.group !== undefined) transformedData.group_id = equipmentData.group;
       if (equipmentData.subgroup !== undefined) transformedData.subgroup_id = equipmentData.subgroup;
       
-      console.log('Données transformées pour mise à jour:', transformedData);
-
       const { data, error } = await supabase
         .from('equipment')
         .update(transformedData)
@@ -358,7 +450,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }));
 
       setEquipment(transformedEquipment);
-      console.log('Données d\'équipement rafraîchies:', transformedEquipment);
       
       return transformedEquipment;
     } catch (error) {
@@ -421,14 +512,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      console.log('Forçage de la mise à jour des statuts d\'emprunt en retard...');
-      
-      // Appeler la fonction RPC pour forcer la mise à jour des statuts d'emprunt en retard
       const { data, error } = await supabase.rpc('force_update_overdue_checkouts');
       
       if (error) throw error;
-      
-      console.log('Résultat de la mise à jour:', data);
       
       // Rafraîchir les données
       await refreshData();
@@ -448,11 +534,27 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('get_checkouts_with_status');
+      // Utiliser la vue checkout_status_view pour récupérer les statuts calculés
+      const { data: checkoutsData, error: checkoutsError } = await supabase
+        .from('checkout_status_view')
+        .select('id, equipment_id, user_id, delivery_note_id, checkout_date, due_date, return_date, notes, calculated_status, equipment_name, total_quantity, available_quantity, first_name, last_name')
+        .order('checkout_date', { ascending: false });
       
-      if (error) throw error;
+      if (checkoutsError) throw checkoutsError;
       
-      return data || [];
+      if (!checkoutsData || checkoutsData.length === 0) {
+        return [];
+      }
+      
+      // Transformer les données pour qu'elles correspondent au format attendu
+      const transformedData = checkoutsData.map(checkout => {
+        return {
+          ...checkout,
+          status: checkout.calculated_status || 'unknown',
+        };
+      });
+      
+      return transformedData;
     } catch (error: any) {
       console.error('Erreur lors du chargement des emprunts avec statuts:', error);
       toast.error(`Erreur: ${error.message}`);
@@ -616,6 +718,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         equipmentInstances,
         statusConfigs,
         checkouts,
+        deliveryNotes,
         
         // Loading states
         loadingAppData,

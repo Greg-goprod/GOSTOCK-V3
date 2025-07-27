@@ -59,3 +59,22 @@ h1, h2, h3, h4, h5, h6 {
 .accordion-title {
   font-size: 0.85rem;
 }
+
+/* Forcer l'affichage des tableaux */
+table {
+  display: table !important;
+  width: 100% !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+thead, tbody, tr, th, td {
+  display: revert !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.overflow-x-auto {
+  overflow-x: auto !important;
+  max-width: 100% !important;
+}

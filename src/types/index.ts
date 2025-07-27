@@ -41,6 +41,7 @@ export interface User {
 
 export interface DeliveryNote {
   id: string;
+  number?: string; // Ajout de la propriété number utilisée dans l'affichage
   noteNumber: string;
   userId: string;
   issueDate: string;
@@ -218,6 +219,9 @@ export interface CheckoutWithCalculatedStatus {
   available_quantity: number;
   first_name: string;
   last_name: string;
+  // Nouvelles propriétés pour les informations de bon de livraison
+  delivery_note_number?: string;
+  delivery_note_date?: string;
 }
 
 export interface EquipmentWithCalculatedStatus {

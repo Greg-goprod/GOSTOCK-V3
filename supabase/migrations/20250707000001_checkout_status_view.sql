@@ -6,6 +6,18 @@
   3. Ajout d'une fonction pour rafraîchir manuellement la vue
 */
 
+-- Suppression des fonctions existantes
+DROP FUNCTION IF EXISTS get_checkouts_with_status();
+DROP FUNCTION IF EXISTS get_checkout_status(UUID);
+DROP FUNCTION IF EXISTS refresh_checkout_status_view_trigger();
+DROP FUNCTION IF EXISTS refresh_checkout_status_view();
+
+-- Suppression du trigger existant
+DROP TRIGGER IF EXISTS trigger_refresh_checkout_status_view ON checkouts;
+
+-- Suppression de la vue matérialisée existante si elle existe
+DROP MATERIALIZED VIEW IF EXISTS checkout_status_view;
+
 -- Création d'une vue matérialisée pour calculer les statuts d'emprunt
 CREATE MATERIALIZED VIEW checkout_status_view AS
 SELECT
@@ -20,7 +32,7 @@ SELECT
   CASE
     WHEN c.return_date IS NOT NULL THEN 'returned'
     WHEN c.status = 'lost' THEN 'lost'
-    WHEN DATE(c.due_date) < CURRENT_DATE AND c.return_date IS NULL THEN 'overdue'
+    WHEN (c.due_date + INTERVAL '1 day') < CURRENT_TIMESTAMP AND c.return_date IS NULL THEN 'overdue'
     ELSE 'active'
   END AS calculated_status,
   e.name AS equipment_name,
@@ -76,5 +88,17 @@ BEGIN
   WHERE id = checkout_id;
   
   RETURN status;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Fonction RPC pour obtenir tous les emprunts avec leurs statuts calculés
+CREATE OR REPLACE FUNCTION get_checkouts_with_status()
+RETURNS SETOF checkout_status_view AS $$
+BEGIN
+  -- Rafraîchir la vue pour s'assurer que les données sont à jour
+  PERFORM refresh_checkout_status_view();
+  
+  -- Retourner tous les emprunts avec leurs statuts calculés
+  RETURN QUERY SELECT * FROM checkout_status_view ORDER BY checkout_date DESC;
 END;
 $$ LANGUAGE plpgsql; 

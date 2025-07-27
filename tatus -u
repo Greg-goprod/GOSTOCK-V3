@@ -1,0 +1,32 @@
+[33mcommit 3d27a79d048b0f7c10d07b1aff8b46effd62f953[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Greg Salvan <greg.salvan@gmail.com>
+Date:   Sun Jul 27 21:45:53 2025 +0200
+
+    feat(pdf): refonte layout bon de sortie, logo à gauche, infos à droite, suppression QR code
+
+ src/components/checkout/CheckoutModal.tsx | 686 [32m+++++++++++++++[m[31m---------------[m
+ 1 file changed, 352 insertions(+), 334 deletions(-)
+
+[33mcommit 468b3b93504adbecc4f296730fdad5f6ea6fa3e8[m
+Author: Greg Salvan <greg.salvan@gmail.com>
+Date:   Thu Jul 24 22:13:40 2025 +0200
+
+    Feat: Intégration des vues matérialisées dans l'interface utilisateur
+
+ src/components/checkout/ReturnModal.tsx     | 1350 [32m++++[m[31m-----------------------[m
+ src/components/common/DirectReturnModal.tsx |  452 [32m++++[m[31m-----[m
+ src/pages/Checkouts.tsx                     | 1210 [32m++++[m[31m--------------------[m
+ 3 files changed, 525 insertions(+), 2487 deletions(-)
+
+[33mcommit 2e76a32188862618e52e07267f5e6b288e307ad5[m
+Author: Greg Salvan <greg.salvan@gmail.com>
+Date:   Thu Jul 24 22:04:00 2025 +0200
+
+    Feat: Ajout de vues matérialisées et d'API pour le calcul automatique des statuts
+
+ src/contexts/AppContext.tsx                        | 212 [32m+++++++++++++++[m[31m---[m
+ src/types/index.ts                                 |  63 [32m++++++[m
+ .../20250707000001_checkout_status_view.sql        |  80 [32m+++++++[m
+ .../20250707000002_equipment_status_view.sql       | 119 [32m++++++++++[m
+ .../migrations/20250707000003_api_functions.sql    | 245 [32m+++++++++++++++++++++[m
+ 5 files changed, 688 insertions(+), 31 deletions(-)

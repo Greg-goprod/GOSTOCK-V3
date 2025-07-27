@@ -1,6 +1,6 @@
 import React from 'react';
 
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'outline';
 
 interface BadgeProps {
   variant?: BadgeVariant;
@@ -15,6 +15,7 @@ const Badge: React.FC<BadgeProps> = ({ variant = 'neutral', children, className 
     danger: 'bg-danger-100 dark:bg-danger-900/50 text-danger-800 dark:text-danger-200',
     info: 'bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200',
     neutral: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
+    outline: 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300',
   };
 
   return (

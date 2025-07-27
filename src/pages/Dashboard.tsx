@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
 import StatusBadge from '../components/common/StatusBadge';
 import CheckoutModal from '../components/checkout/CheckoutModal';
 import ReturnModal from '../components/checkout/ReturnModal';
@@ -8,10 +7,8 @@ import MaintenanceModal from '../components/maintenance/MaintenanceModal';
 import { 
   AlertTriangle, 
   Package, 
-  Users, 
   CheckSquare, 
   Bell, 
-  ArrowUpRight,
   LogOut,
   LogIn,
   RefreshCw,
@@ -26,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
-import { Equipment, User, CheckoutRecord, EquipmentMaintenance } from '../types';
+import { Equipment } from '../types';
 import Button from '../components/common/Button';
 
 const Dashboard: React.FC = () => {
@@ -42,8 +39,16 @@ const Dashboard: React.FC = () => {
     maintenanceEquipment: 0,
     unreadNotifications: 0
   });
-  const [recentCheckouts, setRecentCheckouts] = useState<any[]>([]);
-  const [maintenanceEquipment, setMaintenanceEquipment] = useState<any[]>([]);
+  interface RecentCheckout {
+    id: string;
+    checkout_date: string;
+    due_date: string;
+    status: string;
+    equipment?: { name: string };
+    users?: { first_name: string; last_name: string };
+  }
+  const [recentCheckouts, setRecentCheckouts] = useState<RecentCheckout[]>([]);
+  const [maintenanceEquipment, setMaintenanceEquipment] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +138,7 @@ const Dashboard: React.FC = () => {
       setRetryCount(0);
 
       // Fetch equipment avec timeout et retry logic
-      const fetchWithTimeout = async (query: any, timeoutMs = 10000) => {
+      const fetchWithTimeout = async (query: unknown, timeoutMs = 10000) => {
         return Promise.race([
           query,
           new Promise((_, reject) => 
@@ -172,7 +177,6 @@ const Dashboard: React.FC = () => {
 
       if (equipment) {
         equipment.forEach((eq: any) => {
-          const total = eq.total_quantity || 1;
           const available = eq.available_quantity || 0;
           const borrowed = activeCheckouts?.filter((c: any) => c.equipment_id === eq.id).length || 0;
           
@@ -192,7 +196,7 @@ const Dashboard: React.FC = () => {
           .select('id')
           .eq('status', 'active')
           .lt('due_date', new Date().toISOString())
-      ) as any;
+      ) as unknown;
 
       if (overdueError) {
         throw new Error(`Overdue checkouts fetch failed: ${overdueError.message}`);
@@ -213,7 +217,7 @@ const Dashboard: React.FC = () => {
           .in('status', ['active', 'overdue'])
           .order('checkout_date', { ascending: false })
           .limit(5)
-      ) as any;
+      ) as unknown;
 
       if (recentCheckoutsError) {
         console.warn('Recent checkouts fetch failed:', recentCheckoutsError.message);
@@ -241,7 +245,7 @@ const Dashboard: React.FC = () => {
           .eq('status', 'maintenance')
           .eq('equipment_maintenance.status', 'in_progress')
           .limit(10)
-      ) as any;
+      ) as unknown;
 
       if (maintenanceError) {
         console.warn('Maintenance fetch error:', maintenanceError.message);
@@ -669,11 +673,7 @@ const Dashboard: React.FC = () => {
                           {new Date(checkout.due_date).toLocaleDateString('fr-FR')}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-xs">
-                          <Badge
-                            variant={isOverdue ? 'danger' : 'success'}
-                          >
-                            {isOverdue ? 'EN RETARD' : 'ACTIF'}
-                          </Badge>
+                          <StatusBadge status={checkout.status} />
                         </td>
                       </tr>
                     );
