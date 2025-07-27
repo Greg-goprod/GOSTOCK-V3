@@ -4,14 +4,20 @@ import Button from "../common/Button";
 import StatusBadge from "../common/StatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useAppContext } from "../../contexts/AppContext";
+import { useApp } from "../../contexts/AppContext";
 import { CheckoutWithCalculatedStatus } from "../../types";
 import toast from "react-hot-toast";
 
 interface ReturnModalProps {
   isOpen: boolean;
   onClose: () => void;
-  deliveryNote: any;
+  deliveryNote: {
+    id: string;
+    userId: string;
+    number: string;
+    createdAt: string;
+    notes?: string;
+  };
   checkouts: CheckoutWithCalculatedStatus[];
 }
 
@@ -21,7 +27,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
   deliveryNote,
   checkouts,
 }) => {
-  const { users, returnEquipmentWithAPI, refreshAllStatusViews } = useAppContext();
+  const { users = [], returnEquipmentWithAPI, refreshAllStatusViews } = useApp();
   const [returningItems, setReturningItems] = useState<Record<string, boolean>>(
     {}
   );
@@ -29,7 +35,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Trouver l'utilisateur associé au bon de livraison
-  const user = users.find((u) => u.id === deliveryNote.userId);
+  const user = users && users.find ? users.find((u) => u.id === deliveryNote.userId) : null;
 
   // Gérer le retour des équipements sélectionnés
   const handleReturn = async () => {
@@ -37,7 +43,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
     
     try {
       const selectedCheckouts = Object.entries(returningItems)
-        .filter(([_, isSelected]) => isSelected)
+        .filter(([_checkoutId, isSelected]) => isSelected)
         .map(([checkoutId]) => checkoutId);
       
       if (selectedCheckouts.length === 0) {
@@ -69,7 +75,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Retour - Bon #${deliveryNote.number}`}
+      title={`Retour - Bon #${deliveryNote?.number || 'N/A'}`}
       size="lg"
     >
       <div className="space-y-6">
@@ -81,7 +87,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
                 Date de sortie
               </p>
               <p className="font-medium">
-                {format(new Date(deliveryNote.createdAt), "dd MMMM yyyy", {
+                {format(new Date(deliveryNote?.createdAt || new Date()), "dd MMMM yyyy", {
                   locale: fr,
                 })}
               </p>
@@ -92,11 +98,11 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
               </p>
               <p className="font-medium">
                 {user
-                  ? `${user.firstName} ${user.lastName}`
+                  ? `${user.first_name} ${user.last_name}`
                   : "Utilisateur inconnu"}
               </p>
             </div>
-            {deliveryNote.notes && (
+            {deliveryNote?.notes && (
               <div className="col-span-2">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Notes</p>
                 <p className="font-medium">{deliveryNote.notes}</p>
@@ -109,74 +115,83 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
         <div>
           <h3 className="font-bold text-lg mb-3">Équipements</h3>
           <div className="space-y-4">
-            {checkouts.map((checkout) => (
-              <div
-                key={checkout.id}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-              >
-                <div className="flex justify-between items-center mb-3">
-                  <div>
-                    <h4 className="font-semibold">{checkout.equipment_name}</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Date de retour prévue:{" "}
-                      {format(new Date(checkout.due_date), "dd MMMM yyyy", {
-                        locale: fr,
-                      })}
-                    </p>
-                  </div>
-                  <StatusBadge status={checkout.status} />
-                </div>
-
-                {checkout.status !== "returned" && (
-                  <>
-                    <div className="mb-3">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={!!returningItems[checkout.id]}
-                          onChange={(e) =>
-                            setReturningItems({
-                              ...returningItems,
-                              [checkout.id]: e.target.checked,
-                            })
-                          }
-                          className="form-checkbox h-5 w-5 text-blue-600"
-                        />
-                        <span>Retourner cet équipement</span>
-                      </label>
+            {Array.isArray(checkouts) && checkouts.length > 0 ? (
+              checkouts.map((checkout) => (
+                <div
+                  key={checkout.id}
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <h4 className="font-semibold">{checkout.equipment_name}</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Date de retour prévue:{" "}
+                        {checkout.due_date ? 
+                          format(new Date(checkout.due_date), "dd MMMM yyyy", {
+                            locale: fr,
+                          }) : 
+                          "Date inconnue"
+                        }
+                      </p>
                     </div>
-
-                    {returningItems[checkout.id] && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Notes de retour (optionnel)
-                        </label>
-                        <textarea
-                          value={returnNotes[checkout.id] || ""}
-                          onChange={(e) =>
-                            setReturnNotes({
-                              ...returnNotes,
-                              [checkout.id]: e.target.value,
-                            })
-                          }
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm"
-                          rows={2}
-                        ></textarea>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {checkout.notes && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Notes:
-                    </p>
-                    <p className="text-sm">{checkout.notes}</p>
+                    <StatusBadge status={checkout.status} />
                   </div>
-                )}
+
+                  {checkout.status !== "returned" && (
+                    <>
+                      <div className="mb-3">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={!!returningItems[checkout.id]}
+                            onChange={(e) =>
+                              setReturningItems({
+                                ...returningItems,
+                                [checkout.id]: e.target.checked,
+                              })
+                            }
+                            className="form-checkbox h-5 w-5 text-blue-600"
+                          />
+                          <span>Retourner cet équipement</span>
+                        </label>
+                      </div>
+
+                      {returningItems[checkout.id] && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Notes de retour (optionnel)
+                          </label>
+                          <textarea
+                            value={returnNotes[checkout.id] || ""}
+                            onChange={(e) =>
+                              setReturnNotes({
+                                ...returnNotes,
+                                [checkout.id]: e.target.value,
+                              })
+                            }
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm"
+                            rows={2}
+                          ></textarea>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {checkout.notes && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Notes:
+                      </p>
+                      <p className="text-sm">{checkout.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                Aucun équipement à afficher
               </div>
-            ))}
+            )}
           </div>
         </div>
 
