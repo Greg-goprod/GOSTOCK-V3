@@ -5,7 +5,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'sans': ['Roboto', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'Noto Sans', 'sans-serif'],
+        // Ligne graphique « Régie » : même police que GO-PROD ; chasse fixe pour les codes
+        'sans': ['Geist', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+        'mono': ['"Geist Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       fontWeight: {
         'thin': '100',
@@ -16,18 +18,40 @@ export default {
         'black': '900',
       },
       colors: {
+        // Violet de la famille GO, réservé aux actions principales et à la sélection
         primary: {
+          50: '#f5f1ff',
+          100: '#ede7fd',
+          200: '#dccffc',
+          300: '#c2acf9',
+          400: '#a78bfa',
+          500: '#7c4dea',
+          600: '#6d3ee0',
+          700: '#5b2fc4',
+          800: '#4a269f',
+          900: '#3c2181',
+          950: '#241640',
+        },
+        // Neutres légèrement violacés (fonds sombres « Nocturne » de GO-PROD)
+        gray: {
+          50: '#f7f7fa',
+          100: '#ededf2',
+          200: '#e0e0ea',
+          300: '#c9c9d6',
+          400: '#9a9ab2',
+          500: '#6b6b82',
+          600: '#55556b',
+          700: '#2e2e40',
+          800: '#1a1a24',
+          900: '#101018',
+          950: '#0b0b11',
+        },
+        info: {
           50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
+          100: '#e0ebfb',
           500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+          600: '#1e5bb8',
+          900: '#13233f',
         },
         success: {
           50: '#ecfdf5',

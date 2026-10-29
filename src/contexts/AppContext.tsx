@@ -9,6 +9,7 @@ import {
   EquipmentInstance, 
   EquipmentSubgroup, 
   Supplier, 
+  User,
   CheckoutWithCalculatedStatus,
   EquipmentWithCalculatedStatus
 } from '../types';
@@ -66,6 +67,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [statusConfigs, setStatusConfigs] = useState<any[]>([]); // Assuming StatusConfig is now part of Equipment or handled differently
   const [checkouts, setCheckouts] = useState<import('../types').CheckoutRecord[]>([]);
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
 
   const fetchAppData = async () => {
@@ -164,7 +166,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setDeliveryNotes(transformedDeliveryNotes);
       }
       
-      // Charger les utilisateurs
+      setUsers((usersResult.data || []).map((u: Record<string, any>) => ({
+        id: u.id,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        email: u.email,
+        phone: u.phone,
+        department: u.department,
+        role: u.role,
+        dateCreated: u.created_at
+      })));
       setEquipment(transformedEquipment);
       // Mapping strict pour Category
       setCategories(categoriesResult.data?.map((item: Record<string, any>) => ({
@@ -613,6 +624,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         statusConfigs,
         checkouts,
         deliveryNotes,
+        users,
         
         // Loading states
         loadingAppData,
