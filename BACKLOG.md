@@ -41,7 +41,8 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
 ## Dettes techniques
 
 - **Vite 5 → 8** : failles limitées au serveur de développement ; saut majeur (Node ≥ 20.19).
-- **ESLint** : 68 `any` explicites (surtout `AppContext.tsx`), 11 dépendances de hooks manquantes.
+- **ESLint** : 68 `any` explicites (surtout `AppContext.tsx`). Les 11 avertissements de dépendances de hooks
+  ont été relus le 29.10 : chargements à l'ouverture, sans donnée périmée ; laissés tels quels.
 - **Import Excel** : n'accepte plus que le format `.xlsx` (exceljs ne lit pas l'ancien `.xls`).
 - **Renumérotation** : la scie `GOMAT-20261029-0001` garde l'ancien format de numéro.
 
