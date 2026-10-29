@@ -22,6 +22,7 @@ export interface Equipment {
   unit?: string;
   supplierReference?: string;
   purchasePrice?: number;
+  requiresApproval?: boolean;
   depotId?: string;
 }
 

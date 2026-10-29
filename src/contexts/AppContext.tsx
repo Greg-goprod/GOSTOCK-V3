@@ -42,6 +42,7 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   itemType: item.item_type,
   unit: item.unit,
   supplierReference: item.supplier_reference,
+  requiresApproval: Boolean(item.requires_approval),
   purchasePrice: item.purchase_price === null || item.purchase_price === undefined ? undefined : Number(item.purchase_price),
   depotId: item.depot_id
 });

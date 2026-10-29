@@ -33,7 +33,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     location: '',
     image_url: '',
     short_title: '',
-    available_quantity: 1
+    available_quantity: 1,
+    requires_approval: false
   });
   const [quantityData, setQuantityData] = useState({
     qrType: 'individual' as 'individual' | 'batch',
@@ -61,7 +62,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         location: '',
         image_url: '',
         short_title: '',
-        available_quantity: 1
+        available_quantity: 1,
+        requires_approval: false
       });
       setQuantityData({
         qrType: 'individual',
@@ -505,6 +507,19 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                     <option value="retired">Retiré du service</option>
                   </select>
                 </div>
+
+                <label className="flex items-start gap-3 md:col-span-2 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.requires_approval}
+                    onChange={e => setFormData(prev => ({ ...prev, requires_approval: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Validation requise</span>
+                    <span className="block text-xs text-gray-600 dark:text-gray-400">Toute demande contenant cet article doit être validée par un responsable, même s'il est disponible.</span>
+                  </span>
+                </label>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

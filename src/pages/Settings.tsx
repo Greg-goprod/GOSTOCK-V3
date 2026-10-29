@@ -78,6 +78,7 @@ const Settings: React.FC = () => {
   // Loading states
   const [loading, setLoading] = useState(true);
   const [articlePrefix, setArticlePrefix] = useState('');
+  const [approvalMaxQuantity, setApprovalMaxQuantity] = useState('10');
   const [companyLogo, setCompanyLogo] = useState('');
 
   useEffect(() => {
@@ -190,6 +191,11 @@ const Settings: React.FC = () => {
       setArticlePrefix(prefixSetting.value);
     }
     
+    const approvalSetting = data?.find(s => s.id === 'approval_max_quantity');
+    if (approvalSetting) {
+      setApprovalMaxQuantity(approvalSetting.value);
+    }
+
     const logoSetting = data?.find(s => s.id === 'company_logo');
     if (logoSetting) {
       setCompanyLogo(logoSetting.value);
@@ -390,6 +396,41 @@ const Settings: React.FC = () => {
                 </p>
               </div>
               
+              <div>
+                <label htmlFor="approval-max-quantity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Seuil de validation des demandes
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="approval-max-quantity"
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    value={approvalMaxQuantity}
+                    onChange={(e) => setApprovalMaxQuantity(e.target.value)}
+                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      const value = Number(approvalMaxQuantity);
+                      if (!Number.isInteger(value) || value < 1) {
+                        toast.error('Le seuil doit être un nombre entier positif');
+                        return;
+                      }
+                      updateSystemSetting('approval_max_quantity', String(value), 'Au-delà de cette quantité par article, une demande doit être validée par un responsable');
+                    }}
+                  >
+                    SAUVER
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Au-delà de cette quantité par article, une demande doit être validée par un responsable. Les véhicules et les articles marqués « validation requise » le sont toujours.
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Logo de l'entreprise (URL)
