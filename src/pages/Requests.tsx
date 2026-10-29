@@ -39,6 +39,48 @@ const contentSummary = (r: RequestOverview) =>
     r.vehicle_names,
   ].filter(Boolean).join(' · ');
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Ce que la personne connectée a en sa possession (le magasin le voit dans « Sorties »)
+const MyEquipment: React.FC = () => {
+  const { checkouts, equipment, equipmentInstances } = useApp();
+  const { profile } = useAuth();
+  const mine = checkouts
+    .filter(c => c.userId === profile?.id && (c.status === 'active' || c.status === 'overdue'))
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  if (mine.length === 0) return null;
+
+  return (
+    <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4" aria-labelledby="my-equipment">
+      <h2 id="my-equipment" className="font-bold text-gray-900 dark:text-white mb-2">Matériel chez moi ({mine.length})</h2>
+      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+        {mine.map(c => {
+          const item = equipment.find(e => e.id === c.equipmentId);
+          const instance = c.instanceId ? equipmentInstances.find(i => i.id === c.instanceId) : undefined;
+          const late = c.status === 'overdue' || new Date(c.dueDate).getTime() < Date.now();
+          const daysLate = Math.max(1, Math.floor((Date.now() - new Date(c.dueDate).getTime()) / DAY_MS));
+          return (
+            <li key={c.id} className="flex justify-between items-center gap-3 py-2">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item?.name ?? 'Article'}</div>
+                <div className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                  {[instance?.qrCode ?? item?.articleNumber, `à rendre le ${new Date(c.dueDate).toLocaleDateString('fr-CH')}`].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+              {late && (
+                <span className="shrink-0 rounded-full bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-xs font-semibold">
+                  {daysLate} j de retard
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+};
+
 const Requests: React.FC = () => {
   const [requests, setRequests] = useState<RequestOverview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +133,8 @@ const Requests: React.FC = () => {
         </div>
         <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>
       </div>
+
+      {!staff && <MyEquipment />}
 
       <div className="flex flex-wrap gap-2 items-center">
         {FILTERS.filter(f => staff || f.id === 'all').map(f => (
