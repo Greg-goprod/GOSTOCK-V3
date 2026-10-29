@@ -163,6 +163,8 @@ export interface EquipmentMaintenance {
 }
 
 export interface AppContextType {
+  // Emprunts en retard ou à rendre sous 3 jours (pastille du menu)
+  alertCount: number;
   equipment: Equipment[];
   categories: Category[];
   suppliers: Supplier[];

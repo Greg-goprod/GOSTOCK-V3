@@ -4,6 +4,7 @@ import Button from '../common/Button';
 import QRCodeScanner from '../QRCode/QRCodeScanner';
 import { User, Equipment, Category, Supplier } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { findEquipmentByCode } from '../../lib/scan';
 import { Search, Package, Calendar, Printer, User as UserIcon, Plus, Minus, X, CalendarDays as CalendarDaysIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserModal from '../users/UserModal';
@@ -374,116 +375,50 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleEquipmentScan = async (scannedId: string) => {
+    if (!scannedId?.trim()) return;
+
     try {
-      if (!scannedId) {
-        console.error("ID scanné invalide ou vide");
-        return;
-      }
-      
       setIsLoading(true);
-      const normalizedId = scannedId.trim().toLowerCase();
-      
-      // D'abord chercher dans les équipements déjà chargés
-      let foundEquipment = equipment.find(eq => {
-        if (!eq || !eq.serialNumber) return false;
-        
-        const serialMatches = eq.serialNumber.toLowerCase() === normalizedId;
-        const articleMatches = eq.articleNumber && eq.articleNumber.toLowerCase() === normalizedId;
-        const articleIncludes = eq.articleNumber && normalizedId.includes(eq.articleNumber.toLowerCase());
-        
-        return serialMatches || articleMatches || articleIncludes;
-      });
-      
-      // Si trouvé dans les équipements déjà chargés
-      if (foundEquipment) {
-        // Vérifier la disponibilité avec la nouvelle fonction SQL
-        const { data: availabilityCheck, error: availabilityError } = await supabase
-          .rpc('check_equipment_availability', {
-            equipment_id: foundEquipment.id,
-            requested_quantity: 1
-          });
-
-        if (availabilityError) throw availabilityError;
-
-        const availability = availabilityCheck?.[0];
-        if (!availability?.is_available) {
-          toast.error(`Équipement non disponible: ${availability?.message || 'Raison inconnue'}`);
-          return;
-        }
-
-        addEquipmentToCheckout(foundEquipment);
-        // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
+      const found = await findEquipmentByCode(scannedId);
+      if (!found) {
+        toast.error(`Aucun équipement ne correspond au code ${scannedId.trim()}`);
         return;
       }
-      
-      // Si non trouvé, chercher dans la base de données avec vérification de disponibilité
-      console.log("Équipement non trouvé en mémoire, recherche en base de données...");
-      
-      const { data: equipmentData, error: equipmentError } = await supabase
-        .from('equipment')
-        .select(`
-          *,
-          categories(id, name),
-          suppliers(id, name),
-          equipment_groups(id, name)
-        `)
-        .or(`serial_number.eq.${normalizedId},article_number.eq.${normalizedId},article_number.ilike.%${normalizedId}%,name.ilike.%${normalizedId}%`)
-        .neq('status', 'maintenance') // Exclure les équipements en maintenance
-        .neq('status', 'retired')     // Exclure les équipements retirés
-        .order('name')
-        .limit(10);
-      
-      if (equipmentError) throw equipmentError;
-      
-      if (equipmentData && equipmentData.length > 0) {
-        const eq = equipmentData[0];
-        
-        // Double vérification avec la fonction SQL
-        const { data: availabilityCheck, error: availabilityError } = await supabase
-          .rpc('check_equipment_availability', {
-            equipment_id: eq.id,
-            requested_quantity: 1
-          });
 
-        if (availabilityError) throw availabilityError;
-
-        const availability = availabilityCheck?.[0];
-        if (!availability?.is_available) {
-          toast.error(`Équipement non disponible: ${availability?.message || 'Raison inconnue'}`);
-          return;
-        }
-
-        foundEquipment = {
-          id: eq.id,
-          name: eq.name,
-          description: eq.description || '',
-          category: eq.categories?.name || '',
-          serialNumber: eq.serial_number,
-          status: eq.status as Equipment['status'],
-          addedDate: eq.added_date || eq.created_at,
-          lastMaintenance: eq.last_maintenance,
-          imageUrl: eq.image_url,
-          supplier: eq.suppliers?.name || '',
-          location: eq.location || '',
-          articleNumber: eq.article_number,
-          qrType: eq.qr_type || 'individual',
-          totalQuantity: eq.total_quantity,
-          availableQuantity: eq.available_quantity,
-          shortTitle: eq.short_title,
-          group: eq.equipment_groups?.name || ''
-        };
-        
-        addEquipmentToCheckout(foundEquipment);
-        // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
+      const row = found.equipment;
+      if (row.status === 'retired') {
+        toast.error(`${row.name} est retiré du service`);
         return;
       }
-      
-      toast.error('Équipement non trouvé ou non disponible');
-      // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
+
+      // Version déjà chargée (avec noms de catégorie, fournisseur…), quantités à jour depuis la base
+      const known = equipment.find(eq => eq.id === row.id);
+      const scanned: Equipment = {
+        ...(known ?? {
+          id: row.id,
+          name: row.name,
+          description: row.description || '',
+          category: '',
+          serialNumber: row.serial_number,
+          addedDate: row.created_at,
+          lastMaintenance: row.last_maintenance,
+          imageUrl: row.image_url,
+          supplier: '',
+          location: row.location || '',
+          articleNumber: row.article_number,
+          qrType: row.qr_type || 'individual',
+          shortTitle: row.short_title,
+          group: ''
+        }),
+        status: row.status as Equipment['status'],
+        totalQuantity: row.total_quantity,
+        availableQuantity: row.available_quantity
+      };
+
+      addEquipmentToCheckout(scanned);
     } catch (error: any) {
       console.error('Error scanning equipment:', error);
       toast.error(error.message || 'Erreur lors de la recherche');
-      // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
     } finally {
       setIsLoading(false);
     }

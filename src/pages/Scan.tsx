@@ -6,6 +6,7 @@ import Button from '../components/common/Button';
 import { ArrowLeft, Search, Package, User, FileText, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { findEquipmentByCode } from '../lib/scan';
 import { Equipment, User as UserType, CheckoutRecord } from '../types';
 import ReturnModal from '../components/checkout/ReturnModal';
 
@@ -119,75 +120,10 @@ const Scan: React.FC = () => {
     // Remplacer les apostrophes par des tirets si présentes
     const normalizedId = id.replace(/'/g, '-');
     
-    // Vérifier si c'est un code d'instance (format: ART-20250614-0025-001)
-    const isInstanceCode = /^[A-Z]+-\d+-\d+-\d+$/.test(normalizedId);
-    
-    // Extraire le code article de base si c'est un code d'instance
-    let articleCode = normalizedId;
-    if (isInstanceCode) {
-      // Extraire la partie article sans le numéro d'instance
-      const parts = normalizedId.split('-');
-      if (parts.length >= 3) {
-        articleCode = parts.slice(0, 3).join('-');
-      }
-    }
-    
-    console.log("Code normalisé:", normalizedId);
-    console.log("Code article extrait:", articleCode);
-    
-    // Recherche par numéro de série exact
-    let { data: equipment, error: equipmentError } = await supabase
-      .from('equipment')
-      .select('*')
-      .eq('serial_number', normalizedId)
-      .maybeSingle();
-    
-    console.log("Recherche par numéro de série:", equipment, equipmentError);
-    
-    // Si pas trouvé par numéro de série, essayer par numéro d'article
-    if (!equipment && !equipmentError) {
-      const { data: equipmentByArticle, error: articleError } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('article_number', normalizedId)
-        .maybeSingle();
-      
-      console.log("Recherche par numéro d'article:", equipmentByArticle, articleError);
-      
-      if (equipmentByArticle) {
-        equipment = equipmentByArticle;
-      }
-    }
-    
-    // Si pas trouvé par numéro d'article, essayer par code article extrait
-    if (!equipment && !equipmentError) {
-      const { data: equipmentByArticleCode, error: articleCodeError } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('article_number', articleCode)
-        .maybeSingle();
-      
-      console.log("Recherche par code article extrait:", equipmentByArticleCode, articleCodeError);
-      
-      if (equipmentByArticleCode) {
-        equipment = equipmentByArticleCode;
-      }
-    }
-
-    // Si toujours pas trouvé, essayer avec ILIKE pour une correspondance partielle
-    if (!equipment && !equipmentError) {
-      const { data: equipmentByPartialArticle, error: partialArticleError } = await supabase
-        .from('equipment')
-        .select('*')
-        .ilike('article_number', `%${articleCode}%`)
-        .limit(1);
-      
-      console.log("Recherche par correspondance partielle d'article:", equipmentByPartialArticle, partialArticleError);
-      
-      if (equipmentByPartialArticle && equipmentByPartialArticle.length > 0) {
-        equipment = equipmentByPartialArticle[0];
-      }
-    }
+    // Identifiant, numéro d'article ou numéro de série exacts (plus de correspondance approximative
+    // qui pouvait retourner un autre article) ; les codes d'exemplaire sont traités plus bas
+    const found = await findEquipmentByCode(normalizedId);
+    const equipment = found && !found.instance ? found.equipment : null;
 
     // Si on a trouvé un équipement
     if (equipment) {
@@ -290,7 +226,7 @@ const Scan: React.FC = () => {
         *,
         equipment(*)
       `)
-      .eq('qr_code', normalizedId)
+      .eq('qr_code', found?.instance?.qr_code ?? normalizedId)
       .maybeSingle();
 
     console.log("Recherche instance:", instance, instanceError);

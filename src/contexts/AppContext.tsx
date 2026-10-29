@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   AppContextType, 
@@ -14,13 +14,30 @@ import {
 } from '../types';
 import toast from 'react-hot-toast';
 
-// Define notification type
-interface Notification {
-  id: string;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  timestamp: Date;
-}
+// Ligne de la table equipment (snake_case) → Equipment (camelCase)
+const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
+  id: item.id,
+  name: item.name,
+  description: item.description || '',
+  category: item.category_id,
+  serialNumber: item.serial_number,
+  status: item.status,
+  addedDate: item.created_at,
+  lastMaintenance: item.last_maintenance,
+  imageUrl: item.image_url,
+  supplier: item.supplier_id,
+  location: item.location,
+  articleNumber: item.article_number,
+  qrType: item.qr_type,
+  totalQuantity: item.total_quantity,
+  availableQuantity: item.available_quantity,
+  shortTitle: item.short_title,
+  group: item.group_id,
+  subgroup: item.subgroup_id
+});
+
+// Nombre de jours avant l'échéance à partir duquel un retour est signalé
+const DUE_SOON_DAYS = 3;
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -40,7 +57,6 @@ interface AppProviderProps {
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -51,19 +67,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [checkouts, setCheckouts] = useState<import('../types').CheckoutRecord[]>([]);
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
-
-  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date(),
-    };
-    setNotifications(prev => [...prev, newNotification]);
-  };
-
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-  };
 
   const fetchAppData = async () => {
     setLoadingAppData(true);
@@ -112,26 +115,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (deliveryNotesResult.error) throw deliveryNotesResult.error;
 
       // Transformer les données du snake_case vers le camelCase
-      const transformedEquipment = equipmentResult.data?.map((item: Record<string, any>) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        category: item.category_id,
-        serialNumber: item.serial_number,
-        status: item.status,
-        addedDate: item.created_at,
-        lastMaintenance: item.last_maintenance,
-        imageUrl: item.image_url,
-        supplier: item.supplier_id,
-        location: item.location,
-        articleNumber: item.article_number,
-        qrType: item.qr_type,
-        totalQuantity: item.total_quantity,
-        availableQuantity: item.available_quantity,
-        shortTitle: item.short_title,
-        group: item.group_id,
-        subgroup: item.subgroup_id
-      })) || [];
+      const transformedEquipment = equipmentResult.data?.map(mapEquipmentRow) || [];
 
       // Transformer les bons de livraison
       const transformedDeliveryNotes = deliveryNotesResult.data?.map((item: Record<string, any>) => {
@@ -247,10 +231,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       
     } catch (error) {
       console.error('Error fetching app data:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors du chargement des données'
-      });
+      toast.error('Erreur lors du chargement des données');
     } finally {
       setLoadingAppData(false);
     }
@@ -290,38 +271,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error) throw error;
 
       // Transformer les données reçues de snake_case vers camelCase
-      const newEquipment: Equipment = {
-        id: data.id,
-        name: data.name,
-        description: data.description || '',
-        category: data.category_id,
-        serialNumber: data.serial_number,
-        status: data.status,
-        addedDate: data.created_at,
-        lastMaintenance: data.last_maintenance,
-        imageUrl: data.image_url,
-        supplier: data.supplier_id,
-        location: data.location,
-        articleNumber: data.article_number,
-        qrType: data.qr_type,
-        totalQuantity: data.total_quantity,
-        availableQuantity: data.available_quantity,
-        shortTitle: data.short_title,
-        group: data.group_id,
-        subgroup: data.subgroup_id
-      };
+      const newEquipment = mapEquipmentRow(data);
 
       setEquipment(prev => [newEquipment, ...prev]);
-      addNotification({
-        type: 'success',
-        message: 'Équipement ajouté avec succès'
-      });
+      toast.success('Équipement ajouté avec succès');
     } catch (error) {
       console.error('Error adding equipment:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors de l\'ajout de l\'équipement'
-      });
+      toast.error('Erreur lors de l\'ajout de l\'équipement');
       throw error;
     }
   };
@@ -357,38 +313,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error) throw error;
 
       // Transformer le résultat de snake_case vers camelCase
-      const updatedEquipment: Equipment = {
-        id: data.id,
-        name: data.name,
-        description: data.description || '',
-        category: data.category_id,
-        serialNumber: data.serial_number,
-        status: data.status,
-        addedDate: data.created_at,
-        lastMaintenance: data.last_maintenance,
-        imageUrl: data.image_url,
-        supplier: data.supplier_id,
-        location: data.location,
-        articleNumber: data.article_number,
-        qrType: data.qr_type,
-        totalQuantity: data.total_quantity,
-        availableQuantity: data.available_quantity,
-        shortTitle: data.short_title,
-        group: data.group_id,
-        subgroup: data.subgroup_id
-      };
+      const updatedEquipment = mapEquipmentRow(data);
 
       setEquipment(prev => prev.map(eq => eq.id === id ? updatedEquipment : eq));
-      addNotification({
-        type: 'success',
-        message: 'Équipement mis à jour avec succès'
-      });
+      toast.success('Équipement mis à jour avec succès');
     } catch (error) {
       console.error('Error updating equipment:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors de la mise à jour de l\'équipement'
-      });
+      toast.error('Erreur lors de la mise à jour de l\'équipement');
       throw error;
     }
   };
@@ -403,16 +334,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error) throw error;
 
       setEquipment(prev => prev.filter(eq => eq.id !== id));
-      addNotification({
-        type: 'success',
-        message: 'Équipement supprimé avec succès'
-      });
+      toast.success('Équipement supprimé avec succès');
     } catch (error) {
       console.error('Error deleting equipment:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors de la suppression de l\'équipement'
-      });
+      const isReferenced = (error as { code?: string })?.code === '23503';
+      toast.error(isReferenced
+        ? 'Ce matériel a un historique de sorties : passez-le en « Retiré du service » plutôt que de le supprimer'
+        : 'Erreur lors de la suppression de l\'équipement');
       throw error;
     }
   };
@@ -427,27 +355,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
       if (equipmentError) throw equipmentError;
       
-      // Transformer les données de snake_case en camelCase
-      const transformedEquipment = equipmentData.map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        category: item.category,
-        serialNumber: item.serial_number,
-        status: item.status,
-        addedDate: item.added_date,
-        lastMaintenance: item.last_maintenance,
-        imageUrl: item.image_url,
-        supplier: item.supplier,
-        location: item.location,
-        articleNumber: item.article_number,
-        qrType: item.qr_type,
-        totalQuantity: item.total_quantity || 1,
-        availableQuantity: item.available_quantity || 0,
-        shortTitle: item.short_title,
-        group: item.group,
-        subgroup: item.subgroup
-      }));
+      // Mêmes colonnes que fetchAppData (category_id, supplier_id, group_id…)
+      const transformedEquipment = equipmentData.map(mapEquipmentRow);
 
       setEquipment(transformedEquipment);
       
@@ -677,13 +586,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     fetchAppData();
   }, []);
 
+  // Pastille : emprunts en retard ou à rendre dans les prochains jours
+  const alertCount = useMemo(() => {
+    const dueSoonLimit = Date.now() + DUE_SOON_DAYS * 24 * 60 * 60 * 1000;
+    return checkouts.filter(c => {
+      if (c.status === 'overdue') return true;
+      if (c.status !== 'active') return false;
+      const due = c.dueDate ? new Date(c.dueDate).getTime() : NaN;
+      return !Number.isNaN(due) && due <= dueSoonLimit;
+    }).length;
+  }, [checkouts]);
+
   return (
     <AppContext.Provider
       value={{
-        // Notifications
-        notifications,
-        addNotification,
-        removeNotification,
+        // Alertes (retards et retours proches)
+        alertCount,
         
         // Equipment data
         equipment,

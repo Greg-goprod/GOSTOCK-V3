@@ -77,7 +77,7 @@ const Notifications: React.FC = () => {
           equipment(name, serial_number),
           users(first_name, last_name)
         `)
-        .eq('status', 'active')
+        .in('status', ['active', 'overdue'])
         .lt('due_date', new Date().toISOString());
 
       if (overdueError) throw overdueError;

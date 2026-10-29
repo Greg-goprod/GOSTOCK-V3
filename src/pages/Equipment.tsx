@@ -147,11 +147,14 @@ export default function Equipment() {
   };
 
   const confirmDelete = async () => {
-    if (selectedEquipment) {
+    if (!selectedEquipment) return;
+    try {
       await deleteEquipment(selectedEquipment);
-      setShowDeleteModal(false);
-      setSelectedEquipment(null);
+    } catch {
+      // Message déjà affiché par deleteEquipment
     }
+    setShowDeleteModal(false);
+    setSelectedEquipment(null);
   };
 
   const handleMaintenance = (equipmentId: string) => {

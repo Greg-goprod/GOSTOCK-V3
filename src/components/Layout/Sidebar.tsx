@@ -17,12 +17,10 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 
 const Sidebar: React.FC = () => {
-  const { notifications } = useApp();
+  const { alertCount: unreadNotifications } = useApp();
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [companyLogo, setCompanyLogo] = useState('');
-  
-  const unreadNotifications = notifications.filter(notif => !notif.read).length;
 
   useEffect(() => {
     fetchCompanyLogo();

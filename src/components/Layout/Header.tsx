@@ -7,11 +7,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 const Header: React.FC = () => {
   const location = useLocation();
-  const { notifications } = useApp();
+  const { alertCount: unreadNotifications } = useApp();
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
-  
-  const unreadNotifications = notifications.filter(notif => !notif.read).length;
   
   const getPageTitle = () => {
     const path = location.pathname;
