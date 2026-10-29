@@ -28,7 +28,6 @@ export default function Equipment() {
     equipmentSubgroups,
     equipmentInstances,
     checkouts,
-    addEquipment,
     updateEquipment,
     deleteEquipment,
     refreshData,
@@ -696,7 +695,8 @@ export default function Equipment() {
       {showAddModal && (
         <AddEquipmentModal
           onClose={() => setShowAddModal(false)}
-          onAdd={addEquipment}
+          // La fenêtre enregistre déjà l'article et ses exemplaires : on recharge seulement les données
+          onAdd={() => refreshData()}
         />
       )}
 
