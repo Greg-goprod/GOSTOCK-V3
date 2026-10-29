@@ -350,12 +350,12 @@ export default function Equipment() {
               {/* Badges simplifiés */}
               <div className="flex items-center gap-2">
                 {/* Badge Stock */}
-                <span className="px-3 py-1 bg-blue-50 bg-opacity-80 dark:bg-blue-900 dark:bg-opacity-80 text-blue-800 dark:text-blue-100 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium backdrop-blur-sm">
+                <span className="px-3 py-1 bg-primary-50 bg-opacity-80 dark:bg-primary-900 dark:bg-opacity-80 text-primary-800 dark:text-primary-100 border border-primary-200 dark:border-primary-700 rounded-full text-sm font-medium backdrop-blur-sm">
                   Stock: {totalQuantity}
                 </span>
                 
                 {/* Badge Disponible */}
-                <span className={`px-3 py-1 ${availableQuantity > 0 ? 'bg-green-50 bg-opacity-80 dark:bg-green-900 dark:bg-opacity-80 text-green-800 dark:text-green-100 border border-green-200 dark:border-green-700' : 'bg-red-50 bg-opacity-80 dark:bg-red-900 dark:bg-opacity-80 text-red-800 dark:text-red-100 border border-red-200 dark:border-red-700'} rounded-full text-sm font-medium backdrop-blur-sm`}>
+                <span className={`px-3 py-1 ${availableQuantity > 0 ? 'bg-success-50 bg-opacity-80 dark:bg-success-900 dark:bg-opacity-80 text-success-800 dark:text-success-100 border border-success-200 dark:border-success-700' : 'bg-danger-50 bg-opacity-80 dark:bg-danger-900 dark:bg-opacity-80 text-danger-800 dark:text-danger-100 border border-danger-200 dark:border-danger-700'} rounded-full text-sm font-medium backdrop-blur-sm`}>
                   Disponible: {availableQuantity}
                 </span>
               </div>
@@ -388,7 +388,7 @@ export default function Equipment() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleDelete(eq.id)}
-                className="text-red-600 hover:text-red-700"
+                className="text-danger-600 hover:text-danger-700"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -518,7 +518,7 @@ export default function Equipment() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(eq.id)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-danger-600 hover:text-danger-700"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -577,7 +577,7 @@ export default function Equipment() {
             aria-label="Rechercher un équipement"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">

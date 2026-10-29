@@ -19,24 +19,24 @@ interface ColorUsage {
 // Palette de couleurs étendue avec plus de choix
 const colors = [
   // Rouges
-  '#ef4444', // red-500
-  '#dc2626', // red-600
-  '#b91c1c', // red-700
+  '#ef4444', // danger-500
+  '#dc2626', // danger-600
+  '#b91c1c', // danger-700
   
   // Oranges
-  '#f97316', // orange-500
-  '#ea580c', // orange-600
-  '#c2410c', // orange-700
+  '#f97316', // warning-500
+  '#ea580c', // warning-600
+  '#c2410c', // warning-700
   
   // Ambre
-  '#f59e0b', // amber-500
-  '#d97706', // amber-600
-  '#b45309', // amber-700
+  '#f59e0b', // warning-500
+  '#d97706', // warning-600
+  '#b45309', // warning-700
   
   // Jaunes
-  '#eab308', // yellow-500
-  '#ca8a04', // yellow-600
-  '#a16207', // yellow-700
+  '#eab308', // warning-500
+  '#ca8a04', // warning-600
+  '#a16207', // warning-700
   
   // Verts
   '#84cc16', // lime-500
@@ -44,9 +44,9 @@ const colors = [
   '#4d7c0f', // lime-700
   
   // Émeraudes
-  '#10b981', // emerald-500
-  '#059669', // emerald-600
-  '#047857', // emerald-700
+  '#10b981', // success-500
+  '#059669', // success-600
+  '#047857', // success-700
   
   // Cyans
   '#06b6d4', // cyan-500
@@ -54,19 +54,19 @@ const colors = [
   '#0e7490', // cyan-700
   
   // Bleus
-  '#3b82f6', // blue-500
-  '#2563eb', // blue-600
-  '#1d4ed8', // blue-700
+  '#3b82f6', // primary-500
+  '#2563eb', // primary-600
+  '#1d4ed8', // primary-700
   
   // Indigos
-  '#6366f1', // indigo-500
-  '#4f46e5', // indigo-600
-  '#4338ca', // indigo-700
+  '#6366f1', // primary-500
+  '#4f46e5', // primary-600
+  '#4338ca', // primary-700
   
   // Violets
-  '#8b5cf6', // violet-500
-  '#7c3aed', // violet-600
-  '#6d28d9', // violet-700
+  '#8b5cf6', // primary-500
+  '#7c3aed', // primary-600
+  '#6d28d9', // primary-700
   
   // Fuchsias
   '#d946ef', // fuchsia-500

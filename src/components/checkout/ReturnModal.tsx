@@ -293,7 +293,7 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
                                   [checkout.id]: e.target.checked,
                                 })
                               }
-                              className="form-checkbox h-5 w-5 text-blue-600"
+                              className="form-checkbox h-5 w-5 text-primary-600"
                             />
                             <span>Retourner cet équipement</span>
                           </label>

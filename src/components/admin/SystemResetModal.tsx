@@ -66,16 +66,16 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderWarningStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+      <div className="flex items-center gap-3 text-danger-600 dark:text-danger-400">
         <AlertTriangle className="w-8 h-8" />
         <h3 className="text-xl font-bold"><AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />ATTENTION - REMISE À ZÉRO DU SYSTÈME</h3>
       </div>
 
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <h4 className="font-semibold text-red-800 dark:text-red-200 mb-3">
+      <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+        <h4 className="font-semibold text-danger-800 dark:text-danger-200 mb-3">
           Cette opération supprimera DÉFINITIVEMENT :
         </h4>
-        <ul className="list-disc list-inside space-y-2 text-red-700 dark:text-red-300">
+        <ul className="list-disc list-inside space-y-2 text-danger-700 dark:text-danger-300">
           <li><Trash2 className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les emprunts en cours et l'historique</li>
           <li><FileTextIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les bons de livraison générés</li>
           <li><WrenchIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les maintenances (en cours et passées)</li>
@@ -83,11 +83,11 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
         </ul>
       </div>
 
-      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-        <h4 className="font-semibold text-green-800 dark:text-green-200 mb-3">
+      <div className="bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg p-4">
+        <h4 className="font-semibold text-success-800 dark:text-success-200 mb-3">
           Ce qui sera conservé :
         </h4>
-        <ul className="list-disc list-inside space-y-2 text-green-700 dark:text-green-300">
+        <ul className="list-disc list-inside space-y-2 text-success-700 dark:text-success-300">
           <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les équipements (remis en "disponible")</li>
           <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les utilisateurs et départements</li>
           <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les catégories et fournisseurs</li>
@@ -95,8 +95,8 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
         </ul>
       </div>
 
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+      <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
+        <p className="text-warning-800 dark:text-warning-200 font-medium">
           <AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Cette action est IRRÉVERSIBLE ! Assurez-vous d'avoir une sauvegarde si nécessaire.
         </p>
       </div>
@@ -114,16 +114,16 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderConfirmationStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+      <div className="flex items-center gap-3 text-danger-600 dark:text-danger-400">
         <AlertTriangle className="w-6 h-6" />
         <h3 className="text-lg font-bold">Confirmation finale</h3>
       </div>
 
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <p className="text-red-800 dark:text-red-200 font-medium mb-4">
+      <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+        <p className="text-danger-800 dark:text-danger-200 font-medium mb-4">
           Pour confirmer la remise à zéro, tapez exactement le texte suivant :
         </p>
-        <p className="font-mono text-lg bg-red-100 dark:bg-red-800 p-2 rounded border text-center">
+        <p className="font-mono text-lg bg-danger-100 dark:bg-danger-800 p-2 rounded border text-center">
           {requiredConfirmation}
         </p>
       </div>
@@ -136,7 +136,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
           placeholder="Tapez la confirmation ici..."
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
                      bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                     focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                     focus:ring-2 focus:ring-danger-500 focus:border-danger-500"
           disabled={isResetting}
         />
       </div>
@@ -159,20 +159,20 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderExecutingStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
+      <div className="flex items-center gap-3 text-primary-600 dark:text-primary-400">
         <Loader2 className="w-6 h-6 animate-spin" />
         <h3 className="text-lg font-bold">Remise à zéro en cours...</h3>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <p className="text-blue-800 dark:text-blue-200">
+      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+        <p className="text-primary-800 dark:text-primary-200">
           La remise à zéro est en cours. Cette opération peut prendre quelques minutes.
           Ne fermez pas cette fenêtre.
         </p>
       </div>
 
       <div className="flex justify-center">
-        <div className="animate-pulse text-blue-600 dark:text-blue-400">
+        <div className="animate-pulse text-primary-600 dark:text-primary-400">
           Suppression des données en cours...
         </div>
       </div>
@@ -184,7 +184,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
     
     return (
       <div className="space-y-6">
-        <div className={`flex items-center gap-3 ${hasErrors ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+        <div className={`flex items-center gap-3 ${hasErrors ? 'text-danger-600 dark:text-danger-400' : 'text-success-600 dark:text-success-400'}`}>
           {hasErrors ? <XCircle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
           <h3 className="text-lg font-bold">
             {hasErrors ? 'Remise à zéro terminée avec erreurs' : 'Remise à zéro réussie !'}
@@ -205,9 +205,9 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
             </div>
 
             {hasErrors && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <h4 className="font-semibold text-red-800 dark:text-red-200 mb-3">Erreurs rencontrées :</h4>
-                <ul className="list-disc list-inside space-y-1 text-red-700 dark:text-red-300 text-sm">
+              <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+                <h4 className="font-semibold text-danger-800 dark:text-danger-200 mb-3">Erreurs rencontrées :</h4>
+                <ul className="list-disc list-inside space-y-1 text-danger-700 dark:text-danger-300 text-sm">
                   {resetResults.errors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}

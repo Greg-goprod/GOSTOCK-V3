@@ -403,11 +403,11 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               {connectionStatus === 'connected' ? (
-                <Wifi size={14} className="text-green-500" />
+                <Wifi size={14} className="text-success-500" />
               ) : connectionStatus === 'config_error' ? (
-                <Settings size={14} className="text-orange-500" />
+                <Settings size={14} className="text-warning-500" />
               ) : (
-                <WifiOff size={14} className="text-red-500" />
+                <WifiOff size={14} className="text-danger-500" />
               )}
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {connectionStatus === 'connected' ? 'Connecté' : 
@@ -431,9 +431,9 @@ const Dashboard: React.FC = () => {
         <Card className="p-6">
           <div className="text-center">
             {connectionStatus === 'config_error' ? (
-              <Settings size={36} className="mx-auto text-orange-500 mb-3" />
+              <Settings size={36} className="mx-auto text-warning-500 mb-3" />
             ) : (
-              <AlertCircle size={36} className="mx-auto text-red-500 mb-3" />
+              <AlertCircle size={36} className="mx-auto text-danger-500 mb-3" />
             )}
             <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
               {connectionStatus === 'config_error' ? 'Configuration Supabase requise' : 'Erreur de connexion'}
@@ -471,7 +471,7 @@ const Dashboard: React.FC = () => {
                           href="https://supabase.com/dashboard" 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                          className="inline-flex items-center gap-1 text-primary-600 hover:underline text-sm"
                         >
                           <ExternalLink size={12} />
                           Ouvrir le dashboard Supabase
@@ -518,9 +518,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               {connectionStatus === 'connected' ? (
-                <Wifi size={14} className="text-green-500" />
+                <Wifi size={14} className="text-success-500" />
               ) : (
-                <WifiOff size={14} className="text-red-500" />
+                <WifiOff size={14} className="text-danger-500" />
               )}
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {connectionStatus === 'connected' ? 'Connecté' : 'Déconnecté'}
@@ -603,8 +603,8 @@ const Dashboard: React.FC = () => {
         </Card>
 
         <Card className="flex items-center p-3 hover:shadow-md transition-shadow">
-          <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-2 mr-3">
-            <Wrench size={20} className="text-blue-600 dark:text-blue-300" />
+          <div className="rounded-full bg-primary-100 dark:bg-primary-900/50 p-2 mr-3">
+            <Wrench size={20} className="text-primary-600 dark:text-primary-300" />
           </div>
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Maintenance</p>
@@ -708,7 +708,7 @@ const Dashboard: React.FC = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-1 mb-1">
-                          <Wrench size={14} className="text-blue-600 dark:text-blue-400" />
+                          <Wrench size={14} className="text-primary-600 dark:text-primary-400" />
                           <h4 className="text-xs font-bold text-gray-900 dark:text-white">
                             {equipment.name}
                           </h4>
@@ -731,7 +731,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock size={10} />
-                            <span className={daysSinceMaintenance > 7 ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
+                            <span className={daysSinceMaintenance > 7 ? 'text-danger-600 dark:text-danger-400 font-medium' : ''}>
                               {daysSinceMaintenance} jour{daysSinceMaintenance > 1 ? 's' : ''}
                             </span>
                           </div>
@@ -743,7 +743,7 @@ const Dashboard: React.FC = () => {
                           {equipment.serial_number}
                         </p>
                         {daysSinceMaintenance > 7 && (
-                          <div className="flex items-center gap-1 text-red-600 dark:text-red-400 text-[10px] font-medium mt-1">
+                          <div className="flex items-center gap-1 text-danger-600 dark:text-danger-400 text-[10px] font-medium mt-1">
                             <AlertTriangle size={10} />
                             <span>Maintenance prolongée</span>
                           </div>

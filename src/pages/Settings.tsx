@@ -319,7 +319,7 @@ const Settings: React.FC = () => {
       {/* Paramètres système */}
       <Accordion
         title="PARAMÈTRES SYSTÈME"
-        icon={<SettingsIcon size={20} className="text-blue-600 dark:text-blue-400" />}
+        icon={<SettingsIcon size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={true}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -470,7 +470,7 @@ const Settings: React.FC = () => {
       {/* Catégories */}
       <Accordion
         title={`CATÉGORIES (${categories.length})`}
-        icon={<Tag size={20} className="text-green-600 dark:text-green-400" />}
+        icon={<Tag size={20} className="text-success-600 dark:text-success-400" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
@@ -534,7 +534,7 @@ const Settings: React.FC = () => {
       {/* Fournisseurs */}
       <Accordion
         title={`FOURNISSEURS (${suppliers.length})`}
-        icon={<Truck size={20} className="text-purple-600 dark:text-purple-400" />}
+        icon={<Truck size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
@@ -594,7 +594,7 @@ const Settings: React.FC = () => {
       {/* Groupes et sous-groupes */}
       <Accordion
         title={`GROUPES ET SOUS-GROUPES (${groups.length} groupes, ${subgroups.length} sous-groupes)`}
-        icon={<Layers size={20} className="text-indigo-600 dark:text-indigo-400" />}
+        icon={<Layers size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
         <div className="space-y-6">
@@ -651,7 +651,7 @@ const Settings: React.FC = () => {
                   {group.description && (
                     <p className="text-xs text-gray-500 mt-1">{group.description}</p>
                   )}
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  <p className="text-xs text-primary-600 dark:text-primary-400 mt-1">
                     {subgroups.filter(sg => sg.groupId === group.id).length} sous-groupe(s)
                   </p>
                 </div>
@@ -741,7 +741,7 @@ const Settings: React.FC = () => {
       {/* Départements */}
       <Accordion
         title={`DÉPARTEMENTS (${departments.length})`}
-        icon={<Building size={20} className="text-orange-600 dark:text-orange-400" />}
+        icon={<Building size={20} className="text-warning-600 dark:text-warning-400" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
@@ -807,7 +807,7 @@ const Settings: React.FC = () => {
       {/* Types de maintenance */}
       <Accordion
         title={`TYPES DE MAINTENANCE (${maintenanceTypes.length})`}
-        icon={<Wrench size={20} className="text-yellow-600 dark:text-yellow-400" />}
+        icon={<Wrench size={20} className="text-warning-600 dark:text-warning-400" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
@@ -871,12 +871,12 @@ const Settings: React.FC = () => {
       {/* Administration */}
       <Accordion
         title="ADMINISTRATION"
-        icon={<SettingsIcon size={20} className="text-red-600 dark:text-red-400" />}
+        icon={<SettingsIcon size={20} className="text-danger-600 dark:text-danger-400" />}
         defaultOpen={false}
       >
         <div className="space-y-6">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <h4 className="font-semibold text-red-800 dark:text-red-200 mb-3">
+          <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+            <h4 className="font-semibold text-danger-800 dark:text-danger-200 mb-3">
               <AlertTriangleIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Zone d'administration - Actions irréversibles
             </h4>
             <div className="space-y-4">

@@ -173,22 +173,22 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
     >
       <div className="space-y-6">
         {/* Info header */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <h3 className="text-lg font-black text-blue-800 dark:text-blue-200 mb-1 uppercase">
+        <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+          <h3 className="text-lg font-black text-primary-800 dark:text-primary-200 mb-1 uppercase">
             {equipment.qrType === 'individual' ? 'QR CODES INDIVIDUELS' : 'QR CODE UNIQUE'}
           </h3>
           {loading ? (
-            <p className="text-blue-700 dark:text-blue-300 text-sm font-medium">
+            <p className="text-primary-700 dark:text-primary-300 text-sm font-medium">
               Chargement des QR codes...
             </p>
           ) : (
-            <p className="text-blue-700 dark:text-blue-300 text-sm font-medium">
+            <p className="text-primary-700 dark:text-primary-300 text-sm font-medium">
               {equipment.qrType === 'individual' 
                 ? `${instances.length} QR codes individuels pour impression d'étiquettes`
                 : 'Un seul QR code pour tout le lot'}
             </p>
           )}
-          <p className="text-blue-600 dark:text-blue-400 text-xs font-medium mt-1">
+          <p className="text-primary-600 dark:text-primary-400 text-xs font-medium mt-1">
             Article: {equipment.articleNumber || equipment.serialNumber} • Quantité totale: {equipment.totalQuantity}
           </p>
           

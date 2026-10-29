@@ -103,7 +103,7 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
         {/* Informations de base */}
         <Accordion
           title="INFORMATIONS DE BASE"
-          icon={<Settings size={18} className="text-blue-600 dark:text-blue-400" />}
+          icon={<Settings size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -162,7 +162,7 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
         {/* Couleur */}
         <Accordion
           title="COULEUR"
-          icon={<Palette size={18} className="text-purple-600 dark:text-purple-400" />}
+          icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <div className="space-y-4">

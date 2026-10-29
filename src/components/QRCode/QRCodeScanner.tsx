@@ -118,11 +118,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
   };
 
   const getStatusColor = () => {
-    if (isProcessing) return 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20';
-    if (lastScanStatus === 'success') return 'border-green-400 bg-green-50 dark:bg-green-900/20';
-    if (lastScanStatus === 'error') return 'border-red-400 bg-red-50 dark:bg-red-900/20';
-    if (lastScanStatus === 'duplicate') return 'border-orange-400 bg-orange-50 dark:bg-orange-900/20';
-    return 'border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-800';
+    if (isProcessing) return 'border-warning-400 bg-warning-50 dark:bg-warning-900/20';
+    if (lastScanStatus === 'success') return 'border-success-400 bg-success-50 dark:bg-success-900/20';
+    if (lastScanStatus === 'error') return 'border-danger-400 bg-danger-50 dark:bg-danger-900/20';
+    if (lastScanStatus === 'duplicate') return 'border-warning-400 bg-warning-50 dark:bg-warning-900/20';
+    return 'border-primary-300 dark:border-primary-600 bg-white dark:bg-gray-800';
   };
 
   const getStatusMessage = () => {
@@ -137,14 +137,14 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
   return (
     <div className="w-full max-w-md mx-auto">
       {/* HEADER SIMPLIFIE POUR DEBUG */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-3">
+      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-3 mb-3">
         <div className="flex items-center gap-2 mb-1">
-          <Zap size={16} className="text-blue-600 dark:text-blue-400" />
-          <h3 className="font-bold text-blue-800 dark:text-blue-200 text-sm">
+          <Zap size={16} className="text-primary-600 dark:text-primary-400" />
+          <h3 className="font-bold text-primary-800 dark:text-primary-200 text-sm">
             SCANNER QR - {disableAutoFocus ? 'SUSPENDU' : 'ACTIF'}
           </h3>
         </div>
-        <p className="text-xs text-blue-700 dark:text-blue-300">
+        <p className="text-xs text-primary-700 dark:text-primary-300">
           {disableAutoFocus 
             ? 'Mode manuel actif'
             : 'Scan automatique activé'
@@ -166,14 +166,14 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
           onKeyDown={handleKeyDown}
           placeholder="Scannez ou saisissez un code..."
           disabled={isProcessing}
-          className={`w-full px-3 py-3 text-center border-2 rounded-md font-mono text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${getStatusColor()}`}
+          className={`w-full px-3 py-3 text-center border-2 rounded-md font-mono text-base focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${getStatusColor()}`}
           autoComplete="off"
           autoFocus={!disableAutoFocus}
         />
         
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           {isProcessing ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
           ) : (
             <QrCode size={16} className="text-gray-500 dark:text-gray-400" />
           )}
@@ -183,11 +183,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
       {/* MESSAGE DE STATUT SIMPLIFIE */}
       <div className="mt-2 text-center">
         <p className={`text-sm font-medium ${
-          lastScanStatus === 'success' ? 'text-green-600' :
-          lastScanStatus === 'error' ? 'text-red-600' :
-          lastScanStatus === 'duplicate' ? 'text-orange-600' :
-          isProcessing ? 'text-yellow-600' :
-          'text-blue-600'
+          lastScanStatus === 'success' ? 'text-success-600' :
+          lastScanStatus === 'error' ? 'text-danger-600' :
+          lastScanStatus === 'duplicate' ? 'text-warning-600' :
+          isProcessing ? 'text-warning-600' :
+          'text-primary-600'
         }`}>
           {getStatusMessage()}
         </p>

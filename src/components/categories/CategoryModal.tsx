@@ -103,7 +103,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
         {/* Informations de base */}
         <Accordion
           title="INFORMATIONS DE BASE"
-          icon={<Tag size={18} className="text-blue-600 dark:text-blue-400" />}
+          icon={<Tag size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -142,7 +142,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
         {/* Description */}
         <Accordion
           title="DESCRIPTION"
-          icon={<FileText size={18} className="text-green-600 dark:text-green-400" />}
+          icon={<FileText size={18} className="text-success-600 dark:text-success-400" />}
           defaultOpen={false}
         >
           <div>
@@ -162,7 +162,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
         {/* Couleur */}
         <Accordion
           title="COULEUR"
-          icon={<Palette size={18} className="text-purple-600 dark:text-purple-400" />}
+          icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <div>

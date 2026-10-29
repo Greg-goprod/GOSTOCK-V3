@@ -112,7 +112,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         {/* Informations de base */}
         <Accordion
           title="INFORMATIONS DE BASE"
-          icon={<Building size={18} className="text-blue-600 dark:text-blue-400" />}
+          icon={<Building size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -151,7 +151,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         {/* Contact */}
         <Accordion
           title="CONTACT"
-          icon={<User size={18} className="text-green-600 dark:text-green-400" />}
+          icon={<User size={18} className="text-success-600 dark:text-success-400" />}
           defaultOpen={false}
         >
           <div className="space-y-4">

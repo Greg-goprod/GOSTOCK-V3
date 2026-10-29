@@ -420,7 +420,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
           {/* Informations de base */}
           <Accordion
             title="INFORMATIONS DE BASE"
-            icon={<Info size={18} className="text-blue-600 dark:text-blue-400" />}
+            icon={<Info size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen={false}
           >
             <form onSubmit={handleBasicSubmit} className="space-y-4">
@@ -654,7 +654,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                    Entrez une URL d'image valide et accessible publiquement. Exemple: https://images.pexels.com/photos/1029243/pexels-photo-1029243.jpeg
                  </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Utilisez des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
+                  Utilisez des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
                 </p>
                  {formData.image_url && (
                    <div className="mt-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
@@ -667,7 +667,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                          onError={(e) => {
                            e.currentTarget.style.display = 'none';
                            const errorMsg = document.createElement('p');
-                           errorMsg.className = 'text-xs text-red-500 mt-2';
+                           errorMsg.className = 'text-xs text-danger-500 mt-2';
                           errorMsg.textContent = "Impossible de charger l'image. Vérifiez que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
                            e.currentTarget.parentElement?.appendChild(errorMsg);
                          }}
@@ -680,8 +680,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
 
               {/* Aperçu hiérarchique */}
               {(formData.group_id || formData.subgroup_id) && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
                     <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Hiérarchie de classification
                   </h4>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -742,7 +742,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
           {/* Configuration QR */}
           <Accordion
             title="CONFIGURATION QR CODES"
-            icon={<QrCode size={18} className="text-purple-600 dark:text-purple-400" />}
+            icon={<QrCode size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen={false}
           >
             <div className="space-y-4">
@@ -751,8 +751,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                   Quantité configurée
                 </h4>
                 <div className="flex items-center gap-2">
-                  <Package size={20} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                  <Package size={20} className="text-primary-600 dark:text-primary-400" />
+                  <span className="text-lg font-semibold text-primary-600 dark:text-primary-400">
                     {formData.total_quantity} unité{formData.total_quantity > 1 ? 's' : ''}
                   </span>
                 </div>
@@ -815,7 +815,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <Copy size={18} className="text-green-600 dark:text-green-400" />
+                          <Copy size={18} className="text-success-600 dark:text-success-400" />
                           <h4 className="font-medium text-gray-900 dark:text-gray-100">
                             QR Code unique pour le lot
                           </h4>
@@ -830,8 +830,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
               </div>
 
               {currentQrType === 'individual' && instances.length > 0 && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
+                <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+                  <h4 className="font-medium text-primary-800 dark:text-primary-200 mb-2">
                     Instances créées ({instances.length})
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
@@ -846,14 +846,14 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
               )}
 
               {currentQrType === 'individual' && formData.total_quantity !== instances.length && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                    <AlertTriangle size={18} className="text-warning-600 dark:text-warning-400 mt-0.5" />
                     <div>
-                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+                      <h4 className="font-medium text-warning-800 dark:text-warning-200">
                         Attention : Quantité modifiée
                       </h4>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                      <p className="text-sm text-warning-700 dark:text-warning-300 mt-1">
                         La quantité totale ({formData.total_quantity}) ne correspond pas au nombre d'instances ({instances.length}). 
                         Les QR codes seront régénérés lors de la sauvegarde.
                       </p>

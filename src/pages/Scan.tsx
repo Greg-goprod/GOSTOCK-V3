@@ -425,14 +425,14 @@ const Scan: React.FC = () => {
         <QRCodeScanner onScan={handleScan} onError={setError} />
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+          <div className="mt-4 p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-md">
             <div className="flex items-center gap-2">
-              <AlertCircle size={18} className="text-red-600 dark:text-red-400" />
-              <p className="text-sm font-medium text-red-700 dark:text-red-300">
+              <AlertCircle size={18} className="text-danger-600 dark:text-danger-400" />
+              <p className="text-sm font-medium text-danger-700 dark:text-danger-300">
                 {error}
               </p>
             </div>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-2 pl-6">
+            <p className="text-xs text-danger-600 dark:text-danger-400 mt-2 pl-6">
               Essayez de scanner à nouveau ou saisissez manuellement le code dans le champ ci-dessus.
             </p>
           </div>
@@ -446,10 +446,10 @@ const Scan: React.FC = () => {
         )}
 
         {success && item && (
-          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+          <div className="mt-4 p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-md">
             <div className="flex items-center gap-2">
-              <CheckCircle size={18} className="text-green-600 dark:text-green-400" />
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">
+              <CheckCircle size={18} className="text-success-600 dark:text-success-400" />
+              <p className="text-sm font-medium text-success-700 dark:text-success-300">
                 {itemType === 'equipment' && `Équipement trouvé: ${item.name}`}
                 {itemType === 'user' && `Utilisateur trouvé: ${item.first_name} ${item.last_name}`}
                 {itemType === 'checkout' && `Emprunt trouvé pour: ${item.equipment?.name}`}

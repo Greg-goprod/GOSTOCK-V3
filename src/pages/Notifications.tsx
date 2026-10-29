@@ -272,13 +272,13 @@ const Notifications: React.FC = () => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'overdue':
-        return <AlertTriangle size={20} className="text-red-500" />;
+        return <AlertTriangle size={20} className="text-danger-500" />;
       case 'due_soon':
-        return <Clock size={20} className="text-yellow-500" />;
+        return <Clock size={20} className="text-warning-500" />;
       case 'maintenance':
-        return <Package size={20} className="text-blue-500" />;
+        return <Package size={20} className="text-primary-500" />;
       case 'checkout':
-        return <Package size={20} className="text-green-500" />;
+        return <Package size={20} className="text-success-500" />;
       default:
         return <Bell size={20} className="text-gray-500" />;
     }
@@ -288,11 +288,11 @@ const Notifications: React.FC = () => {
     const opacity = isRead ? 'opacity-60' : '';
     switch (priority) {
       case 'high':
-        return `border-l-red-500 bg-red-50 dark:bg-red-900/10 ${opacity}`;
+        return `border-l-danger-500 bg-danger-50 dark:bg-danger-900/10 ${opacity}`;
       case 'medium':
-        return `border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/10 ${opacity}`;
+        return `border-l-warning-500 bg-warning-50 dark:bg-warning-900/10 ${opacity}`;
       default:
-        return `border-l-blue-500 bg-blue-50 dark:bg-blue-900/10 ${opacity}`;
+        return `border-l-primary-500 bg-primary-50 dark:bg-primary-900/10 ${opacity}`;
     }
   };
 
@@ -485,8 +485,8 @@ const Notifications: React.FC = () => {
                       
                       {notification.read ? (
                         <div className="flex items-center gap-1">
-                          <CheckCircle size={16} className="text-green-500" />
-                          <span className="text-xs text-green-600 dark:text-green-400 font-black uppercase">LUE</span>
+                          <CheckCircle size={16} className="text-success-500" />
+                          <span className="text-xs text-success-600 dark:text-success-400 font-black uppercase">LUE</span>
                         </div>
                       ) : (
                         <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
@@ -532,7 +532,7 @@ const Notifications: React.FC = () => {
                       
                       {notification.relatedData?.equipment_count && (
                         <div className="flex items-center gap-1">
-                          <span className="text-blue-600 dark:text-blue-400 font-black">
+                          <span className="text-primary-600 dark:text-primary-400 font-black">
                             {notification.relatedData.equipment_count} équipement{notification.relatedData.equipment_count > 1 ? 's' : ''}
                           </span>
                         </div>
@@ -541,7 +541,7 @@ const Notifications: React.FC = () => {
                       {notification.relatedData?.daysOverdue && (
                         <div className="flex items-center gap-1">
                           <AlertTriangle size={12} />
-                          <span className="text-red-600 dark:text-red-400 font-black">
+                          <span className="text-danger-600 dark:text-danger-400 font-black">
                             {notification.relatedData.daysOverdue} jour(s) de retard
                           </span>
                         </div>
@@ -602,7 +602,7 @@ const Notifications: React.FC = () => {
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
+              <div className="text-2xl font-black text-primary-600 dark:text-primary-400">
                 {unreadCount}
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
@@ -611,7 +611,7 @@ const Notifications: React.FC = () => {
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-green-600 dark:text-green-400">
+              <div className="text-2xl font-black text-success-600 dark:text-success-400">
                 {readCount}
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
@@ -620,7 +620,7 @@ const Notifications: React.FC = () => {
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-green-600 dark:text-green-400">
+              <div className="text-2xl font-black text-success-600 dark:text-success-400">
                 {notifications.filter(n => n.type === 'checkout').length}
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
@@ -629,7 +629,7 @@ const Notifications: React.FC = () => {
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-red-600 dark:text-red-400">
+              <div className="text-2xl font-black text-danger-600 dark:text-danger-400">
                 {notifications.filter(n => n.type === 'overdue').length}
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
@@ -638,7 +638,7 @@ const Notifications: React.FC = () => {
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-yellow-600 dark:text-yellow-400">
+              <div className="text-2xl font-black text-warning-600 dark:text-warning-400">
                 {notifications.filter(n => n.type === 'due_soon').length}
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">

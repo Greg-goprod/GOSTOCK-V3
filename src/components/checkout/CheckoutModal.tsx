@@ -863,14 +863,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           <div className="space-y-4">
             {/* Selected User Info */}
             {selectedUser && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
                 <div className="flex items-center gap-3">
-                  <UserIcon size={20} className="text-blue-600 dark:text-blue-400" />
+                  <UserIcon size={20} className="text-primary-600 dark:text-primary-400" />
                   <div>
-                    <h3 className="font-bold text-blue-800 dark:text-blue-200">
+                    <h3 className="font-bold text-primary-800 dark:text-primary-200">
                       {selectedUser.first_name} {selectedUser.last_name}
                     </h3>
-                    <p className="text-blue-700 dark:text-blue-300 text-sm">
+                    <p className="text-primary-700 dark:text-primary-300 text-sm">
                       {selectedUser.department} • {selectedUser.email}
                     </p>
                   </div>
@@ -922,7 +922,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                     filteredEquipment.map((eq) => (
                       <div
                         key={eq.id}
-                        className={`flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 ${eq.availableQuantity > 0 ? 'bg-green-100 cursor-pointer' : 'bg-red-100 cursor-not-allowed opacity-60'}`}
+                        className={`flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 ${eq.availableQuantity > 0 ? 'bg-success-100 cursor-pointer' : 'bg-danger-100 cursor-not-allowed opacity-60'}`}
                         onClick={eq.availableQuantity > 0 ? () => addEquipmentToCheckout(eq) : undefined}
                         title={eq.availableQuantity === 0 ? 'Aucune pièce disponible' : ''}
                       >
@@ -1023,9 +1023,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           <div className="space-y-6">
             {/* User Summary */}
             {selectedUser && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">Emprunteur</h3>
-                <p className="text-blue-700 dark:text-blue-300">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+                <h3 className="font-bold text-primary-800 dark:text-primary-200 mb-2">Emprunteur</h3>
+                <p className="text-primary-700 dark:text-primary-300">
                   {selectedUser.first_name} {selectedUser.last_name} • {selectedUser.department}
                 </p>
               </div>
@@ -1052,8 +1052,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Date de retour prévue *
                 </label>
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-2">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-3 mb-2">
+                  <p className="text-sm text-warning-800 dark:text-warning-200 font-medium">
                     <CalendarDaysIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Par défaut : retour le jour même ({new Date().toLocaleDateString('fr-FR')})
                   </p>
                 </div>

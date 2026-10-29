@@ -546,13 +546,13 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
             </div>
 
             {file && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <FileSpreadsheet size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
+                    <FileSpreadsheet size={20} className="text-primary-600 dark:text-primary-400 mr-2" />
                     <div>
-                      <span className="text-blue-800 dark:text-blue-200 font-medium">{file.name}</span>
-                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                      <span className="text-primary-800 dark:text-primary-200 font-medium">{file.name}</span>
+                      <p className="text-xs text-primary-600 dark:text-primary-400">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -588,12 +588,12 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                   {data.length} lignes trouvées
                 </span>
                 {validationErrors.length === 0 ? (
-                  <div className="flex items-center text-green-600">
+                  <div className="flex items-center text-success-600">
                     <CheckCircle size={16} className="mr-1" />
                     <span className="text-sm">Validation réussie</span>
                   </div>
                 ) : (
-                  <div className="flex items-center text-red-600">
+                  <div className="flex items-center text-danger-600">
                     <AlertCircle size={16} className="mr-1" />
                     <span className="text-sm">{validationErrors.length} erreurs</span>
                   </div>
@@ -602,18 +602,18 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
             </div>
 
             {validationErrors.length > 0 && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
+              <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+                <h4 className="font-medium text-danger-800 dark:text-danger-200 mb-2">
                   Erreurs de validation ({validationErrors.length})
                 </h4>
                 <div className="max-h-40 overflow-y-auto space-y-1">
                   {validationErrors.slice(0, 20).map((error, index) => (
-                    <div key={index} className="text-sm text-red-700 dark:text-red-300">
+                    <div key={index} className="text-sm text-danger-700 dark:text-danger-300">
                       <span className="font-medium">Ligne {error.row}</span>, champ "{error.field}": {error.message}
                     </div>
                   ))}
                   {validationErrors.length > 20 && (
-                    <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    <div className="text-sm text-danger-600 dark:text-danger-400 font-medium">
                       ... et {validationErrors.length - 20} autres erreurs
                     </div>
                   )}
@@ -641,38 +641,38 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                       const hasErrors = rowErrors.length > 0;
                       
                       return (
-                        <tr key={index} className={hasErrors ? 'bg-red-50 dark:bg-red-900/10' : ''}>
+                        <tr key={index} className={hasErrors ? 'bg-danger-50 dark:bg-danger-900/10' : ''}>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
                             {index + 1}
                             {hasErrors && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
                             {row.name}
                             {rowErrors.some(e => e.field === 'name') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
                             {row.serial_number}
                             {rowErrors.some(e => e.field === 'serial_number') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{row.category}</td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
                             {row.status}
                             {rowErrors.some(e => e.field === 'status') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                            <span className="font-medium text-blue-600 dark:text-blue-400">
+                            <span className="font-medium text-primary-600 dark:text-primary-400">
                               {row.available_quantity}
                             </span>
                             {rowErrors.some(e => e.field === 'available_quantity') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{row.location}</td>
@@ -723,16 +723,16 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                 </div>
               ) : (
                 <div>
-                  <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
+                  <CheckCircle size={48} className="mx-auto text-success-500 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                     Import terminé
                   </h3>
                   <div className="space-y-2">
-                    <p className="text-green-600 dark:text-green-400">
+                    <p className="text-success-600 dark:text-success-400">
                       <CheckIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.success} équipements importés avec succès
                     </p>
                     {importResults.errors > 0 && (
-                      <p className="text-red-600 dark:text-red-400">
+                      <p className="text-danger-600 dark:text-danger-400">
                         <X className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.errors} erreurs lors de l'import
                       </p>
                     )}

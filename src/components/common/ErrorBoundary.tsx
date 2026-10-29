@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
           <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <div className="text-center mb-6">
-              <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
+              <AlertTriangle size={48} className="mx-auto text-danger-500 mb-4" />
               
               <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 {isSupabaseError ? 'Erreur de configuration Supabase' : 'Une erreur est survenue'}
@@ -59,11 +59,11 @@ class ErrorBoundary extends Component<Props, State> {
 
             {/* Informations de débogage */}
             {import.meta.env.DEV && this.state.error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 text-left">
-                <h3 className="font-medium text-red-800 dark:text-red-200 mb-2">
+              <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4 mb-6 text-left">
+                <h3 className="font-medium text-danger-800 dark:text-danger-200 mb-2">
                   Détails de l'erreur (développement uniquement) :
                 </h3>
-                <pre className="text-xs text-red-700 dark:text-red-300 overflow-auto whitespace-pre-wrap">
+                <pre className="text-xs text-danger-700 dark:text-danger-300 overflow-auto whitespace-pre-wrap">
                   {this.state.error.message}
                 </pre>
               </div>
@@ -71,12 +71,12 @@ class ErrorBoundary extends Component<Props, State> {
 
             {/* Instructions spécifiques pour Supabase */}
             {isSupabaseError && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 text-left">
-                <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4 mb-6 text-left">
+                <h3 className="font-medium text-primary-800 dark:text-primary-200 mb-3 flex items-center">
                   <Settings size={18} className="mr-2" />
                   Configuration Netlify requise
                 </h3>
-                <div className="space-y-3 text-sm text-blue-700 dark:text-blue-300">
+                <div className="space-y-3 text-sm text-primary-700 dark:text-primary-300">
                   <div>
                     <strong>1. Accédez aux paramètres Netlify :</strong>
                     <p className="ml-4">Dashboard Netlify → Votre site → Site settings → Environment variables</p>
@@ -84,8 +84,8 @@ class ErrorBoundary extends Component<Props, State> {
                   <div>
                     <strong>2. Ajoutez ces variables :</strong>
                     <ul className="ml-4 space-y-1">
-                      <li>• <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">VITE_SUPABASE_URL</code> : URL de votre projet Supabase</li>
-                      <li>• <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> : Clé anonyme Supabase</li>
+                      <li>• <code className="bg-primary-100 dark:bg-primary-800 px-1 rounded">VITE_SUPABASE_URL</code> : URL de votre projet Supabase</li>
+                      <li>• <code className="bg-primary-100 dark:bg-primary-800 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> : Clé anonyme Supabase</li>
                     </ul>
                   </div>
                   <div>
@@ -94,8 +94,8 @@ class ErrorBoundary extends Component<Props, State> {
                   </div>
                 </div>
                 
-                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
-                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                <div className="mt-4 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded">
+                  <p className="text-xs text-warning-800 dark:text-warning-200">
                     <strong><LightbulbIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Astuce :</strong> Vous pouvez trouver ces informations dans votre dashboard Supabase → Settings → API
                   </p>
                 </div>
@@ -144,7 +144,7 @@ class ErrorBoundary extends Component<Props, State> {
                   href="https://app.netlify.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
                 >
                   <ExternalLink size={16} />
                   Ouvrir Netlify

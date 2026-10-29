@@ -347,7 +347,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
           {/* Informations de base */}
           <Accordion
             title="INFORMATIONS DE BASE"
-            icon={<Info size={18} className="text-blue-600 dark:text-blue-400" />}
+            icon={<Info size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen={false}
           >
             <form onSubmit={handleBasicSubmit} className="space-y-4">
@@ -584,7 +584,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                    Entrez une URL d'image valide et accessible publiquement. Exemple: https://images.pexels.com/photos/1029243/pexels-photo-1029243.jpeg
                  </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Utilisez des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
+                  Utilisez des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
                 </p>
                  {formData.image_url && (
                    <div className="mt-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
@@ -597,7 +597,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                          onError={(e) => {
                            e.currentTarget.style.display = 'none';
                            const errorMsg = document.createElement('p');
-                           errorMsg.className = 'text-xs text-red-500 mt-2';
+                           errorMsg.className = 'text-xs text-danger-500 mt-2';
                           errorMsg.textContent = "Impossible de charger l'image. Vérifiez que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
                            e.currentTarget.parentElement?.appendChild(errorMsg);
                          }}
@@ -610,8 +610,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
 
               {/* Aperçu hiérarchique */}
               {(formData.group_id || formData.subgroup_id) && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
                     <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Hiérarchie de classification
                   </h4>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -672,7 +672,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
           {/* Configuration QR */}
           <Accordion
             title="CONFIGURATION QR CODES"
-            icon={<QrCode size={18} className="text-purple-600 dark:text-purple-400" />}
+            icon={<QrCode size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen={false}
           >
             <div className="space-y-4">
@@ -681,8 +681,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                   Quantité configurée
                 </h4>
                 <div className="flex items-center gap-2">
-                  <Package size={20} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                  <Package size={20} className="text-primary-600 dark:text-primary-400" />
+                  <span className="text-lg font-semibold text-primary-600 dark:text-primary-400">
                     {formData.available_quantity} unité{formData.available_quantity > 1 ? 's' : ''}
                   </span>
                 </div>
@@ -745,7 +745,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <Copy size={18} className="text-green-600 dark:text-green-400" />
+                          <Copy size={18} className="text-success-600 dark:text-success-400" />
                           <h4 className="font-medium text-gray-900 dark:text-gray-100">
                             QR Code unique pour le lot
                           </h4>
