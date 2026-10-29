@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle, X, Check as CheckIcon } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { downloadWorkbook, readSheetRows } from '../../lib/excel';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -39,7 +39,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
   const [importResults, setImportResults] = useState<{ success: number; errors: number }>({ success: 0, errors: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     try {
       // Données d'exemple pour le modèle
       const templateData = [
@@ -78,27 +78,6 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         }
       ];
 
-      // Créer la feuille principale avec les données d'exemple
-      const ws = XLSX.utils.json_to_sheet(templateData);
-      
-      // Définir la largeur des colonnes
-      const colWidths = [
-        { wch: 25 }, // name
-        { wch: 40 }, // description
-        { wch: 15 }, // category
-        { wch: 15 }, // serial_number
-        { wch: 12 }, // status
-        { wch: 20 }, // location
-        { wch: 20 }, // supplier
-        { wch: 50 }, // image_url
-        { wch: 15 }  // available_quantity
-      ];
-      ws['!cols'] = colWidths;
-
-      // Créer le classeur
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Matériel');
-
       // Créer la feuille d'instructions
       const instructions = [
         {
@@ -124,10 +103,10 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         },
         {
           Champ: 'serial_number',
-          Description: 'Numéro de série unique',
-          Obligatoire: 'OUI',
+          Description: 'Numéro de série du fabricant',
+          Obligatoire: 'NON',
           Exemple: 'DL-XPS-001',
-          Notes: 'Doit être unique dans la base de données'
+          Notes: 'Unique s\'il est renseigné ; le numéro d\'article est attribué automatiquement'
         },
         {
           Champ: 'status',
@@ -166,22 +145,11 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         }
       ];
 
-      const wsInstructions = XLSX.utils.json_to_sheet(instructions);
-      
-      // Largeur des colonnes pour les instructions
-      const instructionColWidths = [
-        { wch: 20 }, // Champ
-        { wch: 25 }, // Description
-        { wch: 12 }, // Obligatoire
-        { wch: 30 }, // Exemple
-        { wch: 40 }  // Notes
-      ];
-      wsInstructions['!cols'] = instructionColWidths;
-
-      XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instructions');
-
-      // Télécharger le fichier
-      XLSX.writeFile(wb, 'GO-Mat_Modele_Import.xlsx');
+      await downloadWorkbook([
+        // name, description, category, serial_number, status, location, supplier, image_url, available_quantity
+        { name: 'Matériel', rows: templateData, widths: [25, 40, 15, 15, 12, 20, 20, 50, 15] },
+        { name: 'Instructions', rows: instructions, widths: [20, 25, 12, 30, 40] },
+      ], 'GO-Mat_Modele_Import.xlsx');
       toast.success('Modèle Excel téléchargé avec succès');
     } catch (error) {
       console.error('Error creating Excel template:', error);
@@ -192,8 +160,8 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      if (!selectedFile.name.match(/\.(xlsx|xls)$/)) {
-        toast.error('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)');
+      if (!/\.xlsx$/i.test(selectedFile.name)) {
+        toast.error('Veuillez sélectionner un fichier Excel .xlsx (enregistrez les anciens .xls au format .xlsx)');
         return;
       }
       setFile(selectedFile);
@@ -211,66 +179,49 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
     e.stopPropagation();
     
     const files = Array.from(e.dataTransfer.files);
-    const excelFile = files.find(file => file.name.match(/\.(xlsx|xls)$/));
+    const excelFile = files.find(file => /\.xlsx$/i.test(file.name));
     
     if (excelFile) {
       setFile(excelFile);
       parseExcelFile(excelFile);
     } else {
-      toast.error('Veuillez déposer un fichier Excel (.xlsx ou .xls)');
+      toast.error('Veuillez déposer un fichier Excel .xlsx');
     }
   };
 
-  const parseExcelFile = (file: File) => {
+  const parseExcelFile = async (file: File) => {
     setIsLoading(true);
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        
-        // Prendre la première feuille qui n'est pas "Instructions"
-        const sheetName = workbook.SheetNames.find(name => name !== 'Instructions') || workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+    try {
+      // Première feuille qui n'est pas « Instructions »
+      const jsonData = await readSheetRows(file, ['Instructions']);
 
-        if (jsonData.length === 0) {
-          toast.error('Le fichier Excel est vide ou ne contient pas de données valides');
-          setIsLoading(false);
-          return;
-        }
-
-        const parsedData: ImportRow[] = jsonData.map(row => ({
-          name: (row.name || '').toString().trim(),
-          description: (row.description || '').toString().trim(),
-          category: (row.category || '').toString().trim(),
-          serial_number: (row.serial_number || '').toString().trim(),
-          status: (row.status || 'available').toString().trim(),
-          location: (row.location || '').toString().trim(),
-          supplier: (row.supplier || '').toString().trim(),
-          image_url: (row.image_url || '').toString().trim(),
-          available_quantity: parseInt(row.available_quantity) || 1
-        }));
-
-        setData(parsedData);
-        validateData(parsedData);
-        setStep('validate');
-        toast.success(`${parsedData.length} lignes lues avec succès`);
-      } catch (error) {
-        console.error('Error parsing Excel file:', error);
-        toast.error('Erreur lors de la lecture du fichier Excel. Vérifiez le format du fichier.');
-      } finally {
-        setIsLoading(false);
+      if (jsonData.length === 0) {
+        toast.error('Le fichier Excel est vide ou ne contient pas de données valides');
+        return;
       }
-    };
 
-    reader.onerror = () => {
-      toast.error('Erreur lors de la lecture du fichier');
+      const parsedData: ImportRow[] = jsonData.map(row => ({
+        name: row.name || '',
+        description: row.description || '',
+        category: row.category || '',
+        serial_number: row.serial_number || '',
+        status: row.status || 'available',
+        location: row.location || '',
+        supplier: row.supplier || '',
+        image_url: row.image_url || '',
+        available_quantity: parseInt(row.available_quantity, 10) || 1
+      }));
+
+      setData(parsedData);
+      validateData(parsedData);
+      setStep('validate');
+      toast.success(`${parsedData.length} lignes lues avec succès`);
+    } catch (error) {
+      console.error('Error parsing Excel file:', error);
+      toast.error('Erreur lors de la lecture du fichier. Utilisez un fichier .xlsx (Excel 2007 ou plus récent).');
+    } finally {
       setIsLoading(false);
-    };
-
-    reader.readAsArrayBuffer(file);
+    }
   };
 
   const validateData = async (data: ImportRow[]) => {
@@ -292,9 +243,8 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         errors.push({ row: rowNumber, field: 'name', message: 'Le nom est obligatoire' });
       }
 
-      if (!row.serial_number.trim()) {
-        errors.push({ row: rowNumber, field: 'serial_number', message: 'Le numéro de série est obligatoire' });
-      } else {
+      // Numéro de série du fabricant facultatif ; s'il est donné, il doit être unique
+      if (row.serial_number.trim()) {
         // Vérification des doublons dans le fichier
         if (serialNumbers.has(row.serial_number)) {
           errors.push({ row: rowNumber, field: 'serial_number', message: 'Numéro de série en double dans le fichier' });
@@ -366,7 +316,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
           const equipmentData: any = {
             name: row.name.trim(),
             description: row.description.trim() || null,
-            serial_number: row.serial_number.trim(),
+            serial_number: row.serial_number.trim() || null,
             status: row.status || 'available',
             location: row.location.trim() || null,
             image_url: row.image_url.trim() || null,
@@ -534,13 +484,13 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".xlsx,.xls"
+                    accept=".xlsx"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Formats supportés: .xlsx, .xls (max 10MB)
+                  Format : .xlsx (max 10 Mo)
                 </p>
               </div>
             </div>

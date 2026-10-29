@@ -40,11 +40,9 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
 
 ## Dettes techniques
 
-- **xlsx 0.18.5** (import Excel) : failles connues (prototype pollution, ReDoS). La version corrigée
-  n'existe que sur `cdn.sheetjs.com` (`xlsx-0.20.3.tgz`), ou remplacer par `exceljs`.
 - **Vite 5 → 8** : failles limitées au serveur de développement ; saut majeur (Node ≥ 20.19).
 - **ESLint** : 68 `any` explicites (surtout `AppContext.tsx`), 11 dépendances de hooks manquantes.
-- **Import Excel** : le numéro de série y est encore obligatoire, alors qu'il est facultatif ailleurs.
+- **Import Excel** : n'accepte plus que le format `.xlsx` (exceljs ne lit pas l'ancien `.xls`).
 - **Renumérotation** : la scie `GOMAT-20261029-0001` garde l'ancien format de numéro.
 
 ## À venir
