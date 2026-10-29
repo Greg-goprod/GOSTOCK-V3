@@ -6,6 +6,9 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   // L'accueil « Aujourd'hui » sert le magasin ; un collaborateur est renvoyé vers ses demandes
   '/': ['scan', 'approve', 'view_all', 'manage_stock'],
   '/scan': ['scan'],
+  '/comptoir': ['scan'],
+  '/etiquettes': ['manage_stock'],
+  '/badges': ['manage_people'],
   '/checkouts': ['scan', 'view_all'],
   '/consommables': ['scan', 'manage_stock'],
   '/commande': ['manage_stock'],

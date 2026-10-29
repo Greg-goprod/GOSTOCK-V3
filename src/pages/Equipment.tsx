@@ -12,7 +12,8 @@ import MaintenanceModal from '../components/maintenance/MaintenanceModal';
 import FilterPanel from '../components/common/FilterPanel';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ExcelImport from '../components/import/ExcelImport';
-import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, Edit, Trash2, Download, Upload, Search, Filter } from 'lucide-react';
+import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, Edit, Trash2, Download, Upload, Search, Filter, History } from 'lucide-react';
+import EquipmentHistoryModal from '../components/equipment/EquipmentHistoryModal';
 import { Equipment as EquipmentType, EquipmentInstance } from '../types';
 import StatusBadge from '../components/common/StatusBadge';
 
@@ -34,6 +35,7 @@ export default function Equipment() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [historyFor, setHistoryFor] = useState<EquipmentType | null>(null);
   const [showQRCodesModal, setShowQRCodesModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -340,6 +342,9 @@ export default function Equipment() {
               >
                 <QrCode className="w-4 h-4" />
               </Button>
+              <Button variant="outline" size="sm" ariaLabel={`Historique de ${eq.name}`} onClick={() => setHistoryFor(eq)}>
+                <History className="w-4 h-4" />
+              </Button>
               {canManage && (
                 <>
                   <Button variant="outline" size="sm" ariaLabel={`Modifier ${eq.name}`} onClick={() => handleEdit(eq.id)}>
@@ -467,6 +472,9 @@ export default function Equipment() {
                           onClick={() => handleShowQR(eq.id)}
                         >
                           <QrCode className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" ariaLabel={`Historique de ${eq.name}`} onClick={() => setHistoryFor(eq)}>
+                          <History className="w-4 h-4" />
                         </Button>
                         {canManage && (
                           <>
@@ -647,6 +655,7 @@ export default function Equipment() {
       )}
 
       {/* Modals */}
+      {historyFor && <EquipmentHistoryModal equipment={historyFor} onClose={() => setHistoryFor(null)} />}
       {showAddModal && (
         <AddEquipmentModal
           onClose={() => setShowAddModal(false)}

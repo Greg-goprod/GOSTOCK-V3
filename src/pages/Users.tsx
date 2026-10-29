@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { Plus, QrCode, Mail, Building2, Phone, LayoutGrid, List, ArrowUpDown, Filter, Pencil, Trash2 } from 'lucide-react';
+import { Plus, QrCode, Mail, Building2, Phone, LayoutGrid, List, ArrowUpDown, Filter, Pencil, Trash2, Contact } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import QRCodeGenerator from '../components/QRCode/QRCodeGenerator';
 import Modal from '../components/common/Modal';
 import FilterPanel, { FilterOption } from '../components/common/FilterPanel';
@@ -430,13 +431,19 @@ const Users: React.FC = () => {
               </span>
             )}
           </Button>
+          <Link
+            to="/badges"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 min-h-[44px] lg:min-h-0 text-sm lg:text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <Contact size={16} aria-hidden="true" /> IMPRIMER LES BADGES
+          </Link>
           <Button 
             variant="primary" 
             icon={<Plus size={18} />}
             onClick={handleAddUser}
             className="font-bold"
           >
-            AJOUTER UN UTILISATEUR
+            AJOUTER UNE PERSONNE
           </Button>
         </div>
       </div>

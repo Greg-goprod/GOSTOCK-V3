@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Sun, Moon, ScanLine, LogOut } from 'lucide-react';
+import { Bell, Sun, Moon, ScanLine, LogOut, Contact } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,6 +45,10 @@ const Header: React.FC = () => {
     if (path.startsWith('/commande')) return 'COMMANDE';
     if (path.startsWith('/demandes')) return 'DEMANDES';
     if (path.startsWith('/vehicules')) return 'VÉHICULES';
+    if (path.startsWith('/comptoir')) return 'COMPTOIR';
+    if (path.startsWith('/badges')) return 'BADGES';
+    if (path.startsWith('/badge')) return 'MON BADGE';
+    if (path.startsWith('/etiquettes')) return 'ÉTIQUETTES';
     
     return 'GO-MAT';
   };
@@ -108,6 +112,14 @@ const Header: React.FC = () => {
                   {ROLE_LABELS[profile.role]}
                 </p>
               </div>
+              <Link
+                to="/badge"
+                role="menuitem"
+                onClick={() => setMenuOpen(false)}
+                className="w-full inline-flex items-center gap-2 rounded-md px-2 py-2 min-h-[44px] text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <Contact size={16} aria-hidden="true" /> Mon badge
+              </Link>
               <button
                 type="button"
                 role="menuitem"

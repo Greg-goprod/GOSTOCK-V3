@@ -14,6 +14,10 @@ import OrderSheet from './pages/OrderSheet';
 import Requests from './pages/Requests';
 import Vehicles from './pages/Vehicles';
 import Today from './pages/Today';
+import Counter from './pages/Counter';
+import MyBadge from './pages/MyBadge';
+import BadgePrint from './pages/BadgePrint';
+import Labels from './pages/Labels';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 
@@ -46,6 +50,10 @@ function App() {
         <Route path="/demandes" element={<Guard><Requests /></Guard>} />
         <Route path="/vehicules" element={<Guard><Vehicles /></Guard>} />
         <Route path="/settings" element={<Guard><Settings /></Guard>} />
+        <Route path="/comptoir" element={<Guard><Counter /></Guard>} />
+        <Route path="/badge" element={<Guard><MyBadge /></Guard>} />
+        <Route path="/badges" element={<Guard><BadgePrint /></Guard>} />
+        <Route path="/etiquettes" element={<Guard><Labels /></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

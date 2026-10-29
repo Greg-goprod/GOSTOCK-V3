@@ -15,7 +15,10 @@ import {
   ClipboardList,
   Inbox,
   Truck,
-  BarChart3
+  BarChart3,
+  ScanBarcode,
+  Contact,
+  Tags
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,14 +29,17 @@ import { supabase } from '../../lib/supabase';
 const NAV_SECTIONS = [
   { title: 'Au quotidien', links: [
     { to: '/', label: "Aujourd'hui", icon: LayoutDashboard },
+    { to: '/comptoir', label: 'Comptoir', icon: ScanBarcode },
     { to: '/demandes', label: 'Demandes', icon: Inbox },
     { to: '/scan', label: 'Scanner', icon: ScanLine },
+    { to: '/badge', label: 'Mon badge', icon: Contact },
     { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
   ] },
   { title: 'Stock', links: [
     { to: '/equipment', label: 'Outils', icon: Package },
     { to: '/consommables', label: 'Consommables', icon: Droplets },
     { to: '/commande', label: 'Commande', icon: ClipboardList },
+    { to: '/etiquettes', label: 'Étiquettes', icon: Tags },
   ] },
   { title: 'Flotte', links: [
     { to: '/vehicules', label: 'Véhicules', icon: Truck },

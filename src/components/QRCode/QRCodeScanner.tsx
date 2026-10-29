@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
-import { QrCode, Zap } from 'lucide-react';
+import { Camera, QrCode, Zap } from 'lucide-react';
+import CameraScanner from './CameraScanner';
 
 interface QRCodeScannerProps {
   onScan: (decodedText: string) => void;
@@ -10,6 +11,7 @@ interface QRCodeScannerProps {
 const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableAutoFocus = false }) => {
   const [scannedValue, setScannedValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
   const [lastScanStatus, setLastScanStatus] = useState<'success' | 'error' | 'duplicate' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
@@ -179,6 +181,21 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
           )}
         </div>
       </div>
+
+      {/* Caméra du téléphone ou de la tablette, quand il n'y a pas de lecteur */}
+      <button
+        type="button"
+        onClick={() => setCameraOn(on => !on)}
+        aria-pressed={cameraOn}
+        className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 min-h-[44px] text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+      >
+        <Camera size={16} aria-hidden="true" /> {cameraOn ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
+      </button>
+      {cameraOn && (
+        <div className="mt-2">
+          <CameraScanner onDecode={text => handleScan(text)} />
+        </div>
+      )}
 
       {/* MESSAGE DE STATUT SIMPLIFIE */}
       <div className="mt-2 text-center">
