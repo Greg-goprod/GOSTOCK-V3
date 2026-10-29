@@ -44,6 +44,30 @@ const contentSummary = (r: RequestOverview) =>
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Avis personnels : demande validée, refusée, prête à retirer
+const MyNotices: React.FC = () => {
+  const { stockNotifications, markStockNotificationRead } = useApp();
+  const { profile } = useAuth();
+  const mine = stockNotifications.filter(n => n.recipientUserId && n.recipientUserId === profile?.id);
+  if (mine.length === 0) return null;
+  return (
+    <ul className="space-y-2" aria-label="Avis sur mes demandes">
+      {mine.map(n => (
+        <li
+          key={n.id}
+          className={`flex items-start justify-between gap-3 rounded-lg p-3 text-sm ${n.kind === 'request_rejected' ? 'bg-danger-50 text-danger-900 dark:bg-danger-900/30 dark:text-danger-100' : n.kind === 'request_ready' ? 'bg-success-50 text-success-900 dark:bg-success-900/30 dark:text-success-100' : 'bg-info-50 text-gray-900 dark:bg-info-900 dark:text-info-100'}`}
+        >
+          <div>
+            <p className="font-semibold">{n.title}</p>
+            <p>{n.message}</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => markStockNotificationRead(n.id)}>OK</Button>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 // Ce que la personne connectée a en sa possession (le magasin le voit dans « Sorties »)
 const MyEquipment: React.FC = () => {
   const { checkouts, equipment, equipmentInstances } = useApp();
@@ -104,6 +128,8 @@ const Requests: React.FC = () => {
   const [filter, setFilter] = useState<Filter>(staff ? 'todo' : 'all');
   const [search, setSearch] = useState('');
   const [showNew, setShowNew] = useState(false);
+  // Demande préremplie (« Refaire cette demande »)
+  const [prefill, setPrefill] = useState<RequestPrefill | null>(null);
   const [selected, setSelected] = useState<RequestOverview | null>(null);
 
   const load = async () => {
@@ -149,6 +175,7 @@ const Requests: React.FC = () => {
         <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>
       </div>
 
+      <MyNotices />
       {!staff && <MyEquipment />}
 
       <div className="flex flex-wrap gap-2 items-center">
@@ -205,9 +232,11 @@ const Requests: React.FC = () => {
 
       {showNew && (
         <NewRequestModal
-          onClose={() => setShowNew(false)}
+          initial={prefill ?? undefined}
+          onClose={() => { setShowNew(false); setPrefill(null); }}
           onCreated={async created => {
             setShowNew(false);
+            setPrefill(null);
             await load();
             toast.success(created.status === 'approved'
               ? `Demande ${created.number} validée automatiquement`
@@ -224,6 +253,11 @@ const Requests: React.FC = () => {
             setSelected(null);
             await load();
           }}
+          onRepeat={repeat => {
+            setSelected(null);
+            setPrefill(repeat);
+            setShowNew(true);
+          }}
         />
       )}
     </div>
@@ -231,6 +265,18 @@ const Requests: React.FC = () => {
 };
 
 /* ------------------------------------------------------------------------ */
+
+export interface RequestPrefill {
+  items: { kind: 'tool' | 'consumable' | 'vehicle'; id: string; quantity: number }[];
+  destination?: string | null;
+}
+
+interface RequestTemplate {
+  id: string;
+  name: string;
+  destination: string | null;
+  items: RequestPrefill['items'];
+}
 
 interface DraftItem {
   kind: 'tool' | 'consumable' | 'vehicle';
@@ -240,7 +286,7 @@ interface DraftItem {
   quantity: number;
 }
 
-const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: string; status: RequestStatus }) => Promise<void> }> = ({ onClose, onCreated }) => {
+const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void; onCreated: (r: { number: string; status: RequestStatus }) => Promise<void> }> = ({ initial, onClose, onCreated }) => {
   const sites = useSiteSuggestions();
   const { users, depots, equipment, vehicles, consumableStock } = useApp();
   const { profile, can } = useAuth();
@@ -253,12 +299,51 @@ const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: 
   tomorrowEnd.setHours(17, 0, 0, 0);
 
   const [requesterId, setRequesterId] = useState(forOthers ? '' : profile?.id ?? '');
-  const [destination, setDestination] = useState('');
+  const [destination, setDestination] = useState(initial?.destination ?? '');
   const [depotId, setDepotId] = useState(depots.find(d => d.isDefault)?.id || depots[0]?.id || '');
   const [start, setStart] = useState(toLocalInput(tomorrow));
   const [end, setEnd] = useState(toLocalInput(tomorrowEnd));
   const [notes, setNotes] = useState('');
-  const [items, setItems] = useState<DraftItem[]>([]);
+  // Lignes d'un panier favori ou d'une demande précédente (articles retirés entre-temps ignorés)
+  const toDraft = (list: RequestPrefill['items']): DraftItem[] => list.flatMap((i): DraftItem[] => {
+    if (i.kind === 'vehicle') {
+      const v = vehicles.find(x => x.id === i.id);
+      return v ? [{ kind: 'vehicle', id: v.id, name: `${v.name} · ${v.plate}`, quantity: 1 }] : [];
+    }
+    const e = equipment.find(x => x.id === i.id && x.status !== 'retired');
+    return e ? [{ kind: i.kind, id: e.id, name: e.name, unit: e.unit, quantity: i.quantity }] : [];
+  });
+  const [items, setItems] = useState<DraftItem[]>(() => toDraft(initial?.items ?? []));
+  const [templates, setTemplates] = useState<RequestTemplate[]>([]);
+
+  useEffect(() => {
+    supabase.from('request_templates').select('id, name, destination, items').order('name')
+      .then(({ data }) => setTemplates((data || []) as RequestTemplate[]));
+  }, []);
+
+  const applyTemplate = (id: string) => {
+    const t = templates.find(x => x.id === id);
+    if (!t) return;
+    setItems(toDraft(t.items));
+    if (t.destination) setDestination(t.destination);
+    toast.success(`Panier « ${t.name} » chargé`);
+  };
+
+  const saveTemplate = async () => {
+    if (!profile || items.length === 0) return;
+    const name = window.prompt('Nom du panier (ex. Kit carottage, Mon lundi) :')?.trim();
+    if (!name) return;
+    const { error } = await supabase.from('request_templates').upsert({
+      user_id: profile.id,
+      name,
+      destination: destination || null,
+      items: items.map(i => ({ kind: i.kind, id: i.id, quantity: i.quantity })),
+    }, { onConflict: 'user_id,name' });
+    if (error) return toast.error(errorMessage(error));
+    toast.success(`Panier « ${name} » enregistré`);
+    const { data } = await supabase.from('request_templates').select('id, name, destination, items').order('name');
+    setTemplates((data || []) as RequestTemplate[]);
+  };
   const [tab, setTab] = useState<DraftItem['kind']>('tool');
   const [search, setSearch] = useState('');
   const [availability, setAvailability] = useState<Record<string, string>>({});
@@ -385,6 +470,22 @@ const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: 
           </div>
         </div>
 
+        {/* Paniers favoris */}
+        {(templates.length > 0 || items.length > 0) && (
+          <div className="flex flex-wrap items-end gap-2">
+            {templates.length > 0 && (
+              <div>
+                <label htmlFor="req-template" className={labelClass}>Mes paniers</label>
+                <select id="req-template" value="" onChange={e => applyTemplate(e.target.value)} className={inputClass}>
+                  <option value="">— Charger un panier —</option>
+                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+            )}
+            {items.length > 0 && <Button size="sm" variant="outline" onClick={saveTemplate}>Enregistrer comme panier</Button>}
+          </div>
+        )}
+
         {/* Choix des articles */}
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Type d'article">
@@ -461,10 +562,16 @@ const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: 
 
 /* ------------------------------------------------------------------------ */
 
-const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => void; onChanged: () => Promise<void> }> = ({ request, onClose, onChanged }) => {
-  const { equipment, vehicles, refreshData } = useApp();
+const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => void; onChanged: () => Promise<void>; onRepeat: (prefill: RequestPrefill) => void }> = ({ request, onClose, onChanged, onRepeat }) => {
+  const { equipment, vehicles, users, refreshData } = useApp();
   const { profile, can } = useAuth();
   const isOwner = profile?.id === request.requester_id;
+  // Retrait par un tiers (chef d'équipe…) : le demandeur reste responsable du matériel
+  const [pickupBy, setPickupBy] = useState(request.requester_id);
+  const pickupName = (() => {
+    const u = users.find(x => x.id === pickupBy);
+    return u ? `${u.first_name} ${u.last_name}` : request.requester_name;
+  })();
   const [items, setItems] = useState<RequestItemRow[]>([]);
   const [deliveryNumber, setDeliveryNumber] = useState<string | null>(null);
   // La base remplace de toute façon ce nom par celui de la personne connectée
@@ -530,6 +637,10 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
     run(() => supabase!.rpc('set_request_status', { p_request_id: request.id, p_status: status }), message);
 
   const issue = async () => {
+    if (pickupBy !== request.requester_id) {
+      const { error } = await supabase.from('requests').update({ picked_up_by: pickupBy }).eq('id', request.id);
+      if (error) return toast.error(errorMessage(error));
+    }
     const ok = await run(() => supabase!.rpc('issue_request', {
       p_request_id: request.id,
       p_vehicle: vehicleItem ? { km: Number(km), fuel, damages: damages || null, signature } : null,
@@ -575,6 +686,20 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
             <div className="sm:col-span-2 text-gray-700 dark:text-gray-300">
               {request.status === 'rejected' ? 'Refusée' : 'Validée'} par {request.decided_by}
               {request.decision_note && ` : ${request.decision_note}`}
+            </div>
+          )}
+          {(isOwner || can('scan') || can('approve')) && items.length > 0 && (
+            <div className="sm:col-span-2 flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onRepeat({
+                  destination: request.destination,
+                  items: items.map(i => ({ kind: i.item_kind, id: (i.item_kind === 'vehicle' ? i.vehicle_id : i.equipment_id) as string, quantity: Number(i.quantity) })),
+                })}
+              >
+                Refaire cette demande
+              </Button>
             </div>
           )}
         </div>
@@ -641,6 +766,14 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
         {/* Préparation et sortie */}
         {canIssue && !issuing && (
           <div className="space-y-3">
+            <div className="max-w-xs">
+              <label htmlFor="pickup-by" className={labelClass}>Retiré par</label>
+              <select id="pickup-by" value={pickupBy} onChange={e => setPickupBy(e.target.value)} className={inputClass}>
+                {users.filter(u => u.active !== false).map(u => (
+                  <option key={u.id} value={u.id}>{u.first_name} {u.last_name}{u.id === request.requester_id ? ' (demandeur)' : ''}</option>
+                ))}
+              </select>
+            </div>
             {articleLines.length > 0 && (
               <div>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Scannez chaque article préparé (ou cochez-le à la main).</p>
@@ -686,7 +819,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
               <textarea id="start-damages" value={damages} onChange={e => setDamages(e.target.value)} rows={2} className={inputClass} placeholder="ex. rayure porte arrière droite" />
             </div>
             <PhotoInput folder="vehicules" value={startPhotos} onChange={setStartPhotos} label="Photos du véhicule au départ (au moins une : chaque côté si possible)" />
-            <SignaturePad label={`Signature de ${request.requester_name}`} onChange={setSignature} />
+            <SignaturePad label={`Signature de ${pickupName}`} onChange={setSignature} />
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setIssuing(false)} disabled={busy}>Retour</Button>
               <Button onClick={issue} loading={busy} disabled={!km || !signature || startPhotos.length === 0}>Valider la sortie</Button>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer, RefreshCw } from 'lucide-react';
+import { Download, Printer, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import BadgeCard from '../components/badges/BadgeCard';
@@ -9,19 +9,29 @@ import { badgeValue } from '../lib/badges';
 import { errorMessage } from '../lib/requests';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLE_LABELS } from '../lib/roles';
+import { useInstallPrompt } from '../lib/install';
 
 // Badge personnel à présenter au magasin, depuis le téléphone ou imprimé
 const MyBadge: React.FC = () => {
   const { profile } = useAuth();
   const [code, setCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { canInstall, iosHint, install } = useInstallPrompt();
 
   useEffect(() => {
     if (!profile) return;
+    const cacheKey = `gomat-badge-${profile.id}`;
     supabase.from('user_badges').select('code').eq('user_id', profile.id).maybeSingle()
       .then(({ data, error }) => {
-        if (error) toast.error(errorMessage(error));
+        if (error) {
+          // Hors ligne : le badge reste lisible au comptoir
+          let cached: string | null = null;
+          try { cached = localStorage.getItem(cacheKey); } catch { /* stockage indisponible */ }
+          if (cached) return setCode(cached);
+          toast.error(errorMessage(error));
+        }
         setCode(data?.code ?? null);
+        try { if (data?.code) localStorage.setItem(cacheKey, data.code); } catch { /* stockage indisponible */ }
       });
   }, [profile]);
 
@@ -36,6 +46,7 @@ const MyBadge: React.FC = () => {
       return;
     }
     setCode(data as string);
+    try { localStorage.setItem(`gomat-badge-${profile.id}`, data as string); } catch { /* stockage indisponible */ }
     toast.success('Nouveau badge créé');
   };
 
@@ -64,6 +75,14 @@ const MyBadge: React.FC = () => {
         <p className="text-xs text-gray-600 dark:text-gray-400 text-center max-w-xs">
           Astuce : montez la luminosité de l'écran. Sur téléphone, ajoutez GO-Mat à l'écran d'accueil pour ouvrir votre badge d'un geste.
         </p>
+        {canInstall && (
+          <Button icon={<Download size={16} />} onClick={install}>Installer GO-Mat sur ce téléphone</Button>
+        )}
+        {iosHint && (
+          <p className="text-xs text-gray-700 dark:text-gray-300 text-center max-w-xs">
+            Sur iPhone : touchez <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong> pour installer GO-Mat.
+          </p>
+        )}
         <div className="flex flex-wrap justify-center gap-2">
           <Button variant="outline" icon={<Printer size={16} />} onClick={() => window.print()} disabled={!code}>Imprimer ma carte</Button>
           <Button variant="outline" icon={<RefreshCw size={16} />} onClick={regenerate} loading={busy}>Badge perdu : nouveau code</Button>

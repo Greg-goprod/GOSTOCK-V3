@@ -58,6 +58,9 @@ const Counter: React.FC = () => {
   const { users, equipment, equipmentInstances, checkouts, depots, refreshData } = useApp();
   const { profile } = useAuth();
   const [person, setPerson] = useState<User | null>(null);
+  // « Pour le compte de » : un chef d'équipe retire pour quelqu'un, qui reste responsable du matériel
+  const [beneficiary, setBeneficiary] = useState<User | null>(null);
+  const owner = beneficiary ?? person;
   const [mode, setMode] = useState<Mode>('auto');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [returns, setReturns] = useState<string[]>([]);
@@ -79,8 +82,8 @@ const Counter: React.FC = () => {
   const [pickerSearch, setPickerSearch] = useState('');
 
   const held = useMemo(
-    () => (person ? checkouts.filter(c => c.userId === person.id && (c.status === 'active' || c.status === 'overdue')) : []),
-    [checkouts, person]
+    () => (owner ? checkouts.filter(c => c.userId === owner.id && (c.status === 'active' || c.status === 'overdue')) : []),
+    [checkouts, owner]
   );
   const itemName = (id: string) => equipment.find(e => e.id === id)?.name ?? 'Article';
 
@@ -95,7 +98,10 @@ const Counter: React.FC = () => {
     if (person && person.id !== user.id && (cart.length || returns.length)) {
       if (!window.confirm(`Passer à ${user.first_name} ${user.last_name} ? Le panier en cours sera vidé.`)) return;
     }
-    if (person?.id !== user.id) reset();
+    if (person?.id !== user.id) {
+      reset();
+      setBeneficiary(null);
+    }
     setPerson(user);
     setPickerOpen(false);
   };
@@ -156,7 +162,7 @@ const Counter: React.FC = () => {
     const match = heldMatch(item, instance);
     if (mode === 'in' || (mode === 'auto' && match)) {
       if (!match) {
-        toast.error(`${person.first_name} n'a pas « ${item.name} »`);
+        toast.error(`${owner?.first_name ?? person.first_name} n'a pas « ${item.name} »`);
         throw new Error('Pas emprunté');
       }
       setReturns(ids => [...ids, match.id]);
@@ -194,12 +200,12 @@ const Counter: React.FC = () => {
       let noteId: string | null = null;
       if (toolLines.length) {
         const { data, error } = await supabase.rpc('create_checkout', {
-          p_user_id: person.id,
+          p_user_id: owner!.id,
           p_due_date: new Date(due).toISOString(),
           p_items: toolLines.map(l => (l.instance
             ? { equipment_id: l.equipment.id, instance_id: l.instance.id }
             : { equipment_id: l.equipment.id, quantity: l.quantity })),
-          p_notes: destination.trim() || null,
+          p_notes: [destination.trim(), beneficiary ? `retiré par ${person.first_name} ${person.last_name}` : ''].filter(Boolean).join(' · ') || null,
         });
         if (error) throw error;
         noteId = data?.id ?? null;
@@ -211,18 +217,19 @@ const Counter: React.FC = () => {
           p_equipment_id: line.equipment.id,
           p_depot_id: depotId,
           p_quantity: line.quantity,
-          p_user_id: person.id,
+          p_user_id: owner!.id,
           p_destination: destination.trim() || null,
-          p_notes: 'Sortie au comptoir',
+          p_notes: beneficiary ? `Sortie au comptoir, retirée par ${person.first_name} ${person.last_name}` : 'Sortie au comptoir',
           p_delivery_note_id: noteId,
         });
         if (error) throw error;
       }
       if (consumableLines.length) done.push(`${consumableLines.length} consommable${consumableLines.length > 1 ? 's' : ''}`);
 
-      toast.success(`${person.first_name} ${person.last_name} : ${done.join(', ')}`);
+      toast.success(`${owner!.first_name} ${owner!.last_name} : ${done.join(', ')}`);
       reset();
       setPerson(null);
+      setBeneficiary(null);
     } catch (error) {
       toast.error(`${done.length ? `Fait : ${done.join(', ')}. ` : ''}Arrêt : ${errorMessage(error)}`);
     } finally {
@@ -299,6 +306,26 @@ const Counter: React.FC = () => {
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {person && (
+              <div>
+                <label htmlFor="counter-for" className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Pour le compte de</label>
+                <select
+                  id="counter-for"
+                  value={beneficiary?.id ?? person.id}
+                  onChange={e => {
+                    const target = users.find(u => u.id === e.target.value) ?? null;
+                    setBeneficiary(target && target.id !== person.id ? target : null);
+                    setReturns([]);
+                  }}
+                  className={inputClass}
+                >
+                  {users.filter(u => u.active !== false).map(u => (
+                    <option key={u.id} value={u.id}>{u.first_name} {u.last_name}{u.id === person.id ? ' (lui-même)' : ''}</option>
+                  ))}
+                </select>
               </div>
             )}
 

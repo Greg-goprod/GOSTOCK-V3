@@ -124,6 +124,9 @@ export interface StockNotification {
   message: string;
   equipmentId?: string;
   depotId?: string;
+  requestId?: string;
+  // Avis personnel (sa demande est validée, prête…) ; vide pour les alertes du magasin
+  recipientUserId?: string;
   createdAt: string;
 }
 

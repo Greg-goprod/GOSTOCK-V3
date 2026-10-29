@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Sun, Moon, ScanLine, LogOut, Contact } from 'lucide-react';
+import { Bell, Sun, Moon, ScanLine, LogOut, Contact, Download } from 'lucide-react';
+import { useInstallPrompt } from '../../lib/install';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,6 +12,7 @@ const Header: React.FC = () => {
   const { alertCount: unreadNotifications } = useApp();
   const { theme, toggleTheme } = useTheme();
   const { profile, can, signOut } = useAuth();
+  const { canInstall, install } = useInstallPrompt();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const initials = profile ? `${profile.first_name[0] ?? ''}${profile.last_name[0] ?? ''}`.toUpperCase() : '?';
@@ -125,6 +127,16 @@ const Header: React.FC = () => {
               >
                 <Contact size={16} aria-hidden="true" /> Mon badge
               </Link>
+              {canInstall && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => { setMenuOpen(false); install(); }}
+                  className="w-full inline-flex items-center gap-2 rounded-md px-2 py-2 min-h-[44px] text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Download size={16} aria-hidden="true" /> Installer l'application
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"

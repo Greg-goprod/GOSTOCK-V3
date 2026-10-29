@@ -1,5 +1,6 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 import { 
   AppContextType, 
   Category, 
@@ -69,6 +70,9 @@ interface AppProviderProps {
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+  const { profile } = useAuth();
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -183,8 +187,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         message: n.message,
         equipmentId: n.equipment_id,
         depotId: n.depot_id,
+        requestId: n.request_id,
+        recipientUserId: n.recipient_user_id,
         createdAt: n.created_at
-      })));
+      }))
+        // Les avis personnels des autres (le magasin peut les lire) n'encombrent pas ses alertes
+        .filter(n => !n.recipientUserId || n.recipientUserId === profileRef.current?.id));
 
       // Transformer les données du snake_case vers le camelCase
       const transformedEquipment = equipmentResult.data?.map(mapEquipmentRow) || [];

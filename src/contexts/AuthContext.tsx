@@ -26,8 +26,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(null);
       return;
     }
+    const cacheKey = `gomat-profile-${current.user.id}`;
     const { data, error } = await supabase.rpc('whoami');
-    if (error) console.error('whoami:', error);
+    if (error) {
+      console.error('whoami:', error);
+      // Hors ligne (chantier, sous-sol) : on garde le dernier profil connu pour afficher le badge
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          setProfile(JSON.parse(cached) as Profile);
+          return;
+        }
+      } catch {
+        // stockage indisponible : on retombe sur « pas de profil »
+      }
+    }
+    try {
+      if (data) localStorage.setItem(cacheKey, JSON.stringify(data));
+      else localStorage.removeItem(cacheKey);
+    } catch {
+      // stockage indisponible
+    }
     setProfile((data as Profile | null) ?? null);
   }, []);
 

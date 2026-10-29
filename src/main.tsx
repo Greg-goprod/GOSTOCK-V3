@@ -10,6 +10,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Toaster } from 'react-hot-toast';
 import { isSupabaseConfigured } from './lib/supabase';
+import { registerServiceWorker } from './lib/install';
+
+registerServiceWorker();
 
 // Vérification critique des variables d'environnement
 const checkEnvironmentVariables = () => {
