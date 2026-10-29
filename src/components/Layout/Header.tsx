@@ -23,6 +23,8 @@ const Header: React.FC = () => {
     if (path.startsWith('/scan')) return 'SCANNER';
     if (path.startsWith('/consommables')) return 'CONSOMMABLES';
     if (path.startsWith('/commande')) return 'COMMANDE';
+    if (path.startsWith('/demandes')) return 'DEMANDES';
+    if (path.startsWith('/vehicules')) return 'VÉHICULES';
     
     return 'GO-MAT';
   };

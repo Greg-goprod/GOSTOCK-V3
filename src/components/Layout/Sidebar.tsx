@@ -12,7 +12,9 @@ import {
   QrCode,
   ScanLine,
   Droplets,
-  ClipboardList
+  ClipboardList,
+  Inbox,
+  Truck
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -105,6 +107,11 @@ const Sidebar: React.FC = () => {
             <span className="uppercase tracking-wider font-bold">TABLEAU DE BORD</span>
           </NavLink>
           
+          <NavLink to="/demandes" className={navLinkClass} onClick={() => setIsOpen(false)}>
+            <Inbox size={16} />
+            <span className="uppercase tracking-wider font-bold">DEMANDES</span>
+          </NavLink>
+
           <NavLink to="/equipment" className={navLinkClass} onClick={() => setIsOpen(false)}>
             <Package size={16} />
             <span className="uppercase tracking-wider font-bold">MATÉRIEL</span>
@@ -118,6 +125,11 @@ const Sidebar: React.FC = () => {
           <NavLink to="/commande" className={navLinkClass} onClick={() => setIsOpen(false)}>
             <ClipboardList size={16} />
             <span className="uppercase tracking-wider font-bold">COMMANDE</span>
+          </NavLink>
+
+          <NavLink to="/vehicules" className={navLinkClass} onClick={() => setIsOpen(false)}>
+            <Truck size={16} />
+            <span className="uppercase tracking-wider font-bold">VÉHICULES</span>
           </NavLink>
           
           <NavLink to="/users" className={navLinkClass} onClick={() => setIsOpen(false)}>

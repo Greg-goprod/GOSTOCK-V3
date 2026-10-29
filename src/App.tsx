@@ -11,6 +11,8 @@ import Scan from './pages/Scan';
 import Settings from './pages/Settings';
 import Consumables from './pages/Consumables';
 import OrderSheet from './pages/OrderSheet';
+import Requests from './pages/Requests';
+import Vehicles from './pages/Vehicles';
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
         <Route path="/scan" element={<MainLayout><Scan /></MainLayout>} />
         <Route path="/consommables" element={<MainLayout><Consumables /></MainLayout>} />
         <Route path="/commande" element={<MainLayout><OrderSheet /></MainLayout>} />
+        <Route path="/demandes" element={<MainLayout><Requests /></MainLayout>} />
+        <Route path="/vehicules" element={<MainLayout><Vehicles /></MainLayout>} />
         <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
         <Route path="*" element={<MainLayout><Dashboard /></MainLayout>} />
       </Routes>

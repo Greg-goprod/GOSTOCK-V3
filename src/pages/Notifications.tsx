@@ -339,15 +339,17 @@ const Notifications: React.FC = () => {
         </div>
       </div>
 
-      {/* Alertes de stock (créées par la base au franchissement d'un seuil) */}
+      {/* Alertes créées par la base : stock bas, demandes à valider, échéances de véhicules */}
       {stockNotifications.length > 0 && (
         <Card>
           <div className="space-y-3">
             <div className="flex flex-wrap justify-between items-center gap-2">
-              <h2 className="font-bold text-gray-900 dark:text-white">Stock bas ({stockNotifications.length})</h2>
-              <Link to="/commande" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline">
-                Ouvrir la feuille de commande
-              </Link>
+              <h2 className="font-bold text-gray-900 dark:text-white">Alertes ({stockNotifications.length})</h2>
+              <div className="flex flex-wrap gap-3 text-sm font-medium">
+                <Link to="/commande" className="text-primary-700 dark:text-primary-300 hover:underline">Feuille de commande</Link>
+                <Link to="/demandes" className="text-primary-700 dark:text-primary-300 hover:underline">Demandes</Link>
+                <Link to="/vehicules" className="text-primary-700 dark:text-primary-300 hover:underline">Véhicules</Link>
+              </div>
             </div>
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {stockNotifications.map(n => (

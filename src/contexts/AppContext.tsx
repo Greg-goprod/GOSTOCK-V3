@@ -13,6 +13,7 @@ import {
   Depot,
   ConsumableStock,
   StockNotification,
+  Vehicle,
   CheckoutWithCalculatedStatus,
   EquipmentWithCalculatedStatus
 } from '../types';
@@ -79,6 +80,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [depots, setDepots] = useState<Depot[]>([]);
   const [consumableStock, setConsumableStock] = useState<ConsumableStock[]>([]);
   const [stockNotifications, setStockNotifications] = useState<StockNotification[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
 
   const fetchAppData = async () => {
@@ -91,6 +93,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         throw new Error('Supabase client not initialized');
       }
       
+      // Alertes d'échéance de la flotte (une seule par échéance, sans effet si déjà créées)
+      await supabase.rpc('check_vehicle_deadlines');
+
       // Charger toutes les données nécessaires en parallèle
       const [
         equipmentResult,
@@ -105,7 +110,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         deliveryNotesResult,
         depotsResult,
         consumableStockResult,
-        notificationsResult
+        notificationsResult,
+        vehiclesResult
       ] = await Promise.all([
         supabase.from('equipment').select('*').order('created_at', { ascending: false }),
         supabase.from('categories').select('*').order('name'),
@@ -119,7 +125,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.from('delivery_notes').select('*').order('created_at', { ascending: false }),
         supabase.from('depots').select('*').order('name'),
         supabase.from('consumable_stock').select('*'),
-        supabase.from('notifications').select('*').is('read_at', null).order('created_at', { ascending: false })
+        supabase.from('notifications').select('*').is('read_at', null).order('created_at', { ascending: false }),
+        supabase.from('vehicles').select('*').order('name')
       ]);
 
       if (equipmentResult.error) throw equipmentResult.error;
@@ -135,6 +142,24 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (depotsResult.error) throw depotsResult.error;
       if (consumableStockResult.error) throw consumableStockResult.error;
       if (notificationsResult.error) throw notificationsResult.error;
+      if (vehiclesResult.error) throw vehiclesResult.error;
+
+      setVehicles((vehiclesResult.data || []).map((v: Record<string, any>) => ({
+        id: v.id,
+        name: v.name,
+        plate: v.plate,
+        depotId: v.depot_id,
+        licenseCategory: v.license_category,
+        seats: v.seats ?? undefined,
+        currentKm: v.current_km,
+        fuelLevel: v.fuel_level,
+        status: v.status,
+        nextServiceDate: v.next_service_date ?? undefined,
+        nextServiceKm: v.next_service_km ?? undefined,
+        tiresDate: v.tires_date ?? undefined,
+        inspectionDate: v.inspection_date ?? undefined,
+        notes: v.notes ?? undefined
+      })));
 
       setDepots((depotsResult.data || []).map((d: Record<string, any>) => ({
         id: d.id,
@@ -671,6 +696,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         consumableStock,
         stockNotifications,
         markStockNotificationRead,
+        vehicles,
         
         // Equipment data
         equipment,

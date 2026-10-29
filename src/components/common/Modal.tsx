@@ -39,11 +39,12 @@ const Modal: React.FC<ModalProps> = ({
     const previouslyFocused = document.activeElement as HTMLElement | null;
     document.body.style.overflow = 'hidden';
 
-    // Focus sur le premier champ du contenu (sauf si un champ a déjà pris le focus via autoFocus)
+    // Focus sur le premier champ de saisie (sauf si un champ a déjà pris le focus via autoFocus) ;
+    // jamais sur un bouton, pour qu'un appui sur Entrée ne déclenche pas une action (ex. annuler)
     const panel = modalRef.current;
     if (panel && !panel.contains(document.activeElement)) {
-      const first = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)].find(el => !el.dataset.modalClose);
-      (first ?? panel).focus();
+      const firstField = panel.querySelector<HTMLElement>('input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])');
+      (firstField ?? panel).focus();
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {

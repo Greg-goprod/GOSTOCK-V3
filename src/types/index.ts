@@ -61,6 +61,60 @@ export interface LowStockItem {
   quantity_to_order: number;
 }
 
+export interface Vehicle {
+  id: string;
+  name: string;
+  plate: string;
+  depotId?: string;
+  licenseCategory: string;
+  seats?: number;
+  currentKm: number;
+  fuelLevel: number;          // en huitièmes (0 à 8)
+  status: 'available' | 'in_use' | 'maintenance' | 'retired';
+  nextServiceDate?: string;
+  nextServiceKm?: number;
+  tiresDate?: string;
+  inspectionDate?: string;
+  notes?: string;
+}
+
+export type RequestStatus = 'requested' | 'approved' | 'rejected' | 'ready' | 'out' | 'closed' | 'cancelled';
+
+// Ligne de la vue requests_overview (snake_case, lue telle quelle)
+export interface RequestOverview {
+  id: string;
+  number: string;
+  requester_id: string;
+  requester_name: string;
+  destination?: string;
+  depot_id: string;
+  depot_name: string;
+  start_at: string;
+  end_at: string;
+  status: RequestStatus;
+  needs_approval: boolean;
+  approval_reason?: string;
+  notes?: string;
+  decided_by?: string;
+  decided_at?: string;
+  decision_note?: string;
+  delivery_note_id?: string;
+  issued_at?: string;
+  closed_at?: string;
+  created_at: string;
+  tool_lines: number;
+  consumable_lines: number;
+  vehicle_names?: string;
+}
+
+export interface RequestItemRow {
+  id: string;
+  item_kind: 'tool' | 'consumable' | 'vehicle';
+  equipment_id?: string;
+  vehicle_id?: string;
+  quantity: number;
+}
+
 export interface StockNotification {
   id: string;
   kind: string;
@@ -220,6 +274,7 @@ export interface AppContextType {
   depots: Depot[];
   consumableStock: ConsumableStock[];
   stockNotifications: StockNotification[];
+  vehicles: Vehicle[];
   markStockNotificationRead: (id: string) => Promise<void>;
   equipment: Equipment[];
   categories: Category[];
