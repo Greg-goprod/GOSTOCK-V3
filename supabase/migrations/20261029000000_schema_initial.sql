@@ -3,7 +3,7 @@
 
   Reconstruit à partir des anciennes migrations, rejouées dans l'ordre et testées sur une base neuve.
   Corrections apportées par rapport à l'historique :
-    - vues checkout_status_view / equipment_status_view : vues classiques au lieu de vues
+    - vues : security_invoker (respectent la RLS) ; checkout_status_view / equipment_status_view : vues classiques au lieu de vues
       matérialisées (le rafraîchissement exigeait d'en être propriétaire : toute sortie/retour échouait)
     - check_equipment_availability : colonne ambiguë corrigée (le scan d'ajout en sortie échouait)
     - numéros de bon : format DNaamm-0001 (au lieu de « DNyymm-aamm-0001 »)
@@ -1340,7 +1340,7 @@ CREATE TABLE public.equipment_maintenance (
 -- Name: equipment_status_stats; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE VIEW public.equipment_status_stats AS
+CREATE VIEW public.equipment_status_stats WITH (security_invoker = true) AS
  SELECT status,
     count(*) AS total_count,
     sum(total_quantity) AS total_quantity,
