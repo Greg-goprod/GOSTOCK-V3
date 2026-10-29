@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useApp } from '../contexts/AppContext';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
@@ -34,6 +36,7 @@ interface NotificationItem {
 
 const Notifications: React.FC = () => {
   const { t } = useLanguage();
+  const { stockNotifications, markStockNotificationRead } = useApp();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read' | 'overdue' | 'maintenance' | 'checkout'>('all');
@@ -335,6 +338,31 @@ const Notifications: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Alertes de stock (créées par la base au franchissement d'un seuil) */}
+      {stockNotifications.length > 0 && (
+        <Card>
+          <div className="space-y-3">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <h2 className="font-bold text-gray-900 dark:text-white">Stock bas ({stockNotifications.length})</h2>
+              <Link to="/commande" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline">
+                Ouvrir la feuille de commande
+              </Link>
+            </div>
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {stockNotifications.map(n => (
+                <li key={n.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
+                  <div>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">{n.message}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{format(new Date(n.createdAt), "d MMM yyyy 'à' HH:mm", { locale: fr })}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => markStockNotificationRead(n.id)}>Marquer comme lu</Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Card>
+      )}
 
       {/* Filtres */}
       <Card>

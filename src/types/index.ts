@@ -17,6 +17,58 @@ export interface Equipment {
   shortTitle?: string;
   group?: string;
   subgroup?: string;
+  // Outil prêté (revient) ou consommable (décompté du stock d'un dépôt)
+  itemType?: 'tool' | 'consumable';
+  unit?: string;
+  supplierReference?: string;
+  purchasePrice?: number;
+  depotId?: string;
+}
+
+export interface Depot {
+  id: string;
+  name: string;
+  address?: string;
+  isDefault: boolean;
+}
+
+// Stock d'un consommable dans un dépôt
+export interface ConsumableStock {
+  id: string;
+  equipmentId: string;
+  depotId: string;
+  quantity: number;
+  minQuantity: number;
+}
+
+// Ligne de la feuille de commande (vue low_stock_items)
+export interface LowStockItem {
+  stock_id: string;
+  equipment_id: string;
+  name: string;
+  article_number?: string;
+  unit: string;
+  supplier_reference?: string;
+  purchase_price?: number;
+  depot_id: string;
+  depot_name: string;
+  supplier_id?: string;
+  supplier_name: string;
+  supplier_email?: string;
+  supplier_phone?: string;
+  quantity: number;
+  min_quantity: number;
+  quantity_to_order: number;
+}
+
+export interface StockNotification {
+  id: string;
+  kind: string;
+  title: string;
+  message: string;
+  equipmentId?: string;
+  depotId?: string;
+  createdAt: string;
 }
 
 export interface EquipmentInstance {
@@ -163,8 +215,12 @@ export interface EquipmentMaintenance {
 }
 
 export interface AppContextType {
-  // Emprunts en retard ou à rendre sous 3 jours (pastille du menu)
+  // Emprunts en retard ou à rendre sous 3 jours + alertes de stock non lues (pastille du menu)
   alertCount: number;
+  depots: Depot[];
+  consumableStock: ConsumableStock[];
+  stockNotifications: StockNotification[];
+  markStockNotificationRead: (id: string) => Promise<void>;
   equipment: Equipment[];
   categories: Category[];
   suppliers: Supplier[];

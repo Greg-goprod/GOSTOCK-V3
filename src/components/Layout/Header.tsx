@@ -21,12 +21,14 @@ const Header: React.FC = () => {
     if (path.startsWith('/notifications')) return 'NOTIFICATIONS';
     if (path.startsWith('/settings')) return 'PARAMÈTRES';
     if (path.startsWith('/scan')) return 'SCANNER';
+    if (path.startsWith('/consommables')) return 'CONSOMMABLES';
+    if (path.startsWith('/commande')) return 'COMMANDE';
     
     return 'GO-MAT';
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 flex items-center justify-between">
+    <header className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 flex items-center justify-between print:hidden">
       <div className="lg:hidden w-11 shrink-0"></div>
       <h1 className="text-lg font-black text-gray-800 dark:text-white tracking-tight uppercase truncate">
         {getPageTitle()}

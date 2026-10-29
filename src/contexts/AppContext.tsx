@@ -10,6 +10,9 @@ import {
   EquipmentSubgroup, 
   Supplier, 
   User,
+  Depot,
+  ConsumableStock,
+  StockNotification,
   CheckoutWithCalculatedStatus,
   EquipmentWithCalculatedStatus
 } from '../types';
@@ -34,7 +37,12 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   availableQuantity: item.available_quantity,
   shortTitle: item.short_title,
   group: item.group_id,
-  subgroup: item.subgroup_id
+  subgroup: item.subgroup_id,
+  itemType: item.item_type,
+  unit: item.unit,
+  supplierReference: item.supplier_reference,
+  purchasePrice: item.purchase_price === null || item.purchase_price === undefined ? undefined : Number(item.purchase_price),
+  depotId: item.depot_id
 });
 
 // Nombre de jours avant l'échéance à partir duquel un retour est signalé
@@ -68,6 +76,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [checkouts, setCheckouts] = useState<import('../types').CheckoutRecord[]>([]);
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [depots, setDepots] = useState<Depot[]>([]);
+  const [consumableStock, setConsumableStock] = useState<ConsumableStock[]>([]);
+  const [stockNotifications, setStockNotifications] = useState<StockNotification[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
 
   const fetchAppData = async () => {
@@ -91,7 +102,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         statusConfigsResult,
         checkoutsResult,
         usersResult,
-        deliveryNotesResult
+        deliveryNotesResult,
+        depotsResult,
+        consumableStockResult,
+        notificationsResult
       ] = await Promise.all([
         supabase.from('equipment').select('*').order('created_at', { ascending: false }),
         supabase.from('categories').select('*').order('name'),
@@ -102,7 +116,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.from('status_configs').select('*').order('name'),
         supabase.from('checkouts').select('*').order('created_at', { ascending: false }),
         supabase.from('users').select('*').order('last_name'),
-        supabase.from('delivery_notes').select('*').order('created_at', { ascending: false })
+        supabase.from('delivery_notes').select('*').order('created_at', { ascending: false }),
+        supabase.from('depots').select('*').order('name'),
+        supabase.from('consumable_stock').select('*'),
+        supabase.from('notifications').select('*').is('read_at', null).order('created_at', { ascending: false })
       ]);
 
       if (equipmentResult.error) throw equipmentResult.error;
@@ -115,6 +132,32 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (checkoutsResult.error) throw checkoutsResult.error;
       if (usersResult.error) throw usersResult.error;
       if (deliveryNotesResult.error) throw deliveryNotesResult.error;
+      if (depotsResult.error) throw depotsResult.error;
+      if (consumableStockResult.error) throw consumableStockResult.error;
+      if (notificationsResult.error) throw notificationsResult.error;
+
+      setDepots((depotsResult.data || []).map((d: Record<string, any>) => ({
+        id: d.id,
+        name: d.name,
+        address: d.address,
+        isDefault: d.is_default
+      })));
+      setConsumableStock((consumableStockResult.data || []).map((s: Record<string, any>) => ({
+        id: s.id,
+        equipmentId: s.equipment_id,
+        depotId: s.depot_id,
+        quantity: Number(s.quantity),
+        minQuantity: Number(s.min_quantity)
+      })));
+      setStockNotifications((notificationsResult.data || []).map((n: Record<string, any>) => ({
+        id: n.id,
+        kind: n.kind,
+        title: n.title,
+        message: n.message,
+        equipmentId: n.equipment_id,
+        depotId: n.depot_id,
+        createdAt: n.created_at
+      })));
 
       // Transformer les données du snake_case vers le camelCase
       const transformedEquipment = equipmentResult.data?.map(mapEquipmentRow) || [];
@@ -597,22 +640,37 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     fetchAppData();
   }, []);
 
-  // Pastille : emprunts en retard ou à rendre dans les prochains jours
+  // Pastille : emprunts en retard ou à rendre dans les prochains jours, et alertes de stock non lues
   const alertCount = useMemo(() => {
     const dueSoonLimit = Date.now() + DUE_SOON_DAYS * 24 * 60 * 60 * 1000;
-    return checkouts.filter(c => {
+    const loanAlerts = checkouts.filter(c => {
       if (c.status === 'overdue') return true;
       if (c.status !== 'active') return false;
       const due = c.dueDate ? new Date(c.dueDate).getTime() : NaN;
       return !Number.isNaN(due) && due <= dueSoonLimit;
     }).length;
-  }, [checkouts]);
+    return loanAlerts + stockNotifications.length;
+  }, [checkouts, stockNotifications]);
+
+  const markStockNotificationRead = async (id: string) => {
+    if (!supabase) return;
+    const { error } = await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id);
+    if (error) {
+      toast.error('Impossible de marquer l\'alerte comme lue');
+      return;
+    }
+    setStockNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   return (
     <AppContext.Provider
       value={{
-        // Alertes (retards et retours proches)
+        // Alertes (retards, retours proches, stock bas)
         alertCount,
+        depots,
+        consumableStock,
+        stockNotifications,
+        markStockNotificationRead,
         
         // Equipment data
         equipment,

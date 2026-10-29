@@ -200,8 +200,10 @@ export default function Equipment() {
   };
 
   const filteredEquipment = equipment.filter(eq => {
+    // Les consommables ont leur propre page
+    if (eq.itemType === 'consumable') return false;
     const matchesSearch = eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         eq.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (eq.serialNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (eq.articleNumber && eq.articleNumber.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = !filters.status || eq.status === filters.status;

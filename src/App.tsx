@@ -9,6 +9,8 @@ import Checkouts from './pages/Checkouts';
 import Notifications from './pages/Notifications';
 import Scan from './pages/Scan';
 import Settings from './pages/Settings';
+import Consumables from './pages/Consumables';
+import OrderSheet from './pages/OrderSheet';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path="/checkouts" element={<MainLayout><Checkouts /></MainLayout>} />
         <Route path="/notifications" element={<MainLayout><Notifications /></MainLayout>} />
         <Route path="/scan" element={<MainLayout><Scan /></MainLayout>} />
+        <Route path="/consommables" element={<MainLayout><Consumables /></MainLayout>} />
+        <Route path="/commande" element={<MainLayout><OrderSheet /></MainLayout>} />
         <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
         <Route path="*" element={<MainLayout><Dashboard /></MainLayout>} />
       </Routes>

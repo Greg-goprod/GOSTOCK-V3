@@ -10,7 +10,9 @@ import {
   Menu, 
   X,
   QrCode,
-  ScanLine
+  ScanLine,
+  Droplets,
+  ClipboardList
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -58,7 +60,7 @@ const Sidebar: React.FC = () => {
     <>
       <button
         type="button"
-        className="lg:hidden fixed top-2 left-2 z-50 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md bg-white dark:bg-gray-800 shadow-md"
+        className="lg:hidden print:hidden fixed top-2 left-2 z-50 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md bg-white dark:bg-gray-800 shadow-md"
         onClick={toggleSidebar}
         aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
         aria-expanded={isOpen}
@@ -74,7 +76,7 @@ const Sidebar: React.FC = () => {
       )}
       
       <aside 
-        className={`fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-md z-40 transition-transform transform lg:translate-x-0 ${
+        className={`print:hidden fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-md z-40 transition-transform transform lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -106,6 +108,16 @@ const Sidebar: React.FC = () => {
           <NavLink to="/equipment" className={navLinkClass} onClick={() => setIsOpen(false)}>
             <Package size={16} />
             <span className="uppercase tracking-wider font-bold">MATÉRIEL</span>
+          </NavLink>
+
+          <NavLink to="/consommables" className={navLinkClass} onClick={() => setIsOpen(false)}>
+            <Droplets size={16} />
+            <span className="uppercase tracking-wider font-bold">CONSOMMABLES</span>
+          </NavLink>
+
+          <NavLink to="/commande" className={navLinkClass} onClick={() => setIsOpen(false)}>
+            <ClipboardList size={16} />
+            <span className="uppercase tracking-wider font-bold">COMMANDE</span>
           </NavLink>
           
           <NavLink to="/users" className={navLinkClass} onClick={() => setIsOpen(false)}>

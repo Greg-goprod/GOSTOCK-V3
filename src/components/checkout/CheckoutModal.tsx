@@ -124,6 +124,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         totalQuantity: eq.total_quantity,
         availableQuantity: eq.available_quantity,
         shortTitle: eq.short_title,
+        itemType: eq.item_type,
         group: eq.equipment_groups?.name || ''
       }));
 
@@ -194,6 +195,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           totalQuantity: eq.total_quantity,
           availableQuantity: eq.available_quantity,
           shortTitle: eq.short_title,
+          itemType: eq.item_type,
           group: eq.equipment_groups?.name || ''
         }));
         
@@ -284,6 +286,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           totalQuantity: eq.total_quantity,
           availableQuantity: eq.available_quantity,
           shortTitle: eq.short_title,
+          itemType: eq.item_type,
           group: eq.equipment_groups?.name || ''
         }));
         
@@ -348,6 +351,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         totalQuantity: eq.total_quantity,
         availableQuantity: eq.available_quantity,
         shortTitle: eq.short_title,
+        itemType: eq.item_type,
         group: eq.equipment_groups?.name || ''
       }));
       
@@ -386,6 +390,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       }
 
       const row = found.equipment;
+      if (row.item_type === 'consumable') {
+        toast.error(`${row.name} est un consommable : enregistrez sa sortie depuis la page Consommables`);
+        return;
+      }
       if (row.status === 'retired') {
         toast.error(`${row.name} est retiré du service`);
         return;
@@ -737,15 +745,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   }, [users, filteredUsers, userSearchTerm]);
 
   const filteredEquipment = equipment.filter(eq => {
-    // Vérifier que les propriétés existent avant d'appeler toLowerCase()
-    if (!eq || !eq.name || !eq.serialNumber || !eq.category) {
+    // Les consommables ne s'empruntent pas ; numéro de série et catégorie sont facultatifs
+    if (!eq || !eq.name || eq.itemType === 'consumable') {
       return false;
     }
     
     const name = eq.name.toLowerCase();
-    const serialNumber = eq.serialNumber.toLowerCase();
+    const serialNumber = (eq.serialNumber || '').toLowerCase();
     const articleNumber = eq.articleNumber ? eq.articleNumber.toLowerCase() : '';
-    const category = eq.category.toLowerCase();
+    const category = (eq.category || '').toLowerCase();
     const group = eq.group ? eq.group.toLowerCase() : '';
     const description = eq.description ? eq.description.toLowerCase() : '';
     const search = searchTerm.toLowerCase();
