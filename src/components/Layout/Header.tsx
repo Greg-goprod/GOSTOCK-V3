@@ -49,6 +49,8 @@ const Header: React.FC = () => {
     if (path.startsWith('/badges')) return 'BADGES';
     if (path.startsWith('/badge')) return 'MON BADGE';
     if (path.startsWith('/etiquettes')) return 'ÉTIQUETTES';
+    if (path.startsWith('/entretien')) return 'ENTRETIEN';
+    if (path.startsWith('/incidents')) return 'PERTES ET CASSE';
     
     return 'GO-MAT';
   };

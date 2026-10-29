@@ -3,6 +3,7 @@ import { CheckCircle2, Minus, Plus, Trash2, Undo2, UserRound, X } from 'lucide-r
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
+import PhotoInput from '../components/common/PhotoInput';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -12,6 +13,21 @@ import { errorMessage, toLocalInput } from '../lib/requests';
 import { Equipment, EquipmentInstance, User } from '../types';
 
 type Mode = 'auto' | 'out' | 'in';
+
+type Condition = 'ok' | 'dirty' | 'incomplete' | 'to_repair' | 'broken';
+interface ReturnCheck {
+  condition: Condition;
+  notes: string;
+  photos: string[];
+}
+const CONDITIONS: { id: Condition; label: string; className: string }[] = [
+  { id: 'ok', label: 'OK', className: 'bg-success-600 text-white' },
+  { id: 'dirty', label: 'Sale', className: 'bg-warning-500 text-white' },
+  { id: 'incomplete', label: 'Incomplet', className: 'bg-warning-600 text-white' },
+  { id: 'to_repair', label: 'À réparer', className: 'bg-danger-500 text-white' },
+  { id: 'broken', label: 'Cassé', className: 'bg-danger-700 text-white' },
+];
+const DEFAULT_CHECK: ReturnCheck = { condition: 'ok', notes: '', photos: [] };
 
 interface CartLine {
   key: string;
@@ -43,6 +59,10 @@ const Counter: React.FC = () => {
   const [mode, setMode] = useState<Mode>('auto');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [returns, setReturns] = useState<string[]>([]);
+  // État constaté au retour, par emprunt (OK par défaut)
+  const [checks, setChecks] = useState<Record<string, ReturnCheck>>({});
+  const checkOf = (id: string) => checks[id] ?? DEFAULT_CHECK;
+  const setCheck = (id: string, change: Partial<ReturnCheck>) => setChecks(c => ({ ...c, [id]: { ...checkOf(id), ...change } }));
   const [due, setDue] = useState(toLocalInput(at17(1)));
   const [destination, setDestination] = useState('');
   const myDepots = profile?.depot_ids?.length ? depots.filter(d => profile.depot_ids.includes(d.id)) : depots;
@@ -60,6 +80,7 @@ const Counter: React.FC = () => {
   const reset = () => {
     setCart([]);
     setReturns([]);
+    setChecks({});
     setDestination('');
   };
 
@@ -147,11 +168,21 @@ const Counter: React.FC = () => {
     setBusy(true);
     const done: string[] = [];
     try {
+      const damaged = returns.filter(id => ['to_repair', 'broken'].includes(checkOf(id).condition)).length;
       for (const id of returns) {
-        const { error } = await supabase.rpc('return_equipment', { p_checkout_id: id, p_notes: 'Retour au comptoir' });
+        const check = checkOf(id);
+        if (check.condition !== 'ok' && check.condition !== 'dirty' && !check.notes.trim() && !check.photos.length) {
+          throw new Error('Décrivez le problème (remarque ou photo) pour chaque retour non conforme');
+        }
+        const { error } = await supabase.rpc('return_with_check', {
+          p_checkout_id: id,
+          p_condition: check.condition,
+          p_notes: check.notes.trim() || null,
+          p_photos: check.photos,
+        });
         if (error) throw error;
       }
-      if (returns.length) done.push(`${returns.length} retour${returns.length > 1 ? 's' : ''}`);
+      if (returns.length) done.push(`${returns.length} retour${returns.length > 1 ? 's' : ''}${damaged ? ` (dont ${damaged} en maintenance)` : ''}`);
 
       let noteId: string | null = null;
       if (toolLines.length) {
@@ -303,11 +334,43 @@ const Counter: React.FC = () => {
             <ul className="space-y-1">
               {returns.map(id => {
                 const c = held.find(x => x.id === id);
+                const check = checkOf(id);
                 return (
-                  <li key={id} className="flex items-center gap-2 rounded-md bg-info-50 dark:bg-info-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100">
-                    <Undo2 size={16} aria-hidden="true" className="text-info-600 dark:text-info-100" />
-                    <span className="flex-1 truncate">Retour · {c ? itemName(c.equipmentId) : 'Article'}</span>
-                    <Button size="sm" variant="outline" icon={<X size={14} />} ariaLabel="Retirer du panier" onClick={() => setReturns(ids => ids.filter(x => x !== id))} />
+                  <li key={id} className="rounded-md bg-info-50 dark:bg-info-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Undo2 size={16} aria-hidden="true" className="text-info-600 dark:text-info-100" />
+                      <span className="flex-1 truncate">Retour · {c ? itemName(c.equipmentId) : 'Article'}</span>
+                      <Button size="sm" variant="outline" icon={<X size={14} />} ariaLabel="Retirer du panier" onClick={() => setReturns(ids => ids.filter(x => x !== id))} />
+                    </div>
+                    <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="État au retour">
+                      {CONDITIONS.map(cond => (
+                        <button
+                          key={cond.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={check.condition === cond.id}
+                          onClick={() => setCheck(id, { condition: cond.id })}
+                          className={`rounded-full px-3 py-1 min-h-[32px] text-xs font-semibold ${check.condition === cond.id ? cond.className : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'}`}
+                        >
+                          {cond.label}
+                        </button>
+                      ))}
+                    </div>
+                    {check.condition !== 'ok' && (
+                      <div className="space-y-2">
+                        <input
+                          value={check.notes}
+                          onChange={e => setCheck(id, { notes: e.target.value })}
+                          placeholder={check.condition === 'incomplete' ? 'Ce qui manque…' : 'Ce qui ne va pas…'}
+                          aria-label="Remarque sur l'état"
+                          className={inputClass}
+                        />
+                        <PhotoInput folder="retours" value={check.photos} onChange={photos => setCheck(id, { photos })} />
+                        {(check.condition === 'to_repair' || check.condition === 'broken') && (
+                          <p className="text-xs text-danger-700 dark:text-danger-300">L'outil passera en maintenance{check.condition === 'broken' ? ' et un incident sera ouvert' : ''}.</p>
+                        )}
+                      </div>
+                    )}
                   </li>
                 );
               })}

@@ -18,7 +18,9 @@ import {
   BarChart3,
   ScanBarcode,
   Contact,
-  Tags
+  Tags,
+  Wrench,
+  AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,6 +48,8 @@ const NAV_SECTIONS = [
   ] },
   { title: 'Suivi', links: [
     { to: '/notifications', label: 'Notifications', icon: Bell },
+    { to: '/entretien', label: 'Entretien', icon: Wrench },
+    { to: '/incidents', label: 'Pertes et casse', icon: AlertTriangle },
     { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },
   ] },
   { title: 'Réglages', links: [

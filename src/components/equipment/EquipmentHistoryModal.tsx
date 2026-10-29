@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, Undo2, Wrench, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, Undo2, Wrench, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import Modal from '../common/Modal';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
@@ -8,7 +8,7 @@ import { Equipment } from '../../types';
 interface HistoryEvent {
   id: string;
   at: string;
-  kind: 'out' | 'return' | 'lost' | 'maintenance';
+  kind: 'out' | 'return' | 'lost' | 'maintenance' | 'incident' | 'inspection';
   title: string;
   detail?: string;
 }
@@ -18,7 +18,14 @@ const ICONS = {
   return: <Undo2 size={16} className="text-success-600 dark:text-success-400" aria-hidden="true" />,
   lost: <AlertTriangle size={16} className="text-danger-600 dark:text-danger-400" aria-hidden="true" />,
   maintenance: <Wrench size={16} className="text-warning-600 dark:text-warning-400" aria-hidden="true" />,
+  incident: <AlertTriangle size={16} className="text-danger-600 dark:text-danger-400" aria-hidden="true" />,
+  inspection: <ClipboardCheck size={16} className="text-info-600 dark:text-info-100" aria-hidden="true" />,
 };
+
+const CONDITION_LABELS: Record<string, string> = {
+  ok: 'bon état', dirty: 'sale', incomplete: 'incomplet', to_repair: 'à réparer', broken: 'cassé',
+};
+const INCIDENT_LABELS: Record<string, string> = { lost: 'Perte', stolen: 'Vol', broken: 'Casse' };
 
 const fmt = (date: string) => new Date(date).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -35,10 +42,14 @@ const EquipmentHistoryModal: React.FC<{ equipment: Equipment; onClose: () => voi
     const instanceLabel = (id?: string | null) => (id ? equipmentInstances.find(i => i.id === id)?.qrCode : undefined);
 
     (async () => {
-      const [checkoutsRes, maintenanceRes] = await Promise.all([
+      const [checkoutsRes, maintenanceRes, checksRes, incidentsRes, plansRes] = await Promise.all([
         supabase.from('checkouts').select('id, user_id, instance_id, checkout_date, due_date, return_date, status, notes').eq('equipment_id', equipment.id),
         supabase.from('equipment_maintenance').select('id, title, start_date, end_date, status, technician_name, cost, notes').eq('equipment_id', equipment.id),
+        supabase.from('return_checks').select('checkout_id, condition, notes').eq('equipment_id', equipment.id),
+        supabase.from('incidents').select('id, kind, occurred_at, responsible_id, description, decision, cost').eq('equipment_id', equipment.id),
+        supabase.from('maintenance_plans').select('id, title, maintenance_plan_runs(id, done_at, result, technician, notes)').eq('equipment_id', equipment.id),
       ]);
+      const checkByCheckout = new Map((checksRes.data || []).map(c => [c.checkout_id, c]));
       const list: HistoryEvent[] = [];
       for (const c of checkoutsRes.data || []) {
         const unit = instanceLabel(c.instance_id);
@@ -49,10 +60,12 @@ const EquipmentHistoryModal: React.FC<{ equipment: Equipment; onClose: () => voi
         });
         if (c.status === 'returned' && c.return_date) {
           const late = new Date(c.return_date) > new Date(c.due_date);
-          list.push({ id: `${c.id}-in`, at: c.return_date, kind: 'return', title: `Rendu par ${name(c.user_id)}${unit ? ` · ${unit}` : ''}`, detail: late ? 'rendu en retard' : undefined });
-        }
-        if (c.status === 'lost') {
-          list.push({ id: `${c.id}-lost`, at: c.return_date || c.due_date, kind: 'lost', title: `Déclaré perdu (${name(c.user_id)})` });
+          const check = checkByCheckout.get(c.id);
+          list.push({
+            id: `${c.id}-in`, at: c.return_date, kind: 'return',
+            title: `Rendu par ${name(c.user_id)}${unit ? ` · ${unit}` : ''}${check ? ` · ${CONDITION_LABELS[check.condition] ?? check.condition}` : ''}`,
+            detail: [late && 'rendu en retard', check?.notes].filter(Boolean).join(' · ') || undefined,
+          });
         }
       }
       for (const m of maintenanceRes.data || []) {
@@ -61,6 +74,22 @@ const EquipmentHistoryModal: React.FC<{ equipment: Equipment; onClose: () => voi
           title: `Maintenance : ${m.title}`,
           detail: [m.status === 'completed' && m.end_date ? `terminée le ${new Date(m.end_date).toLocaleDateString('fr-CH')}` : 'en cours', m.technician_name, m.cost ? `CHF ${Number(m.cost).toFixed(2)}` : null, m.notes].filter(Boolean).join(' · '),
         });
+      }
+      for (const i of incidentsRes.data || []) {
+        list.push({
+          id: i.id, at: i.occurred_at, kind: 'incident',
+          title: `${INCIDENT_LABELS[i.kind] ?? i.kind} · ${name(i.responsible_id)}`,
+          detail: [i.description, i.decision !== 'pending' ? `décision : ${i.decision}` : 'à décider', i.cost ? `CHF ${Number(i.cost).toFixed(2)}` : null].filter(Boolean).join(' · '),
+        });
+      }
+      for (const plan of (plansRes.data || []) as { title: string; maintenance_plan_runs: { id: string; done_at: string; result: string; technician: string | null; notes: string | null }[] }[]) {
+        for (const run of plan.maintenance_plan_runs || []) {
+          list.push({
+            id: run.id, at: run.done_at, kind: 'inspection',
+            title: `${plan.title} · ${run.result === 'ok' ? 'conforme' : 'non conforme'}`,
+            detail: [run.technician, run.notes].filter(Boolean).join(' · ') || undefined,
+          });
+        }
       }
       setEvents(list.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()));
     })();

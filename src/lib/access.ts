@@ -9,6 +9,8 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   '/comptoir': ['scan'],
   '/etiquettes': ['manage_stock'],
   '/badges': ['manage_people'],
+  '/entretien': ['manage_stock'],
+  '/incidents': ['view_all', 'scan', 'approve', 'manage_stock'],
   '/checkouts': ['scan', 'view_all'],
   '/consommables': ['scan', 'manage_stock'],
   '/commande': ['manage_stock'],

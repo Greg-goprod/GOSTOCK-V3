@@ -94,8 +94,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         throw new Error('Supabase client not initialized');
       }
       
-      // Alertes d'échéance de la flotte (une seule par échéance, sans effet si déjà créées)
-      await supabase.rpc('check_vehicle_deadlines');
+      // Alertes d'échéance (flotte, entretien des outils) : une seule par échéance, sans effet si déjà créées
+      await Promise.all([supabase.rpc('check_vehicle_deadlines'), supabase.rpc('check_maintenance_due')]);
 
       // Charger toutes les données nécessaires en parallèle
       const [
@@ -618,9 +618,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('return_equipment', {
+      // Retour en bon état, consigné comme au comptoir (le comptoir permet de signaler un problème)
+      const { data, error } = await supabase.rpc('return_with_check', {
         p_checkout_id: checkoutId,
-        p_notes: notes
+        p_condition: 'ok',
+        p_notes: notes || null,
+        p_photos: []
       });
       
       if (error) throw error;
@@ -647,9 +650,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('mark_equipment_lost', {
+      // Une perte ouvre un incident (décision du responsable : remplacé, retenue, retrouvé…)
+      const equipmentId = checkouts.find(c => c.id === checkoutId)?.equipmentId;
+      const { data, error } = await supabase.rpc('declare_incident', {
+        p_kind: 'lost',
+        p_equipment_id: equipmentId,
         p_checkout_id: checkoutId,
-        p_notes: notes
+        p_description: notes || null
       });
       
       if (error) throw error;

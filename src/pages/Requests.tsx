@@ -8,6 +8,7 @@ import SignaturePad from '../components/common/SignaturePad';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { DeclareIncidentModal } from './Incidents';
 import { supabase } from '../lib/supabase';
 import { findEquipmentByCode } from '../lib/scan';
 import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib/requests';
@@ -45,6 +46,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MyEquipment: React.FC = () => {
   const { checkouts, equipment, equipmentInstances } = useApp();
   const { profile } = useAuth();
+  const [reporting, setReporting] = useState<{ checkoutId: string; equipmentId: string } | null>(null);
   const mine = checkouts
     .filter(c => c.userId === profile?.id && (c.status === 'active' || c.status === 'overdue'))
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
@@ -68,15 +70,26 @@ const MyEquipment: React.FC = () => {
                   {[instance?.qrCode ?? item?.articleNumber, `à rendre le ${new Date(c.dueDate).toLocaleDateString('fr-CH')}`].filter(Boolean).join(' · ')}
                 </div>
               </div>
-              {late && (
-                <span className="shrink-0 rounded-full bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-xs font-semibold">
-                  {daysLate} j de retard
-                </span>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {late && (
+                  <span className="rounded-full bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-xs font-semibold">
+                    {daysLate} j de retard
+                  </span>
+                )}
+                <Button size="sm" variant="outline" onClick={() => setReporting({ checkoutId: c.id, equipmentId: c.equipmentId })}>Signaler</Button>
+              </div>
             </li>
           );
         })}
       </ul>
+      {reporting && (
+        <DeclareIncidentModal
+          checkoutId={reporting.checkoutId}
+          equipmentId={reporting.equipmentId}
+          onClose={() => setReporting(null)}
+          onDone={async () => setReporting(null)}
+        />
+      )}
     </section>
   );
 };

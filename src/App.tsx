@@ -18,6 +18,8 @@ import Counter from './pages/Counter';
 import MyBadge from './pages/MyBadge';
 import BadgePrint from './pages/BadgePrint';
 import Labels from './pages/Labels';
+import Maintenance from './pages/Maintenance';
+import Incidents from './pages/Incidents';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 
@@ -54,6 +56,8 @@ function App() {
         <Route path="/badge" element={<Guard><MyBadge /></Guard>} />
         <Route path="/badges" element={<Guard><BadgePrint /></Guard>} />
         <Route path="/etiquettes" element={<Guard><Labels /></Guard>} />
+        <Route path="/entretien" element={<Guard><Maintenance /></Guard>} />
+        <Route path="/incidents" element={<Guard><Incidents /></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

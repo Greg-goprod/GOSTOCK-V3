@@ -370,8 +370,9 @@ const Scan: React.FC = () => {
         setLoading(true);
         
         // La base remet le stock à jour elle-même
-        const { error: returnError } = await supabase.rpc('return_equipment', {
-          p_checkout_id: item.id
+        const { error: returnError } = await supabase.rpc('return_with_check', {
+          p_checkout_id: item.id,
+          p_condition: 'ok'
         });
 
         if (returnError) throw returnError;
