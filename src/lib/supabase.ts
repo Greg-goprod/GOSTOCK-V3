@@ -28,7 +28,7 @@ const validateEnvironmentVariables = () => {
   // Validation du format de l'URL
   try {
     new URL(supabaseUrl);
-  } catch (error) {
+  } catch {
     console.error(`❌ Format d'URL Supabase invalide: ${supabaseUrl}`);
     return false;
   }
@@ -38,10 +38,14 @@ const validateEnvironmentVariables = () => {
 };
 
 // Validation des variables d'environnement
-const isValidConfig = validateEnvironmentVariables();
+export const isSupabaseConfigured = validateEnvironmentVariables();
 
-// Création du client Supabase seulement si la configuration est valide
-export const supabase = isValidConfig ? createClient(supabaseUrl, supabaseAnonKey, {
+// Client toujours créé : sans configuration valide, main.tsx affiche l'écran
+// « Configuration Supabase manquante » et l'application ne démarre pas
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : 'http://localhost',
+  isSupabaseConfigured ? supabaseAnonKey : 'configuration-manquante',
+  {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
@@ -60,7 +64,7 @@ export const supabase = isValidConfig ? createClient(supabaseUrl, supabaseAnonKe
   db: {
     schema: 'public',
   },
-}) : null;
+});
 
 // Fonction de test de connexion améliorée
 export const testSupabaseConnection = async (): Promise<{ success: boolean; error?: string }> => {
@@ -68,7 +72,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
     console.log('🔄 Test de connexion Supabase...');
     
     // Vérifier d'abord si la configuration est valide
-    if (!isValidConfig || !supabase) {
+    if (!isSupabaseConfigured) {
       return {
         success: false,
         error: 'Configuration Supabase invalide. Vérifiez vos variables d\'environnement VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans le fichier .env'
@@ -209,7 +213,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
 };
 
 // Test de connexion au chargement (uniquement en développement)
-if (import.meta.env.DEV && isValidConfig) {
+if (import.meta.env.DEV && isSupabaseConfigured) {
   testSupabaseConnection().then(result => {
     if (result.success) {
       console.log('🎉 Supabase connecté avec succès en mode développement');

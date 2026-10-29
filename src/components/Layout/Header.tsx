@@ -3,13 +3,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { Bell, Sun, Moon, ScanLine } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 const Header: React.FC = () => {
   const location = useLocation();
   const { alertCount: unreadNotifications } = useApp();
   const { theme, toggleTheme } = useTheme();
-  const { t } = useLanguage();
   
   const getPageTitle = () => {
     const path = location.pathname;

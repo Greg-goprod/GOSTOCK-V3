@@ -477,7 +477,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('force_update_overdue_checkouts');
+      const { error } = await supabase.rpc('force_update_overdue_checkouts');
       
       if (error) throw error;
       

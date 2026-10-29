@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import Badge from '../components/common/Badge';
 import Modal from '../components/common/Modal';
 import AddEquipmentModal from '../components/equipment/AddEquipmentModal';
 import EditEquipmentModal from '../components/equipment/EditEquipmentModal';
 import QRCodeGenerator from '../components/QRCode/QRCodeGenerator';
 import QRCodesModal from '../components/equipment/QRCodesModal';
 import MaintenanceModal from '../components/maintenance/MaintenanceModal';
-import MaintenanceHistoryModal from '../components/maintenance/MaintenanceHistoryModal';
-import CheckoutModal from '../components/checkout/CheckoutModal';
 import FilterPanel from '../components/common/FilterPanel';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ExcelImport from '../components/import/ExcelImport';
-import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, RefreshCw, Edit, Trash2, Download, Upload, Search, Filter } from 'lucide-react';
+import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, Edit, Trash2, Download, Upload, Search, Filter } from 'lucide-react';
 import { Equipment as EquipmentType, EquipmentInstance } from '../types';
-import toast from 'react-hot-toast';
 import StatusBadge from '../components/common/StatusBadge';
 
 export default function Equipment() {
@@ -28,11 +24,8 @@ export default function Equipment() {
     equipmentSubgroups,
     equipmentInstances,
     checkouts,
-    updateEquipment,
     deleteEquipment,
-    refreshData,
-    refreshEquipmentData,
-    forceUpdateEquipmentAvailability
+    refreshData
   } = useApp();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -40,13 +33,11 @@ export default function Equipment() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showQRCodesModal, setShowQRCodesModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [showMaintenanceHistoryModal, setShowMaintenanceHistoryModal] = useState(false);
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
-  const [selectedEquipmentForQR, setSelectedEquipmentForQR] = useState<EquipmentType | null>(null);
   const [selectedInstance, setSelectedInstance] = useState<EquipmentInstance | null>(null);
+  const [selectedEquipmentForQR, setSelectedEquipmentForQR] = useState<EquipmentType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -60,7 +51,6 @@ export default function Equipment() {
     group: '',
     subgroup: ''
   });
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<{ url: string; name: string } | null>(null);
 
   // Fonction pour calculer la disponibilité : disponible = stock - (emprunts + maintenance + perdu)
@@ -85,7 +75,7 @@ export default function Equipment() {
     
     // Compter les emprunts actifs et en retard
     const activeCheckouts = checkouts.filter(
-      c => c.equipment_id === eq.id && 
+      c => c.equipmentId === eq.id && 
       (c.status === 'active' || c.status === 'overdue' || c.status === 'lost')
     ).length;
     
@@ -161,16 +151,7 @@ export default function Equipment() {
     setShowMaintenanceModal(true);
   };
 
-  const handleMaintenanceHistory = (equipmentId: string) => {
-    setSelectedEquipment(equipmentId);
-    setShowMaintenanceHistoryModal(true);
-  };
 
-  const handleCheckout = (equipmentId: string, instance?: EquipmentInstance) => {
-    setSelectedEquipment(equipmentId);
-    setSelectedInstance(instance || null);
-    setShowCheckoutModal(true);
-  };
 
   const exportToCSV = () => {
     const headers = ['Nom', 'Numéro de série', 'Statut', 'Catégorie', 'Fournisseur', 'Localisation', 'Date d\'ajout'];
@@ -222,11 +203,12 @@ export default function Equipment() {
       case 'name':
         comparison = a.name.localeCompare(b.name);
         break;
-      case 'category':
+      case 'category': {
         const categoryA = categories.find(c => c.id === a.category)?.name || '';
         const categoryB = categories.find(c => c.id === b.category)?.name || '';
         comparison = categoryA.localeCompare(categoryB);
         break;
+      }
       case 'status':
         comparison = a.status.localeCompare(b.status);
         break;
@@ -242,22 +224,7 @@ export default function Equipment() {
   };
 
   const renderEquipmentCard = (eq: EquipmentType) => {
-    const category = categories.find(c => c.id === eq.category);
-    const supplier = suppliers.find(s => s.id === eq.supplier);
-    const group = equipmentGroups.find(g => g.id === eq.group);
-    const subgroup = equipmentSubgroups.find(sg => sg.id === eq.subgroup);
-    const instances = getEquipmentInstances(eq.id);
-    
     // Calculer la disponibilité
-    const getAvailabilityText = () => {
-      if (eq.qrType === 'batch') {
-        return `${eq.availableQuantity || 0}/${eq.totalQuantity || 1}`;
-      } else if (eq.qrType === 'individual') {
-        const availableInstances = instances.filter(inst => inst.status === 'available' || !inst.status).length;
-        return `${availableInstances}/${instances.length || 1}`;
-      }
-      return eq.status === 'available' ? '1/1' : '0/1';
-    };
 
     // Calculer la quantité totale et disponible
     const totalQuantity = eq.totalQuantity || 1;
@@ -434,7 +401,6 @@ export default function Equipment() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredEquipment.map((eq) => {
                 const category = categories.find(c => c.id === eq.category);
-                const instances = getEquipmentInstances(eq.id);
                 
                 return (
                   <tr key={eq.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -534,12 +500,6 @@ export default function Equipment() {
   };
 
   // Fonction pour rafraîchir explicitement les données d'équipement
-  const handleRefreshEquipment = async () => {
-    setIsRefreshing(true);
-    await refreshEquipmentData();
-    setIsRefreshing(false);
-    toast.success('Données d\'équipement rafraîchies');
-  };
 
   return (
     <div className="space-y-6">
@@ -753,29 +713,6 @@ export default function Equipment() {
         />
       )}
 
-      {showMaintenanceHistoryModal && selectedEquipment && (
-        <MaintenanceHistoryModal
-          equipmentId={selectedEquipment}
-          onClose={() => {
-            setShowMaintenanceHistoryModal(false);
-            setSelectedEquipment(null);
-          }}
-        />
-      )}
-
-      {showCheckoutModal && selectedEquipment && (
-        <CheckoutModal
-          equipmentId={selectedEquipment}
-          instance={selectedInstance}
-          onClose={async () => {
-            setShowCheckoutModal(false);
-            setSelectedEquipment(null);
-            setSelectedInstance(null);
-            await refreshEquipmentData();
-          }}
-        />
-      )}
-
       {showDeleteModal && (
         <ConfirmModal
           isOpen={showDeleteModal}
@@ -786,9 +723,8 @@ export default function Equipment() {
           onConfirm={confirmDelete}
           title="Supprimer l'équipement"
           message="Êtes-vous sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          variant="danger"
+          confirmLabel="Supprimer"
+          cancelLabel="Annuler"
         />
       )}
 

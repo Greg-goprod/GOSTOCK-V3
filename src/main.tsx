@@ -7,6 +7,7 @@ import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Toaster } from 'react-hot-toast';
+import { isSupabaseConfigured } from './lib/supabase';
 
 // Vérification critique des variables d'environnement
 const checkEnvironmentVariables = () => {
@@ -19,8 +20,8 @@ const checkEnvironmentVariables = () => {
   console.log('- VITE_SUPABASE_URL:', supabaseUrl ? '✅ Définie' : '❌ Manquante');
   console.log('- VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Définie' : '❌ Manquante');
 
-  if (import.meta.env.PROD && (!supabaseUrl || !supabaseAnonKey)) {
-    console.error('❌ ERREUR CRITIQUE: Variables d\'environnement Supabase manquantes en production');
+  if (!isSupabaseConfigured) {
+    console.error('❌ ERREUR CRITIQUE: configuration Supabase manquante ou invalide (.env)');
     console.error('Configuration requise dans Netlify:');
     console.error('1. Dashboard Netlify → Site settings → Environment variables');
     console.error('2. Ajouter VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY');
@@ -52,17 +53,14 @@ const checkEnvironmentVariables = () => {
         ">
           <h1 style="color: #dc2626; margin-bottom: 1rem;">Configuration Supabase manquante</h1>
           <p style="color: #374151; margin-bottom: 1.5rem;">
-            Les variables d'environnement Supabase ne sont pas configurées sur Netlify.
+            Les variables VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sont absentes ou invalides.
           </p>
           <div style="background: #f3f4f6; padding: 1rem; border-radius: 4px; text-align: left; font-size: 0.875rem;">
-            <strong>Configuration requise :</strong><br>
-            1. Dashboard Netlify → Site settings → Environment variables<br>
-            2. Ajouter VITE_SUPABASE_URL<br>
-            3. Ajouter VITE_SUPABASE_ANON_KEY<br>
-            4. Redéployer le site
+            <strong>En local :</strong> compléter le fichier .env à la racine du projet, puis relancer npm run dev.<br><br>
+            <strong>En ligne (Netlify) :</strong> Site settings → Environment variables, ajouter les deux variables, puis redéployer.
           </div>
           <button onclick="window.location.reload()" style="
-            background: #2563eb; 
+            background: #6d3ee0; 
             color: white; 
             border: none; 
             padding: 0.75rem 1.5rem; 

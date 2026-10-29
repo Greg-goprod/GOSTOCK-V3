@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../contexts/AppContext";
 import Button from "../components/common/Button";
 import CheckoutModal from "../components/checkout/CheckoutModal";
@@ -6,7 +6,7 @@ import ReturnModal from "../components/checkout/ReturnModal";
 import StatusBadge from "../components/common/StatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Plus, Search, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft } from "lucide-react";
+import { Plus, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft } from "lucide-react";
 import { CheckoutWithCalculatedStatus, DeliveryNote } from "../types";
 import toast from "react-hot-toast";
 

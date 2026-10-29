@@ -99,7 +99,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
       });
     } catch (error) {
       console.error('Error saving user:', error);
-      toast.error(error.message || t('errorSavingUser'));
+      toast.error((error as { message?: string })?.message || t('errorSavingUser'));
     } finally {
       setIsLoading(false);
     }

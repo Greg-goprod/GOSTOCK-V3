@@ -270,6 +270,7 @@ export interface EquipmentMaintenance {
 }
 
 export interface AppContextType {
+  statusConfigs: StatusConfig[];
   // Emprunts en retard ou à rendre sous 3 jours + alertes de stock non lues (pastille du menu)
   alertCount: number;
   loadingAppData: boolean;
@@ -285,16 +286,13 @@ export interface AppContextType {
   equipmentSubgroups: EquipmentSubgroup[];
   equipmentInstances: EquipmentInstance[];
   checkouts: CheckoutRecord[];
-  departments: Department[];
   users: User[];
   deliveryNotes: DeliveryNote[];
-  maintenanceTypes: MaintenanceType[];
-  maintenanceRecords: EquipmentMaintenance[];
-  addEquipment: (equipmentData: Partial<Equipment>) => Promise<string | null>;
+  addEquipment: (equipmentData: Omit<Equipment, 'id' | 'createdAt'>) => Promise<void>;
   updateEquipment: (id: string, equipmentData: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
-  refreshEquipmentData: () => Promise<void>;
+  refreshEquipmentData: () => Promise<Equipment[]>;
   forceUpdateEquipmentAvailability: () => Promise<void>;
   forceUpdateOverdueCheckouts: () => Promise<void>;
   // Nouvelles fonctions pour les vues matérialisées

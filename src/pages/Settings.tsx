@@ -49,7 +49,7 @@ import {
 } from '../types';
 
 const Settings: React.FC = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { refreshData } = useApp();
   

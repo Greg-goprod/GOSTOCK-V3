@@ -174,7 +174,7 @@ const Users: React.FC = () => {
       if (!value) return true;
       
       switch (key) {
-        case 'search':
+        case 'search': {
           const searchTerm = value.toLowerCase();
           return (
             user.first_name.toLowerCase().includes(searchTerm) ||
@@ -182,6 +182,7 @@ const Users: React.FC = () => {
             user.email.toLowerCase().includes(searchTerm) ||
             (user.phone || '').toLowerCase().includes(searchTerm)
           );
+        }
         case 'role':
           return user.role === value;
         case 'department':

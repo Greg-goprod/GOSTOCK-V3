@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { supabase } from '../../lib/supabase';
-import { Equipment, EquipmentMaintenance, MaintenanceType } from '../../types';
-import { Wrench, Calendar, Clock, CheckCircle, AlertTriangle, FileText, DollarSign, User, Plus } from 'lucide-react';
+import { Equipment, EquipmentMaintenance } from '../../types';
+import { Wrench, Calendar, Clock, CheckCircle, AlertTriangle, DollarSign, User, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MaintenanceModal from './MaintenanceModal';
 
@@ -217,9 +217,9 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                       <div className="flex items-center gap-2 mb-2">
                         <span 
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                          style={{ backgroundColor: maintenance.maintenanceType.color }}
+                          style={{ backgroundColor: maintenance.maintenanceType?.color || '#6d3ee0' }}
                         >
-                          {maintenance.maintenanceType.name}
+                          {maintenance.maintenanceType?.name || 'Maintenance'}
                         </span>
                         {getStatusBadge(maintenance.status)}
                       </div>

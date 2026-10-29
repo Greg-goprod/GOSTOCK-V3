@@ -150,7 +150,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange }) => {
       ]);
 
       // Créer un mapping des couleurs et de leurs utilisations
-      const usageMap = new Map<string, { type: string; name: string }[]>();
+      const usageMap = new Map<string, ColorUsage['usedBy']>();
 
       // Ajouter les catégories
       if (categoriesRes.data) {

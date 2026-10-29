@@ -231,7 +231,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         const workbook = XLSX.read(data, { type: 'array' });
         
         // Prendre la première feuille qui n'est pas "Instructions"
-        let sheetName = workbook.SheetNames.find(name => name !== 'Instructions') || workbook.SheetNames[0];
+        const sheetName = workbook.SheetNames.find(name => name !== 'Instructions') || workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
@@ -336,7 +336,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
     try {
       new URL(string);
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   };

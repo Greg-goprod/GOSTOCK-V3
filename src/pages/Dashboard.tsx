@@ -48,7 +48,21 @@ const Dashboard: React.FC = () => {
     users?: { first_name: string; last_name: string };
   }
   const [recentCheckouts, setRecentCheckouts] = useState<RecentCheckout[]>([]);
-  const [maintenanceEquipment, setMaintenanceEquipment] = useState<unknown[]>([]);
+  interface MaintenanceEquipment {
+    id: string;
+    name: string;
+    serial_number: string | null;
+    article_number: string | null;
+    last_maintenance: string | null;
+    equipment_maintenance: {
+      id: string;
+      title: string;
+      start_date: string;
+      status: string;
+      maintenance_types?: { name: string; color: string } | null;
+    }[];
+  }
+  const [maintenanceEquipment, setMaintenanceEquipment] = useState<MaintenanceEquipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,10 +152,10 @@ const Dashboard: React.FC = () => {
       setRetryCount(0);
 
       // Fetch equipment avec timeout et retry logic
-      const fetchWithTimeout = async (query: unknown, timeoutMs = 10000) => {
+      const fetchWithTimeout = async <T,>(query: PromiseLike<T>, timeoutMs = 10000): Promise<T> => {
         return Promise.race([
           query,
-          new Promise((_, reject) => 
+          new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
           )
         ]);
@@ -196,7 +210,7 @@ const Dashboard: React.FC = () => {
           .select('id')
           .eq('status', 'active')
           .lt('due_date', new Date().toISOString())
-      ) as unknown;
+      );
 
       if (overdueError) {
         throw new Error(`Overdue checkouts fetch failed: ${overdueError.message}`);
@@ -217,7 +231,7 @@ const Dashboard: React.FC = () => {
           .in('status', ['active', 'overdue'])
           .order('checkout_date', { ascending: false })
           .limit(5)
-      ) as unknown;
+      );
 
       if (recentCheckoutsError) {
         console.warn('Recent checkouts fetch failed:', recentCheckoutsError.message);
@@ -245,7 +259,7 @@ const Dashboard: React.FC = () => {
           .eq('status', 'maintenance')
           .eq('equipment_maintenance.status', 'in_progress')
           .limit(10)
-      ) as unknown;
+      );
 
       if (maintenanceError) {
         console.warn('Maintenance fetch error:', maintenanceError.message);
@@ -279,8 +293,10 @@ const Dashboard: React.FC = () => {
         unreadNotifications: unreadNotificationsCount
       });
 
-      setRecentCheckouts(checkouts || []);
-      setMaintenanceEquipment(sortedMaintenanceData);
+      // Sans types générés, supabase-js type les jointures « plusieurs vers un » comme des tableaux ;
+      // la base renvoie bien un objet (equipment, users, maintenance_types)
+      setRecentCheckouts((checkouts || []) as unknown as RecentCheckout[]);
+      setMaintenanceEquipment(sortedMaintenanceData as unknown as MaintenanceEquipment[]);
       setError(null);
 
     } catch (error: any) {
@@ -656,7 +672,6 @@ const Dashboard: React.FC = () => {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                   {recentCheckouts.map(checkout => {
-                    const isOverdue = new Date(checkout.due_date) < new Date();
                     
                     return (
                       <tr key={checkout.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">

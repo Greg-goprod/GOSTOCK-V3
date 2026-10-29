@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import QRCodeScanner from '../QRCode/QRCodeScanner';
-import { User, Equipment, Category, Supplier } from '../../types';
+import { User, Equipment } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { findEquipmentByCode } from '../../lib/scan';
-import { Search, Package, Calendar, Printer, User as UserIcon, Plus, Minus, X, CalendarDays as CalendarDaysIcon } from 'lucide-react';
+import { Search, Printer, User as UserIcon, Plus, Minus, X, CalendarDays as CalendarDaysIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserModal from '../users/UserModal';
 
@@ -23,8 +23,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState<'user' | 'equipment' | 'summary'>('user');
   const [users, setUsers] = useState<User[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>([]);
   const [dueDate, setDueDate] = useState('');
@@ -569,7 +567,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       });
 
       // Générer le QR code pour le bon de sortie
-      const noteQrCode = deliveryNote.qr_code || `DN-${deliveryNote.note_number}`;
 
       const printContent = `
         <!DOCTYPE html>
@@ -922,8 +919,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                     filteredEquipment.map((eq) => (
                       <div
                         key={eq.id}
-                        className={`flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 ${eq.availableQuantity > 0 ? 'bg-success-100 cursor-pointer' : 'bg-danger-100 cursor-not-allowed opacity-60'}`}
-                        onClick={eq.availableQuantity > 0 ? () => addEquipmentToCheckout(eq) : undefined}
+                        className={`flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 ${(eq.availableQuantity ?? 0) > 0 ? 'bg-success-100 cursor-pointer' : 'bg-danger-100 cursor-not-allowed opacity-60'}`}
+                        onClick={(eq.availableQuantity ?? 0) > 0 ? () => addEquipmentToCheckout(eq) : undefined}
                         title={eq.availableQuantity === 0 ? 'Aucune pièce disponible' : ''}
                       >
                         <div className="flex-1">
@@ -934,7 +931,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                             {eq.serialNumber} • <span className="font-bold text-black dark:text-white">Dispo : {eq.availableQuantity ?? 0}/{eq.totalQuantity ?? 0}</span>
                           </p>
                         </div>
-                        <Plus size={16} className={eq.availableQuantity > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'} />
+                        <Plus size={16} className={(eq.availableQuantity ?? 0) > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'} />
                       </div>
                     ))
                   ) : (
@@ -982,7 +979,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                           size="sm"
                           icon={<Plus size={14} />}
                           onClick={() => updateQuantity(item.equipment.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.equipment.availableQuantity}
+                          disabled={item.quantity >= (item.equipment.availableQuantity ?? 0)}
                           ariaLabel="Augmenter la quantité"
                         />
                         <Button

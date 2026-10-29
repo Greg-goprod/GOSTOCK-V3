@@ -3,7 +3,6 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
 
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Equipment, Category, Supplier, EquipmentGroup, EquipmentSubgroup } from '../../types';
@@ -16,7 +15,6 @@ interface EditEquipmentModalProps {
 }
 
 const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose, equipment }) => {
-  const { t } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [groups, setGroups] = useState<EquipmentGroup[]>([]);
@@ -27,7 +25,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
   const [step, setStep] = useState<'basic' | 'quantity'>('basic');
   const [currentQrType, setCurrentQrType] = useState<'individual' | 'batch'>('individual');
   const [originalQuantity, setOriginalQuantity] = useState(1);
-  const [instances, setInstances] = useState<Record<string, unknown>[]>([]);
+  const [instances, setInstances] = useState<{ id: string; qr_code: string; instance_number: number }[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -264,52 +262,6 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
     }
   };
 
-  const handleQrTypeChange = async (newQrType: 'individual' | 'batch') => {
-    if (newQrType === currentQrType) return;
-
-    try {
-      setIsLoading(true);
-
-      if (newQrType === 'individual') {
-        // Générer des QR codes individuels
-        const success = await generateQRCodes(
-          equipment.id, 
-          equipment.articleNumber || equipment.serialNumber, 
-          formData.total_quantity
-        );
-        
-        if (!success) return;
-      } else {
-        // Supprimer les instances existantes
-        const { error: deleteError } = await supabase
-          .from('equipment_instances')
-          .delete()
-          .eq('equipment_id', equipment.id);
-
-        if (deleteError) throw deleteError;
-        setInstances([]);
-        toast.success('Instances supprimées, QR code unique pour le lot');
-      }
-
-      // Mettre à jour le type de QR dans la base de données
-      const { error: updateError } = await supabase
-        .from('equipment')
-        .update({ qr_type: newQrType })
-        .eq('id', equipment.id);
-
-      if (updateError) throw updateError;
-
-      setCurrentQrType(newQrType);
-      setFormData(prev => ({ ...prev, qr_type: newQrType }));
-      setQuantityData(prev => ({ ...prev, qrType: newQrType }));
-
-    } catch (error: any) {
-      console.error('Error changing QR type:', error);
-      toast.error('Erreur lors du changement de type de QR code');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleBasicSubmit = (e: React.FormEvent) => {
     e.preventDefault();

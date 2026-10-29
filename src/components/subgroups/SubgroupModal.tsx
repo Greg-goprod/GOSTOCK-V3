@@ -3,7 +3,6 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
 import ColorPicker from '../common/ColorPicker';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { EquipmentSubgroup, EquipmentGroup } from '../../types';
@@ -17,7 +16,6 @@ interface SubgroupModalProps {
 }
 
 const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup, groups }) => {
-  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',

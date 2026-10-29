@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Equipment, MaintenanceType, EquipmentMaintenance } from '../../types';
-import { Wrench, FileText, DollarSign, User, Calendar } from 'lucide-react';
+import { Wrench, FileText, User } from 'lucide-react';
 
 interface MaintenanceModalProps {
   isOpen: boolean;
@@ -21,7 +20,6 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   equipment, 
   maintenance 
 }) => {
-  const { t } = useLanguage();
   const [maintenanceTypes, setMaintenanceTypes] = useState<MaintenanceType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({

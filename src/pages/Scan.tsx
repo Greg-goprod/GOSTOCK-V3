@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
 import Card from '../components/common/Card';
@@ -7,12 +7,11 @@ import { ArrowLeft, Search, Package, User, FileText, RefreshCw, AlertCircle, Che
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { findEquipmentByCode } from '../lib/scan';
-import { Equipment, User as UserType, CheckoutRecord } from '../types';
+import { Equipment, User as UserType } from '../types';
 import ReturnModal from '../components/checkout/ReturnModal';
 
 const Scan: React.FC = () => {
   const navigate = useNavigate();
-  const [scannedId, setScannedId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<'equipment' | 'user' | 'checkout' | 'delivery_note' | null>(null);
   const [item, setItem] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +22,6 @@ const Scan: React.FC = () => {
 
   const handleScan = async (decodedText: string) => {
     console.log("Scan détecté:", decodedText);
-    setScannedId(decodedText);
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -176,6 +174,8 @@ const Scan: React.FC = () => {
         .order('checkout_date')
         .limit(1)
         .maybeSingle();
+      // Sans ce contrôle, une erreur de lecture ferait passer l'outil pour disponible
+      if (checkoutError) throw checkoutError;
       
       if (activeCheckout) {
         console.log("Emprunt actif trouvé pour cet équipement:", activeCheckout);

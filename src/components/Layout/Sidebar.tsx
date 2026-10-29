@@ -18,7 +18,6 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 
 // Menu groupé par usage : le quotidien du magasin d'abord
@@ -49,7 +48,6 @@ const NAV_SECTIONS = [
 
 const Sidebar: React.FC = () => {
   const { alertCount: unreadNotifications } = useApp();
-  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [companyLogo, setCompanyLogo] = useState('');
 
@@ -68,7 +66,7 @@ const Sidebar: React.FC = () => {
       if (data?.value) {
         setCompanyLogo(data.value);
       }
-    } catch (error) {
+    } catch {
       // Logo not found, use default
       console.log('No company logo found');
     }
