@@ -85,11 +85,13 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
 
     // Test de connectivité réseau d'abord
     try {
-      const healthCheckUrl = `${supabaseUrl}/rest/v1/`;
+      // La racine /rest/v1/ n'est plus accessible avec la clé anon (HTTP 401) : on teste une table publique
+      const healthCheckUrl = `${supabaseUrl}/rest/v1/status_configs?select=id&limit=1`;
       const healthResponse = await fetch(healthCheckUrl, {
         method: 'HEAD',
         headers: {
           'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
         },
         signal: AbortSignal.timeout(5000)
       });
