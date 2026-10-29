@@ -13,12 +13,14 @@ import Consumables from './pages/Consumables';
 import OrderSheet from './pages/OrderSheet';
 import Requests from './pages/Requests';
 import Vehicles from './pages/Vehicles';
+import Today from './pages/Today';
 
 function App() {
   return (
     <ErrorBoundary>
       <Routes>
-        <Route path="/" element={<MainLayout><Dashboard /></MainLayout>} />
+        <Route path="/" element={<MainLayout><Today /></MainLayout>} />
+        <Route path="/tableau-de-bord" element={<MainLayout><Dashboard /></MainLayout>} />
         <Route path="/equipment" element={<MainLayout><Equipment /></MainLayout>} />
         <Route path="/users" element={<MainLayout><Users /></MainLayout>} />
         <Route path="/checkouts" element={<MainLayout><Checkouts /></MainLayout>} />
@@ -29,7 +31,7 @@ function App() {
         <Route path="/demandes" element={<MainLayout><Requests /></MainLayout>} />
         <Route path="/vehicules" element={<MainLayout><Vehicles /></MainLayout>} />
         <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
-        <Route path="*" element={<MainLayout><Dashboard /></MainLayout>} />
+        <Route path="*" element={<MainLayout><Today /></MainLayout>} />
       </Routes>
     </ErrorBoundary>
   );

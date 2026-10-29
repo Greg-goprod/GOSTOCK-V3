@@ -14,10 +14,11 @@ const Header: React.FC = () => {
   const getPageTitle = () => {
     const path = location.pathname;
     
-    if (path === '/') return 'TABLEAU DE BORD';
-    if (path.startsWith('/equipment')) return 'MATÉRIEL';
+    if (path === '/') return "AUJOURD'HUI";
+    if (path.startsWith('/tableau-de-bord')) return 'STATISTIQUES';
+    if (path.startsWith('/equipment')) return 'OUTILS';
     if (path.startsWith('/users')) return 'UTILISATEURS';
-    if (path.startsWith('/checkouts')) return 'SORTIE MATÉRIEL';
+    if (path.startsWith('/checkouts')) return 'SORTIES';
     if (path.startsWith('/notifications')) return 'NOTIFICATIONS';
     if (path.startsWith('/settings')) return 'PARAMÈTRES';
     if (path.startsWith('/scan')) return 'SCANNER';

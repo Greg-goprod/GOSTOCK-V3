@@ -271,6 +271,7 @@ export interface EquipmentMaintenance {
 export interface AppContextType {
   // Emprunts en retard ou à rendre sous 3 jours + alertes de stock non lues (pastille du menu)
   alertCount: number;
+  loadingAppData: boolean;
   depots: Depot[];
   consumableStock: ConsumableStock[];
   stockNotifications: StockNotification[];

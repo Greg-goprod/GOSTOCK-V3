@@ -14,11 +14,38 @@ import {
   Droplets,
   ClipboardList,
   Inbox,
-  Truck
+  Truck,
+  BarChart3
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
+
+// Menu groupé par usage : le quotidien du magasin d'abord
+const NAV_SECTIONS = [
+  { title: 'Au quotidien', links: [
+    { to: '/', label: "Aujourd'hui", icon: LayoutDashboard },
+    { to: '/demandes', label: 'Demandes', icon: Inbox },
+    { to: '/scan', label: 'Scanner', icon: ScanLine },
+    { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
+  ] },
+  { title: 'Stock', links: [
+    { to: '/equipment', label: 'Outils', icon: Package },
+    { to: '/consommables', label: 'Consommables', icon: Droplets },
+    { to: '/commande', label: 'Commande', icon: ClipboardList },
+  ] },
+  { title: 'Flotte', links: [
+    { to: '/vehicules', label: 'Véhicules', icon: Truck },
+  ] },
+  { title: 'Suivi', links: [
+    { to: '/notifications', label: 'Notifications', icon: Bell },
+    { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },
+  ] },
+  { title: 'Réglages', links: [
+    { to: '/users', label: 'Personnes', icon: Users },
+    { to: '/settings', label: 'Paramètres', icon: Settings },
+  ] },
+];
 
 const Sidebar: React.FC = () => {
   const { alertCount: unreadNotifications } = useApp();
@@ -101,68 +128,29 @@ const Sidebar: React.FC = () => {
           </div>
         </div>
         
-        <nav className="py-3 px-2 flex flex-col gap-1">
-          <NavLink to="/" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <LayoutDashboard size={16} />
-            <span className="uppercase tracking-wider font-bold">TABLEAU DE BORD</span>
-          </NavLink>
-          
-          <NavLink to="/demandes" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <Inbox size={16} />
-            <span className="uppercase tracking-wider font-bold">DEMANDES</span>
-          </NavLink>
-
-          <NavLink to="/equipment" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <Package size={16} />
-            <span className="uppercase tracking-wider font-bold">MATÉRIEL</span>
-          </NavLink>
-
-          <NavLink to="/consommables" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <Droplets size={16} />
-            <span className="uppercase tracking-wider font-bold">CONSOMMABLES</span>
-          </NavLink>
-
-          <NavLink to="/commande" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <ClipboardList size={16} />
-            <span className="uppercase tracking-wider font-bold">COMMANDE</span>
-          </NavLink>
-
-          <NavLink to="/vehicules" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <Truck size={16} />
-            <span className="uppercase tracking-wider font-bold">VÉHICULES</span>
-          </NavLink>
-          
-          <NavLink to="/users" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <Users size={16} />
-            <span className="uppercase tracking-wider font-bold">UTILISATEURS</span>
-          </NavLink>
-          
-          <NavLink to="/checkouts" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <CalendarClock size={16} />
-            <span className="uppercase tracking-wider font-bold">SORTIE MATÉRIEL</span>
-          </NavLink>
-          
-          <NavLink to="/scan" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <ScanLine size={16} />
-            <span className="uppercase tracking-wider font-bold">SCANNER</span>
-          </NavLink>
-          
-          <NavLink to="/notifications" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <div className="relative">
-              <Bell size={16} />
-              {unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 bg-danger-500 text-white text-[8px] rounded-full w-3 h-3 flex items-center justify-center font-bold">
-                  {unreadNotifications}
-                </span>
-              )}
+        <nav className="py-3 px-2 flex flex-col gap-3 overflow-y-auto max-h-[calc(100%-6rem)]" aria-label="Menu principal">
+          {NAV_SECTIONS.map(section => (
+            <div key={section.title} className="flex flex-col gap-1">
+              <p className="px-3 text-[0.7rem] lg:text-[0.65rem] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">{section.title}</p>
+              {section.links.map(link => (
+                <NavLink key={link.to} to={link.to} end={link.to === '/'} className={navLinkClass} onClick={() => setIsOpen(false)}>
+                  {link.to === '/notifications' ? (
+                    <div className="relative">
+                      <link.icon size={16} />
+                      {unreadNotifications > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-danger-500 text-white text-[8px] rounded-full w-3 h-3 flex items-center justify-center font-bold" aria-label={`${unreadNotifications} alerte(s)`}>
+                          {unreadNotifications}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <link.icon size={16} />
+                  )}
+                  <span className="uppercase tracking-wider font-bold">{link.label}</span>
+                </NavLink>
+              ))}
             </div>
-            <span className="uppercase tracking-wider font-bold">NOTIFICATIONS</span>
-          </NavLink>
-          
-          <NavLink to="/settings" className={navLinkClass} onClick={() => setIsOpen(false)}>
-            <Settings size={16} />
-            <span className="uppercase tracking-wider font-bold">PARAMÈTRES</span>
-          </NavLink>
+          ))}
         </nav>
       </aside>
     </>
