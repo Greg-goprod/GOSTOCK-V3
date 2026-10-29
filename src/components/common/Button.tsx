@@ -38,10 +38,11 @@ const Button: React.FC<ButtonProps> = ({
     default: 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white', // Identique à primary pour compatibilité
   };
 
+  // Sur mobile/tablette : cible tactile d'au moins 44px ; compact sur grand écran
   const sizeClasses = {
-    sm: 'text-xs px-2 py-1',
-    md: 'text-xs px-3 py-1.5',
-    lg: 'text-sm px-4 py-2',
+    sm: 'text-sm lg:text-xs px-2 py-1 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0',
+    md: 'text-sm lg:text-xs px-3 py-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0',
+    lg: 'text-sm px-4 py-2 min-h-[44px] min-w-[44px]',
   };
 
   return (

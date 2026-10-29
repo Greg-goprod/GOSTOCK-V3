@@ -9,7 +9,8 @@ import {
   Settings, 
   Menu, 
   X,
-  QrCode
+  QrCode,
+  ScanLine
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -49,7 +50,7 @@ const Sidebar: React.FC = () => {
   };
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs tracking-wide ${
+    `flex items-center gap-2 px-3 py-3 lg:py-2 rounded-lg transition-colors text-sm lg:text-xs tracking-wide ${
       isActive 
         ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200 font-bold' 
         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium'
@@ -58,8 +59,11 @@ const Sidebar: React.FC = () => {
   return (
     <>
       <button
-        className="lg:hidden fixed top-3 left-3 z-50 p-1.5 rounded-md bg-white dark:bg-gray-800 shadow-md"
+        type="button"
+        className="lg:hidden fixed top-2 left-2 z-50 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md bg-white dark:bg-gray-800 shadow-md"
         onClick={toggleSidebar}
+        aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+        aria-expanded={isOpen}
       >
         {isOpen ? <X size={18} className="dark:text-white" /> : <Menu size={18} className="dark:text-white" />}
       </button>
@@ -114,6 +118,11 @@ const Sidebar: React.FC = () => {
           <NavLink to="/checkouts" className={navLinkClass} onClick={() => setIsOpen(false)}>
             <CalendarClock size={16} />
             <span className="uppercase tracking-wider font-bold">SORTIE MATÉRIEL</span>
+          </NavLink>
+          
+          <NavLink to="/scan" className={navLinkClass} onClick={() => setIsOpen(false)}>
+            <ScanLine size={16} />
+            <span className="uppercase tracking-wider font-bold">SCANNER</span>
           </NavLink>
           
           <NavLink to="/notifications" className={navLinkClass} onClick={() => setIsOpen(false)}>

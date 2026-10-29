@@ -542,15 +542,16 @@ export default function Checkouts() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <input
           type="text"
           placeholder="Rechercher par équipement ou utilisateur..."
-          className="w-64 max-w-xs p-2 pl-10 border border-gray-300 rounded-md"
+          aria-label="Rechercher par équipement ou utilisateur"
+          className="w-full sm:w-64 p-2 px-3 border border-gray-300 rounded-md"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
             onClick={handleForceUpdateStatus}

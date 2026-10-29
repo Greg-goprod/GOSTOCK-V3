@@ -62,7 +62,7 @@ export default function Equipment() {
     subgroup: ''
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; name: string } | null>(null);
 
   // Fonction pour calculer la disponibilité : disponible = stock - (emprunts + maintenance + perdu)
   const getAvailableQuantity = (eq: EquipmentType): number => {
@@ -291,7 +291,8 @@ export default function Equipment() {
               <img 
                 src={eq.imageUrl} 
                 alt={eq.name}
-                className="w-24 h-24 object-cover rounded-full border-4 border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-700 p-2 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative"
+                onClick={() => setZoomedImage({ url: eq.imageUrl!, name: eq.name })}
+                className="w-24 h-24 object-cover rounded-full border-4 border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-700 p-2 cursor-zoom-in"
                 onError={(e) => {
                   console.log("Erreur de chargement d'image:", eq.imageUrl);
                   
@@ -310,7 +311,7 @@ export default function Equipment() {
                   if (parent) {
                     // Create a fallback div with the Tool icon
                     const fallbackDiv = document.createElement('div');
-                    fallbackDiv.className = 'w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative';
+                    fallbackDiv.className = 'w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2';
                     
                     // We can't directly insert a React component, so we'll use a simple SVG
                     fallbackDiv.innerHTML = `
@@ -324,7 +325,7 @@ export default function Equipment() {
                 }}
               />
             ) : (
-              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
+              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2">
                 <PenTool className="w-12 h-12 text-gray-400" />
               </div>
             )}
@@ -438,17 +439,16 @@ export default function Equipment() {
                         <div className="flex-shrink-0 h-12 w-12">
                           {eq.imageUrl ? (
                             <img
-                              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative"
+                              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 cursor-zoom-in"
                               src={eq.imageUrl}
                               alt={eq.name}
-                              onMouseEnter={() => setHoveredImageId(eq.id)}
-                              onMouseLeave={() => setHoveredImageId(null)}
+                              onClick={() => setZoomedImage({ url: eq.imageUrl!, name: eq.name })}
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 const parent = e.currentTarget.parentElement;
                                 if (parent) {
                                   parent.innerHTML = `
-                                    <div class="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
+                                    <div class="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
                                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                                       </svg>
@@ -458,19 +458,11 @@ export default function Equipment() {
                               }}
                             />
                           ) : (
-                            <div className="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
+                            <div className="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1">
                               <PenTool className="w-6 h-6 text-gray-400" />
                             </div>
                           )}
                         </div>
-                        {hoveredImageId === eq.id && (
-                          <img
-                            src={eq.imageUrl}
-                            alt={eq.name}
-                            className="absolute left-16 top-1/2 -translate-y-1/2 w-64 h-64 object-contain rounded-lg shadow-xl z-50 border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-900"
-                            style={{ pointerEvents: 'none' }}
-                          />
-                        )}
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {eq.name.toUpperCase()}
@@ -547,9 +539,9 @@ export default function Equipment() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Équipements</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Équipements</h1>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={() => setShowImportModal(true)}
@@ -571,12 +563,13 @@ export default function Equipment() {
         </div>
       </div>
 
-      <div className="flex gap-4 items-center">
-        <div className="flex-1 relative">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative basis-full sm:basis-auto sm:flex-1 sm:min-w-[240px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
             placeholder="Rechercher par nom, numéro de série ou numéro d'article..."
+            aria-label="Rechercher un équipement"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -600,7 +593,7 @@ export default function Equipment() {
             Liste
           </Button>
         </div>
-        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden ml-2">
+        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
           <select 
             value={sortField}
             onChange={(e) => setSortField(e.target.value as 'name' | 'category' | 'status')}
@@ -792,6 +785,20 @@ export default function Equipment() {
           cancelText="Annuler"
           variant="danger"
         />
+      )}
+
+      {zoomedImage && (
+        <Modal
+          isOpen={!!zoomedImage}
+          onClose={() => setZoomedImage(null)}
+          title={zoomedImage.name}
+        >
+          <img
+            src={zoomedImage.url}
+            alt={zoomedImage.name}
+            className="w-full max-h-[65vh] object-contain rounded-lg"
+          />
+        </Modal>
       )}
 
       {showImportModal && (

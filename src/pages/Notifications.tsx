@@ -307,15 +307,15 @@ const Notifications: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">NOTIFICATIONS</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">NOTIFICATIONS</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Événements spéciaux, rappels de retard et mouvements de matériel
           </p>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
             icon={<CheckCircle size={18} />}

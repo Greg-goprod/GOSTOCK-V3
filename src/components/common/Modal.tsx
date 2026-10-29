@@ -91,8 +91,10 @@ const Modal: React.FC<ModalProps> = ({
             <div className="flex items-center justify-between px-3 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700">
               <h2 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wide">{title}</h2>
               <button
+                type="button"
                 onClick={onClose}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
+                aria-label="Fermer"
+                className="p-1 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
               >
                 <X size={16} className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200" />
               </button>
