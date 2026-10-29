@@ -10,6 +10,7 @@ import DepartmentModal from '../components/departments/DepartmentModal';
 import MaintenanceTypeModal from '../components/settings/MaintenanceTypeModal';
 import ExcelImport from '../components/import/ExcelImport';
 import CatalogImport from '../components/import/CatalogImport';
+import NotificationRecipients from '../components/settings/NotificationRecipients';
 import { SystemResetModal } from '../components/admin/SystemResetModal';
 import { useApp } from '../contexts/AppContext';
 import { 
@@ -23,6 +24,7 @@ import {
   Wrench,
   Upload,
   BookOpen,
+  Mail,
   Download,
   Globe,
   Moon,
@@ -487,6 +489,19 @@ const Settings: React.FC = () => {
             </div>
           </Card>
         </div>
+      </Accordion>
+
+      {/* Notifications par e-mail */}
+      <Accordion
+        title="NOTIFICATIONS PAR E-MAIL"
+        icon={<Mail size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <NotificationRecipients />
+          </div>
+        </Card>
       </Accordion>
 
       {/* Catalogues fournisseurs */}
