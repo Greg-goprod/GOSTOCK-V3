@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import MainLayout from './components/Layout/MainLayout';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
@@ -13,24 +14,39 @@ import OrderSheet from './pages/OrderSheet';
 import Requests from './pages/Requests';
 import Vehicles from './pages/Vehicles';
 import Today from './pages/Today';
+import { useAuth } from './contexts/AuthContext';
+import { canAccess } from './lib/access';
+
+// Page refusée par les droits : retour à l'accueil (la base refuserait de toute façon les données)
+const Guard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { can } = useAuth();
+  const { pathname } = useLocation();
+  return canAccess(pathname, can) ? <MainLayout>{children}</MainLayout> : <Navigate to="/" replace />;
+};
+
+// L'accueil « Aujourd'hui » sert le magasin ; un collaborateur arrive sur ses demandes
+const Home: React.FC = () => {
+  const { can } = useAuth();
+  return canAccess('/', can) ? <MainLayout><Today /></MainLayout> : <Navigate to="/demandes" replace />;
+};
 
 function App() {
   return (
     <ErrorBoundary>
       <Routes>
-        <Route path="/" element={<MainLayout><Today /></MainLayout>} />
-        <Route path="/tableau-de-bord" element={<MainLayout><Dashboard /></MainLayout>} />
-        <Route path="/equipment" element={<MainLayout><Equipment /></MainLayout>} />
-        <Route path="/users" element={<MainLayout><Users /></MainLayout>} />
-        <Route path="/checkouts" element={<MainLayout><Checkouts /></MainLayout>} />
-        <Route path="/notifications" element={<MainLayout><Notifications /></MainLayout>} />
-        <Route path="/scan" element={<MainLayout><Scan /></MainLayout>} />
-        <Route path="/consommables" element={<MainLayout><Consumables /></MainLayout>} />
-        <Route path="/commande" element={<MainLayout><OrderSheet /></MainLayout>} />
-        <Route path="/demandes" element={<MainLayout><Requests /></MainLayout>} />
-        <Route path="/vehicules" element={<MainLayout><Vehicles /></MainLayout>} />
-        <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
-        <Route path="*" element={<MainLayout><Today /></MainLayout>} />
+        <Route path="/" element={<Home />} />
+        <Route path="/tableau-de-bord" element={<Guard><Dashboard /></Guard>} />
+        <Route path="/equipment" element={<Guard><Equipment /></Guard>} />
+        <Route path="/users" element={<Guard><Users /></Guard>} />
+        <Route path="/checkouts" element={<Guard><Checkouts /></Guard>} />
+        <Route path="/notifications" element={<Guard><Notifications /></Guard>} />
+        <Route path="/scan" element={<Guard><Scan /></Guard>} />
+        <Route path="/consommables" element={<Guard><Consumables /></Guard>} />
+        <Route path="/commande" element={<Guard><OrderSheet /></Guard>} />
+        <Route path="/demandes" element={<Guard><Requests /></Guard>} />
+        <Route path="/vehicules" element={<Guard><Vehicles /></Guard>} />
+        <Route path="/settings" element={<Guard><Settings /></Guard>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>
   );

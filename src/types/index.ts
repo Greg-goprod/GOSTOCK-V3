@@ -142,7 +142,12 @@ export interface User {
   email: string;
   phone: string;
   department: string;
-  role: 'admin' | 'user';
+  // admin = Administrateur, manager = Responsable, technician = Magasinier, user = Collaborateur
+  role: 'admin' | 'manager' | 'technician' | 'user';
+  permissions?: string[];
+  active?: boolean;
+  // Compte de connexion déjà lié (la personne s'est connectée au moins une fois)
+  linked?: boolean;
   dateCreated: string;
 }
 

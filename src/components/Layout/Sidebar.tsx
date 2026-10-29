@@ -18,6 +18,8 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { canAccess } from '../../lib/access';
 import { supabase } from '../../lib/supabase';
 
 // Menu groupé par usage : le quotidien du magasin d'abord
@@ -48,6 +50,10 @@ const NAV_SECTIONS = [
 
 const Sidebar: React.FC = () => {
   const { alertCount: unreadNotifications } = useApp();
+  const { can } = useAuth();
+  const sections = NAV_SECTIONS
+    .map(section => ({ ...section, links: section.links.filter(link => canAccess(link.to, can)) }))
+    .filter(section => section.links.length > 0);
   const [isOpen, setIsOpen] = useState(false);
   const [companyLogo, setCompanyLogo] = useState('');
 
@@ -127,7 +133,7 @@ const Sidebar: React.FC = () => {
         </div>
         
         <nav className="py-3 px-2 flex flex-col gap-3 overflow-y-auto max-h-[calc(100%-6rem)]" aria-label="Menu principal">
-          {NAV_SECTIONS.map(section => (
+          {sections.map(section => (
             <div key={section.title} className="flex flex-col gap-1">
               <p className="px-3 text-[0.7rem] lg:text-[0.65rem] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">{section.title}</p>
               {section.links.map(link => (

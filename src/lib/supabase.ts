@@ -47,9 +47,11 @@ export const supabase = createClient(
   isSupabaseConfigured ? supabaseAnonKey : 'configuration-manquante',
   {
   auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false
+    // Session conservée et prolongée : on ne redemande pas de code à chaque visite
+    persistSession: true,
+    autoRefreshToken: true,
+    // Le lien de l'e-mail de connexion ouvre directement une session
+    detectSessionInUrl: true
   },
   global: {
     headers: {

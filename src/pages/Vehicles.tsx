@@ -6,6 +6,7 @@ import Modal from '../components/common/Modal';
 import FuelInput from '../components/common/FuelInput';
 import SignaturePad from '../components/common/SignaturePad';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { REQUEST_STATUS, VEHICLE_STATUS, deadlineState, errorMessage } from '../lib/requests';
 import { RequestOverview, Vehicle } from '../types';
@@ -42,6 +43,10 @@ const Deadline: React.FC<{ label: string; date?: string }> = ({ label, date }) =
 
 const Vehicles: React.FC = () => {
   const { vehicles, depots, refreshData } = useApp();
+  const { can } = useAuth();
+  // Fiches et maintenance : gestion de flotte ; retour d'un véhicule : le magasin
+  const canManage = can('manage_fleet');
+  const canReturn = can('scan') || canManage;
   const [bookings, setBookings] = useState<RequestOverview[]>([]);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [editing, setEditing] = useState<Vehicle | 'new' | null>(null);
@@ -108,7 +113,7 @@ const Vehicles: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Véhicules</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Flotte, réservations et états des lieux</p>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>Ajouter un véhicule</Button>
+        {canManage && <Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>Ajouter un véhicule</Button>}
       </div>
 
       {/* Planning de la semaine */}
@@ -192,9 +197,9 @@ const Vehicles: React.FC = () => {
               <Deadline label="Expertise" date={v.inspectionDate} />
             </div>
             <div className="flex flex-wrap gap-2">
-              {v.status === 'in_use' && <Button size="sm" icon={<Undo2 size={14} />} onClick={() => setReturning(v)}>Retour</Button>}
-              <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setEditing(v)}>Modifier</Button>
-              {(v.status === 'available' || v.status === 'maintenance') && (
+              {canReturn && v.status === 'in_use' && <Button size="sm" icon={<Undo2 size={14} />} onClick={() => setReturning(v)}>Retour</Button>}
+              {canManage && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setEditing(v)}>Modifier</Button>}
+              {canManage && (v.status === 'available' || v.status === 'maintenance') && (
                 <Button size="sm" variant="outline" icon={<Wrench size={14} />} onClick={() => toggleMaintenance(v)}>
                   {v.status === 'maintenance' ? 'Fin de maintenance' : 'Maintenance'}
                 </Button>

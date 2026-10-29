@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -27,6 +28,8 @@ export default function Equipment() {
     deleteEquipment,
     refreshData
   } = useApp();
+  // Créer, modifier ou supprimer un article : droit « gérer le stock » (la base le vérifie aussi)
+  const canManage = useAuth().can('manage_stock');
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -332,32 +335,24 @@ export default function Equipment() {
               <Button
                 variant="outline"
                 size="sm"
+                ariaLabel={`Code QR de ${eq.name}`}
                 onClick={() => handleShowQR(eq.id)}
               >
                 <QrCode className="w-4 h-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleEdit(eq.id)}
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleMaintenance(eq.id)}
-              >
-                <Wrench className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDelete(eq.id)}
-                className="text-danger-600 hover:text-danger-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              {canManage && (
+                <>
+                  <Button variant="outline" size="sm" ariaLabel={`Modifier ${eq.name}`} onClick={() => handleEdit(eq.id)}>
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" ariaLabel={`Maintenance de ${eq.name}`} onClick={() => handleMaintenance(eq.id)}>
+                    <Wrench className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-danger-600 hover:text-danger-700">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -468,25 +463,21 @@ export default function Equipment() {
                         <Button
                           variant="outline"
                           size="sm"
+                          ariaLabel={`Code QR de ${eq.name}`}
                           onClick={() => handleShowQR(eq.id)}
                         >
                           <QrCode className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(eq.id)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(eq.id)}
-                          className="text-danger-600 hover:text-danger-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {canManage && (
+                          <>
+                            <Button variant="outline" size="sm" ariaLabel={`Modifier ${eq.name}`} onClick={() => handleEdit(eq.id)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-danger-600 hover:text-danger-700">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -506,13 +497,15 @@ export default function Equipment() {
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Équipements</h1>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowImportModal(true)}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Importer
-          </Button>
+          {canManage && (
+            <Button
+              variant="outline"
+              onClick={() => setShowImportModal(true)}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Importer
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={exportToCSV}
@@ -520,10 +513,12 @@ export default function Equipment() {
             <Download className="w-4 h-4 mr-2" />
             Exporter
           </Button>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter un équipement
-          </Button>
+          {canManage && (
+            <Button onClick={() => setShowAddModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter un équipement
+            </Button>
+          )}
         </div>
       </div>
 

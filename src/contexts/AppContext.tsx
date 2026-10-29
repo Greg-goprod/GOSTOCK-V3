@@ -243,6 +243,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         phone: u.phone,
         department: u.department,
         role: u.role,
+        permissions: u.permissions || [],
+        active: u.active !== false,
+        linked: !!u.auth_user_id,
         dateCreated: u.created_at
       })));
       setEquipment(transformedEquipment);

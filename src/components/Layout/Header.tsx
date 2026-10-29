@@ -1,13 +1,34 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Sun, Moon, ScanLine } from 'lucide-react';
+import { Bell, Sun, Moon, ScanLine, LogOut } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { ROLE_LABELS } from '../../lib/roles';
 
 const Header: React.FC = () => {
   const location = useLocation();
   const { alertCount: unreadNotifications } = useApp();
   const { theme, toggleTheme } = useTheme();
+  const { profile, can, signOut } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const initials = profile ? `${profile.first_name[0] ?? ''}${profile.last_name[0] ?? ''}`.toUpperCase() : '?';
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [menuOpen]);
   
   const getPageTitle = () => {
     const path = location.pathname;
@@ -15,7 +36,7 @@ const Header: React.FC = () => {
     if (path === '/') return "AUJOURD'HUI";
     if (path.startsWith('/tableau-de-bord')) return 'STATISTIQUES';
     if (path.startsWith('/equipment')) return 'OUTILS';
-    if (path.startsWith('/users')) return 'UTILISATEURS';
+    if (path.startsWith('/users')) return 'PERSONNES';
     if (path.startsWith('/checkouts')) return 'SORTIES';
     if (path.startsWith('/notifications')) return 'NOTIFICATIONS';
     if (path.startsWith('/settings')) return 'PARAMÈTRES';
@@ -37,13 +58,13 @@ const Header: React.FC = () => {
       
       <div className="flex items-center gap-1 lg:gap-3 shrink-0">
         {/* Raccourci vers le scan, l'écran principal sur le terrain */}
-        <Link
+        {can('scan') && <Link
           to="/scan"
           aria-label="Scanner un QR code"
           className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-primary-600 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <ScanLine size={22} />
-        </Link>
+        </Link>}
 
         <button
           type="button"
@@ -67,8 +88,36 @@ const Header: React.FC = () => {
           )}
         </div>
         
-        <div className="hidden sm:flex h-7 w-7 rounded-full bg-primary-600 text-white items-center justify-center" aria-hidden="true">
-          <span className="font-black text-xs">GM</span>
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen(open => !open)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label={`Compte de ${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`}
+            className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center"
+          >
+            <span className="h-8 w-8 lg:h-7 lg:w-7 rounded-full bg-primary-600 text-white flex items-center justify-center font-black text-xs">{initials}</span>
+          </button>
+          {menuOpen && profile && (
+            <div role="menu" className="absolute right-0 mt-2 w-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 p-3 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile.first_name} {profile.last_name}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{profile.email}</p>
+                <p className="mt-1 inline-block rounded-full bg-primary-100 dark:bg-primary-950 text-primary-800 dark:text-primary-200 px-2 py-0.5 text-xs font-semibold">
+                  {ROLE_LABELS[profile.role]}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={signOut}
+                className="w-full inline-flex items-center gap-2 rounded-md px-2 py-2 min-h-[44px] text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <LogOut size={16} aria-hidden="true" /> Se déconnecter
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import { AppProvider } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
+import AuthGate from './components/auth/AuthGate';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Toaster } from 'react-hot-toast';
@@ -97,19 +99,23 @@ if (!checkEnvironmentVariables()) {
       <BrowserRouter>
         <LanguageProvider>
           <ThemeProvider>
-            <AppProvider>
-              <App />
-              <Toaster 
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#363636',
-                    color: '#fff',
-                  },
-                }}
-              />
-            </AppProvider>
+            <AuthProvider>
+              <AuthGate>
+                <AppProvider>
+                  <App />
+                </AppProvider>
+              </AuthGate>
+            </AuthProvider>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
           </ThemeProvider>
         </LanguageProvider>
       </BrowserRouter>

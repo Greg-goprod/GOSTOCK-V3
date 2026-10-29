@@ -7,6 +7,7 @@ import FuelInput from '../components/common/FuelInput';
 import SignaturePad from '../components/common/SignaturePad';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { findEquipmentByCode } from '../lib/scan';
 import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib/requests';
@@ -41,7 +42,9 @@ const contentSummary = (r: RequestOverview) =>
 const Requests: React.FC = () => {
   const [requests, setRequests] = useState<RequestOverview[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<Filter>('todo');
+  const { can } = useAuth();
+  const staff = can('scan') || can('approve') || can('view_all');
+  const [filter, setFilter] = useState<Filter>(staff ? 'todo' : 'all');
   const [search, setSearch] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [selected, setSelected] = useState<RequestOverview | null>(null);
@@ -83,14 +86,14 @@ const Requests: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Demandes</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">{staff ? 'Demandes' : 'Mes demandes'}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Réservations d'outils, de consommables et de véhicules</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
-        {FILTERS.map(f => (
+        {FILTERS.filter(f => staff || f.id === 'all').map(f => (
           <Button key={f.id} size="sm" variant={filter === f.id ? 'primary' : 'outline'} onClick={() => setFilter(f.id)}>
             {f.label} ({counts[f.id] ?? 0})
           </Button>
@@ -180,13 +183,16 @@ interface DraftItem {
 
 const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: string; status: RequestStatus }) => Promise<void> }> = ({ onClose, onCreated }) => {
   const { users, depots, equipment, vehicles, consumableStock } = useApp();
+  const { profile, can } = useAuth();
+  // Le magasin et les responsables peuvent saisir une demande pour quelqu'un d'autre
+  const forOthers = can('scan') || can('approve');
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(7, 30, 0, 0);
   const tomorrowEnd = new Date(tomorrow);
   tomorrowEnd.setHours(17, 0, 0, 0);
 
-  const [requesterId, setRequesterId] = useState('');
+  const [requesterId, setRequesterId] = useState(forOthers ? '' : profile?.id ?? '');
   const [destination, setDestination] = useState('');
   const [depotId, setDepotId] = useState(depots.find(d => d.isDefault)?.id || depots[0]?.id || '');
   const [start, setStart] = useState(toLocalInput(tomorrow));
@@ -285,10 +291,14 @@ const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="req-user" className={labelClass}>Pour qui</label>
-            <select id="req-user" value={requesterId} onChange={e => setRequesterId(e.target.value)} className={inputClass} required>
-              <option value="">— Choisir une personne —</option>
-              {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
-            </select>
+            {forOthers ? (
+              <select id="req-user" value={requesterId} onChange={e => setRequesterId(e.target.value)} className={inputClass} required>
+                <option value="">— Choisir une personne —</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
+              </select>
+            ) : (
+              <input id="req-user" value={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`} className={inputClass} readOnly />
+            )}
           </div>
           <div>
             <label htmlFor="req-dest" className={labelClass}>Chantier ou service</label>
@@ -392,9 +402,12 @@ const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: 
 
 const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => void; onChanged: () => Promise<void> }> = ({ request, onClose, onChanged }) => {
   const { equipment, vehicles, refreshData } = useApp();
+  const { profile, can } = useAuth();
+  const isOwner = profile?.id === request.requester_id;
   const [items, setItems] = useState<RequestItemRow[]>([]);
   const [deliveryNumber, setDeliveryNumber] = useState<string | null>(null);
-  const [decider, setDecider] = useState('');
+  // La base remplace de toute façon ce nom par celui de la personne connectée
+  const decider = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim();
   const [decisionNote, setDecisionNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [prepared, setPrepared] = useState<Record<string, boolean>>({});
@@ -477,7 +490,9 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
 
   const articleLines = items.filter(i => i.item_kind !== 'vehicle');
   const allPrepared = articleLines.every(i => prepared[i.id]);
-  const canIssue = ['approved', 'ready'].includes(request.status);
+  // Préparer et sortir : le magasin uniquement (le collaborateur ne scanne jamais)
+  const canIssue = can('scan') && ['approved', 'ready'].includes(request.status);
+  const canCancelOwn = isOwner && !can('scan') && request.status === 'approved';
 
   return (
     <Modal isOpen onClose={onClose} title={`Demande ${request.number}`} size="lg">
@@ -533,20 +548,25 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
         {request.status === 'requested' && (
           <div className="space-y-3 rounded-md border border-warning-200 dark:border-warning-800 p-3">
             <p className="text-sm text-gray-800 dark:text-gray-200">Validation requise : {request.approval_reason}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="decider" className={labelClass}>Votre nom</label>
-                <input id="decider" value={decider} onChange={e => setDecider(e.target.value)} className={inputClass} placeholder="ex. Greg" />
+            {can('approve') ? (
+              <>
+                <div>
+                  <label htmlFor="decision-note" className={labelClass}>Remarque (obligatoire si refus)</label>
+                  <input id="decision-note" value={decisionNote} onChange={e => setDecisionNote(e.target.value)} className={inputClass} />
+                </div>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button variant="danger" icon={<XCircle size={16} />} onClick={() => decide(false)} loading={busy}>Refuser</Button>
+                  <Button variant="success" icon={<CheckCircle2 size={16} />} onClick={() => decide(true)} loading={busy}>Valider</Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-400">En attente de la décision d'un responsable.</p>
+            )}
+            {isOwner && !can('approve') && (
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>Annuler ma demande</Button>
               </div>
-              <div>
-                <label htmlFor="decision-note" className={labelClass}>Remarque (obligatoire si refus)</label>
-                <input id="decision-note" value={decisionNote} onChange={e => setDecisionNote(e.target.value)} className={inputClass} />
-              </div>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button variant="danger" icon={<XCircle size={16} />} onClick={() => decide(false)} loading={busy}>Refuser</Button>
-              <Button variant="success" icon={<CheckCircle2 size={16} />} onClick={() => decide(true)} loading={busy}>Valider</Button>
-            </div>
+            )}
           </div>
         )}
 
@@ -575,6 +595,12 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
               </Button>
             </div>
             {!allPrepared && <p className="text-right text-xs text-gray-600 dark:text-gray-400">Tous les articles doivent être préparés avant la sortie.</p>}
+          </div>
+        )}
+
+        {canCancelOwn && (
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>Annuler ma demande</Button>
           </div>
         )}
 

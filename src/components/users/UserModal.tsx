@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
-import Accordion from '../common/Accordion';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
-import toast from 'react-hot-toast';
 import { User } from '../../types';
-import { User as UserIcon, Mail, Building } from 'lucide-react';
+import { useApp } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { Permission, PERMISSION_LABELS, ROLE_LABELS, ROLE_PERMISSIONS } from '../../lib/roles';
+import { errorMessage } from '../../lib/requests';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -14,241 +15,234 @@ interface UserModalProps {
   user?: User;
 }
 
+type Role = User['role'];
+
+const ROLE_HINTS: Record<Role, string> = {
+  admin: 'Tout, y compris les réglages et les autres administrateurs.',
+  manager: 'Valide les demandes, gère les personnes, le stock et la flotte, tous les dépôts.',
+  technician: 'Scanne, prépare, sort et reprend le matériel, gère le stock de ses dépôts.',
+  user: 'Fait ses demandes et voit le matériel qu\'il a emprunté. Ne scanne jamais.',
+};
+
+// Droits proposés « à la carte » (réglages : réservé au rôle administrateur)
+const EXTRA_PERMISSIONS: Permission[] = ['scan', 'approve', 'manage_stock', 'manage_fleet', 'view_all', 'manage_people', 'all_depots'];
+
+const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
+const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+
+const emptyForm = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+  department: '',
+  role: 'user' as Role,
+  permissions: [] as Permission[],
+  active: true,
+};
+
 const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
-  const { t } = useLanguage();
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    department: '',
-    role: 'user'
-  });
+  const { depots } = useApp();
+  const { profile, refreshProfile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  const [form, setForm] = useState(emptyForm);
+  const [depotIds, setDepotIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (user) {
-      setFormData({
+      setForm({
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
         phone: user.phone || '',
-        department: user.department,
-        role: user.role
+        department: user.department || '',
+        role: user.role,
+        permissions: (user.permissions || []) as Permission[],
+        active: user.active !== false,
       });
+      supabase.from('user_depots').select('depot_id').eq('user_id', user.id)
+        .then(({ data }) => setDepotIds((data || []).map(d => d.depot_id)));
     } else {
-      setFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        department: '',
-        role: 'user'
-      });
+      setForm(emptyForm);
+      setDepotIds([]);
     }
-  }, [user]);
+  }, [isOpen, user]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Validation uniquement pour les champs obligatoires : nom, prénom et téléphone
-    if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.phone.trim()) {
-      toast.error('Veuillez remplir tous les champs obligatoires (prénom, nom et téléphone)');
-      setIsLoading(false);
-      return;
-    }
+  const inherited = ROLE_PERMISSIONS[form.role];
+  const effective = new Set([...inherited, ...form.permissions]);
+  const depotScoped = effective.has('scan') || effective.has('manage_stock');
 
+  const togglePermission = (permission: Permission) =>
+    setForm(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permission)
+        ? prev.permissions.filter(p => p !== permission)
+        : [...prev.permissions, permission],
+    }));
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
     try {
-      const dataToSubmit = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email || null, // Email peut être vide
-        phone: formData.phone,
-        department: formData.department || null, // Département peut être vide
-        role: formData.role
+      const payload = {
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim() || null,
+        department: form.department.trim() || null,
+        role: form.role,
+        // On n'enregistre que ce qui s'ajoute au rôle
+        permissions: form.permissions.filter(p => !inherited.includes(p)),
+        active: form.active,
       };
 
+      let userId = user?.id;
       if (user) {
-        // Update existing user
-        const { error } = await supabase
-          .from('users')
-          .update(dataToSubmit)
-          .eq('id', user.id);
-
+        const { error } = await supabase.from('users').update(payload).eq('id', user.id);
         if (error) throw error;
-        toast.success(t('userUpdated'));
       } else {
-        // Create new user
-        const { error } = await supabase
-          .from('users')
-          .insert([dataToSubmit]);
-
+        const { data, error } = await supabase.from('users').insert(payload).select('id').single();
         if (error) throw error;
-        toast.success(t('userAdded'));
+        userId = data.id;
       }
 
+      // Dépôts attribués : aucun dépôt coché = tous les dépôts
+      const { data: current, error: readError } = await supabase.from('user_depots').select('depot_id').eq('user_id', userId!);
+      if (readError) throw readError;
+      const before = (current || []).map(d => d.depot_id);
+      const wanted = depotScoped ? depotIds : [];
+      const removed = before.filter(id => !wanted.includes(id));
+      const added = wanted.filter(id => !before.includes(id));
+      if (removed.length) {
+        const { error } = await supabase.from('user_depots').delete().eq('user_id', userId!).in('depot_id', removed);
+        if (error) throw error;
+      }
+      if (added.length) {
+        const { error } = await supabase.from('user_depots').insert(added.map(depot_id => ({ user_id: userId, depot_id })));
+        if (error) throw error;
+      }
+
+      toast.success(user ? 'Personne mise à jour' : `${payload.first_name} ajouté(e) : connexion possible avec ${payload.email}`);
+      if (user && user.id === profile?.id) await refreshProfile();
       onClose();
-      setFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        department: '',
-        role: 'user'
-      });
     } catch (error) {
-      console.error('Error saving user:', error);
-      toast.error((error as { message?: string })?.message || t('errorSavingUser'));
+      const code = (error as { code?: string })?.code;
+      toast.error(code === '23505' ? 'Cette adresse e-mail est déjà utilisée' : errorMessage(error));
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const roles: Role[] = isAdmin ? ['user', 'technician', 'manager', 'admin'] : ['user', 'technician', 'manager'];
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={user ? 'MODIFIER L\'UTILISATEUR' : 'AJOUTER UN UTILISATEUR'}
-      size="md"
-    >
-      <div className="space-y-4">
-        {/* Informations personnelles */}
-        <Accordion
-          title="INFORMATIONS PERSONNELLES"
-          icon={<UserIcon size={18} className="text-primary-600 dark:text-primary-400" />}
-          defaultOpen={true}
-        >
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Prénom *
-                </label>
-                <input
-                  type="text"
-                  name="first_name"
-                  required
-                  value={formData.first_name}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nom *
-                </label>
-                <input
-                  type="text"
-                  name="last_name"
-                  required
-                  value={formData.last_name}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={onClose}
-              >
-                {t('cancel')}
-              </Button>
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={isLoading}
-              >
-                {isLoading ? t('saving') : user ? t('save') : t('add')}
-              </Button>
-            </div>
-          </form>
-        </Accordion>
-
-        {/* Contact */}
-        <Accordion
-          title="CONTACT"
-          icon={<Mail size={18} className="text-success-600 dark:text-success-400" />}
-          defaultOpen={true}
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('email')}
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('phone')} *
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                required
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              />
-            </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={user ? 'Modifier la personne' : 'Ajouter une personne'} size="lg">
+      <form onSubmit={submit} className="space-y-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="user-first" className={labelClass}>Prénom</label>
+            <input id="user-first" value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} className={inputClass} required />
           </div>
-        </Accordion>
-
-        {/* Organisation */}
-        <Accordion
-          title="ORGANISATION"
-          icon={<Building size={18} className="text-primary-600 dark:text-primary-400" />}
-          defaultOpen={false}
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('department')}
-              </label>
-              <input
-                type="text"
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('role')}
-              </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              >
-                <option value="user">{t('user')}</option>
-                <option value="admin">{t('admin')}</option>
-              </select>
-            </div>
+          <div>
+            <label htmlFor="user-last" className={labelClass}>Nom</label>
+            <input id="user-last" value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} className={inputClass} required />
           </div>
-        </Accordion>
-      </div>
+          <div>
+            <label htmlFor="user-email" className={labelClass}>E-mail (sert à se connecter)</label>
+            <input id="user-email" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className={inputClass} required />
+          </div>
+          <div>
+            <label htmlFor="user-phone" className={labelClass}>Téléphone</label>
+            <input id="user-phone" type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="user-dept" className={labelClass}>Service</label>
+            <input id="user-dept" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} className={inputClass} />
+          </div>
+        </div>
+
+        <fieldset>
+          <legend className={labelClass}>Rôle</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {roles.map(role => (
+              <label
+                key={role}
+                className={`flex gap-3 rounded-md border p-3 cursor-pointer ${form.role === role ? 'border-primary-500 bg-primary-50 dark:bg-primary-950' : 'border-gray-200 dark:border-gray-700'}`}
+              >
+                <input type="radio" name="role" value={role} checked={form.role === role} onChange={() => setForm({ ...form, role })} className="mt-1 text-primary-600 focus:ring-primary-500" />
+                <span>
+                  <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{ROLE_LABELS[role]}</span>
+                  <span className="block text-xs text-gray-600 dark:text-gray-400">{ROLE_HINTS[role]}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {form.role !== 'admin' && (
+          <fieldset>
+            <legend className={labelClass}>Droits</legend>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Les droits grisés viennent du rôle ; cochez-en d'autres pour cette personne seulement.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {EXTRA_PERMISSIONS.map(permission => {
+                const fromRole = inherited.includes(permission);
+                return (
+                  <label key={permission} className={`inline-flex items-center gap-2 text-sm ${fromRole ? 'text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                    <input
+                      type="checkbox"
+                      checked={effective.has(permission)}
+                      disabled={fromRole}
+                      onChange={() => togglePermission(permission)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    {PERMISSION_LABELS[permission]}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+
+        {depotScoped && !effective.has('all_depots') && depots.length > 1 && (
+          <fieldset>
+            <legend className={labelClass}>Dépôts</legend>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Aucun dépôt coché : tous les dépôts.</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {depots.map(depot => (
+                <label key={depot.id} className="inline-flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={depotIds.includes(depot.id)}
+                    onChange={() => setDepotIds(ids => (ids.includes(depot.id) ? ids.filter(id => id !== depot.id) : [...ids, depot.id]))}
+                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  {depot.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
+        <label className="flex items-start gap-3 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.active}
+            onChange={e => setForm({ ...form, active: e.target.checked })}
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <span>
+            <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Accès actif</span>
+            <span className="block text-xs text-gray-600 dark:text-gray-400">Décochez pour bloquer la connexion sans supprimer l'historique.</span>
+          </span>
+        </label>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button>
+          <Button type="submit" variant="primary" loading={saving}>Enregistrer</Button>
+        </div>
+      </form>
     </Modal>
   );
 };

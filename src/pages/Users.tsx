@@ -8,6 +8,7 @@ import FilterPanel, { FilterOption } from '../components/common/FilterPanel';
 import UserModal from '../components/users/UserModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { User } from '../types';
+import { ROLE_LABELS } from '../lib/roles';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -129,8 +130,10 @@ const Users: React.FC = () => {
       label: 'Rôle',
       type: 'select',
       options: [
-        { value: 'admin', label: 'Administrateur' },
-        { value: 'user', label: 'Utilisateur' },
+        { value: 'admin', label: ROLE_LABELS.admin },
+        { value: 'manager', label: ROLE_LABELS.manager },
+        { value: 'technician', label: ROLE_LABELS.technician },
+        { value: 'user', label: ROLE_LABELS.user },
       ],
     },
     {
@@ -163,7 +166,7 @@ const Users: React.FC = () => {
       case 'department':
         return a.department.localeCompare(b.department) * direction;
       case 'role':
-        return a.role.localeCompare(b.role) * direction;
+        return (ROLE_LABELS[a.role] ?? a.role).localeCompare(ROLE_LABELS[b.role] ?? b.role) * direction;
       default:
         return 0;
     }
@@ -283,8 +286,11 @@ const Users: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   {user.department}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100 uppercase">
-                  {user.role}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  <span className="font-bold uppercase">{ROLE_LABELS[user.role] ?? user.role}</span>
+                  <span className={`block text-xs ${user.active === false ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                    {user.active === false ? 'Accès suspendu' : user.linked ? 'Déjà connecté' : 'Jamais connecté'}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
                   <Button
@@ -332,7 +338,10 @@ const Users: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-lg font-black text-gray-800 dark:text-gray-100">{user.first_name} {user.last_name}</h3>
-                <p className="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase">{user.role}</p>
+                <p className="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase">{ROLE_LABELS[user.role] ?? user.role}</p>
+                <p className={`text-xs ${user.active === false ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                  {user.active === false ? 'Accès suspendu' : user.linked ? 'Déjà connecté' : 'Jamais connecté'}
+                </p>
               </div>
             </div>
             
