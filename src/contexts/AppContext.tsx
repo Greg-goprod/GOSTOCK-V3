@@ -43,6 +43,7 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   unit: item.unit,
   supplierReference: item.supplier_reference,
   requiresApproval: Boolean(item.requires_approval),
+  dailyRate: item.daily_rate === null || item.daily_rate === undefined ? undefined : Number(item.daily_rate),
   purchasePrice: item.purchase_price === null || item.purchase_price === undefined ? undefined : Number(item.purchase_price),
   depotId: item.depot_id
 });
@@ -263,7 +264,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         contactPerson: item.contact_person,
         email: item.email,
         phone: item.phone,
-        website: item.website
+        website: item.website,
+        leadTimeDays: item.lead_time_days
       })) || []);
       // Mapping strict pour EquipmentGroup
       setEquipmentGroups(groupsResult.data?.map((item: Record<string, any>) => ({

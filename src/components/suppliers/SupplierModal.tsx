@@ -22,7 +22,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
     contact_person: '',
     email: '',
     phone: '',
-    website: ''
+    website: '',
+    lead_time_days: '7'
   });
 
   useEffect(() => {
@@ -32,7 +33,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         contact_person: supplier.contactPerson || '',
         email: supplier.email || '',
         phone: supplier.phone || '',
-        website: supplier.website || ''
+        website: supplier.website || '',
+        lead_time_days: String(supplier.leadTimeDays ?? 7)
       });
     } else {
       setFormData({
@@ -40,7 +42,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         contact_person: '',
         email: '',
         phone: '',
-        website: ''
+        website: '',
+        lead_time_days: '7'
       });
     }
   }, [supplier]);
@@ -55,7 +58,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         contact_person: formData.contact_person || null,
         email: formData.email || null,
         phone: formData.phone || null,
-        website: formData.website || null
+        website: formData.website || null,
+        lead_time_days: Math.max(0, Number(formData.lead_time_days) || 7)
       };
 
       if (supplier) {
@@ -83,7 +87,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         contact_person: '',
         email: '',
         phone: '',
-        website: ''
+        website: '',
+        lead_time_days: '7'
       });
     } catch (error: any) {
       console.error('Error saving supplier:', error);
@@ -205,6 +210,22 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                 onChange={handleChange}
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
               />
+            </div>
+
+            <div>
+              <label htmlFor="supplier-lead" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Délai de livraison (jours)
+              </label>
+              <input
+                id="supplier-lead"
+                type="number"
+                min={0}
+                name="lead_time_days"
+                value={formData.lead_time_days}
+                onChange={handleChange}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono"
+              />
+              <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Sert au calcul des seuils proposés pour les consommables.</p>
             </div>
           </div>
         </Accordion>

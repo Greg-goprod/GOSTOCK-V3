@@ -20,7 +20,10 @@ import {
   Contact,
   Tags,
   Wrench,
-  AlertTriangle
+  AlertTriangle,
+  ListChecks,
+  ShoppingCart,
+  Coins
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -40,7 +43,9 @@ const NAV_SECTIONS = [
   { title: 'Stock', links: [
     { to: '/equipment', label: 'Outils', icon: Package },
     { to: '/consommables', label: 'Consommables', icon: Droplets },
-    { to: '/commande', label: 'Commande', icon: ClipboardList },
+    { to: '/inventaire', label: 'Inventaire', icon: ListChecks },
+    { to: '/commande', label: 'À commander', icon: ClipboardList },
+    { to: '/commandes', label: 'Commandes', icon: ShoppingCart },
     { to: '/etiquettes', label: 'Étiquettes', icon: Tags },
   ] },
   { title: 'Flotte', links: [
@@ -50,6 +55,7 @@ const NAV_SECTIONS = [
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/entretien', label: 'Entretien', icon: Wrench },
     { to: '/incidents', label: 'Pertes et casse', icon: AlertTriangle },
+    { to: '/couts', label: 'Coûts', icon: Coins },
     { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },
   ] },
   { title: 'Réglages', links: [

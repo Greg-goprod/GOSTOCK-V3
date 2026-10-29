@@ -42,7 +42,7 @@ const Header: React.FC = () => {
     if (path.startsWith('/settings')) return 'PARAMÈTRES';
     if (path.startsWith('/scan')) return 'SCANNER';
     if (path.startsWith('/consommables')) return 'CONSOMMABLES';
-    if (path.startsWith('/commande')) return 'COMMANDE';
+    if (path === '/commande') return 'À COMMANDER';
     if (path.startsWith('/demandes')) return 'DEMANDES';
     if (path.startsWith('/vehicules')) return 'VÉHICULES';
     if (path.startsWith('/comptoir')) return 'COMPTOIR';
@@ -50,6 +50,9 @@ const Header: React.FC = () => {
     if (path.startsWith('/badge')) return 'MON BADGE';
     if (path.startsWith('/etiquettes')) return 'ÉTIQUETTES';
     if (path.startsWith('/entretien')) return 'ENTRETIEN';
+    if (path.startsWith('/inventaire')) return 'INVENTAIRE';
+    if (path.startsWith('/commandes')) return 'COMMANDES';
+    if (path.startsWith('/couts')) return 'COÛTS';
     if (path.startsWith('/incidents')) return 'PERTES ET CASSE';
     
     return 'GO-MAT';

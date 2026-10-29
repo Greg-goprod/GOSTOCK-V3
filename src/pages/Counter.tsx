@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Minus, Plus, Trash2, Undo2, UserRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
@@ -7,6 +7,7 @@ import PhotoInput from '../components/common/PhotoInput';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useSiteSuggestions } from '../lib/sites';
 import { findEquipmentByCode } from '../lib/scan';
 import { isBadgeCode } from '../lib/badges';
 import { errorMessage, toLocalInput } from '../lib/requests';
@@ -53,6 +54,7 @@ const endOfWeek = () => {
 
 // Comptoir du magasin : badge de la personne, puis les articles ; sorties et retours en une validation
 const Counter: React.FC = () => {
+  const sites = useSiteSuggestions();
   const { users, equipment, equipmentInstances, checkouts, depots, refreshData } = useApp();
   const { profile } = useAuth();
   const [person, setPerson] = useState<User | null>(null);
@@ -69,6 +71,11 @@ const Counter: React.FC = () => {
   const [depotId, setDepotId] = useState(myDepots.find(d => d.isDefault)?.id || myDepots[0]?.id || '');
   const [busy, setBusy] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Les dépôts arrivent après le premier affichage : dépôt par défaut dès qu'ils sont là
+  useEffect(() => {
+    if (!depotId && myDepots.length) setDepotId(myDepots.find(d => d.isDefault)?.id || myDepots[0].id);
+  }, [depotId, myDepots]);
   const [pickerSearch, setPickerSearch] = useState('');
 
   const held = useMemo(
@@ -415,7 +422,8 @@ const Counter: React.FC = () => {
               )}
               <div>
                 <label htmlFor="counter-dest" className={labelClass}>Chantier ou service</label>
-                <input id="counter-dest" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
+                <input id="counter-dest" list="counter-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
+            <datalist id="counter-dest-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
               </div>
               {consumableLines.length > 0 && (
                 <div>

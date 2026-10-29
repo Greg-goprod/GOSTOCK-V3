@@ -22,6 +22,7 @@ export interface Equipment {
   unit?: string;
   supplierReference?: string;
   purchasePrice?: number;
+  dailyRate?: number;
   requiresApproval?: boolean;
   depotId?: string;
 }
@@ -195,6 +196,8 @@ export interface Supplier {
   email: string;
   phone: string;
   website?: string;
+  // Délai de livraison habituel, en jours (seuils proposés)
+  leadTimeDays?: number;
 }
 
 export interface Category {

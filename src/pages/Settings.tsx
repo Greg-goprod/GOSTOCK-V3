@@ -130,7 +130,16 @@ const Settings: React.FC = () => {
       .order('name');
     
     if (error) throw error;
-    setSuppliers(data || []);
+    // Mêmes champs que dans AppContext : la fenêtre d'édition lit contactPerson, leadTimeDays…
+    setSuppliers((data || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      contactPerson: item.contact_person,
+      email: item.email,
+      phone: item.phone,
+      website: item.website,
+      leadTimeDays: item.lead_time_days,
+    })));
   };
 
   const fetchGroups = async () => {

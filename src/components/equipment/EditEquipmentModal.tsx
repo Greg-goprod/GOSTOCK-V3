@@ -41,7 +41,9 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
     total_quantity: 1,
     qr_type: 'individual' as 'individual' | 'batch',
     available_quantity: 1,
-    requires_approval: false
+    requires_approval: false,
+    purchase_price: '',
+    daily_rate: ''
   });
   const [quantityData, setQuantityData] = useState({
     qrType: 'individual' as 'individual' | 'batch',
@@ -67,7 +69,9 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         total_quantity: equipment.totalQuantity || 1,
         qr_type: equipment.qrType || 'individual',
         available_quantity: equipment.availableQuantity || 1,
-        requires_approval: Boolean(equipment.requiresApproval)
+        requires_approval: Boolean(equipment.requiresApproval),
+        purchase_price: equipment.purchasePrice === undefined ? '' : String(equipment.purchasePrice),
+        daily_rate: equipment.dailyRate === undefined ? '' : String(equipment.dailyRate)
       });
       setCurrentQrType(equipment.qrType || 'individual');
       setOriginalQuantity(equipment.totalQuantity || 1);
@@ -289,6 +293,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         location: formData.location || null,
         short_title: formData.short_title || null,
         serial_number: formData.serial_number?.trim() || null,
+        purchase_price: formData.purchase_price === '' ? null : Number(formData.purchase_price),
+        daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
         qr_type: quantityData.qrType,
         total_quantity: quantityData.totalQuantity
       };
@@ -551,6 +557,21 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                     <span className="block text-xs text-gray-600 dark:text-gray-400">Toute demande contenant cet article doit être validée par un responsable, même s'il est disponible.</span>
                   </span>
                 </label>
+
+                <div>
+                  <label htmlFor="eq-price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prix d'achat (CHF)</label>
+                  <input id="eq-price" type="number" min={0} step="0.05" inputMode="decimal" value={formData.purchase_price}
+                    onChange={e => setFormData(prev => ({ ...prev, purchase_price: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Valeur du stock et des pertes</p>
+                </div>
+                <div>
+                  <label htmlFor="eq-rate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tarif interne par jour (CHF)</label>
+                  <input id="eq-rate" type="number" min={0} step="0.05" inputMode="decimal" value={formData.daily_rate}
+                    onChange={e => setFormData(prev => ({ ...prev, daily_rate: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Coût imputé au chantier par jour de sortie</p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

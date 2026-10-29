@@ -10,6 +10,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { DeclareIncidentModal } from './Incidents';
 import { supabase } from '../lib/supabase';
+import { useSiteSuggestions } from '../lib/sites';
 import { findEquipmentByCode } from '../lib/scan';
 import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib/requests';
 import { RequestItemRow, RequestOverview, RequestStatus } from '../types';
@@ -239,6 +240,7 @@ interface DraftItem {
 }
 
 const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: string; status: RequestStatus }) => Promise<void> }> = ({ onClose, onCreated }) => {
+  const sites = useSiteSuggestions();
   const { users, depots, equipment, vehicles, consumableStock } = useApp();
   const { profile, can } = useAuth();
   // Le magasin et les responsables peuvent saisir une demande pour quelqu'un d'autre
@@ -359,7 +361,8 @@ const NewRequestModal: React.FC<{ onClose: () => void; onCreated: (r: { number: 
           </div>
           <div>
             <label htmlFor="req-dest" className={labelClass}>Chantier ou service</label>
-            <input id="req-dest" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
+            <input id="req-dest" list="req-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
+            <datalist id="req-dest-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
           </div>
           <div>
             <label htmlFor="req-start" className={labelClass}>Du</label>

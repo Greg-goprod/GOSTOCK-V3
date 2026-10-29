@@ -37,6 +37,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     short_title: '',
     available_quantity: 1,
     requires_approval: false,
+    purchase_price: '',
+    daily_rate: '',
     catalog_product_id: '',
     ean: '',
     supplier_reference: ''
@@ -71,6 +73,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         short_title: '',
         available_quantity: 1,
         requires_approval: false,
+        purchase_price: '',
+        daily_rate: '',
         catalog_product_id: '',
         ean: '',
         supplier_reference: ''
@@ -217,6 +221,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         short_title: formData.short_title || null,
         // Vide → NULL : le numéro de série est unique en base, deux chaînes vides se heurteraient
         serial_number: formData.serial_number.trim() || null,
+        purchase_price: formData.purchase_price === '' ? null : Number(formData.purchase_price),
+        daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
         catalog_product_id: formData.catalog_product_id || null,
         ean: formData.ean || null,
         supplier_reference: formData.supplier_reference || null,
@@ -559,6 +565,21 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                     <span className="block text-xs text-gray-600 dark:text-gray-400">Toute demande contenant cet article doit être validée par un responsable, même s'il est disponible.</span>
                   </span>
                 </label>
+
+                <div>
+                  <label htmlFor="eq-price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prix d'achat (CHF)</label>
+                  <input id="eq-price" type="number" min={0} step="0.05" inputMode="decimal" value={formData.purchase_price}
+                    onChange={e => setFormData(prev => ({ ...prev, purchase_price: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Valeur du stock et des pertes</p>
+                </div>
+                <div>
+                  <label htmlFor="eq-rate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tarif interne par jour (CHF)</label>
+                  <input id="eq-rate" type="number" min={0} step="0.05" inputMode="decimal" value={formData.daily_rate}
+                    onChange={e => setFormData(prev => ({ ...prev, daily_rate: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Coût imputé au chantier par jour de sortie</p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

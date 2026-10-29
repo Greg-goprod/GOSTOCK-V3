@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Minus, Plus, Search, Settings2, Warehouse } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import CatalogPicker from '../components/common/CatalogPicker';
 import { CatalogProduct, catalogDescription } from '../lib/catalog';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
+import { useSiteSuggestions } from '../lib/sites';
 import { Equipment } from '../types';
 
 type StockAction = 'consume' | 'receive' | 'count' | 'transfer' | 'threshold';
@@ -55,6 +56,7 @@ const Consumables: React.FC = () => {
   const [action, setAction] = useState<{ type: StockAction; item: Equipment } | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [showDepots, setShowDepots] = useState(false);
+  const [showThresholds, setShowThresholds] = useState(false);
 
   const consumables = useMemo(
     () => equipment.filter(eq => eq.itemType === 'consumable'),
@@ -121,6 +123,9 @@ const Consumables: React.FC = () => {
             <ClipboardList size={16} aria-hidden="true" />
             Feuille de commande
           </Link>
+          <Button variant="outline" icon={<Settings2 size={16} />} onClick={() => setShowThresholds(true)}>
+            Seuils proposés
+          </Button>
           <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>
             Nouveau consommable
           </Button>
@@ -264,6 +269,7 @@ const Consumables: React.FC = () => {
       )}
 
       {showDepots && <DepotsModal onClose={() => setShowDepots(false)} />}
+      {showThresholds && <ThresholdsModal onClose={() => setShowThresholds(false)} />}
 
     </div>
   );
@@ -280,6 +286,7 @@ interface StockActionModalProps {
 }
 
 const StockActionModal: React.FC<StockActionModalProps> = ({ action, item, defaultDepotId, onClose, onDone }) => {
+  const sites = useSiteSuggestions();
   const { depots, consumableStock, users } = useApp();
   const [depotId, setDepotId] = useState(defaultDepotId || '');
   const [toDepotId, setToDepotId] = useState(depots.find(d => d.id !== defaultDepotId)?.id || '');
@@ -383,7 +390,8 @@ const StockActionModal: React.FC<StockActionModalProps> = ({ action, item, defau
             </div>
             <div>
               <label htmlFor="stock-destination" className={labelClass}>Chantier ou service</label>
-              <input id="stock-destination" type="text" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens, Service technique" />
+              <input id="stock-destination" list="stock-destination-sites" autoComplete="off" type="text" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens, Service technique" />
+            <datalist id="stock-destination-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
               <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Indiquez une personne, un chantier ou un service (au moins l'un des deux).</p>
             </div>
           </>
@@ -600,6 +608,91 @@ const DepotsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
           <Button type="submit" loading={saving} icon={<Plus size={16} />}>Ajouter</Button>
         </form>
+      </div>
+    </Modal>
+  );
+};
+
+/* ------------------------------------------------------------------------ */
+
+interface Suggestion {
+  stock_id: string;
+  equipment_id: string;
+  depot_id: string;
+  name: string;
+  unit: string | null;
+  quantity: number;
+  min_quantity: number;
+  lead_time_days: number;
+  daily_use: number;
+  suggested_min: number;
+}
+
+// Seuils d'après la consommation réelle : 90 derniers jours × (délai fournisseur + 5 jours de marge)
+const ThresholdsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { depots, refreshData } = useApp();
+  const [rows, setRows] = useState<Suggestion[] | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    const { data, error } = await supabase.from('suggested_thresholds').select('*').order('name');
+    if (error) toast.error(errorMessage(error));
+    setRows(((data || []) as Suggestion[])
+      .map(r => ({ ...r, quantity: Number(r.quantity), min_quantity: Number(r.min_quantity), daily_use: Number(r.daily_use), suggested_min: Number(r.suggested_min) }))
+      .filter(r => r.suggested_min > 0 && r.suggested_min !== r.min_quantity));
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const apply = async (list: Suggestion[]) => {
+    setBusy(true);
+    for (const r of list) {
+      const { error } = await supabase.rpc('set_min_quantity', { p_equipment_id: r.equipment_id, p_depot_id: r.depot_id, p_min_quantity: r.suggested_min });
+      if (error) {
+        toast.error(errorMessage(error));
+        break;
+      }
+    }
+    setBusy(false);
+    toast.success(`${list.length} seuil${list.length > 1 ? 's' : ''} mis à jour`);
+    await refreshData();
+    await load();
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title="Seuils proposés" size="lg">
+      <div className="space-y-3">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Calcul : consommation moyenne des 90 derniers jours × (délai de livraison du fournisseur + 5 jours de marge).
+          Le délai se règle dans la fiche du fournisseur (7 jours par défaut).
+        </p>
+        {rows === null ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400">Calcul…</p>
+        ) : rows.length === 0 ? (
+          <p className="text-sm text-gray-700 dark:text-gray-300">Les seuils actuels correspondent à la consommation (ou il n'y a pas encore assez de sorties).</p>
+        ) : (
+          <>
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {rows.map(r => (
+                <li key={r.stock_id} className="py-2 flex flex-wrap items-center gap-3 text-sm">
+                  <div className="flex-1 min-w-[180px]">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{r.name}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {depots.find(d => d.id === r.depot_id)?.name} · {r.daily_use.toLocaleString('fr-CH', { maximumFractionDigits: 2 })} {r.unit}/jour · délai {r.lead_time_days} j
+                    </p>
+                  </div>
+                  <span className="font-mono text-gray-700 dark:text-gray-300">{r.min_quantity} → <strong className="text-gray-900 dark:text-white">{r.suggested_min}</strong></span>
+                  <Button size="sm" variant="outline" onClick={() => apply([r])} disabled={busy}>Appliquer</Button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex justify-end">
+              <Button onClick={() => apply(rows)} loading={busy}>Tout appliquer ({rows.length})</Button>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   );

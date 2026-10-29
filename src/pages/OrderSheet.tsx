@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Printer, RefreshCw } from 'lucide-react';
+import { FileText, Printer, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -22,6 +23,9 @@ const OrderSheet: React.FC = () => {
   const [depotFilter, setDepotFilter] = useState('all');
   // Quantités à commander modifiables avant impression (non enregistrées)
   const [overrides, setOverrides] = useState<Record<string, string>>({});
+  // Déjà commandé et pas encore reçu, par article et dépôt
+  const [onOrder, setOnOrder] = useState<Record<string, number>>({});
+  const [creating, setCreating] = useState(false);
 
   const load = async () => {
     if (!supabase) return;
@@ -45,9 +49,33 @@ const OrderSheet: React.FC = () => {
     })));
   };
 
+  const loadOnOrder = async () => {
+    const { data } = await supabase.from('open_order_quantities').select('*');
+    setOnOrder(Object.fromEntries((data || []).map(r => [`${r.equipment_id}:${r.depot_id}`, Number(r.quantity)])));
+  };
+
   useEffect(() => {
     load();
+    loadOnOrder();
   }, []);
+
+  // Un bon de commande brouillon par fournisseur, sans ce qui est déjà en commande
+  const createOrders = async () => {
+    setCreating(true);
+    const targets = depotFilter === 'all' ? [...new Set(items.map(i => i.depot_id))] : [depotFilter];
+    let created = 0;
+    for (const depotId of targets) {
+      const { data, error } = await supabase.rpc('create_orders_from_low_stock', { p_depot_id: depotId });
+      if (error) {
+        toast.error(error.message);
+        break;
+      }
+      created += Number(data) || 0;
+    }
+    setCreating(false);
+    await loadOnOrder();
+    toast[created ? 'success' : 'error'](created ? `${created} bon${created > 1 ? 's' : ''} de commande créé${created > 1 ? 's' : ''} (brouillon)` : 'Tout est déjà en commande');
+  };
 
   const bySupplier = useMemo(() => {
     const groups = new Map<string, LowStockItem[]>();
@@ -85,7 +113,9 @@ const OrderSheet: React.FC = () => {
             {depots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
           <Button variant="outline" icon={<RefreshCw size={16} />} onClick={load} loading={loading}>Actualiser</Button>
-          <Button icon={<Printer size={16} />} onClick={() => window.print()} disabled={bySupplier.length === 0}>Imprimer</Button>
+          <Button variant="outline" icon={<Printer size={16} />} onClick={() => window.print()} disabled={bySupplier.length === 0}>Imprimer</Button>
+          <Button icon={<FileText size={16} />} onClick={createOrders} loading={creating} disabled={bySupplier.length === 0}>Créer les bons de commande</Button>
+          <Link to="/commandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline">Commandes en cours →</Link>
         </div>
       </div>
 
@@ -143,6 +173,11 @@ const OrderSheet: React.FC = () => {
                           />
                           <span className="hidden print:inline font-mono">{formatQty(toOrder(line))}</span>{' '}
                           <span className="text-gray-600 dark:text-gray-400">{line.unit}</span>
+                          {onOrder[`${line.equipment_id}:${line.depot_id}`] > 0 && (
+                            <span className="block text-xs text-info-600 dark:text-info-100 print:hidden">
+                              déjà commandé : {formatQty(onOrder[`${line.equipment_id}:${line.depot_id}`])}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-2 text-right font-mono tabular-nums">{line.purchase_price ? formatChf(line.purchase_price) : '—'}</td>
                       </tr>
