@@ -9,6 +9,7 @@ import SubgroupModal from '../components/subgroups/SubgroupModal';
 import DepartmentModal from '../components/departments/DepartmentModal';
 import MaintenanceTypeModal from '../components/settings/MaintenanceTypeModal';
 import ExcelImport from '../components/import/ExcelImport';
+import CatalogImport from '../components/import/CatalogImport';
 import { SystemResetModal } from '../components/admin/SystemResetModal';
 import { useApp } from '../contexts/AppContext';
 import { 
@@ -21,6 +22,7 @@ import {
   Layers,
   Wrench,
   Upload,
+  BookOpen,
   Download,
   Globe,
   Moon,
@@ -465,6 +467,19 @@ const Settings: React.FC = () => {
             </div>
           </Card>
         </div>
+      </Accordion>
+
+      {/* Catalogues fournisseurs */}
+      <Accordion
+        title="CATALOGUES FOURNISSEURS"
+        icon={<BookOpen size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <CatalogImport suppliers={suppliers} onSuppliersChanged={fetchSuppliers} />
+          </div>
+        </Card>
       </Accordion>
 
       {/* Catégories */}

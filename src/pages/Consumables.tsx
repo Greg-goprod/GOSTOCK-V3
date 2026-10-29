@@ -4,6 +4,8 @@ import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Minus, Plus, Search, Se
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
+import CatalogPicker from '../components/common/CatalogPicker';
+import { CatalogProduct, catalogDescription } from '../lib/catalog';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { Equipment } from '../types';
@@ -423,6 +425,7 @@ const NewConsumableModal: React.FC<NewConsumableModalProps> = ({ suppliers, depo
     quantity: '',
     minQuantity: '',
   });
+  const [catalogProduct, setCatalogProduct] = useState<CatalogProduct | null>(null);
   const [saving, setSaving] = useState(false);
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(prev => ({ ...prev, [key]: e.target.value }));
@@ -444,6 +447,10 @@ const NewConsumableModal: React.FC<NewConsumableModalProps> = ({ suppliers, depo
           supplier_id: form.supplierId || null,
           supplier_reference: form.supplierReference.trim() || null,
           purchase_price: form.purchasePrice ? Number(form.purchasePrice.replace(',', '.')) : null,
+          catalog_product_id: catalogProduct?.id ?? null,
+          ean: catalogProduct?.ean ?? null,
+          image_url: catalogProduct?.image_url ?? null,
+          description: catalogProduct ? catalogDescription(catalogProduct) : null,
         })
         .select('id')
         .single();
@@ -471,8 +478,16 @@ const NewConsumableModal: React.FC<NewConsumableModalProps> = ({ suppliers, depo
     <Modal isOpen onClose={onClose} title="Nouveau consommable" size="lg">
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
+          <CatalogPicker
+            onSelect={product => {
+              setCatalogProduct(product);
+              setForm(prev => ({ ...prev, name: product.name, supplierId: product.supplier_id, supplierReference: product.reference }));
+            }}
+          />
+        </div>
+        <div className="sm:col-span-2">
           <label htmlFor="new-name" className={labelClass}>Nom</label>
-          <input id="new-name" value={form.name} onChange={set('name')} className={inputClass} required autoFocus placeholder="ex. Gants nitrile taille L" />
+          <input id="new-name" value={form.name} onChange={set('name')} className={inputClass} required placeholder="ex. Gants nitrile taille L" />
         </div>
         <div>
           <label htmlFor="new-unit" className={labelClass}>Unité</label>

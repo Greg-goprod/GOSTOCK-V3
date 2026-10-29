@@ -18,7 +18,7 @@ const exactILike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
  * Retrouve l'équipement correspondant à un code scanné, sans correspondance approximative :
  *  1. identifiant de l'équipement (contenu des QR codes d'équipement)
  *  2. QR code d'un exemplaire (ex. GOMAT-20261029-0001-001)
- *  3. numéro d'article, puis numéro de série exacts
+ *  3. numéro d'article, numéro de série, puis code-barres EAN du fabricant exacts
  */
 export async function findEquipmentByCode(rawCode: string): Promise<ScannedEquipment | null> {
   if (!supabase) throw new Error('Supabase client not initialized');
@@ -46,13 +46,14 @@ export async function findEquipmentByCode(rawCode: string): Promise<ScannedEquip
     return { equipment, instance: instanceFields };
   }
 
-  for (const column of ['article_number', 'serial_number']) {
+  const labels: Record<string, string> = { article_number: "numéro d'article", serial_number: 'numéro de série', ean: 'code EAN' };
+  for (const column of ['article_number', 'serial_number', 'ean']) {
     const { data, error } = await supabase.from('equipment').select('*').ilike(column, pattern).limit(2);
     if (error) throw error;
-    // Un numéro de série saisi deux fois ne doit pas choisir un équipement au hasard
+    // Un code partagé par plusieurs fiches ne doit pas choisir un équipement au hasard
     if (data && data.length === 1) return { equipment: data[0] };
     if (data && data.length > 1) {
-      throw new Error(`Plusieurs équipements ont ce ${column === 'article_number' ? "numéro d'article" : 'numéro de série'} : ${code}`);
+      throw new Error(`Plusieurs équipements ont ce ${labels[column]} : ${code}`);
     }
   }
 

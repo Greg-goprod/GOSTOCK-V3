@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
+import CatalogPicker from '../common/CatalogPicker';
+import { CatalogProduct, catalogDescription } from '../../lib/catalog';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Category, Supplier, EquipmentGroup, EquipmentSubgroup, Equipment } from '../../types';
@@ -34,7 +36,10 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     image_url: '',
     short_title: '',
     available_quantity: 1,
-    requires_approval: false
+    requires_approval: false,
+    catalog_product_id: '',
+    ean: '',
+    supplier_reference: ''
   });
   const [quantityData, setQuantityData] = useState({
     qrType: 'individual' as 'individual' | 'batch',
@@ -63,7 +68,10 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         image_url: '',
         short_title: '',
         available_quantity: 1,
-        requires_approval: false
+        requires_approval: false,
+        catalog_product_id: '',
+        ean: '',
+        supplier_reference: ''
       });
       setQuantityData({
         qrType: 'individual',
@@ -205,6 +213,9 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         description: formData.description || null,
         location: formData.location || null,
         short_title: formData.short_title || null,
+        catalog_product_id: formData.catalog_product_id || null,
+        ean: formData.ean || null,
+        supplier_reference: formData.supplier_reference || null,
         qr_type: quantityData.qrType,
         total_quantity: quantityData.totalQuantity,
         available_quantity: quantityData.totalQuantity
@@ -292,6 +303,20 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     }
   };
 
+  const fillFromCatalog = (product: CatalogProduct) => {
+    setFormData(prev => ({
+      ...prev,
+      name: product.name,
+      description: catalogDescription(product),
+      image_url: product.image_url || prev.image_url,
+      supplier_id: product.supplier_id,
+      catalog_product_id: product.id,
+      ean: product.ean || '',
+      supplier_reference: product.reference
+    }));
+    toast.success(`Fiche remplie : ${product.name}`);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -344,11 +369,18 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     >
       {step === 'basic' ? (
         <div className="space-y-4">
+          <CatalogPicker onSelect={fillFromCatalog} />
+          {formData.catalog_product_id && (
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Depuis le catalogue : <span className="font-medium">{formData.name}</span>{' '}
+              <span className="font-mono text-xs">({formData.supplier_reference})</span>. Complétez le numéro de série ci-dessous.
+            </p>
+          )}
           {/* Informations de base */}
           <Accordion
             title="INFORMATIONS DE BASE"
             icon={<Info size={18} className="text-primary-600 dark:text-primary-400" />}
-            defaultOpen={false}
+            defaultOpen
           >
             <form onSubmit={handleBasicSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
