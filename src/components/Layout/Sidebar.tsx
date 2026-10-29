@@ -23,7 +23,9 @@ import {
   AlertTriangle,
   ListChecks,
   ShoppingCart,
-  Coins
+  Coins,
+  Gauge,
+  History
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -55,11 +57,13 @@ const NAV_SECTIONS = [
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/entretien', label: 'Entretien', icon: Wrench },
     { to: '/incidents', label: 'Pertes et casse', icon: AlertTriangle },
+    { to: '/pilotage', label: 'Pilotage', icon: Gauge },
     { to: '/couts', label: 'Coûts', icon: Coins },
     { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },
   ] },
   { title: 'Réglages', links: [
     { to: '/users', label: 'Personnes', icon: Users },
+    { to: '/journal', label: 'Journal', icon: History },
     { to: '/settings', label: 'Paramètres', icon: Settings },
   ] },
 ];

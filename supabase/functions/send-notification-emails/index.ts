@@ -30,6 +30,17 @@ const KIND_LABEL: Record<string, { label: string; path: string; action: string }
   low_stock: { label: 'Stock bas', path: '/commande', action: 'Voir la feuille de commande' },
   request_to_approve: { label: 'Demande à valider', path: '/demandes', action: 'Ouvrir les demandes' },
   vehicle_deadline: { label: 'Échéance véhicule', path: '/vehicules', action: 'Voir la flotte' },
+  maintenance_due: { label: 'Entretien', path: '/entretien', action: "Voir l'entretien" },
+  tool_damaged: { label: 'Outil abîmé', path: '/entretien', action: "Voir l'entretien" },
+  incident: { label: 'Perte / casse', path: '/incidents', action: 'Voir les incidents' },
+  inventory_gap: { label: 'Inventaire', path: '/inventaire', action: "Voir l'inventaire" },
+  return_escalation: { label: 'Retard', path: '/checkouts', action: 'Voir les sorties' },
+  monthly_report: { label: 'Rapport mensuel', path: '/pilotage', action: 'Ouvrir le pilotage' },
+  request_ready: { label: 'Votre demande', path: '/demandes', action: 'Voir mes demandes' },
+  request_approved: { label: 'Votre demande', path: '/demandes', action: 'Voir mes demandes' },
+  request_rejected: { label: 'Votre demande', path: '/demandes', action: 'Voir mes demandes' },
+  return_reminder: { label: 'Retour de matériel', path: '/demandes', action: 'Voir mon matériel' },
+  return_overdue: { label: 'Retour de matériel', path: '/demandes', action: 'Voir mon matériel' },
 };
 
 interface PendingEmail {
@@ -74,7 +85,7 @@ function renderEmail(n: Pick<PendingEmail, 'kind' | 'title' | 'message' | 'creat
         ${link}
       </td></tr>
     </table>
-    <p style="font-size:12px;color:#6b6b82;margin:12px 0 0">Vous recevez cet e-mail car vous êtes destinataire des alertes GO-Mat.</p>
+    <p style="font-size:12px;color:#6b6b82;margin:12px 0 0">Message automatique de GO-Mat · gestion du matériel.</p>
   </td></tr></table></body></html>`;
   const text = `${n.title}\n\n${n.message}\n\n${when}${n.depot_name ? ` · ${n.depot_name}` : ''}${APP_URL ? `\n\n${APP_URL}${meta.path}` : ''}`;
   return { subject: `[GO-Mat] ${n.title}`, html, text };
@@ -128,8 +139,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Les échéances véhicules sont créées ici aussi, même si personne n'ouvre l'application
-  await supabase.rpc('check_vehicle_deadlines');
+  // Les échéances et relances sont créées ici aussi, même si personne n'ouvre l'application
+  await Promise.all([
+    supabase.rpc('check_vehicle_deadlines'),
+    supabase.rpc('check_maintenance_due'),
+    supabase.rpc('check_due_reminders'),
+    supabase.rpc('check_monthly_report'),
+  ]);
 
   const { data: pending, error } = await supabase.rpc('claim_notification_emails', { p_limit: 50 });
   if (error) return json({ error: error.message }, 500);
@@ -152,11 +168,12 @@ Deno.serve(async (req) => {
     }
     // Sans destinataire, l'alerte est considérée comme traitée (elle reste visible dans l'app)
     // Si au moins un destinataire l'a reçue, pas de nouvel essai (il la recevrait en double)
-    await supabase.rpc('mark_notification_email', {
-      p_id: n.id,
-      p_error: errors.length ? errors.join(' ; ').slice(0, 1000) : null,
-      p_done: errors.length === 0 || delivered > 0,
-    });
+    const failure = errors.length ? errors.join(' ; ').slice(0, 1000) : null;
+    const marked = await supabase.rpc('mark_notification_email', { p_id: n.id, p_error: failure, p_done: errors.length === 0 || delivered > 0 });
+    // Base sans la version à trois paramètres (correction du backlog non appliquée) : ancienne signature
+    if (marked.error?.code === 'PGRST202') {
+      await supabase.rpc('mark_notification_email', { p_id: n.id, p_error: delivered > 0 ? null : failure });
+    }
   }
 
   return json({ notifications: pending?.length ?? 0, sent, failed });

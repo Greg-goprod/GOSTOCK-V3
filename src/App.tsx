@@ -23,6 +23,8 @@ import Incidents from './pages/Incidents';
 import Inventory from './pages/Inventory';
 import PurchaseOrders from './pages/PurchaseOrders';
 import Costs from './pages/Costs';
+import Steering from './pages/Steering';
+import AuditLog from './pages/AuditLog';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 
@@ -64,6 +66,8 @@ function App() {
         <Route path="/inventaire" element={<Guard><Inventory /></Guard>} />
         <Route path="/commandes" element={<Guard><PurchaseOrders /></Guard>} />
         <Route path="/couts" element={<Guard><Costs /></Guard>} />
+        <Route path="/pilotage" element={<Guard><Steering /></Guard>} />
+        <Route path="/journal" element={<Guard><AuditLog /></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

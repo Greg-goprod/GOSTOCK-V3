@@ -55,6 +55,8 @@ const Header: React.FC = () => {
     if (path.startsWith('/inventaire')) return 'INVENTAIRE';
     if (path.startsWith('/commandes')) return 'COMMANDES';
     if (path.startsWith('/couts')) return 'COÛTS';
+    if (path.startsWith('/pilotage')) return 'PILOTAGE';
+    if (path.startsWith('/journal')) return 'JOURNAL';
     if (path.startsWith('/incidents')) return 'PERTES ET CASSE';
     
     return 'GO-MAT';

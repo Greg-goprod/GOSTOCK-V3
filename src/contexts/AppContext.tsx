@@ -99,8 +99,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         throw new Error('Supabase client not initialized');
       }
       
-      // Alertes d'échéance (flotte, entretien des outils) : une seule par échéance, sans effet si déjà créées
-      await Promise.all([supabase.rpc('check_vehicle_deadlines'), supabase.rpc('check_maintenance_due')]);
+      // Alertes d'échéance (flotte, entretien, retours, rapport du mois) : une seule par échéance,
+      // sans effet si déjà créées
+      await Promise.all([
+        supabase.rpc('check_vehicle_deadlines'),
+        supabase.rpc('check_maintenance_due'),
+        supabase.rpc('check_due_reminders'),
+        supabase.rpc('check_monthly_report'),
+      ]);
 
       // Charger toutes les données nécessaires en parallèle
       const [
