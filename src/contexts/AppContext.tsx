@@ -466,33 +466,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      // Pour chaque équipement
-      for (const eq of equipment) {
-        // Compter les emprunts actifs, en retard et perdus
-        const { data: checkoutsData, error: checkoutsError } = await supabase
-          .from('checkouts')
-          .select('*')
-          .eq('equipment_id', eq.id)
-          .in('status', ['active', 'overdue', 'lost']);
-
-        if (checkoutsError) throw checkoutsError;
-        
-        const activeCount = checkoutsData?.length || 0;
-        const totalQuantity = eq.totalQuantity || 1;
-        const availableQuantity = Math.max(totalQuantity - activeCount, 0);
-        const newStatus = availableQuantity <= 0 ? 'checked-out' : 'available';
-        
-        // Mettre à jour la quantité disponible
-        const { error: updateError } = await supabase
-          .from('equipment')
-          .update({
-            available_quantity: availableQuantity,
-            status: newStatus
-          })
-          .eq('id', eq.id);
-          
-        if (updateError) throw updateError;
-      }
+      // La base recalcule le stock de chaque équipement à partir des emprunts et maintenances
+      const { error } = await supabase.rpc('update_equipment_availability');
+      if (error) throw error;
       
       // Rafraîchir les données
       await refreshEquipmentData();

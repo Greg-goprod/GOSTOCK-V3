@@ -327,16 +327,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         throw equipmentResult.error;
       }
 
-      console.log('Utilisateurs récupérés:', usersResult.data?.length);
-      if (usersResult.data) {
-        // Vérifier si Benoit Kaelin est présent dans les résultats
-        const benoitKaelin = usersResult.data.find(u => 
-          u.first_name?.toLowerCase() === 'benoit' && 
-          u.last_name?.toLowerCase() === 'kaelin'
-        );
-        console.log('Benoit Kaelin trouvé:', benoitKaelin ? 'Oui' : 'Non');
-      }
-
       setUsers(usersResult.data || []);
       
       // Transform equipment data from snake_case to camelCase
@@ -501,8 +491,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
   const addEquipmentToCheckout = (eq: Equipment) => {
     const existingItem = checkoutItems.find(item => item.equipment.id === eq.id);
-    const availableQty = eq.availableQuantity || 1; // Valeur par défaut si undefined
-    
+    const availableQty = eq.availableQuantity ?? 0;
+
+    if (availableQty <= 0) {
+      toast.error(`Plus de stock disponible pour ${eq.name}`);
+      return;
+    }
+
     if (existingItem) {
       const currentQty = existingItem.quantity || 0;
       if (currentQty < availableQty) {
@@ -536,7 +531,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    const availableQty = item.equipment.availableQuantity || 1; // Valeur par défaut si undefined
+    const availableQty = item.equipment.availableQuantity ?? 0;
     if (newQuantity > availableQty) {
       toast.error(`Quantité maximale disponible: ${availableQty}`);
       return;
@@ -565,57 +560,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     try {
       setIsLoading(true);
 
-      // Create delivery note
-      const { data: deliveryNote, error: deliveryNoteError } = await supabase
-        .from('delivery_notes')
-        .insert([{
-          user_id: selectedUser.id,
-          due_date: dueDate,
-          notes: notes || null
-        }])
-        .select()
-        .single();
-
-      if (deliveryNoteError) throw deliveryNoteError;
-
-      // Create checkouts for each item
-      const checkoutPromises = checkoutItems.map(async (item) => {
-        const checkouts = [];
-        
-        for (let i = 0; i < item.quantity; i++) {
-          checkouts.push({
-            equipment_id: item.equipment.id,
-            user_id: selectedUser.id,
-            delivery_note_id: deliveryNote.id,
-            due_date: dueDate,
-            status: 'active',
-            notes: notes || null
-          });
-        }
-
-        // Insert checkouts
-        const { error: checkoutError } = await supabase
-          .from('checkouts')
-          .insert(checkouts);
-
-        if (checkoutError) throw checkoutError;
-
-        // Update equipment availability
-        const newAvailableQuantity = item.equipment.availableQuantity - item.quantity;
-        const newStatus = newAvailableQuantity === 0 ? 'checked-out' : 'available';
-
-        const { error: equipmentError } = await supabase
-          .from('equipment')
-          .update({
-            available_quantity: newAvailableQuantity,
-            status: newStatus
-          })
-          .eq('id', item.equipment.id);
-
-        if (equipmentError) throw equipmentError;
+      // Bon + emprunts en une seule transaction ; la base refuse la sortie s'il n'y a plus de stock
+      const { data: deliveryNote, error: checkoutError } = await supabase.rpc('create_checkout', {
+        p_user_id: selectedUser.id,
+        p_due_date: dueDate,
+        p_items: checkoutItems.map(item => ({
+          equipment_id: item.equipment.id,
+          quantity: item.quantity
+        })),
+        p_notes: notes || null
       });
 
-      await Promise.all(checkoutPromises);
+      if (checkoutError) throw checkoutError;
 
       // Add notification to localStorage
       const notification = {

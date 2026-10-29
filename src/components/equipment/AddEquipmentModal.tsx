@@ -496,14 +496,13 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                   </label>
                   <select
                     name="status"
-                    value={formData.status}
+                    value={formData.status === 'retired' ? 'retired' : 'available'}
                     onChange={handleChange}
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
                   >
-                    <option value="available">Disponible</option>
-                    <option value="checked-out">Emprunté</option>
-                    <option value="maintenance">En maintenance</option>
-                    <option value="retired">Retiré</option>
+                    {/* Emprunté / en maintenance sont calculés par la base à partir des sorties et maintenances */}
+                    <option value="available">En service</option>
+                    <option value="retired">Retiré du service</option>
                   </select>
                 </div>
 

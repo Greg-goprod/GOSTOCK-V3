@@ -34,7 +34,6 @@ export default function Checkouts() {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedDeliveryNote, setSelectedDeliveryNote] = useState<DeliveryNoteWithStatus | null>(null);
-  const [deliveryCheckouts, setDeliveryCheckouts] = useState<CheckoutWithCalculatedStatus[]>([]);
   const [calculatedCheckouts, setCalculatedCheckouts] = useState<CheckoutWithCalculatedStatus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'equipment'>('list');
@@ -174,13 +173,6 @@ export default function Checkouts() {
     }
     
     setSelectedDeliveryNote(deliveryNote);
-    
-    // Récupérer les emprunts associés à ce bon de livraison
-    const associatedCheckouts = calculatedCheckouts.filter(
-      checkout => checkout.delivery_note_id === deliveryNote.id
-    ) || [];
-    
-    setDeliveryCheckouts(associatedCheckouts);
     setShowReturnModal(true);
   };
 
@@ -629,14 +621,7 @@ export default function Checkouts() {
             setSelectedDeliveryNote(null);
             loadCheckoutsWithStatus();
           }}
-          deliveryNote={{
-            id: selectedDeliveryNote.id,
-            userId: selectedDeliveryNote.userId,
-            number: selectedDeliveryNote.number || 'N/A',
-            createdAt: selectedDeliveryNote.createdAt,
-            notes: selectedDeliveryNote.notes
-          }}
-          checkouts={deliveryCheckouts}
+          deliveryNoteId={selectedDeliveryNote.id}
         />
       )}
     </div>

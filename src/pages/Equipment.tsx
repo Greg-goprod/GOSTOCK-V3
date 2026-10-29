@@ -11,7 +11,6 @@ import QRCodesModal from '../components/equipment/QRCodesModal';
 import MaintenanceModal from '../components/maintenance/MaintenanceModal';
 import MaintenanceHistoryModal from '../components/maintenance/MaintenanceHistoryModal';
 import CheckoutModal from '../components/checkout/CheckoutModal';
-import ReturnModal from '../components/checkout/ReturnModal';
 import FilterPanel from '../components/common/FilterPanel';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ExcelImport from '../components/import/ExcelImport';
@@ -44,7 +43,6 @@ export default function Equipment() {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showMaintenanceHistoryModal, setShowMaintenanceHistoryModal] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [showReturnModal, setShowReturnModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
@@ -170,12 +168,6 @@ export default function Equipment() {
     setSelectedEquipment(equipmentId);
     setSelectedInstance(instance || null);
     setShowCheckoutModal(true);
-  };
-
-  const handleReturn = (equipmentId: string, instance?: EquipmentInstance) => {
-    setSelectedEquipment(equipmentId);
-    setSelectedInstance(instance || null);
-    setShowReturnModal(true);
   };
 
   const exportToCSV = () => {
@@ -779,19 +771,6 @@ export default function Equipment() {
           instance={selectedInstance}
           onClose={async () => {
             setShowCheckoutModal(false);
-            setSelectedEquipment(null);
-            setSelectedInstance(null);
-            await refreshEquipmentData();
-          }}
-        />
-      )}
-
-      {showReturnModal && selectedEquipment && (
-        <ReturnModal
-          equipmentId={selectedEquipment}
-          instance={selectedInstance}
-          onClose={async () => {
-            setShowReturnModal(false);
             setSelectedEquipment(null);
             setSelectedInstance(null);
             await refreshEquipmentData();

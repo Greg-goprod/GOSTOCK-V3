@@ -223,7 +223,7 @@ const Scan: React.FC = () => {
         articleNumber: equipment.article_number,
         qrType: equipment.qr_type || 'individual',
         totalQuantity: equipment.total_quantity || 1,
-        availableQuantity: equipment.available_quantity || 1,
+        availableQuantity: equipment.available_quantity ?? 0,
         shortTitle: equipment.short_title
       };
       
@@ -236,7 +236,9 @@ const Scan: React.FC = () => {
           delivery_notes(id, note_number, status)
         `)
         .eq('equipment_id', equipment.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'overdue'])
+        .order('checkout_date')
+        .limit(1)
         .maybeSingle();
       
       if (activeCheckout) {
@@ -313,7 +315,7 @@ const Scan: React.FC = () => {
         articleNumber: instance.equipment.article_number,
         qrType: instance.equipment.qr_type || 'individual',
         totalQuantity: instance.equipment.total_quantity || 1,
-        availableQuantity: instance.equipment.available_quantity || 1,
+        availableQuantity: instance.equipment.available_quantity ?? 0,
         shortTitle: instance.equipment.short_title
       };
       
@@ -427,42 +429,16 @@ const Scan: React.FC = () => {
   };
 
   const handleReturnEquipment = async () => {
-    if (itemType === 'checkout' && item && item.status === 'active') {
+    if (itemType === 'checkout' && item && (item.status === 'active' || item.status === 'overdue')) {
       try {
         setLoading(true);
         
-        // Mettre à jour le statut du checkout
-        const { error: checkoutError } = await supabase
-          .from('checkouts')
-          .update({
-            status: 'returned',
-            return_date: new Date().toISOString()
-          })
-          .eq('id', item.id);
+        // La base remet le stock à jour elle-même
+        const { error: returnError } = await supabase.rpc('return_equipment', {
+          p_checkout_id: item.id
+        });
 
-        if (checkoutError) throw checkoutError;
-
-        // Mettre à jour la quantité disponible de l'équipement
-        const { data: equipmentData, error: equipmentFetchError } = await supabase
-          .from('equipment')
-          .select('available_quantity, total_quantity')
-          .eq('id', item.equipmentId)
-          .single();
-
-        if (equipmentFetchError) throw equipmentFetchError;
-
-        const newAvailableQuantity = (equipmentData.available_quantity || 0) + 1;
-        const newStatus = newAvailableQuantity >= (equipmentData.total_quantity || 1) ? 'available' : 'checked-out';
-
-        const { error: equipmentUpdateError } = await supabase
-          .from('equipment')
-          .update({
-            status: newStatus,
-            available_quantity: newAvailableQuantity
-          })
-          .eq('id', item.equipmentId);
-
-        if (equipmentUpdateError) throw equipmentUpdateError;
+        if (returnError) throw returnError;
 
         toast.success('Matériel retourné avec succès');
         
@@ -640,7 +616,7 @@ const Scan: React.FC = () => {
                 Voir les détails
               </Button>
 
-              {itemType === 'checkout' && item.status === 'active' && (
+              {itemType === 'checkout' && (item.status === 'active' || item.status === 'overdue') && (
                 <Button
                   variant="success"
                   icon={<ArrowLeft size={18} />}
@@ -672,7 +648,7 @@ const Scan: React.FC = () => {
           setShowReturnModal(false);
           setSelectedNoteId(undefined);
         }}
-        initialNoteId={selectedNoteId}
+        deliveryNoteId={selectedNoteId}
       />
     </div>
   );
