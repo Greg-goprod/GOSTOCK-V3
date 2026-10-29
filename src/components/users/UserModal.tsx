@@ -39,7 +39,12 @@ const emptyForm = {
   role: 'user' as Role,
   permissions: [] as Permission[],
   active: true,
+  license_categories: [] as string[],
+  license_expires_on: '',
 };
+
+// Catégories de permis suisses courantes pour la flotte
+const LICENSE_CATEGORIES = ['B', 'BE', 'C1', 'C1E', 'C', 'CE', 'D1', 'D'];
 
 const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
   const { depots } = useApp();
@@ -61,6 +66,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         role: user.role,
         permissions: (user.permissions || []) as Permission[],
         active: user.active !== false,
+        license_categories: user.licenseCategories || [],
+        license_expires_on: user.licenseExpiresOn || '',
       });
       supabase.from('user_depots').select('depot_id').eq('user_id', user.id)
         .then(({ data }) => setDepotIds((data || []).map(d => d.depot_id)));
@@ -96,6 +103,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         // On n'enregistre que ce qui s'ajoute au rôle
         permissions: form.permissions.filter(p => !inherited.includes(p)),
         active: form.active,
+        license_categories: form.license_categories,
+        license_expires_on: form.license_expires_on || null,
       };
 
       let userId = user?.id;
@@ -224,6 +233,28 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             </div>
           </fieldset>
         )}
+
+        <fieldset>
+          <legend className={labelClass}>Permis de conduire</legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {LICENSE_CATEGORIES.map(cat => (
+              <label key={cat} className="inline-flex items-center gap-1.5 text-sm text-gray-800 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={form.license_categories.includes(cat)}
+                  onChange={() => setForm(f => ({ ...f, license_categories: f.license_categories.includes(cat) ? f.license_categories.filter(c => c !== cat) : [...f.license_categories, cat] }))}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="font-mono">{cat}</span>
+              </label>
+            ))}
+          </div>
+          <div className="mt-2 max-w-xs">
+            <label htmlFor="user-license-exp" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Valable jusqu'au (facultatif)</label>
+            <input id="user-license-exp" type="date" value={form.license_expires_on} onChange={e => setForm({ ...form, license_expires_on: e.target.value })} className={inputClass} />
+          </div>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie.</p>
+        </fieldset>
 
         <label className="flex items-start gap-3 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">
           <input

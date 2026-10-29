@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Pencil, Plus, Undo2, Wrench } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Pencil, Plus, Undo2, Wrench } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import FuelInput from '../components/common/FuelInput';
 import SignaturePad from '../components/common/SignaturePad';
+import PhotoInput from '../components/common/PhotoInput';
+import { fileUrl } from '../lib/files';
+import LogbookModal from '../components/vehicles/LogbookModal';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -47,6 +50,7 @@ const Vehicles: React.FC = () => {
   // Fiches et maintenance : gestion de flotte ; retour d'un véhicule : le magasin
   const canManage = can('manage_fleet');
   const canReturn = can('scan') || canManage;
+  const [logbookOf, setLogbookOf] = useState<Vehicle | null>(null);
   const [bookings, setBookings] = useState<RequestOverview[]>([]);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [editing, setEditing] = useState<Vehicle | 'new' | null>(null);
@@ -198,6 +202,7 @@ const Vehicles: React.FC = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               {canReturn && v.status === 'in_use' && <Button size="sm" icon={<Undo2 size={14} />} onClick={() => setReturning(v)}>Retour</Button>}
+              <Button size="sm" variant="outline" icon={<BookOpen size={14} />} onClick={() => setLogbookOf(v)}>Carnet</Button>
               {canManage && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setEditing(v)}>Modifier</Button>}
               {canManage && (v.status === 'available' || v.status === 'maintenance') && (
                 <Button size="sm" variant="outline" icon={<Wrench size={14} />} onClick={() => toggleMaintenance(v)}>
@@ -223,6 +228,7 @@ const Vehicles: React.FC = () => {
           onDone={async () => { setReturning(null); await refreshData(); await loadBookings(); }}
         />
       )}
+      {logbookOf && <LogbookModal vehicle={logbookOf} onClose={() => setLogbookOf(null)} />}
     </div>
   );
 };
@@ -318,7 +324,9 @@ const VehicleFormModal: React.FC<{ vehicle: Vehicle | null; onClose: () => void;
 /* ------------------------------------------------------------------------ */
 
 const VehicleReturnModal: React.FC<{ vehicle: Vehicle; onClose: () => void; onDone: () => Promise<void> }> = ({ vehicle, onClose, onDone }) => {
-  const [trip, setTrip] = useState<{ start_km: number; start_fuel: number; start_damages?: string; driver?: string } | null>(null);
+  const [trip, setTrip] = useState<{ id: string; start_km: number; start_fuel: number; start_damages?: string; start_photos: string[]; driver?: string } | null>(null);
+  const [endPhotos, setEndPhotos] = useState<string[]>([]);
+  const [startUrls, setStartUrls] = useState<string[]>([]);
   const [km, setKm] = useState('');
   const [fuel, setFuel] = useState(vehicle.fuelLevel);
   const [damages, setDamages] = useState('');
@@ -330,14 +338,16 @@ const VehicleReturnModal: React.FC<{ vehicle: Vehicle; onClose: () => void; onDo
     (async () => {
       const { data } = await supabase!
         .from('vehicle_trips')
-        .select('start_km, start_fuel, start_damages, users(first_name, last_name)')
+        .select('id, start_km, start_fuel, start_damages, start_photos, users(first_name, last_name)')
         .eq('vehicle_id', vehicle.id)
         .is('end_at', null)
         .maybeSingle();
       if (data) {
         const driver = (data as unknown as { users?: { first_name: string; last_name: string } }).users;
-        setTrip({ start_km: data.start_km, start_fuel: data.start_fuel, start_damages: data.start_damages ?? undefined, driver: driver ? `${driver.first_name} ${driver.last_name}` : undefined });
+        setTrip({ id: data.id, start_km: data.start_km, start_fuel: data.start_fuel, start_damages: data.start_damages ?? undefined, start_photos: data.start_photos || [], driver: driver ? `${driver.first_name} ${driver.last_name}` : undefined });
         setKm(String(data.start_km));
+        const urls = await Promise.all((data.start_photos || []).map((p: string) => fileUrl(p)));
+        setStartUrls(urls.filter((u): u is string => !!u));
       }
     })();
   }, [vehicle.id]);
@@ -349,6 +359,10 @@ const VehicleReturnModal: React.FC<{ vehicle: Vehicle; onClose: () => void; onDo
     const { error } = await supabase.rpc('return_vehicle', {
       p_vehicle_id: vehicle.id, p_km: Number(km), p_fuel: fuel, p_damages: damages || null, p_signature: signature,
     });
+    if (!error && trip && endPhotos.length) {
+      const photos = await supabase.from('vehicle_trips').update({ end_photos: endPhotos }).eq('id', trip.id);
+      if (photos.error) toast.error(`Photos non enregistrées : ${errorMessage(photos.error)}`);
+    }
     setSaving(false);
     if (error) return toast.error(errorMessage(error));
     const distance = trip ? Number(km) - trip.start_km : 0;
@@ -364,6 +378,16 @@ const VehicleReturnModal: React.FC<{ vehicle: Vehicle; onClose: () => void; onDo
             Départ : <span className="font-mono">{trip.start_km.toLocaleString('fr-CH')} km</span>, carburant {trip.start_fuel}/8
             {trip.driver && <> · conducteur {trip.driver}</>}
             {trip.start_damages && <div className="mt-1">Dégâts déjà notés : {trip.start_damages}</div>}
+            {startUrls.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs mb-1">Photos au départ : comparez avec l'état actuel</p>
+                <div className="flex flex-wrap gap-2">
+                  {startUrls.map(url => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer"><img src={url} alt="Véhicule au départ" className="h-20 w-28 rounded object-cover" /></a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         <div>
@@ -375,10 +399,11 @@ const VehicleReturnModal: React.FC<{ vehicle: Vehicle; onClose: () => void; onDo
           <label htmlFor="end-damages" className={labelClass}>Nouveaux dégâts (facultatif)</label>
           <textarea id="end-damages" value={damages} onChange={e => setDamages(e.target.value)} rows={2} className={inputClass} />
         </div>
+        <PhotoInput folder="vehicules" value={endPhotos} onChange={setEndPhotos} label="Photos au retour (au moins une)" />
         <SignaturePad label={trip?.driver ? `Signature de ${trip.driver}` : 'Signature du conducteur'} onChange={setSignature} />
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button>
-          <Button type="submit" loading={saving} disabled={!signature}>Valider le retour</Button>
+          <Button type="submit" loading={saving} disabled={!signature || endPhotos.length === 0}>Valider le retour</Button>
         </div>
       </form>
     </Modal>

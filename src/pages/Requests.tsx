@@ -9,6 +9,7 @@ import QRCodeScanner from '../components/QRCode/QRCodeScanner';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { DeclareIncidentModal } from './Incidents';
+import PhotoInput from '../components/common/PhotoInput';
 import { supabase } from '../lib/supabase';
 import { useSiteSuggestions } from '../lib/sites';
 import { findEquipmentByCode } from '../lib/scan';
@@ -478,6 +479,8 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
   const [fuel, setFuel] = useState(8);
   const [damages, setDamages] = useState('');
   const [signature, setSignature] = useState<string | null>(null);
+  // Photos du véhicule au départ : comparées à celles du retour
+  const [startPhotos, setStartPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -526,11 +529,16 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
   const setStatus = (status: 'ready' | 'approved' | 'cancelled', message: string) =>
     run(() => supabase!.rpc('set_request_status', { p_request_id: request.id, p_status: status }), message);
 
-  const issue = () =>
-    run(() => supabase!.rpc('issue_request', {
+  const issue = async () => {
+    const ok = await run(() => supabase!.rpc('issue_request', {
       p_request_id: request.id,
       p_vehicle: vehicleItem ? { km: Number(km), fuel, damages: damages || null, signature } : null,
     }), `Demande ${request.number} sortie`);
+    if (ok && vehicleItem && startPhotos.length) {
+      const { error } = await supabase.from('vehicle_trips').update({ start_photos: startPhotos }).eq('request_id', request.id).is('end_at', null);
+      if (error) toast.error(`Photos non enregistrées : ${errorMessage(error)}`);
+    }
+  };
 
   // Préparation : le magasinier scanne chaque article de la demande
   const onScan = async (code: string) => {
@@ -677,10 +685,11 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
               <label htmlFor="start-damages" className={labelClass}>Dégâts constatés (facultatif)</label>
               <textarea id="start-damages" value={damages} onChange={e => setDamages(e.target.value)} rows={2} className={inputClass} placeholder="ex. rayure porte arrière droite" />
             </div>
+            <PhotoInput folder="vehicules" value={startPhotos} onChange={setStartPhotos} label="Photos du véhicule au départ (au moins une : chaque côté si possible)" />
             <SignaturePad label={`Signature de ${request.requester_name}`} onChange={setSignature} />
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setIssuing(false)} disabled={busy}>Retour</Button>
-              <Button onClick={issue} loading={busy} disabled={!km || !signature}>Valider la sortie</Button>
+              <Button onClick={issue} loading={busy} disabled={!km || !signature || startPhotos.length === 0}>Valider la sortie</Button>
             </div>
           </div>
         )}

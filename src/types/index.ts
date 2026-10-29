@@ -149,6 +149,8 @@ export interface User {
   active?: boolean;
   // Compte de connexion déjà lié (la personne s'est connectée au moins une fois)
   linked?: boolean;
+  licenseCategories?: string[];
+  licenseExpiresOn?: string | null;
   dateCreated: string;
 }
 

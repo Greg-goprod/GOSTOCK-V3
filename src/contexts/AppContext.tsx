@@ -247,6 +247,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         permissions: u.permissions || [],
         active: u.active !== false,
         linked: !!u.auth_user_id,
+        licenseCategories: u.license_categories || [],
+        licenseExpiresOn: u.license_expires_on,
         dateCreated: u.created_at
       })));
       setEquipment(transformedEquipment);
