@@ -46,6 +46,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     totalQuantity: 1
   });
   const [isGeneratingQRCodes, setIsGeneratingQRCodes] = useState(false);
+  const [nextArticleNumber, setNextArticleNumber] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -53,6 +54,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
       fetchSuppliers();
       fetchGroups();
       fetchSubgroups();
+      supabase?.rpc('preview_article_number').then(({ data }) => setNextArticleNumber(data || ''));
       // Reset form when modal opens
       setStep('basic');
       setFormData({
@@ -213,6 +215,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         description: formData.description || null,
         location: formData.location || null,
         short_title: formData.short_title || null,
+        // Vide → NULL : le numéro de série est unique en base, deux chaînes vides se heurteraient
+        serial_number: formData.serial_number.trim() || null,
         catalog_product_id: formData.catalog_product_id || null,
         ean: formData.ean || null,
         supplier_reference: formData.supplier_reference || null,
@@ -373,7 +377,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
           {formData.catalog_product_id && (
             <p className="text-sm text-gray-700 dark:text-gray-300">
               Depuis le catalogue : <span className="font-medium">{formData.name}</span>{' '}
-              <span className="font-mono text-xs">({formData.supplier_reference})</span>. Complétez le numéro de série ci-dessous.
+              <span className="font-mono text-xs">({formData.supplier_reference})</span>. Ajoutez le numéro de série du fabricant si vous l'avez.
             </p>
           )}
           {/* Informations de base */}
@@ -400,16 +404,19 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Numéro de série *
+                    Numéro de série du fabricant
                   </label>
                   <input
                     type="text"
                     name="serial_number"
-                    required
                     value={formData.serial_number}
                     onChange={handleChange}
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                    placeholder="Facultatif"
                   />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    Numéro d'article attribué automatiquement{nextArticleNumber && <> : <span className="font-mono">{nextArticleNumber}</span></>}
+                  </p>
                 </div>
 
                 <div>

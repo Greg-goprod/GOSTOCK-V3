@@ -35,6 +35,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+
+// Organisation unique tant que l'app n'a pas de connexion (voir default_organization_id())
+const DEFAULT_ORGANIZATION_ID = '00000000-0000-0000-0000-000000000001';
 import { 
   Category, 
   Supplier, 
@@ -79,7 +82,8 @@ const Settings: React.FC = () => {
   
   // Loading states
   const [loading, setLoading] = useState(true);
-  const [articlePrefix, setArticlePrefix] = useState('');
+  const [articleSeries, setArticleSeries] = useState('');
+  const [nextArticleNumber, setNextArticleNumber] = useState('');
   const [approvalMaxQuantity, setApprovalMaxQuantity] = useState('10');
   const [companyLogo, setCompanyLogo] = useState('');
 
@@ -188,10 +192,14 @@ const Settings: React.FC = () => {
     setSystemSettings(data || []);
     
     // Set specific settings
-    const prefixSetting = data?.find(s => s.id === 'article_prefix');
-    if (prefixSetting) {
-      setArticlePrefix(prefixSetting.value);
-    }
+    const { data: organization } = await supabase!
+      .from('organizations')
+      .select('article_series')
+      .eq('id', DEFAULT_ORGANIZATION_ID)
+      .maybeSingle();
+    if (organization) setArticleSeries(organization.article_series);
+    const { data: preview } = await supabase!.rpc('preview_article_number');
+    setNextArticleNumber(preview || '');
     
     const approvalSetting = data?.find(s => s.id === 'approval_max_quantity');
     if (approvalSetting) {
@@ -202,6 +210,17 @@ const Settings: React.FC = () => {
     if (logoSetting) {
       setCompanyLogo(logoSetting.value);
     }
+  };
+
+  const saveArticleSeries = async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase.rpc('set_article_series', { p_series: articleSeries });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setNextArticleNumber(data || '');
+    toast.success(`Série enregistrée : prochain numéro ${data}`);
   };
 
   const updateSystemSetting = async (id: string, value: string, description?: string) => {
@@ -373,31 +392,32 @@ const Settings: React.FC = () => {
               </h3>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Préfixe des articles
+                <label htmlFor="article-series" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Série de numérotation des articles
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id="article-series"
                     type="text"
-                    value={articlePrefix}
-                    onChange={(e) => setArticlePrefix(e.target.value)}
-                    maxLength={5}
-                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    placeholder="Ex: MAT"
+                    value={articleSeries}
+                    onChange={(e) => setArticleSeries(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+                    maxLength={6}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-mono tracking-widest uppercase"
+                    placeholder="Ex: GCENT1"
                   />
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => updateSystemSetting('article_prefix', articlePrefix, 'Préfixe utilisé pour générer les numéros d\'articles')}
-                  >
+                  <Button variant="primary" size="sm" onClick={saveArticleSeries} disabled={articleSeries.length !== 6}>
                     SAUVER
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Préfixe utilisé pour générer les numéros d'articles (5 caractères max)
+                  Exactement 6 lettres ou chiffres. Chaque nouvel article reçoit automatiquement le numéro suivant
+                  {nextArticleNumber && <> : prochain numéro <span className="font-mono text-gray-800 dark:text-gray-200">{nextArticleNumber}</span></>}.
+                  Les articles déjà créés gardent leur numéro.
                 </p>
               </div>
-              
+
               <div>
                 <label htmlFor="approval-max-quantity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Seuil de validation des demandes

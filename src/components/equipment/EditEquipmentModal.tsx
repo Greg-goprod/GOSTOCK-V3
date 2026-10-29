@@ -60,7 +60,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         category_id: '', // Will be set after fetching categories
         group_id: '', // Will be set after fetching groups
         subgroup_id: '', // Will be set after fetching subgroups
-        serial_number: equipment.serialNumber,
+        serial_number: equipment.serialNumber || '',
         status: equipment.status,
         supplier_id: '', // Will be set after fetching suppliers
         location: equipment.location || '',
@@ -336,6 +336,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         description: formData.description || null,
         location: formData.location || null,
         short_title: formData.short_title || null,
+        serial_number: formData.serial_number?.trim() || null,
         qr_type: quantityData.qrType,
         total_quantity: quantityData.totalQuantity
       };
@@ -441,16 +442,21 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Numéro de série *
+                    Numéro de série du fabricant
                   </label>
                   <input
                     type="text"
                     name="serial_number"
-                    required
                     value={formData.serial_number}
                     onChange={handleChange}
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                    placeholder="Facultatif"
                   />
+                  {equipment?.articleNumber && (
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                      Numéro d'article : <span className="font-mono">{equipment.articleNumber}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
