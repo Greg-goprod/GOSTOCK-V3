@@ -22,6 +22,22 @@ Reste à faire :
 3. **Planification pg_cron** toutes les 5 minutes (SQL en fin de migration 00007).
 4. Essai réel avec le bouton « Tester », puis une vraie alerte de stock bas.
 
+### Connexion — réglages Supabase à faire par le propriétaire
+
+La connexion (e-mail + code) et les rôles sont en place (migrations 00008 et 00009 appliquées sur GO-MAT).
+À régler dans le tableau de bord Supabase (Authentication), sans quoi l'envoi des codes reste limité :
+1. **URL Configuration** : Site URL = adresse de l'app (en local `http://localhost:5174`), et l'ajouter
+   aux Redirect URLs (le lien de l'e-mail y renvoie).
+2. **Email Templates → Magic Link** : ajouter `{{ .Token }}` pour que l'e-mail affiche le code à 6 chiffres
+   (sans cela, seul le lien fonctionne).
+3. **SMTP Settings** : le serveur d'envoi par défaut de Supabase n'écrit qu'aux membres de l'équipe du
+   projet et quelques fois par heure. Saisir le compte SMTP (le même que pour les alertes) avant
+   d'inviter les collaborateurs.
+
+Conseiller de sécurité : les avertissements « SECURITY DEFINER exécutable par authenticated » restants
+sont voulus (whoami, fonctions app_* utilisées par les règles RLS, create_request, disponibilités,
+recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
+
 ## Dettes techniques
 
 - **xlsx 0.18.5** (import Excel) : failles connues (prototype pollution, ReDoS). La version corrigée
@@ -33,4 +49,7 @@ Reste à faire :
 
 ## À venir
 
-- Connexion et rôles (Supabase Auth, RLS par organisation et par rôle) — en dernier, comme convenu.
+- Multi-organisation (intégration Mannyx) : `organization_id` est présent sur les nouvelles tables, mais
+  les règles RLS ne filtrent pas encore par organisation (une seule organisation aujourd'hui).
+- Envoi des e-mails de connexion via le relais Mannyx (hook « Send Email » de Supabase Auth), si on ne
+  veut pas saisir le SMTP dans Supabase.
