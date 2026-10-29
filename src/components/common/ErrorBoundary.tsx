@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home, Settings, ExternalLink } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home, Settings, ExternalLink, Lightbulb as LightbulbIcon } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -96,7 +96,7 @@ class ErrorBoundary extends Component<Props, State> {
                 
                 <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
                   <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                    <strong>💡 Astuce :</strong> Vous pouvez trouver ces informations dans votre dashboard Supabase → Settings → API
+                    <strong><LightbulbIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Astuce :</strong> Vous pouvez trouver ces informations dans votre dashboard Supabase → Settings → API
                   </p>
                 </div>
               </div>

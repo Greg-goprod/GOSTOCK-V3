@@ -182,7 +182,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
             </div>
           ) : maintenanceHistory.length === 0 ? (
             <div className="text-center py-12">
-              <Wrench size={48} className="mx-auto text-gray-400 mb-4" />
+              <Wrench size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
               <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase">
                 AUCUN HISTORIQUE DE MAINTENANCE
               </h3>

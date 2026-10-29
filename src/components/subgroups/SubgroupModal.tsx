@@ -7,7 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { EquipmentSubgroup, EquipmentGroup } from '../../types';
-import { Layers, FileText, Palette } from 'lucide-react';
+import { Layers, FileText, Palette, Folder as FolderIcon, FolderOpen as FolderOpenIcon } from 'lucide-react';
 
 interface SubgroupModalProps {
   isOpen: boolean;
@@ -234,16 +234,16 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                       style={{ backgroundColor: selectedGroup.color }}
                     >
-                      📁 {selectedGroup.name}
+                      <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{selectedGroup.name}
                     </span>
-                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-500 dark:text-gray-400">→</span>
                   </>
                 )}
                 <span 
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                   style={{ backgroundColor: formData.color }}
                 >
-                  📂 {formData.name || 'Nom du sous-groupe'}
+                  <FolderOpenIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{formData.name || 'Nom du sous-groupe'}
                 </span>
               </div>
             </div>

@@ -26,7 +26,8 @@ import {
   Moon,
   Sun,
   Truck,
-  Building2
+  Building2,
+  AlertTriangle as AlertTriangleIcon 
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -470,12 +471,14 @@ const Settings: React.FC = () => {
                       setEditingCategory(category);
                       setShowCategoryModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('categories', category.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -526,12 +529,14 @@ const Settings: React.FC = () => {
                       setEditingSupplier(supplier);
                       setShowSupplierModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('suppliers', supplier.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -591,12 +596,14 @@ const Settings: React.FC = () => {
                           setEditingGroup(group);
                           setShowGroupModal(true);
                         }}
+                        ariaLabel="Modifier"
                       />
                       <Button
                         variant="danger"
                         size="sm"
                         icon={<Trash2 size={14} />}
                         onClick={() => handleDeleteItem('equipment_groups', group.id)}
+                        ariaLabel="Supprimer"
                       />
                     </div>
                   </div>
@@ -664,12 +671,14 @@ const Settings: React.FC = () => {
                               setEditingSubgroup(subgroup);
                               setShowSubgroupModal(true);
                             }}
+                            ariaLabel="Modifier"
                           />
                           <Button
                             variant="danger"
                             size="sm"
                             icon={<Trash2 size={14} />}
                             onClick={() => handleDeleteItem('equipment_subgroups', subgroup.id)}
+                            ariaLabel="Supprimer"
                           />
                         </div>
                       </div>
@@ -733,12 +742,14 @@ const Settings: React.FC = () => {
                       setEditingDepartment(department);
                       setShowDepartmentModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('departments', department.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -797,12 +808,14 @@ const Settings: React.FC = () => {
                       setEditingMaintenanceType(type);
                       setShowMaintenanceTypeModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('maintenance_types', type.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -823,7 +836,7 @@ const Settings: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <h4 className="font-semibold text-red-800 dark:text-red-200 mb-3">
-              ⚠️ Zone d'administration - Actions irréversibles
+              <AlertTriangleIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Zone d'administration - Actions irréversibles
             </h4>
             <div className="space-y-4">
               <div>

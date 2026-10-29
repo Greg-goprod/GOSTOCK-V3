@@ -7,7 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Equipment, Category, Supplier, EquipmentGroup, EquipmentSubgroup } from '../../types';
-import { Package, QrCode, Copy, AlertTriangle, Info } from 'lucide-react';
+import { Package, QrCode, Copy, AlertTriangle, Info, Folder as FolderIcon, FolderOpen as FolderOpenIcon, Tag as TagIcon } from 'lucide-react';
 
 interface EditEquipmentModalProps {
   isOpen: boolean;
@@ -494,7 +494,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                         style={{ backgroundColor: getGroupColor(formData.group_id) }}
                       />
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        📁 {getGroupName(formData.group_id)}
+                        <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{getGroupName(formData.group_id)}
                       </span>
                     </div>
                   )}
@@ -533,7 +533,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                         />
                       </div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        📂 {filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
+                        <FolderOpenIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
                       </span>
                     </div>
                   )}
@@ -653,7 +653,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                            e.currentTarget.style.display = 'none';
                            const errorMsg = document.createElement('p');
                            errorMsg.className = 'text-xs text-red-500 mt-2';
-                          errorMsg.textContent = "⚠️ Impossible de charger l'image. Vérifiez que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
+                          errorMsg.textContent = "Impossible de charger l'image. Vérifiez que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
                            e.currentTarget.parentElement?.appendChild(errorMsg);
                          }}
                        />
@@ -667,15 +667,15 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
               {(formData.group_id || formData.subgroup_id) && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                    📁 Hiérarchie de classification
+                    <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Hiérarchie de classification
                   </h4>
                   <div className="flex items-center gap-2 flex-wrap">
                     {formData.category_id && (
                       <>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                          🏷️ {categories.find(c => c.id === formData.category_id)?.name}
+                          <TagIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{categories.find(c => c.id === formData.category_id)?.name}
                         </span>
-                        <span className="text-gray-400">→</span>
+                        <span className="text-gray-500 dark:text-gray-400">→</span>
                       </>
                     )}
                     {formData.group_id && (
@@ -684,9 +684,9 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                           style={{ backgroundColor: getGroupColor(formData.group_id) }}
                         >
-                          📁 {getGroupName(formData.group_id)}
+                          <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{getGroupName(formData.group_id)}
                         </span>
-                        {formData.subgroup_id && <span className="text-gray-400">→</span>}
+                        {formData.subgroup_id && <span className="text-gray-500 dark:text-gray-400">→</span>}
                       </>
                     )}
                     {formData.subgroup_id && (
@@ -694,12 +694,12 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                         style={{ backgroundColor: filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.color || '#64748b' }}
                       >
-                        📂 {filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
+                        <FolderOpenIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
                       </span>
                     )}
-                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-500 dark:text-gray-400">→</span>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
-                      💻 {formData.name || 'Nom du matériel'}
+                      <Package className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{formData.name || 'Nom du matériel'}
                     </span>
                   </div>
                 </div>

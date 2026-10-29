@@ -300,12 +300,14 @@ const Users: React.FC = () => {
                     size="sm"
                     icon={<Pencil size={16} />}
                     onClick={() => handleEditUser(user)}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={16} />}
                     onClick={() => handleDeleteClick(user)}
+                    ariaLabel="Supprimer"
                   />
                 </td>
               </tr>
@@ -363,12 +365,14 @@ const Users: React.FC = () => {
                 size="sm"
                 icon={<Pencil size={16} />}
                 onClick={() => handleEditUser(user)}
+                ariaLabel="Modifier"
               />
               <Button
                 variant="danger"
                 size="sm"
                 icon={<Trash2 size={16} />}
                 onClick={() => handleDeleteClick(user)}
+                ariaLabel="Supprimer"
               />
             </div>
           </div>

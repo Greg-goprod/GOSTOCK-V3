@@ -93,3 +93,14 @@ thead, tbody, tr, th, td {
   overflow-x: auto !important;
   max-width: 100% !important;
 }
+/* Respect du réglage système « réduire les animations » (les indicateurs de chargement restent animés) */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-spin),
+  *:not(.animate-spin)::before,
+  *:not(.animate-spin)::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

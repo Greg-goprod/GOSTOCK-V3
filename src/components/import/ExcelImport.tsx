@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle, X, Check as CheckIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -474,17 +474,17 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
       <div className="space-y-6">
         {/* Progress indicator */}
         <div className="flex items-center justify-center space-x-4">
-          <div className={`flex items-center ${step === 'upload' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'upload' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>1</div>
             <span className="ml-2">Fichier</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'validate' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'validate' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'validate' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>2</div>
             <span className="ml-2">Validation</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'import' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'import' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'import' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>3</div>
             <span className="ml-2">Import</span>
           </div>
@@ -494,7 +494,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         {step === 'upload' && (
           <div className="space-y-6">
             <div className="text-center">
-              <FileSpreadsheet size={48} className="mx-auto text-gray-400 mb-4" />
+              <FileSpreadsheet size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 Import de matériel depuis Excel
               </h3>
@@ -519,7 +519,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
               onDrop={handleDrop}
             >
               <div className="text-center">
-                <Upload size={32} className="mx-auto text-gray-400 mb-4" />
+                <Upload size={32} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
                 <div className="space-y-2">
                   <p className="text-gray-600 dark:text-gray-400">
                     Glissez-déposez votre fichier Excel ici ou
@@ -729,11 +729,11 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                   </h3>
                   <div className="space-y-2">
                     <p className="text-green-600 dark:text-green-400">
-                      ✓ {importResults.success} équipements importés avec succès
+                      <CheckIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.success} équipements importés avec succès
                     </p>
                     {importResults.errors > 0 && (
                       <p className="text-red-600 dark:text-red-400">
-                        ✗ {importResults.errors} erreurs lors de l'import
+                        <X className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.errors} erreurs lors de l'import
                       </p>
                     )}
                   </div>

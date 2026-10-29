@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Trash2, CheckCircle, XCircle, Loader2, CheckCircle2 as CheckCircle2Icon, FileText as FileTextIcon, Tag as TagIcon, Wrench as WrenchIcon } from 'lucide-react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { resetSystemForProduction, displayResetReport, type ResetResults } from '../../scripts/resetSystem';
@@ -68,7 +68,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
     <div className="space-y-6">
       <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
         <AlertTriangle className="w-8 h-8" />
-        <h3 className="text-xl font-bold">⚠️ ATTENTION - REMISE À ZÉRO DU SYSTÈME</h3>
+        <h3 className="text-xl font-bold"><AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />ATTENTION - REMISE À ZÉRO DU SYSTÈME</h3>
       </div>
 
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -76,10 +76,10 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
           Cette opération supprimera DÉFINITIVEMENT :
         </h4>
         <ul className="list-disc list-inside space-y-2 text-red-700 dark:text-red-300">
-          <li>🗑️ Tous les emprunts en cours et l'historique</li>
-          <li>📄 Tous les bons de livraison générés</li>
-          <li>🔧 Toutes les maintenances (en cours et passées)</li>
-          <li>🏷️ Toutes les instances d'équipement individuelles</li>
+          <li><Trash2 className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les emprunts en cours et l'historique</li>
+          <li><FileTextIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les bons de livraison générés</li>
+          <li><WrenchIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les maintenances (en cours et passées)</li>
+          <li><TagIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les instances d'équipement individuelles</li>
         </ul>
       </div>
 
@@ -88,16 +88,16 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
           Ce qui sera conservé :
         </h4>
         <ul className="list-disc list-inside space-y-2 text-green-700 dark:text-green-300">
-          <li>✅ Tous les équipements (remis en "disponible")</li>
-          <li>✅ Tous les utilisateurs et départements</li>
-          <li>✅ Toutes les catégories et fournisseurs</li>
-          <li>✅ Tous les paramètres système</li>
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les équipements (remis en "disponible")</li>
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les utilisateurs et départements</li>
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les catégories et fournisseurs</li>
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les paramètres système</li>
         </ul>
       </div>
 
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <p className="text-yellow-800 dark:text-yellow-200 font-medium">
-          ⚠️ Cette action est IRRÉVERSIBLE ! Assurez-vous d'avoir une sauvegarde si nécessaire.
+          <AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Cette action est IRRÉVERSIBLE ! Assurez-vous d'avoir une sauvegarde si nécessaire.
         </p>
       </div>
 
@@ -196,11 +196,11 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <h4 className="font-semibold mb-3">Rapport de remise à zéro :</h4>
               <ul className="space-y-2 text-sm">
-                <li>🗑️ Emprunts supprimés : <strong>{resetResults.deletedCheckouts}</strong></li>
-                <li>📄 Bons de livraison supprimés : <strong>{resetResults.deletedDeliveryNotes}</strong></li>
-                <li>🔧 Maintenances supprimées : <strong>{resetResults.deletedMaintenances}</strong></li>
-                <li>🏷️ Instances d'équipement supprimées : <strong>{resetResults.deletedInstances}</strong></li>
-                <li>✅ Équipements remis en disponible : <strong>{resetResults.updatedEquipment}</strong></li>
+                <li><Trash2 className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Emprunts supprimés : <strong>{resetResults.deletedCheckouts}</strong></li>
+                <li><FileTextIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Bons de livraison supprimés : <strong>{resetResults.deletedDeliveryNotes}</strong></li>
+                <li><WrenchIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Maintenances supprimées : <strong>{resetResults.deletedMaintenances}</strong></li>
+                <li><TagIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Instances d'équipement supprimées : <strong>{resetResults.deletedInstances}</strong></li>
+                <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Équipements remis en disponible : <strong>{resetResults.updatedEquipment}</strong></li>
               </ul>
             </div>
 

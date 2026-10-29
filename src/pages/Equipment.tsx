@@ -315,7 +315,7 @@ export default function Equipment() {
                     
                     // We can't directly insert a React component, so we'll use a simple SVG
                     fallbackDiv.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 mx-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500 dark:text-gray-400 mx-auto">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                       </svg>
                     `;
@@ -326,7 +326,7 @@ export default function Equipment() {
               />
             ) : (
               <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2">
-                <PenTool className="w-12 h-12 text-gray-400" />
+                <PenTool className="w-12 h-12 text-gray-500 dark:text-gray-400" />
               </div>
             )}
           </div>
@@ -449,7 +449,7 @@ export default function Equipment() {
                                 if (parent) {
                                   parent.innerHTML = `
                                     <div class="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500 dark:text-gray-400">
                                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                                       </svg>
                                     </div>
@@ -459,7 +459,7 @@ export default function Equipment() {
                             />
                           ) : (
                             <div className="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1">
-                              <PenTool className="w-6 h-6 text-gray-400" />
+                              <PenTool className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                             </div>
                           )}
                         </div>
@@ -565,7 +565,7 @@ export default function Equipment() {
 
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative basis-full sm:basis-auto sm:flex-1 sm:min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" />
           <input
             type="text"
             placeholder="Rechercher par nom, numéro de série ou numéro d'article..."
@@ -792,6 +792,7 @@ export default function Equipment() {
           isOpen={!!zoomedImage}
           onClose={() => setZoomedImage(null)}
           title={zoomedImage.name}
+          closeOnBackdrop
         >
           <img
             src={zoomedImage.url}
@@ -801,21 +802,14 @@ export default function Equipment() {
         </Modal>
       )}
 
-      {showImportModal && (
-        <Modal
-          isOpen={showImportModal}
-          onClose={() => setShowImportModal(false)}
-          title="Importer des équipements"
-        >
-          <ExcelImport
-            onClose={() => setShowImportModal(false)}
-            onImportComplete={() => {
-              setShowImportModal(false);
-              refreshData();
-            }}
-          />
-        </Modal>
-      )}
+      <ExcelImport
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportComplete={() => {
+          setShowImportModal(false);
+          refreshData();
+        }}
+      />
     </div>
   );
 }

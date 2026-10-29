@@ -4,7 +4,9 @@ type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' 
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  // Obligatoire pour un bouton sans texte (icône seule) : lu par les lecteurs d'écran et affiché au survol
+  ariaLabel?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
@@ -27,6 +29,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = '',
   loading = false,
+  ariaLabel,
 }) => {
   const variantClasses = {
     primary: 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white',
@@ -61,6 +64,8 @@ const Button: React.FC<ButtonProps> = ({
       `}
       disabled={disabled || loading}
       onClick={onClick}
+      aria-label={ariaLabel}
+      title={ariaLabel}
     >
       {loading ? (
         <>
@@ -72,7 +77,7 @@ const Button: React.FC<ButtonProps> = ({
         </>
       ) : (
         <>
-          {icon && <span className="text-[0.9em]">{icon}</span>}
+          {icon && <span className="text-[0.9em]" aria-hidden="true">{icon}</span>}
           {children}
         </>
       )}

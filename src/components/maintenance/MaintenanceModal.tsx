@@ -144,7 +144,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
         {/* Informations équipement */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">
-            🔧 MATÉRIEL EN MAINTENANCE
+            <Wrench className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />MATÉRIEL EN MAINTENANCE
           </h3>
           <div className="flex items-center gap-3">
             <div>

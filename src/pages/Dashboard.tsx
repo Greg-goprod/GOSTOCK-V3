@@ -387,7 +387,7 @@ const Dashboard: React.FC = () => {
         <div className="text-center">
           <RefreshCw size={28} className="mx-auto animate-spin text-primary-600 mb-3" />
           <div className="text-gray-500 dark:text-gray-400 text-sm">{t('loading')}</div>
-          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
             {connectionStatus === 'testing' ? 'Test de connexion...' : 'Chargement des données...'}
           </div>
         </div>
@@ -571,7 +571,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Disponible</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.availableEquipment}
-              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-400" />}
+              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
             </p>
           </div>
         </Card>
@@ -584,7 +584,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Emprunté</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.checkedOutEquipment}
-              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-400" />}
+              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
             </p>
           </div>
         </Card>
@@ -597,7 +597,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">En retard</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.overdueEquipment}
-              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-400" />}
+              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
             </p>
           </div>
         </Card>
@@ -610,7 +610,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Maintenance</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.maintenanceEquipment}
-              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-400" />}
+              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
             </p>
           </div>
         </Card>
@@ -623,7 +623,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Notifications</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.unreadNotifications}
-              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-400" />}
+              {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
             </p>
           </div>
         </Card>
@@ -683,7 +683,7 @@ const Dashboard: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-6">
-              <Package size={32} className="mx-auto text-gray-400 mb-2" />
+              <Package size={32} className="mx-auto text-gray-500 dark:text-gray-400 mb-2" />
               <p className="text-sm text-gray-500 dark:text-gray-400">Aucun emprunt actif</p>
             </div>
           )}
@@ -756,7 +756,7 @@ const Dashboard: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-6">
-              <Wrench size={32} className="mx-auto text-gray-400 mb-2" />
+              <Wrench size={32} className="mx-auto text-gray-500 dark:text-gray-400 mb-2" />
               <p className="text-sm text-gray-500 dark:text-gray-400">Aucun matériel en maintenance</p>
             </div>
           )}

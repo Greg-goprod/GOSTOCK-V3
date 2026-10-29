@@ -4,7 +4,7 @@ import Button from '../common/Button';
 import QRCodeScanner from '../QRCode/QRCodeScanner';
 import { User, Equipment, Category, Supplier } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { Search, Package, Calendar, Printer, User as UserIcon, Plus, Minus, X } from 'lucide-react';
+import { Search, Package, Calendar, Printer, User as UserIcon, Plus, Minus, X, CalendarDays as CalendarDaysIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserModal from '../users/UserModal';
 
@@ -835,17 +835,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       <div className="space-y-6">
         {/* Progress Steps */}
         <div className="flex items-center justify-center space-x-4">
-          <div className={`flex items-center ${step === 'user' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'user' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'user' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>1</div>
             <span className="ml-2 font-bold">Utilisateur</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'equipment' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'equipment' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'equipment' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>2</div>
             <span className="ml-2 font-bold">Matériel</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'summary' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'summary' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'summary' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>3</div>
             <span className="ml-2 font-bold">Résumé</span>
           </div>
@@ -991,7 +991,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                             {eq.serialNumber} • <span className="font-bold text-black dark:text-white">Dispo : {eq.availableQuantity ?? 0}/{eq.totalQuantity ?? 0}</span>
                           </p>
                         </div>
-                        <Plus size={16} className={eq.availableQuantity > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'} />
+                        <Plus size={16} className={eq.availableQuantity > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'} />
                       </div>
                     ))
                   ) : (
@@ -1031,6 +1031,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                           size="sm"
                           icon={<Minus size={14} />}
                           onClick={() => updateQuantity(item.equipment.id, item.quantity - 1)}
+                          ariaLabel="Diminuer la quantité"
                         />
                         <span className="w-8 text-center font-bold">{item.quantity}</span>
                         <Button
@@ -1039,12 +1040,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                           icon={<Plus size={14} />}
                           onClick={() => updateQuantity(item.equipment.id, item.quantity + 1)}
                           disabled={item.quantity >= item.equipment.availableQuantity}
+                          ariaLabel="Augmenter la quantité"
                         />
                         <Button
                           variant="danger"
                           size="sm"
                           icon={<X size={14} />}
                           onClick={() => removeEquipmentFromCheckout(item.equipment.id)}
+                          ariaLabel="Retirer de la sortie"
                         />
                       </div>
                     </div>
@@ -1108,7 +1111,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 </label>
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-2">
                   <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                    📅 Par défaut : retour le jour même ({new Date().toLocaleDateString('fr-FR')})
+                    <CalendarDaysIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Par défaut : retour le jour même ({new Date().toLocaleDateString('fr-FR')})
                   </p>
                 </div>
                 <input

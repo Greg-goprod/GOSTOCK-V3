@@ -395,7 +395,7 @@ const Notifications: React.FC = () => {
         {filteredNotifications.length === 0 ? (
           <Card>
             <div className="text-center py-12">
-              <Bell size={48} className="mx-auto text-gray-400 mb-4" />
+              <Bell size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
               <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase">
                 AUCUNE NOTIFICATION
               </h3>
@@ -549,6 +549,7 @@ const Notifications: React.FC = () => {
                     icon={<Trash2 size={14} />}
                     onClick={() => deleteNotification(notification.id)}
                     className="text-xs"
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>

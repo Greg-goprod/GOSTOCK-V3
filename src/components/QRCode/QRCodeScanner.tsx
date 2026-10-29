@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { QrCode, Zap } from 'lucide-react';
 
 interface QRCodeScannerProps {
@@ -12,6 +12,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastScanStatus, setLastScanStatus] = useState<'success' | 'error' | 'duplicate' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const lastScanTimeRef = useRef<number>(0);
   const lastScannedValueRef = useRef<string>('');
 
@@ -125,12 +126,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
   };
 
   const getStatusMessage = () => {
-    if (isProcessing) return '⚡ Traitement en cours...';
-    if (lastScanStatus === 'success') return '✅ Scan réussi !';
-    if (lastScanStatus === 'error') return '❌ Erreur de scan';
-    if (lastScanStatus === 'duplicate') return '⚠️ Doublon ignoré';
-    if (scannedValue) return '⚡ Appuyez sur Entrée pour valider';
-    return '🎯 Prêt pour le scan...';
+    if (isProcessing) return 'Traitement en cours...';
+    if (lastScanStatus === 'success') return 'Scan réussi !';
+    if (lastScanStatus === 'error') return 'Erreur de scan';
+    if (lastScanStatus === 'duplicate') return 'Doublon ignoré';
+    if (scannedValue) return 'Appuyez sur Entrée pour valider';
+    return 'Prêt pour le scan...';
   };
 
   return (
@@ -152,9 +153,13 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
       </div>
 
       {/* CHAMP DE SAISIE SIMPLIFIE */}
+      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Code scanné
+      </label>
       <div className="relative">
         <input
           ref={inputRef}
+          id={inputId}
           type="text"
           value={scannedValue}
           onChange={handleInputChange}
@@ -170,7 +175,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
           {isProcessing ? (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
           ) : (
-            <QrCode size={16} className="text-gray-400" />
+            <QrCode size={16} className="text-gray-500 dark:text-gray-400" />
           )}
         </div>
       </div>
