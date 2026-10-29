@@ -12,14 +12,16 @@ Fait :
 - Migration `20261029000007_notifications_email.sql` (file d'envoi, réservation sans double envoi, 3 essais)
 
 Reste à faire :
-1. **Appliquer sur GO-MAT** la nouvelle signature de `mark_notification_email(uuid, text, boolean)` :
-   le `DROP FUNCTION mark_notification_email(uuid, text)` attend une confirmation dans Supabase.
-   Tant que ce n'est pas fait, la fonction Edge ne peut pas marquer les alertes comme envoyées.
+1. *(Facultatif depuis le 29.10)* Appliquer sur GO-MAT la signature `mark_notification_email(uuid, text, boolean)` :
+   le `DROP FUNCTION mark_notification_email(uuid, text)` attend une confirmation dans Supabase. La fonction
+   Edge sait désormais utiliser l'ancienne signature ; la nouvelle évite seulement un renvoi en double quand
+   un destinataire sur plusieurs échoue.
 2. **Secrets de la fonction Edge** (saisis par le propriétaire dans Supabase, jamais dans le code) :
    `SMTP_RELAY_API_KEY` (= `API_SECRET_KEY` du relais Fly.io, même valeur que dans Mannyx),
    `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` ;
    facultatifs `SMTP_FROM_NAME`, `APP_URL`.
-3. **Planification pg_cron** toutes les 5 minutes (SQL en fin de migration 00007).
+3. **Planification pg_cron** toutes les 5 minutes (SQL en fin de migration 00007). Le même passage crée
+   les relances de retour, les échéances d'entretien et le rapport mensuel.
 4. Essai réel avec le bouton « Tester », puis une vraie alerte de stock bas.
 
 ### Connexion — réglages Supabase à faire par le propriétaire
@@ -37,6 +39,19 @@ La connexion (e-mail + code) et les rôles sont en place (migrations 00008 et 00
 Conseiller de sécurité : les avertissements « SECURITY DEFINER exécutable par authenticated » restants
 sont voulus (whoami, fonctions app_* utilisées par les règles RLS, create_request, disponibilités,
 recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
+
+## Ajouts du 29.10 (lots 1 à 6) — points d'attention
+
+- Photos et PV dans le compartiment privé Supabase Storage « fichiers » (10 Mo par fichier).
+- Les permis ne sont renseignés pour personne : **toute réservation de véhicule est refusée** tant que
+  le permis du demandeur n'est pas saisi dans « Personnes ».
+- Les contrôles OIBT « bloquants » refusent la sortie d'un outil dès l'échéance.
+- Avis personnels (demande validée / refusée / prête, à rendre demain, en retard) : visibles dans
+  « Mes demandes » ; envoyés par e-mail à la personne dès que l'envoi est configuré.
+- Appli installable (PWA) : le service worker n'est actif qu'en production (`npm run build`), pas avec
+  `npm run dev`.
+- Conseiller de sécurité : 36 avertissements « SECURITY DEFINER » voulus (chaque fonction vérifie les
+  droits elle-même).
 
 ## Dettes techniques
 
