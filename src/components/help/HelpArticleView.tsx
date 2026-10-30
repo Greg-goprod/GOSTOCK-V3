@@ -1,23 +1,70 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, ChevronRight, Lightbulb, MapPin, User, Wrench, ZoomIn } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronRight, Lightbulb, MapPin, Maximize2, Minimize2, User, Wrench, X, ZoomIn } from 'lucide-react';
 import type { HelpArticle, HelpTask } from '../../help/content';
 
-// Capture d'écran de l'aide ; masquée si elle n'a pas encore été générée
+// Zoom d'une capture par-dessus la page : se ferme avec la croix, Échap ou un clic sur le fond.
+// « Taille réelle » affiche l'image pixel pour pixel (défilement si elle dépasse l'écran).
+const ShotZoom: React.FC<{ src: string; alt: string; onClose: () => void }> = ({ src, alt, onClose }) => {
+  const [actual, setActual] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
+    window.addEventListener('keydown', onKey, true);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      document.body.style.overflow = overflow;
+      previous?.focus();
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Capture agrandie" onClick={onClose}
+      className="fixed inset-0 z-[1000] flex flex-col bg-black/85 backdrop-blur-sm">
+      <div className="flex shrink-0 items-center justify-end gap-2 p-3" onClick={e => e.stopPropagation()}>
+        <button type="button" onClick={() => setActual(a => !a)}
+          className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
+          {actual ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
+          {actual ? 'Adapter à l\'écran' : 'Taille réelle'}
+        </button>
+        <button ref={closeRef} type="button" onClick={onClose} aria-label="Fermer"
+          className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
+          <X size={16} aria-hidden="true" /> Fermer
+        </button>
+      </div>
+      <div className={`min-h-0 flex-1 overflow-auto px-3 pb-3 ${actual ? '' : 'flex items-center justify-center'}`}>
+        <img src={src} alt={alt} onClick={e => { e.stopPropagation(); setActual(a => !a); }}
+          style={actual ? { width: 'auto', maxWidth: 'none', cursor: 'zoom-out' } : { cursor: 'zoom-in' }}
+          className={actual ? 'mx-auto block' : 'block max-h-full max-w-full object-contain rounded-md shadow-2xl'} />
+      </div>
+    </div>,
+    document.body,
+  );
+};
+
+// Capture d'écran de l'aide ; masquée si elle n'a pas encore été générée. Clic : zoom refermable.
 export const HelpShot: React.FC<{ name: string; alt: string }> = ({ name, alt }) => {
   const [missing, setMissing] = useState(false);
+  const [zoom, setZoom] = useState(false);
   if (missing) return null;
+  const src = `/aide/${name}.jpg`;
   return (
     <figure className="mt-3">
-      {/* Clic : la capture en grand dans un nouvel onglet */}
-      <a href={`/aide/${name}.jpg`} target="_blank" rel="noopener" title="Agrandir la capture"
-        className="group relative block w-fit max-w-full overflow-hidden rounded-lg border-[1.5px] border-gray-200 dark:border-gray-700 shadow-sm">
-        <img src={`/aide/${name}.jpg`} alt={alt} loading="lazy" onError={() => setMissing(true)}
-          className="block max-h-[520px] w-auto max-w-full" />
-        <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-gray-900/75 px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
+      <button type="button" onClick={() => setZoom(true)} title="Agrandir la capture" aria-label={`Agrandir la capture : ${alt}`}
+        className="group relative block w-fit max-w-full cursor-zoom-in overflow-hidden rounded-lg border-[1.5px] border-gray-200 dark:border-gray-700 shadow-sm">
+        <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setMissing(true)}
+          className="block max-h-[560px] w-auto max-w-full" />
+        <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-gray-900/75 px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
           <ZoomIn size={13} aria-hidden="true" /> Agrandir
         </span>
-      </a>
+      </button>
+      {zoom && <ShotZoom src={src} alt={alt} onClose={() => setZoom(false)} />}
     </figure>
   );
 };

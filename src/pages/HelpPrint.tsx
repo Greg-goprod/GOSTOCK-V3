@@ -15,7 +15,7 @@ const HelpPrint: React.FC = () => {
   }, []);
 
   return (
-    <div className="help-print mx-auto max-w-[820px] bg-white px-8 py-10 text-gray-900">
+    <div translate="no" className="help-print mx-auto max-w-[820px] bg-white px-8 py-10 text-gray-900">
       <style>{`
         @page { margin: 14mm; }
         .help-print h2 { break-before: page; }

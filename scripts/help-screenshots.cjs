@@ -37,7 +37,7 @@ async function mark(page, locator, n) {
 
 const byRole = (page, role, name) => page.getByRole(role, { name });
 
-// Chaque capture : page, rôle, format, actions avant la photo, repères
+// Chaque capture : page, rôle, format, actions avant la photo, repères ; clip: false garde tout l'écran (menu compris)
 const SHOTS = [
   { name: 'connexion-1', path: '/', role: 'none', marks: p => [byRole(p, 'button', 'Recevoir un code')] },
   { name: 'connexion-2', path: '/', role: 'none', act: async p => {
@@ -45,7 +45,7 @@ const SHOTS = [
       await byRole(p, 'button', 'Recevoir un code').click();
       await p.waitForTimeout(800);
     }, marks: p => [p.getByLabel(/Code reçu/i)] },
-  { name: 'accueil-magasinier', path: '/', role: 'technician' },
+  { name: 'accueil-magasinier', path: '/', role: 'technician', clip: false },
   { name: 'accueil-collaborateur', path: '/', role: 'user', viewport: MOBILE },
   { name: 'badge-1', path: '/badge', role: 'user', viewport: MOBILE },
   { name: 'pilotage-1', path: '/pilotage' },
@@ -153,7 +153,17 @@ async function newPage(browser, role, viewport) {
       // Les messages passagers (toasts) gêneraient la capture
       await page.addStyleTag({ content: '[role="status"][aria-live], div[style*="z-index: 9999"] { display: none !important; }' });
       for (const [i, loc] of (shot.marks ? shot.marks(page) : []).entries()) await mark(page, loc, i + 1);
-      await page.screenshot({ path: path.join(OUT, `${shot.name}.jpg`), type: 'jpeg', quality: 72 });
+      // Recadrage sur la zone utile (le drawer ouvert, sinon le contenu de la page sans le menu) :
+      // l'image est moins réduite à l'affichage, le texte reste lisible
+      const clip = shot.clip === false || (shot.viewport || DESKTOP) === MOBILE ? null : await page.evaluate(() => {
+        const visible = r => r.width > 0 && r.height > 0 && r.left >= 0 && r.left < innerWidth - 10;
+        const drawer = [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].map(e => e.getBoundingClientRect()).find(visible);
+        const r = drawer || document.querySelector('main')?.getBoundingClientRect();
+        if (!r) return null;
+        const x = Math.max(0, r.left), y = Math.max(0, r.top);
+        return { x, y, width: Math.min(r.width, innerWidth - x), height: Math.min(r.height, innerHeight - y) };
+      });
+      await page.screenshot({ path: path.join(OUT, `${shot.name}.jpg`), type: 'jpeg', quality: 90, ...(clip ? { clip } : {}) });
       console.log('✓', shot.name);
     } catch (error) {
       failed.push(shot.name);

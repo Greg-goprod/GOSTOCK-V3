@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, FileDown, HelpCircle, Printer, Search, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, ExternalLink, FileDown, HelpCircle, Printer, Search, X } from 'lucide-react';
 import HelpArticleView, { taskAnchor } from '../components/help/HelpArticleView';
 import { ARTICLES, CATEGORIES, FAQ, GLOSSARY, QUICK, articleById, searchHelp } from '../help/content';
 import type { FaqItem, HelpArticle } from '../help/content';
@@ -119,13 +119,18 @@ const Help: React.FC = () => {
   if (id) {
     const category = article && CATEGORIES.find(c => c.id === article.category);
     return (
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[250px_minmax(0,1fr)]">
+      <div translate="no" className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[250px_minmax(0,1fr)]">
         <HelpSidebar current={id} />
         <div className="min-w-0 space-y-6">
-          <nav aria-label="Fil d'Ariane" className="flex flex-wrap items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-            <Link to="/aide" className="hover:underline">Aide</Link>
-            {category && <><ChevronRight size={13} aria-hidden="true" /><span>{category.label}</span></>}
-          </nav>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <nav aria-label="Fil d'Ariane" className="flex flex-wrap items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+              <Link to="/aide" className="hover:underline">Aide</Link>
+              {category && <><ChevronRight size={13} aria-hidden="true" /><span>{category.label}</span></>}
+            </nav>
+            <a href={`/aide/${id}`} target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-1.5 text-sm">
+              <ExternalLink size={15} aria-hidden="true" /> Ouvrir dans un nouvel onglet
+            </a>
+          </div>
           {article ? (
             <>
               <HelpArticleView article={article} />
@@ -141,7 +146,7 @@ const Help: React.FC = () => {
 
   const searching = query.trim().length > 0;
   return (
-    <div className="mx-auto max-w-6xl space-y-10">
+    <div translate="no" className="mx-auto max-w-6xl space-y-10">
       {/* En-tête : titre, recherche, PDF */}
       <section className="rounded-2xl border-[1.5px] border-gray-200 dark:border-gray-700 bg-gradient-to-br from-primary-50 to-white dark:from-primary-900/30 dark:to-gray-900 px-5 py-7 sm:px-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -152,6 +157,10 @@ const Help: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {/* L'aide à côté de l'application : on lit d'un côté, on travaille de l'autre */}
+            <a href="/aide" target="_blank" rel="noopener" className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm">
+              <ExternalLink size={16} aria-hidden="true" /> Nouvel onglet
+            </a>
             <a href="/aide/GO-Mat-mode-emploi.pdf" download className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm">
               <FileDown size={16} aria-hidden="true" /> PDF
             </a>
