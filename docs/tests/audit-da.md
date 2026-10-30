@@ -1,5 +1,95 @@
 # Audit visuel de conformité à la charte Mannyx (MX)
 
+## Contre-test du lot 19 (30.10.2026, 20:20-21:10)
+
+- **Version** : `claude/loving-thompson-6zfo06` à `c71447b`. Elle contient `b7918dc` « Lot 19 : corrections de l'audit DA » ; les deux commits suivants ne touchent que l'Aide et une fiche Word.
+- **Copie de travail** : `GOMAT-essai`, détachée. La branche de développement n'a pas été modifiée.
+- **Serveurs** : 5190 et 5191 relancés sur cette version.
+- **Conditions identiques au premier audit** :
+  - mêmes sondes (`.claude/audit-probes/probes.js`) ;
+  - 1 440 × 900 en clair puis en sombre, sur 38 pages, compte administrateur ;
+  - 390 × 844 pour les pages terrain ;
+  - drawers mesurés ouverts : Nouvelle demande, fiche de demande, Réception de location, Ajouter du matériel, Ajouter une personne.
+- **Référence** : catalogue `Mannyx Components V2.html`, relu dans le même navigateur.
+  - `#s-accordion` : en-tête de 46 px, padding 14 × 16 px, titre 14 px / 700 / −0,14 px. Ouvert : filet `inset 3px` accent, icônes en accent. 8 px entre éléments en mode séparé.
+  - `#s-viewtoggle` : conteneur `--surface2` (rgb 246,246,248), filet `--border`, rayon 6 px, padding 3 px, `role=radiogroup`. Boutons 12 px / 700, padding 6 × 11 px, rayon 4 px, **28 px de haut, casse normale**. Pastille glissante `--surface` avec ombre ; texte actif en `--accent`, inactif en `--text3`.
+
+### Résultat écart par écart
+
+| Écart | Verdict | Constat (mesures du contre-test) |
+|---|---|---|
+| **DA1** Libellé des boutons 10,5 px | **Partiellement corrigé** | `mx-btn` en 12,5 px / 600 sur les 38 pages (Paramètres, Demandes, drawers…). Restent : <br>• Notifications : « Marquer comme lue » et « Supprimer » en **10,5 px** ; <br>• Personnes : « Imprimer les badges » en **10,5 px / 500** ; « QR code » en 12,5 px / 500, coupé sur deux lignes (bouton de 47 px) ; <br>• Aide : « Nouvel onglet », « PDF », « Imprimer » en 12,25 px ; <br>• Statistiques : « Sortie » et « Retour » en 13 px ; <br>• Recherche « Chercher » et Planning « Semaine précédente » / « Semaine suivante » en 14 px / 600. |
+| **DA2** Boutons de pied de drawer | **Corrigé pour les drawers**, partiel pour les confirmations | Pieds des 5 drawers mesurés : rayon 8 px, padding 12 × 16 px, 12,5 px / 600, bouton principal en `flex-grow: 1`, pied 16 / 24 px avec filet. La fenêtre de confirmation (`confirmAction`, 360 px) garde des boutons au rayon **4 px**, de 35 px, padding 7 × 12,25 px. |
+| **DA3** Boutons écrits à la main | **Partiellement corrigé** | « Scanner avec la caméra » : `mx-btn` 12,5 px / 600, 35 px ✅. « Imprimer ou enregistrer en PDF » (Aide imprimable) : `mx-btn` ✅. Restent : <br>• « Chercher » : `mx-btn` mais 14 px, 37 px ; <br>• « Semaine précédente » : `mx-btn` en 14 px ; <br>• Écran TV « Plein écran » : inchangé (37 px, 14 px / 400, rayon 6 px, hors `mx-btn`) ; <br>• tuiles de l'Accueil : inchangées (92 px, 14 px / 400). |
+| **DA4** Puces et boutons ronds | **Corrigé** | Suggestions de la Recherche au rayon 4 px (27 px, 12 px / 600). Statistiques : plus de bouton rond ; « Sortie » (primaire) et « Retour » (secondaire) sont des boutons rectangulaires. |
+| **DA5** Onglets segmentés (8 bascules) | **Partiellement corrigé** | Les 8 bascules utilisent `MxSegmented` : Comptoir, Libre-service, Transferts, Atelier, Chantiers, Locations, Planning, Sorties. Conforme à `#s-viewtoggle` : conteneur `--surface2`, filet `--border`, rayon 6 px, padding 3 px, `radiogroup`, boutons `radio` avec `aria-checked` et `tabindex` itinérant, 12 px / 700, padding 6 × 11 px, rayon 4 px, pastille `--surface` avec ombre, texte actif en accent (6,4:1 en clair, 4,94:1 en sombre), plus aucun aplat. <br>**Restent** : <br>• libellés en **MAJUSCULES** (`text-transform: uppercase` et `letter-spacing: 0.02em`, repris de MxTabs d'après le commentaire de `MxSegmented.tsx`), alors que `#s-viewtoggle` est en casse normale (« Liste », « Grille ») ; <br>• hauteur de **24 px** au lieu de 28 px (interligne fixé à 12 px), conteneur de 32 px au lieu de 36 px ; Sorties, avec icônes, fait 27 px ; <br>• texte inactif `--text3` sur `--surface2` à 3,41:1 en clair (valeur des tokens de la charte, pour information). <br>Voir aussi NDA1 : les bascules Grille / Liste d'Outils et de Personnes ne sont pas converties. |
+| **DA6** Accordéons | **Partiellement corrigé** | Paramètres, 11 sections : titre 14 px / 700 / −0,14 px en casse normale, padding 14 × 16 px, conteneur `--surface` rayon 6 px avec filet, 8 px entre sections. Ouvert : filet `inset 3px` accent, icône et chevron en accent, chevron tourné de 180°, élément bordé d'accent. Fermé : icônes `--text3`. Drawer « Ajouter du matériel » : même accordéon. <br>**Restent** : <br>• en-tête de **49 px** au lieu de 46 px, parce que l'interligne vaut 21 px contre `normal` dans le catalogue ; <br>• **Santé des données** : les 14 lignes repliables sont toujours hors charte (39 px, rayon 0, 14 px / 400, padding 10,5 × 14 px). |
+| **DA7** `aria-expanded` | **Corrigé** | Présent sur les 11 en-têtes de Paramètres, les sections des drawers et les 14 lignes de Santé des données. |
+| **DA8** Majuscules saisies | **Corrigé** | Plus aucun texte saisi en majuscules sur les 38 pages, hors données (plaques « TEST C11 », numéros d'articles). Corrigés : sections de Paramètres, « Imprimer les badges », titre « Ajouter du matériel » (26 px, casse normale), onglets de Notifications (« Toutes (1) »…), « Scanner QR : actif », titres de Statistiques (« Emprunts récents » 16 px / 700). Il reste seulement la puce « INFO » des Notifications. |
+| **DA9** Gris intermédiaires | **Corrigé en clair, résidu en sombre** | En clair, plus aucun gris hors tokens (`--g-500` et `--g-700` valent `--text2`, `--g-800` vaut `--text`). En sombre, `dark:text-gray-200` donne rgb(226,227,233), qui est la teinte de bordure et non `--text` (245,246,248). Touché : numéros d'articles et textes secondaires de Paramètres, Inventaire, Kits, Étiquettes, Chantiers, Locations, Personnes, Formations, Pilotage. Écart faible, sans effet de contraste. |
+| **DA10** Couleurs de statut Tailwind | **Partiellement corrigé** | Sorties : « Retourné » sur `--mx-tone-fill-success` avec texte `--mx-tone-on-success`, 5,45:1 ✅. Restent : <br>• Véhicules : 56 barres de planning en rgb(23,181,129) (`success-500`) et badges « Disponible » en `success-100` / `success-800` ; <br>• Statistiques : icônes en rgb(23,181,129) et pastilles d'icône en `*-100` ; <br>• Consommables : « OK » en `success-100` / `success-800` ; <br>• Outils : badges « Stock / Disponible » en `primary-50` / `danger-50` ; <br>• nouveaux cas : NDA3 et NDA4. |
+| **DA11** Blanc sur accent en sombre | **Partiellement corrigé** | Boutons primaires en sombre : texte rgb(20,17,10) sur #8672F5, **5,15:1** (« Sauver », « Nouvelle demande », « Valider », « Ajouter un équipement »…). Bascules sans aplat. Restent : <br>• tuile « Demandes à valider » de l'Accueil, blanc sur #8672F5, **3,66:1** (inchangé) ; <br>• badge « Réparation » de Statistiques, blanc sur rose, **3,53:1** dans les deux thèmes (NDA3). |
+| **DA12** Icônes colorées en dur | **Corrigé** | Icônes de section de Paramètres en `--text3`, accent une fois ouvertes. Plus d'ambre en dur sur Kits ni sur Santé des données. |
+| **DA13** Encadrés teintés | **Partiellement corrigé** | Aide, « Astuces » : encart `--mutedBox` (246,246,248), filet `--border`, rayon 8 px ✅. Restent : <br>• Coûts : avertissement en `warning-50` (254,248,225) ; <br>• badge « Validée » de l'Accueil et des Demandes en rgb(204,234,245). |
+| **DA14** Taille du texte saisi | Conforme (inchangé) | 12,25 px. |
+| **DA15** Graisse du texte saisi | **Non corrigé** | Tous les champs des pages et des drawers restent en **400**. La règle ajoutée dans `gomat-mx.css` (`:where(input…, select, textarea) { font-weight: 500 }`) a une spécificité nulle : la base de Tailwind (`font-weight: inherit` sur les champs, spécificité d'élément) l'emporte. |
+| **DA16** Hauteurs de champ | **Partiellement corrigé** | 34 px : langue (Paramètres et connexion, avant 27 px), tri de l'Inventaire, champs des drawers. Restent : <br>• recherche Outils 37 px et tri Outils 35 px (14 px) ; <br>• recherche Sorties, Recherche et Aide 37 px (14 px) ; <br>• Coûts « Mois » 36 px ; Démarrage 35 px ; <br>• e-mail de connexion 44 px (14 px / 400) ; <br>• Écran TV : liste des dépôts **41 px en 15,75 px**. |
+| **DA17** Cases et radios natives | **Partiellement corrigé** | Drawer Personnes : <br>• cases dessinées 16 × 16 px, rayon 4 px, filet `--inputBorder`, coche SVG blanche sur accent ✅ ; <br>• radios dessinés 18 px, point accent de 8 px en dégradé radial ✅ ; <br>• carte de rôle sélectionnée bordée de `--accent` sur `--accent-lt` (rgba 90,70,214,.09) ✅. <br>Restent : padding des cartes radio **10,5 px** (catalogue 14 px) ; titre de carte en **12,25 px / 600** (catalogue 13,5 px / 700, « à trancher » selon le LISEZ-MOI) ; description en 10,5 px. |
+| **DA18** Champ de scan | **Partiellement corrigé** | Filet aux tokens (1 px `--inputBorder`, rayon 6 px) ✅. Restent : **41 px** et texte 14 px / 400. L'état du scanner « Scanner QR : actif » est en rgb(59,45,147) (`primary-800`), pas en token. |
+| **DA19** Largeur des drawers | **Corrigé** | « Nouvelle demande » : **680 px** (avant 960). « Réception · … » : **680 px** (avant 960). Fiche de demande, Ajouter du matériel, Ajouter une personne : 680 px. Confirmation : 360 px. Tous dans l'échelle. |
+| **DA20** Padding du corps | **Corrigé** | 20 / 24 / 8 px dans les 5 drawers. |
+| **DA21** Libellés de section de drawer | **Corrigé** | Personnes (« Rôle », « Droits », « Permis de conduire », « Statut ») et Réception (« Relevés », « Photos », « Dégâts déjà présents », « Accessoires remis », « Signatures ») : 11 px / 700 / 0,88 px (0,08 em), majuscules par le style, `--text3`. |
+| **DA22** Fiche de demande sans pied | **Corrigé** | « Liste de préparation », « Annuler la demande », « Marquer prête », « Sortir : état des lieux » sont dans un pied collant, en boutons de drawer (45 px, rayon 8 px). Voir NDA2. |
+| **DA23** Lignes de la « Nouvelle demande » | **Corrigé** | Lignes de 42 px, padding 10 × 12 px, fond `--surface2`, filet `--border`, rayon 6 px. Texte en 14 px / 400. |
+| **DA24** Statistiques sans titre | **Corrigé** | `h1.mx-page-title` « Statistiques » 52 px / 700, sous-titre « Disponibilités, emprunts récents et matériel en maintenance. », titres de blocs en casse normale. L'écran TV reste sans titre (mode plein écran, comme admis). |
+| **DA25** Aide imprimable | Inchangé (à valider) | `h1` « Mode d'emploi » en 31,5 px, sans `mx-page-title`. Le bouton est désormais un `mx-btn`. |
+| **DA26** États vides | **Partiellement corrigé** | `MxEmpty` avec pastille : Pertes et casse (« Aucun incident ») ; Statistiques a une icône au-dessus de « Aucun emprunt actif ». Restent en simple phrase : Commandes, Entretien (« Rien à faire… »), Transferts (« Aucun transfert. »), Chantiers (« Rien sur le chantier »). |
+| **DA27** Sorties sur téléphone | **Corrigé** | En 390 px, Sorties s'ouvre en vue **Grille** (cartes), sans tableau ni défilement latéral (largeur du document 390 px). Capture `da-ct-01`. |
+| **DA28** Petites cibles tactiles | Inchangé (remarque) | Accueil : « Demandes », « Sorties », « Feuille de commande », « Flotte » en 20 px. Comptoir : « choisissez la personne » en 20 px. |
+| **DA29** Toast neutre | **Corrigé** | Toast d'erreur teinté (fond et filet rosés `color-mix`), padding 12 × 14 px, rayon 6 px. L'icône reste celle de react-hot-toast. |
+| **DA30** Contrôles de la carte | **Corrigé** | Attribution et boutons de zoom Leaflet en Geist. Les couleurs par défaut de Leaflet (texte 51,51,51 ; lien 0,120,168) restent, sans gravité. |
+
+**Bilan** :
+- **corrigés (14)** : DA4, DA7, DA8, DA12, DA19, DA20, DA21, DA22, DA23, DA24, DA27, DA29, DA30, et DA9 en clair (résidu en sombre) ;
+- **partiellement corrigés (12)** : DA1, DA2, DA3, DA5, DA6, DA10, DA11, DA13, DA16, DA17, DA18, DA26 ;
+- **non corrigé (1)** : DA15 ;
+- **inchangés, sans demande de correction (3)** : DA14 (conforme), DA25 (à valider), DA28 (remarque).
+
+### Points vérifiés en particulier
+
+1. **Accordéons de Paramètres comparés à `#s-accordion`** : identiques sur le titre (14 px / 700 / −0,14 px, `--text`), le padding (14 × 16 px), la couleur des icônes fermées et ouvertes, le filet d'accent à l'ouverture, la rotation du chevron, l'écart de 8 px et `aria-expanded`. Seul écart : **49 px de haut au lieu de 46 px**, à cause de l'interligne de 21 px. Capture `da-ct-02`.
+2. **Les 8 bascules comparées à `#s-viewtoggle`** : structure, couleurs, pastille et sémantique `radiogroup` conformes sur les 8. Écarts restants : **majuscules** (choix repris de MxTabs, absent du catalogue : à arbitrer) et **24 px au lieu de 28 px**. Les deux bascules non converties (Outils et Personnes) sont en NDA1.
+3. **Texte des boutons violets en sombre** : tous les `mx-btn-primary` sont désormais en rgb(20,17,10) sur #8672F5, soit **5,15:1** (avant : blanc à 3,66:1). Exceptions : la tuile « Demandes à valider » de l'Accueil (blanc, 3,66:1) et le badge rose de Statistiques (3,53:1).
+4. **Largeur des drawers « Nouvelle demande » et « Réception »** : **680 px** chacun (avant 960 px). Corps 20 / 24 / 8 px, pied 16 / 24 px, boutons de pied au rayon 8 px.
+5. **Cases et radios du drawer Personnes** : cases 16 px et radios 18 px dessinés, coche et point en accent, carte sélectionnée en `--accent` / `--accent-lt`. Restent le padding des cartes (10,5 px contre 14 px) et la taille du titre de carte.
+6. **Statistiques** : titre de page conforme, boutons ronds remplacés, majuscules supprimées. Restent les couleurs `success-500` et `*-100` des icônes et le badge « Réparation » rose (NDA3). Capture `da-ct-03`.
+
+### Nouveaux écarts et régressions
+
+| N° | Gravité | Constat |
+|---|---|---|
+| **NDA1** | majeur | Bascules **Grille / Liste d'Outils et de Personnes** non converties en `MxSegmented` : aplat accent, texte blanc en clair (6,4:1) et quasi-noir en sombre, rayons 4 / 0 px, pas de `radiogroup`. Ce sont les deux dernières bascules hors charte. Elles n'étaient pas dans la liste des 8 du premier audit. Capture `da-ct-04`. |
+| **NDA2** | majeur (usage) | Fiche de demande : « **Annuler la demande** » est maintenant dans le pied collant, entre « Liste de préparation » et « Marquer prête », dans le même style secondaire. Elle part **sans confirmation** (le code n'en avait pas non plus avant le lot 19, mais le bouton était moins exposé). Pendant la mesure, la demande TEST DEM2610-0004 a été annulée d'un seul clic. À séparer des actions courantes (style danger, à gauche) et à faire confirmer. |
+| **NDA3** | mineur | Statistiques, badge « **Réparation** » : blanc sur rose rgb(236,72,153) (`pink-500`), couleur hors charte et contraste **3,53:1**, dans les deux thèmes. |
+| **NDA4** | mineur | Véhicules et Locations, pastille « **Loué jusqu'au …** » : orange rgb(194,65,12) sur `warning-50` en clair (4,86:1) ; en sombre, rgb(224,106,27) sur ambre translucide, **4,38:1**. Ce ne sont pas des tons MX. |
+| **NDA5** | mineur | Liens texte et états en `primary-700` / `primary-800` (rgb 65,50,154 et 59,45,147) au lieu de `--accent` : liens de Démarrage, d'Accueil, de Pilotage, « Détail et export → », état du scanner. |
+| **NDA6** | à arbitrer | Majuscules des bascules (DA5) : elles ne sont pas dans la charte (`#s-viewtoggle` est en casse normale) mais résultent d'un choix du composant du tronc. À trancher : aligner `MxSegmented` sur le catalogue, ou consigner l'exception. |
+
+Aucune autre régression visuelle n'a été relevée : Geist partout, titres de page 52 px (30 px en 390 px), cartes, toasts et en-têtes de drawer conformes, et aucun débordement horizontal en 390 px sur l'Accueil, le Comptoir, le Libre-service, les Demandes, le Scanner, Mon badge et les Sorties.
+
+### Captures du contre-test
+
+| Fichier | Contenu |
+|---|---|
+| `captures/da/da-ct-01-sorties-390-cartes-et-bascule.jpg` | Sorties en 390 px : cartes par défaut, bascule `MxSegmented` en majuscules (DA27, DA5) |
+| `captures/da/da-ct-02-parametres-accordeons.jpg` | Paramètres, 1 440 px, clair : accordéons MX, section ouverte avec filet d'accent (DA6) |
+| `captures/da/da-ct-03-statistiques.jpg` | Statistiques : titre de page, boutons « Sortie » / « Retour », badge « Réparation » rose (DA24, DA4, NDA3) |
+| `captures/da/da-ct-04-personnes-bascule-aplat.jpg` | Personnes : bascule Grille / Liste encore en aplat accent ; « Imprimer les badges » en 10,5 px ; « QR code » sur deux lignes (NDA1, DA1) |
+
+---
+
+## Premier audit (version `765ae37`)
+
 - **Date** : 30 octobre 2026, de 16:35 à 17:00 (heure de Zurich)
 - **Version** : `765ae37` « Charte Mannyx de référence et consignes d'audit visuel » de `claude/loving-thompson-6zfo06`.
 - **Consignes** : `docs/tests/consignes-audit-da.md`. Aucun fichier de l'application n'a été modifié.
