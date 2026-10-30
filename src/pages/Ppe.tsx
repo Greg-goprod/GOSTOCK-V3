@@ -136,7 +136,7 @@ const Ppe: React.FC = () => {
 
   const give = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (selectedType?.sizes.length && !issue.size) return toast.error('Choisissez la taille');
+    if (selectedType?.sizes.length && !issue.size) return toast.error('Choisis la taille');
     setBusy(true);
     const { error } = await supabase.rpc('issue_ppe', {
       p_user_id: issue.user_id,
@@ -175,7 +175,7 @@ const Ppe: React.FC = () => {
         {canIssue && (
           <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3">
             <h2 className="font-bold text-gray-900 dark:text-white">Remettre un EPI</h2>
-            {types.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Créez d'abord les types d'EPI (à droite).</p> : (
+            {types.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Crée d'abord les types d'EPI (à droite).</p> : (
               <form onSubmit={give} className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label htmlFor="ppe-user" className={labelClass}>Personne</label>

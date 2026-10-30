@@ -116,7 +116,7 @@ const translations: Translations = {
     noData: 'Aucune donnée',
     noResults: 'Aucun résultat',
     confirmDelete: 'Confirmer la suppression',
-    deleteConfirmMessage: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
+    deleteConfirmMessage: 'Es-tu sûr de vouloir supprimer cet élément ?',
     
     // Dashboard
     recentCheckouts: 'Emprunts récents',

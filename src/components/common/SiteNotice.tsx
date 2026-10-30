@@ -19,7 +19,7 @@ const SiteNotice: React.FC<{ value: string }> = ({ value }) => {
   return (
     <p className="mt-1 flex items-start gap-1.5 text-[12.5px] text-tone-warning">
       <Info size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-      <span>Aucune fiche chantier à ce nom : le matériel ne sera rattaché à aucun chantier ni visible sur la carte. Choisissez un chantier de la liste ou créez sa fiche dans « Chantiers ».</span>
+      <span>Aucune fiche chantier à ce nom : le matériel ne sera rattaché à aucun chantier ni visible sur la carte. Choisis un chantier de la liste ou crée sa fiche dans « Chantiers ».</span>
     </p>
   );
 };

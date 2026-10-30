@@ -92,7 +92,7 @@ const day = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(locale()
 // les vues sont mises côte à côte : réception à gauche, restitution à droite.
 export async function printInspection(rental: InspectedRental, inspections: RentalInspection[]) {
   const win = window.open('', '_blank');
-  if (!win) throw new Error('Autorisez les fenêtres pour imprimer le PV');
+  if (!win) throw new Error('Autorise les fenêtres pour imprimer le PV');
   const reception = inspections.find(i => i.kind === 'reception');
   const back = inspections.find(i => i.kind === 'return');
   const shown = [reception, back].filter(Boolean) as RentalInspection[];

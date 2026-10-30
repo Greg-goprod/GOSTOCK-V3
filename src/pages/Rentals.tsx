@@ -200,10 +200,10 @@ const Rentals: React.FC = () => {
         .or([...vehicleIds.map(id => `vehicle_id.eq.${id}`), ...equipmentIds.map(id => `equipment_id.eq.${id}`)].join(',') || 'id.is.null')
         .in('requests.status', ['requested', 'approved', 'ready', 'out']),
     ]);
-    if (trips.data?.length) return toast.error('Le véhicule est encore en route : clôturez le trajet d\'abord');
-    if (outs.data?.length) return toast.error('L\'outil est encore sorti : enregistrez son retour au comptoir d\'abord');
+    if (trips.data?.length) return toast.error('Le véhicule est encore en route : clôture le trajet d\'abord');
+    if (outs.data?.length) return toast.error('L\'outil est encore sorti : enregistre son retour au comptoir d\'abord');
     const numbers = [...new Set((planned.data || []).map(row => (row as unknown as { requests: { number: string } }).requests.number))];
-    if (numbers.length) return toast.error(`Encore prévu dans les demandes ${numbers.join(', ')} : clôturez-les ou retirez-le d'abord`, { duration: 8000 });
+    if (numbers.length) return toast.error(`Encore prévu dans les demandes ${numbers.join(', ')} : clôture-les ou retire-le d'abord`, { duration: 8000 });
     setInspecting({ rental, kind: 'return' });
   };
 

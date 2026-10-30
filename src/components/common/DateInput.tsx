@@ -44,11 +44,11 @@ const shortDate = (value: string) => new Date(`${value.slice(0, 10)}T12:00:00`).
 // Bornes min / max comme sur un champ natif : une date hors limites est refusée avec un message
 const outOfRange = (value: string, min?: string, max?: string) => {
   if (min && value < min) {
-    toast.error(`Choisissez une date à partir du ${shortDate(min)}`);
+    toast.error(`Choisis une date à partir du ${shortDate(min)}`);
     return true;
   }
   if (max && value > max) {
-    toast.error(`Choisissez une date jusqu'au ${shortDate(max)}`);
+    toast.error(`Choisis une date jusqu'au ${shortDate(max)}`);
     return true;
   }
   return false;

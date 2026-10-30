@@ -400,7 +400,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
           {formData.catalog_product_id && (
             <p className="text-sm text-gray-700 dark:text-gray-300">
               Depuis le catalogue : <span className="font-medium">{formData.name}</span>{' '}
-              <span className="font-mono text-xs">({formData.supplier_reference})</span>. Ajoutez le numéro de série du fabricant si vous l'avez.
+              <span className="font-mono text-xs">({formData.supplier_reference})</span>. Ajoute le numéro de série du fabricant si tu l'as.
             </p>
           )}
           {/* Informations de base */}
@@ -503,7 +503,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">
-                      {!formData.group_id ? 'Sélectionnez d\'abord un groupe' : 'Sélectionner un sous-groupe'}
+                      {!formData.group_id ? 'Sélectionne d\'abord un groupe' : 'Sélectionner un sous-groupe'}
                     </option>
                     {filteredSubgroups.map(subgroup => (
                       <option key={subgroup.id} value={subgroup.id}>
@@ -674,10 +674,10 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                   placeholder="https://example.com/image.jpg"
                 />
                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                   Entrez une URL d'image valide et accessible publiquement. Exemple: https://images.pexels.com/photos/1029243/pexels-photo-1029243.jpeg
+                   Entre une URL d'image valide et accessible publiquement. Exemple: https://images.pexels.com/photos/1029243/pexels-photo-1029243.jpeg
                  </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Utilisez des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
+                  Utilise des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
                 </p>
                  {formData.image_url && (
                    <div className="mt-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
@@ -691,7 +691,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                            e.currentTarget.style.display = 'none';
                            const errorMsg = document.createElement('p');
                            errorMsg.className = 'text-xs text-danger-500 mt-2';
-                          errorMsg.textContent = "Impossible de charger l'image. Vérifiez que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
+                          errorMsg.textContent = "Impossible de charger l'image. Vérifie que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
                            e.currentTarget.parentElement?.appendChild(errorMsg);
                          }}
                        />

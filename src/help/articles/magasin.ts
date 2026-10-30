@@ -17,7 +17,7 @@ export const MAGASIN: HelpArticle[] = [
         steps: [
           { text: 'Ouvre « Magasin » › « Comptoir ». Vérifie qu\'en haut à droite, « Auto » est sélectionné (c\'est le réglage normal).', shot: 'comptoir-1' },
           { text: 'Scanne le badge de la personne : carte imprimée, ou QR affiché sur son téléphone (« Mon badge »). Avec une douchette, scanne simplement ; avec la tablette, clique sur « Scanner avec la caméra ».' },
-          { text: 'Pas de badge ? Clique sur le lien « choisissez la personne », tape quelques lettres de son nom, puis clique sur son nom.' },
+          { text: 'Pas de badge ? Clique sur le lien « choisis la personne », tape quelques lettres de son nom, puis clique sur son nom.' },
           { text: 'Sa fiche s\'affiche à gauche, avec ce qu\'elle a déjà « En sa possession ».' },
           { text: 'Scanne l\'étiquette QR de chaque outil. Chaque outil s\'ajoute dans le « Panier » à droite, avec « Sortie · nom de l\'outil ».', shot: 'comptoir-2' },
           { text: 'Pour un article en quantité (lot), utilise « Un de plus » / « Un de moins » sur sa ligne.' },
@@ -27,7 +27,7 @@ export const MAGASIN: HelpArticle[] = [
         ],
         result: 'Un message vert confirme la sortie, avec le numéro du bon. Le panier se vide, prêt pour la personne suivante.',
         problems: [
-          { if: '« Scannez d\'abord le badge de la personne ».', then: 'Le badge doit être scanné (ou la personne choisie) avant les articles.' },
+          { if: '« Scanne d\'abord le badge de la personne ».', then: 'Le badge doit être scanné (ou la personne choisie) avant les articles.' },
           { if: 'L\'outil est refusé au scan.', then: 'Le message donne la raison : retiré du service, rendu au loueur, location qui finit avant la date de retour, ou permis machine manquant pour cette personne.' },
           { if: 'Une fenêtre « Signature à la remise » s\'ouvre.', then: 'L\'outil est de valeur : la personne signe avec le doigt ou la souris, puis clique sur « Valider la remise ».' },
           { if: '« Plus de stock disponible ».', then: 'Tous les exemplaires sont déjà sortis ou réservés. Vérifie dans « Sorties » qui les a.' },
@@ -38,7 +38,7 @@ export const MAGASIN: HelpArticle[] = [
         title: 'Reprendre du matériel rendu',
         who: 'Magasinier, responsable.',
         steps: [
-          { text: 'Scanne le badge de la personne qui rend (ou « choisissez la personne »).' },
+          { text: 'Scanne le badge de la personne qui rend (ou « choisis la personne »).' },
           { text: 'Scanne chaque outil rendu. En mode « Auto », un outil qu\'elle a déjà part tout seul en « Retour ». Tu peux aussi cocher la ligne dans « En sa possession (cocher pour rendre) ».' },
           { text: 'Pour chaque retour, choisis l\'état : « OK », « Sale », « Incomplet », « À réparer » ou « Cassé ».' },
           { text: 'Si ce n\'est pas « OK » : écris ce qui ne va pas ou ce qui manque, et ajoute une photo.' },
@@ -46,7 +46,7 @@ export const MAGASIN: HelpArticle[] = [
         ],
         result: 'Un message confirme « x retour(s) ». Un outil « À réparer » ou « Cassé » passe en maintenance ; pour « Cassé », un incident est ouvert et le responsable est prévenu.',
         problems: [
-          { if: '« Décrivez le problème (remarque ou photo) pour chaque retour non conforme ».', then: 'Ajoute une remarque ou une photo sur chaque ligne qui n\'est pas « OK ».' },
+          { if: '« Décris le problème (remarque ou photo) pour chaque retour non conforme ».', then: 'Ajoute une remarque ou une photo sur chaque ligne qui n\'est pas « OK ».' },
           { if: '« X n\'a pas … ».', then: 'Cette personne n\'a pas cet outil à son nom. Vérifie dans « Sorties » qui l\'a emprunté, puis scanne le badge de cette personne.' },
         ],
       },
@@ -113,7 +113,7 @@ export const MAGASIN: HelpArticle[] = [
         ],
       },
     ],
-    tips: ['Garde le curseur dans « Scannez ou saisissez un code… » : une douchette tape le code et valide toute seule.'],
+    tips: ['Garde le curseur dans « Scanne ou saisis un code… » : une douchette tape le code et valide toute seule.'],
   },
   {
     id: 'demandes',
@@ -139,7 +139,7 @@ export const MAGASIN: HelpArticle[] = [
         ],
         result: 'Un message donne le numéro (ex. DEM2610-0012) et l\'état : « Validée » (automatique) ou « À valider » (un responsable doit décider). Une demande avec un véhicule est toujours « À valider ».',
         problems: [
-          { if: '« Choisissez la personne qui fait la demande ».', then: 'Remplis « Pour qui ».' },
+          { if: '« Choisis la personne qui fait la demande ».', then: 'Remplis « Pour qui ».' },
           { if: '« La fin doit être après le début ».', then: 'Corrige les dates « Du » / « Au ».' },
           { if: '« Un seul véhicule par demande ».', then: 'Fais une demande séparée pour le deuxième véhicule.' },
           { if: 'Un engin loué (chariot, nacelle) n\'apparaît pas dans « Véhicule ».', then: 'Un engin est dans l\'onglet « Outils ». S\'il n\'y est pas, sa location n\'est pas encore réceptionnée.' },
@@ -172,7 +172,7 @@ export const MAGASIN: HelpArticle[] = [
         steps: [
           { text: 'Ouvre « Demandes », filtre « À préparer », puis clique sur la demande : le volet s\'ouvre à droite avec le « Contenu » et le compteur « 0 / x préparé(s) ».', shot: 'demandes-3' },
           { text: 'Clique sur « Liste de préparation » pour imprimer la liste triée par emplacement (facultatif).' },
-          { text: 'Scanne chaque article préparé dans le champ « Scannez ou saisissez un code… », ou coche la ligne à la main. Pour un outil à exemplaires, scanne chaque exemplaire : la ligne affiche « x exemplaire(s) scanné(s) ».' },
+          { text: 'Scanne chaque article préparé dans le champ « Scanne ou saisis un code… », ou coche la ligne à la main. Pour un outil à exemplaires, scanne chaque exemplaire : la ligne affiche « x exemplaire(s) scanné(s) ».' },
           { text: 'Quand tout est coché, clique sur « Marquer prête ».' },
         ],
         result: 'La demande est « Prête » ; le demandeur est prévenu qu\'il peut passer.',
@@ -266,7 +266,7 @@ export const MAGASIN: HelpArticle[] = [
           { text: 'Règle la quantité avec « Un de plus » / « Un de moins », choisis le chantier dans « Pour le chantier ».' },
           { text: 'Clique sur « Je prends ».' },
         ],
-        result: '« Pris en libre-service : c\'est noté à votre nom ».',
+        result: '« Pris en libre-service : c\'est noté à ton nom ».',
         problems: [{ if: '« Pas libre-service ».', then: 'Cet article ne se prend qu\'au comptoir.' }],
       },
       {

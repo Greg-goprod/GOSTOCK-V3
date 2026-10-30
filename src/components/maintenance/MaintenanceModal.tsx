@@ -259,7 +259,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               onChange={handleChange}
               rows={4}
               className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              placeholder="Décrivez le problème, les symptômes, les actions entreprises..."
+              placeholder="Décris le problème, les symptômes, les actions entreprises..."
             />
           </div>
         </Accordion>

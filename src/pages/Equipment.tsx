@@ -744,7 +744,7 @@ export default function Equipment() {
           }}
           onConfirm={confirmDelete}
           title="Supprimer l'équipement"
-          message="Êtes-vous sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
+          message="Es-tu sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
           confirmLabel="Supprimer"
           cancelLabel="Annuler"
         />

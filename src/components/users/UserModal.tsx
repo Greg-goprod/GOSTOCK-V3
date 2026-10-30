@@ -228,7 +228,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         {form.role !== 'admin' && (
           <fieldset>
             <legend className={labelClass}>Droits</legend>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Les droits grisés viennent du rôle ; cochez-en d'autres pour cette personne seulement.</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Les droits grisés viennent du rôle ; coches-en d'autres pour cette personne seulement.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {EXTRA_PERMISSIONS.map(permission => {
                 const fromRole = inherited.includes(permission);
@@ -289,7 +289,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             <label htmlFor="user-license-exp" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Valable jusqu'au (facultatif)</label>
             <DateInput id="user-license-exp" value={form.license_expires_on} onChange={e => setForm({ ...form, license_expires_on: e.target.value })} className={inputClass} />
           </div>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie. Cochez la catégorie la plus haute : elle inclut celles qu'elle exige (B inclut F, G et M ; CE inclut C, C1, C1E, BE et B ; DE inclut D, D1, D1E, BE et B). Les permis machines (cariste, nacelle, grutier…) se saisissent dans « Formations ».</p>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie. Coche la catégorie la plus haute : elle inclut celles qu'elle exige (B inclut F, G et M ; CE inclut C, C1, C1E, BE et B ; DE inclut D, D1, D1E, BE et B). Les permis machines (cariste, nacelle, grutier…) se saisissent dans « Formations ».</p>
         </fieldset>
 
         <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
@@ -344,7 +344,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
           />
           <span>
             <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Accès actif</span>
-            <span className="block text-xs text-gray-600 dark:text-gray-400">Décochez pour bloquer la connexion sans supprimer l'historique.</span>
+            <span className="block text-xs text-gray-600 dark:text-gray-400">Décoche pour bloquer la connexion sans supprimer l'historique.</span>
           </span>
         </label>
 

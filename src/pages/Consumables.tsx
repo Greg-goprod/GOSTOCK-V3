@@ -101,7 +101,7 @@ const Consumables: React.FC = () => {
       <div className="space-y-4">
         <h1 className="mx-page-title">Consommables</h1>
         <p className="text-gray-600 dark:text-gray-300">
-          Aucun dépôt trouvé. Exécutez le script <span className="font-mono">20261029000002_depots_consommables.sql</span> dans Supabase, puis rechargez la page.
+          Aucun dépôt trouvé. Exécute le script <span className="font-mono">20261029000002_depots_consommables.sql</span> dans Supabase, puis recharge la page.
         </p>
       </div>
     );
@@ -167,7 +167,7 @@ const Consumables: React.FC = () => {
       {rows.length === 0 ? (
         <div className="text-center py-12 text-gray-600 dark:text-gray-400">
           {consumables.length === 0
-            ? 'Aucun consommable pour l\'instant. Créez le premier avec « Nouveau consommable ».'
+            ? 'Aucun consommable pour l\'instant. Crée le premier avec « Nouveau consommable ».'
             : 'Aucun consommable ne correspond à la recherche.'}
         </div>
       ) : (
@@ -396,7 +396,7 @@ const StockActionModal: React.FC<StockActionModalProps> = ({ action, item, defau
               <label htmlFor="stock-destination" className={labelClass}>Chantier ou service</label>
               <input id="stock-destination" list="stock-destination-sites" autoComplete="off" type="text" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens, Service technique" />
             <datalist id="stock-destination-sites">{sites.map(site => <option key={site.name} value={site.name} label={site.registered ? 'Chantier' : 'Sans fiche chantier'} />)}</datalist>
-              <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Indiquez une personne, un chantier ou un service (au moins l'un des deux).</p>
+              <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Indique une personne, un chantier ou un service (au moins l'un des deux).</p>
             </div>
           </>
         )}

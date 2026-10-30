@@ -137,7 +137,7 @@ const Vehicles: React.FC = () => {
           </div>
         </div>
         {activeVehicles.length === 0 ? (
-          <MxEmpty icon={Truck} title="Aucun véhicule" description="Ajoutez-en un pour voir son planning." />
+          <MxEmpty icon={Truck} title="Aucun véhicule" description="Ajoutes-en un pour voir son planning." />
         ) : (
           <div className="overflow-x-auto">
             <div className="min-w-[640px] grid grid-cols-[10rem_1fr] gap-x-3 gap-y-2 items-center">
@@ -388,7 +388,7 @@ const VehicleReturnModal: React.FC<{ vehicle: Vehicle; onClose: () => void; onDo
             {trip.start_damages && <div className="mt-1">Dégâts déjà notés : {trip.start_damages}</div>}
             {startUrls.length > 0 && (
               <div className="mt-2">
-                <p className="text-xs mb-1">Photos au départ : comparez avec l'état actuel</p>
+                <p className="text-xs mb-1">Photos au départ : compare avec l'état actuel</p>
                 <div className="flex flex-wrap gap-2">
                   {startUrls.map(url => (
                     <a key={url} href={url} target="_blank" rel="noreferrer"><img src={url} alt="Véhicule au départ" className="h-20 w-28 rounded object-cover" /></a>

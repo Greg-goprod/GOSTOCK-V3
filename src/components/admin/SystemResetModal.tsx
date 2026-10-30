@@ -97,7 +97,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
       <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
         <p className="text-tone-warning font-medium">
-          <AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Cette action est IRRÉVERSIBLE ! Assurez-vous d'avoir une sauvegarde si nécessaire.
+          <AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Cette action est IRRÉVERSIBLE ! Assure-toi d'avoir une sauvegarde si nécessaire.
         </p>
       </div>
 
@@ -121,7 +121,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
       <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
         <p className="text-tone-danger font-medium mb-4">
-          Pour confirmer la remise à zéro, tapez exactement le texte suivant :
+          Pour confirmer la remise à zéro, tape exactement le texte suivant :
         </p>
         <p className="font-mono text-lg bg-danger-100 dark:bg-danger-800 p-2 rounded border text-center">
           {requiredConfirmation}
@@ -133,7 +133,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
           type="text"
           value={confirmationText}
           onChange={(e) => setConfirmationText(e.target.value)}
-          placeholder="Tapez la confirmation ici..."
+          placeholder="Tape la confirmation ici..."
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
                      bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                      focus:ring-2 focus:ring-danger-500 focus:border-danger-500"
@@ -167,7 +167,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
       <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
         <p className="text-primary-800 dark:text-primary-200">
           La remise à zéro est en cours. Cette opération peut prendre quelques minutes.
-          Ne fermez pas cette fenêtre.
+          Ne ferme pas cette fenêtre.
         </p>
       </div>
 

@@ -234,7 +234,7 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
           <div className="text-center py-6">
             <p className="text-gray-500 dark:text-gray-400">
               Aucune instance trouvée pour cet équipement. 
-              Essayez de mettre à jour la quantité totale pour générer des instances.
+              Essaie de mettre à jour la quantité totale pour générer des instances.
             </p>
           </div>
         )}

@@ -34,7 +34,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <h1 className="text-lg font-bold text-gray-900 dark:text-white">Accès non autorisé</h1>
           <p className="text-sm text-gray-700 dark:text-gray-300">
             L'adresse <span className="font-medium">{session.user.email}</span> n'est pas enregistrée dans GO-Mat,
-            ou son accès est suspendu. Demandez à votre responsable de vous ajouter dans « Personnes ».
+            ou son accès est suspendu. Demande à ton responsable de t'ajouter dans « Personnes ».
           </p>
           <Button variant="outline" fullWidth icon={<LogOut size={16} />} onClick={signOut}>
             Se déconnecter

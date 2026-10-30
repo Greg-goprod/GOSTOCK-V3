@@ -120,7 +120,7 @@ export const PERSONNES: HelpArticle[] = [
           { text: 'Ajoute l\'« Attestation » (photo ou PDF), puis « Enregistrer ».' },
         ],
         result: 'La personne peut sortir et réserver les outils qui exigent ce permis. Une alerte part 30 jours avant l\'échéance.',
-        problems: [{ if: '« Cette personne a déjà cette formation : modifiez la ligne existante ».', then: 'Clique sur « Modifier » sur sa ligne pour mettre à jour la date.' }],
+        problems: [{ if: '« Cette personne a déjà cette formation : modifie la ligne existante ».', then: 'Clique sur « Modifier » sur sa ligne pour mettre à jour la date.' }],
       },
       {
         id: 'nouveau',
@@ -150,7 +150,7 @@ export const PERSONNES: HelpArticle[] = [
           { text: '« Pris dans le stock de » : le dépôt d\'où il sort.' },
           { text: 'La personne signe, puis clique sur « Remettre ».' },
         ],
-        problems: [{ if: '« Choisissez la taille ».', then: 'La taille est obligatoire pour ce type d\'EPI.' }],
+        problems: [{ if: '« Choisis la taille ».', then: 'La taille est obligatoire pour ce type d\'EPI.' }],
       },
       {
         id: 'renouveler',

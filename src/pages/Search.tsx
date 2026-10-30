@@ -38,7 +38,7 @@ const Search: React.FC = () => {
   // Un collaborateur ne lit que ses propres emprunts : on ne déduit rien des emprunts des autres
   const seesAll = can('view_all') || can('scan');
   const me = profile?.id;
-  const OTHERS_HIDDEN = { main: 'Seul le magasin voit le matériel des autres personnes.', sub: 'Demandez au magasin ou à votre responsable.' };
+  const OTHERS_HIDDEN = { main: 'Seul le magasin voit le matériel des autres personnes.', sub: 'Demande au magasin ou à ton responsable.' };
   const [params, setParams] = useSearchParams();
   const [text, setText] = useState(params.get('q') ?? '');
   const query = params.get('q') ?? '';
@@ -63,7 +63,7 @@ const Search: React.FC = () => {
   const whereIs = (item: Equipment): ResultBlock => {
     const out = active.filter(c => c.equipmentId === item.id);
     const lines = out.map(c => ({
-      main: c.userId === me && !seesAll ? 'Chez vous' : `Chez ${name(users.find(u => u.id === c.userId))}`,
+      main: c.userId === me && !seesAll ? 'Chez toi' : `Chez ${name(users.find(u => u.id === c.userId))}`,
       sub: `depuis le ${fmt(c.checkoutDate)}${siteOf(c) ? ` · ${siteOf(c)}` : ''} · retour ${fmt(c.dueDate)}${c.droppedAt ? ' · déposé dans la boîte' : ''}`,
       alert: new Date(c.dueDate).getTime() < Date.now() && !c.droppedAt,
     }));
@@ -92,7 +92,7 @@ const Search: React.FC = () => {
     // « en retard »
     if (/\b(en )?retards?\b/.test(q)) {
       const late = active.filter(c => new Date(c.dueDate).getTime() < Date.now() && !c.droppedAt).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-      return [{ title: `${seesAll ? 'En retard' : 'Vos retards'} (${late.length})`, lines: late.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${name(users.find(u => u.id === c.userId))} · prévu le ${fmt(c.dueDate)}`, alert: true })) }];
+      return [{ title: `${seesAll ? 'En retard' : 'Tes retards'} (${late.length})`, lines: late.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${name(users.find(u => u.id === c.userId))} · prévu le ${fmt(c.dueDate)}`, alert: true })) }];
     }
 
     // « chantier Renens », « qu'est-ce qui est sur le chantier Renens »
@@ -150,7 +150,7 @@ const Search: React.FC = () => {
       }
       for (const s of sites.filter(x => matchesAll(x.name, words(q))).slice(0, 5)) {
         const n = siteItems.filter(i => i.site_id === s.id).length;
-        blocks.push({ title: `Chantier ${s.name}`, lines: [{ main: `${n} élément(s) sur le chantier`, sub: 'Cherchez « chantier ' + s.name.replace(/^chantier\s+/i, '') + ' » pour le détail' }] });
+        blocks.push({ title: `Chantier ${s.name}`, lines: [{ main: `${n} élément(s) sur le chantier`, sub: 'Cherche « chantier ' + s.name.replace(/^chantier\s+/i, '') + ' » pour le détail' }] });
       }
     }
     return blocks;
@@ -166,7 +166,7 @@ const Search: React.FC = () => {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="mx-page-title">Recherche</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Posez la question comme vous la diriez au magasin.</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Pose la question comme tu la dirais au magasin.</p>
       </div>
       <form onSubmit={submit} className="flex gap-2">
         <label htmlFor="search-q" className="sr-only">Question</label>
@@ -183,7 +183,7 @@ const Search: React.FC = () => {
         ))}
       </div>
 
-      {query && results.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-400">Rien trouvé pour « {query} ». Essayez avec moins de mots, ou le numéro d'article.</p>}
+      {query && results.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-400">Rien trouvé pour « {query} ». Essaie avec moins de mots, ou le numéro d'article.</p>}
       <div className="space-y-3">
         {results.map((block, i) => (
           <section key={`${block.title}-${i}`} className="rounded-lg bg-white dark:bg-gray-800 shadow p-4">

@@ -61,7 +61,7 @@ const NotificationRecipients: React.FC = () => {
   const add = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.kinds.length) {
-      toast.error('Choisissez au moins un type d\'alerte');
+      toast.error('Choisis au moins un type d\'alerte');
       return;
     }
     const { error } = await supabase.from('notification_recipients').insert({

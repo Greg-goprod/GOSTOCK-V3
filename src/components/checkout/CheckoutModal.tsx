@@ -390,7 +390,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
       const row = found.equipment;
       if (row.item_type === 'consumable') {
-        toast.error(`${row.name} est un consommable : enregistrez sa sortie depuis la page Consommables`);
+        toast.error(`${row.name} est un consommable : enregistre sa sortie depuis la page Consommables`);
         return;
       }
       if (row.status === 'retired') {
@@ -490,12 +490,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
   const handleCheckout = async () => {
     if (!selectedUser || checkoutItems.length === 0) {
-      toast.error('Veuillez sélectionner un utilisateur et au moins un équipement');
+      toast.error('Sélectionne un utilisateur et au moins un équipement');
       return;
     }
 
     if (!dueDate) {
-      toast.error('Veuillez sélectionner une date de retour');
+      toast.error('Sélectionne une date de retour');
       return;
     }
 
@@ -645,7 +645,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
               </div>
             ` : ''}
             <div class="important-notice"><span class="icon">!</span>
-              <span>Ce bon de sortie doit être conservé et présenté lors du retour du matériel.<br />En cas de perte ou de dommage du matériel, veuillez contacter immédiatement le service de gestion.</span>
+              <span>Ce bon de sortie doit être conservé et présenté lors du retour du matériel.<br />En cas de perte ou de dommage du matériel, contacte immédiatement le service de gestion.</span>
             </div>
             <div class="signatures">
               <div class="signature-box">
@@ -937,7 +937,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                     ))
                   ) : (
                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                      {searchTerm ? (isSearching ? "Recherche en cours..." : "Aucun équipement trouvé") : "Commencez à taper pour rechercher du matériel"}
+                      {searchTerm ? (isSearching ? "Recherche en cours..." : "Aucun équipement trouvé") : "Commence à taper pour rechercher du matériel"}
                     </div>
                   )}
                   {filteredEquipment.length > 0 && (

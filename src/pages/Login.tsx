@@ -12,12 +12,12 @@ const inputClass =
 // Messages Supabase Auth les plus courants, en clair
 const authMessage = (message: string) => {
   // Limite d'envoi d'e-mails du projet (service d'envoi de Supabase sans SMTP propre : quelques e-mails par heure)
-  if (/email rate limit/i.test(message)) return "Limite d'envoi d'e-mails atteinte pour le moment (quelques e-mails par heure tant que le compte d'envoi n'est pas configuré). Réessayez dans une heure.";
-  if (/rate limit|too many|seconds/i.test(message)) return 'Trop de demandes de code. Patientez une minute avant de réessayer.';
-  if (/invalid login credentials/i.test(message)) return 'E-mail ou mot de passe incorrect. Sans mot de passe, connectez-vous avec un code.';
-  if (/expired|invalid/i.test(message)) return 'Code incorrect ou expiré. Vérifiez le dernier e-mail reçu, ou demandez un nouveau code.';
-  if (/email not confirmed/i.test(message)) return "Adresse pas encore confirmée : connectez-vous une première fois avec un code.";
-  if (/signups not allowed/i.test(message)) return "Cette adresse n'a pas d'accès à GO-Mat. Demandez à votre responsable de vous ajouter.";
+  if (/email rate limit/i.test(message)) return "Limite d'envoi d'e-mails atteinte pour le moment (quelques e-mails par heure tant que le compte d'envoi n'est pas configuré). Réessaie dans une heure.";
+  if (/rate limit|too many|seconds/i.test(message)) return 'Trop de demandes de code. Patiente une minute avant de réessayer.';
+  if (/invalid login credentials/i.test(message)) return 'E-mail ou mot de passe incorrect. Sans mot de passe, connecte-toi avec un code.';
+  if (/expired|invalid/i.test(message)) return 'Code incorrect ou expiré. Vérifie le dernier e-mail reçu, ou demande un nouveau code.';
+  if (/email not confirmed/i.test(message)) return "Adresse pas encore confirmée : connecte-toi une première fois avec un code.";
+  if (/signups not allowed/i.test(message)) return "Cette adresse n'a pas d'accès à GO-Mat. Demande à ton responsable de t'ajouter.";
   return message;
 };
 
@@ -118,7 +118,7 @@ const Login: React.FC = () => {
                 {busy ? 'Envoi…' : 'Recevoir un code'}
               </Button>
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                Pas de mot de passe : vous recevez un code à usage unique par e-mail.
+                Pas de mot de passe : tu reçois un code à usage unique par e-mail.
               </p>
               <button type="button" onClick={() => { setStep('password'); setError(''); }}
                 className="text-sm text-primary-700 dark:text-primary-300 hover:underline min-h-[44px]">
@@ -152,7 +152,7 @@ const Login: React.FC = () => {
           ) : (
             <form onSubmit={verify} className="space-y-4">
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                Code envoyé à <span className="font-medium">{email}</span>. Saisissez-le, ou cliquez sur le lien de l'e-mail.
+                Code envoyé à <span className="font-medium">{email}</span>. Saisis-le, ou clique sur le lien de l'e-mail.
               </p>
               <div>
                 <label htmlFor="login-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

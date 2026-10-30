@@ -93,7 +93,7 @@ const SiteMap: React.FC = () => {
       <div className="flex flex-wrap justify-between items-end gap-3">
         <div>
           <h1 className="mx-page-title">Carte</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Où est mon matériel : chaque chantier avec ce qui s'y trouve encore. Touchez une pastille pour le détail.</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Où est mon matériel : chaque chantier avec ce qui s'y trouve encore. Touche une pastille pour le détail.</p>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
           <input type="checkbox" checked={showClosed} onChange={e => setShowClosed(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-primary-600" />
@@ -113,7 +113,7 @@ const SiteMap: React.FC = () => {
         <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4">
           <h2 className="text-sm font-bold text-gray-900 dark:text-white">{`Pas encore sur la carte (${unplaced.length})`}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-            Ajoutez l'adresse dans la fiche du chantier, ou placez-le avec « Ma position » quand vous êtes sur place.
+            Ajoute l'adresse dans la fiche du chantier, ou place-le avec « Ma position » quand tu es sur place.
           </p>
           <ul className="text-sm text-gray-800 dark:text-gray-200 divide-y divide-gray-200 dark:divide-gray-700">
             {unplaced.map(s => {

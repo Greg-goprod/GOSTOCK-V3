@@ -593,7 +593,7 @@ const Settings: React.FC = () => {
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez les catégories de matériel pour organiser votre inventaire
+            Gère les catégories de matériel pour organiser ton inventaire
           </p>
           <Button
             variant="primary"
@@ -657,7 +657,7 @@ const Settings: React.FC = () => {
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez vos fournisseurs et leurs informations de contact
+            Gère tes fournisseurs et leurs informations de contact
           </p>
           <Button
             variant="primary"
@@ -797,7 +797,7 @@ const Settings: React.FC = () => {
             
             {groups.length === 0 ? (
               <p className="text-sm text-gray-500 italic">
-                Créez d'abord un groupe pour pouvoir ajouter des sous-groupes
+                Crée d'abord un groupe pour pouvoir ajouter des sous-groupes
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -864,7 +864,7 @@ const Settings: React.FC = () => {
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez les départements de votre organisation
+            Gère les départements de ton organisation
           </p>
           <Button
             variant="primary"
@@ -930,7 +930,7 @@ const Settings: React.FC = () => {
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez les types de maintenance et de pannes
+            Gère les types de maintenance et de pannes
           </p>
           <Button
             variant="primary"

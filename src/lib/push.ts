@@ -15,7 +15,7 @@ const keyBytes = (base64: string) => {
 
 const registration = async () => {
   const reg = await navigator.serviceWorker.getRegistration();
-  if (!reg) throw new Error('Application non installée : ouvrez la version en ligne de GO-Mat (le mode développement ne reçoit pas les notifications)');
+  if (!reg) throw new Error('Application non installée : ouvre la version en ligne de GO-Mat (le mode développement ne reçoit pas les notifications)');
   return reg;
 };
 

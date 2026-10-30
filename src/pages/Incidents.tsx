@@ -190,7 +190,7 @@ export const DeclareIncidentModal: React.FC<DeclareProps> = ({ onClose, onDone, 
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!itemId) return toast.error('Choisissez l\'article');
+    if (!itemId) return toast.error('Choisis l\'article');
     setSaving(true);
     const { error } = await supabase.rpc('declare_incident', {
       p_kind: kind,

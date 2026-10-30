@@ -62,7 +62,7 @@ export const FAQ: { group: string; items: FaqItem[] }[] = [
   {
     group: 'Comptoir et sorties',
     items: [
-      { q: 'Le badge n\'est pas reconnu.', a: 'Vérifie que la personne est active et que son accès n\'a pas expiré. Le motif exact s\'affiche sous la caméra. En dépannage, clique sur « choisissez la personne ».', article: 'comptoir' },
+      { q: 'Le badge n\'est pas reconnu.', a: 'Vérifie que la personne est active et que son accès n\'a pas expiré. Le motif exact s\'affiche sous la caméra. En dépannage, clique sur « choisis la personne ».', article: 'comptoir' },
       { q: 'La sortie est refusée : pourquoi ?', a: 'Le message donne le motif : plus de stock disponible, outil en réparation ou retiré, permis machine manquant, fin de location avant la date de retour, chantier clôturé.', article: 'comptoir' },
       { q: 'Il n\'y a pas de réseau au dépôt.', a: 'Le comptoir continue hors ligne : les opérations sont gardées sur l\'appareil et partent au retour du réseau. Pas de photo ni de recherche par code EAN hors ligne.', article: 'comptoir' },
       { q: 'Comment rendre un kit ?', a: 'Scanne le QR du kit au comptoir : tous ses outils passent en retour. Retire du panier ce qui manque.', article: 'kits' },

@@ -257,7 +257,7 @@ const Accounting: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-gray-900 dark:text-gray-100">
-            {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-4 text-gray-600 dark:text-gray-400">Aucun outil avec un prix d'achat. Saisissez prix et date d'achat dans les fiches.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-4 text-gray-600 dark:text-gray-400">Aucun outil avec un prix d'achat. Saisis prix et date d'achat dans les fiches.</td></tr>}
             {rows.slice(0, 300).map(r => (
               <tr key={r.equipment_id}>
                 <td className="px-4 py-2">{r.name}{r.article_number ? <span className="font-mono text-xs text-gray-500"> · {r.article_number}</span> : null}</td>
@@ -274,7 +274,7 @@ const Accounting: React.FC = () => {
 
       <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3">
         <h2 className="font-bold text-gray-900 dark:text-white">Comptes de l'export</h2>
-        <p className="text-xs text-gray-600 dark:text-gray-400">Comptes usuels du plan comptable PME suisse : faites-les confirmer par votre fiduciaire.</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400">Comptes usuels du plan comptable PME suisse : fais-les confirmer par ta fiduciaire.</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {(Object.keys(ACCOUNT_LABELS) as (keyof Accounts)[]).map(key => (
             <div key={key}>

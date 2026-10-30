@@ -20,7 +20,7 @@ const PushToggle: React.FC = () => {
   if (!pushSupported()) {
     return (
       <p className="text-xs text-gray-600 dark:text-gray-400">
-        Ce navigateur ne reçoit pas les notifications. Sur iPhone : installez d'abord GO-Mat sur l'écran d'accueil (iOS 16.4 ou plus récent), puis ouvrez-le depuis l'icône.
+        Ce navigateur ne reçoit pas les notifications. Sur iPhone : installe d'abord GO-Mat sur l'écran d'accueil (iOS 16.4 ou plus récent), puis ouvre-le depuis l'icône.
       </p>
     );
   }

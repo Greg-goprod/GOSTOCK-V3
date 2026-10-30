@@ -87,7 +87,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ label, onChange }) => {
         onPointerUp={end}
         onPointerLeave={end}
       />
-      {empty && <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Signez dans le cadre avec le doigt ou la souris.</p>}
+      {empty && <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Signe dans le cadre avec le doigt ou la souris.</p>}
     </div>
   );
 };

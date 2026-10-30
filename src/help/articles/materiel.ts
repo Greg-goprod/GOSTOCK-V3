@@ -72,7 +72,7 @@ export const MATERIEL: HelpArticle[] = [
         steps: [
           { text: 'Clique sur « Importer » en haut de « Outils ».' },
           { text: 'Clique sur « Télécharger le modèle Excel », remplis une ligne par outil (seul « Nom » est obligatoire ; catégories et fournisseurs inconnus sont créés automatiquement).' },
-          { text: 'Glisse ton fichier dans le cadre « Glissez-déposez votre fichier Excel ici », ou clique pour le choisir.' },
+          { text: 'Glisse ton fichier dans le cadre « Glisse-dépose ton fichier Excel ici », ou clique pour le choisir.' },
           { text: 'À l\'étape « Validation », vérifie le tableau : « Validation réussie » si tout est bon.' },
           { text: 'Lance l\'import, attends « Import terminé », puis « Fermer ».' },
         ],
@@ -101,7 +101,7 @@ export const MATERIEL: HelpArticle[] = [
         ],
         result: '« Kit enregistré ». Au comptoir, scanner ce QR ajoute tout le contenu.',
         problems: [
-          { if: '« Ajoutez au moins un outil au kit ».', then: 'Un kit vide ne s\'enregistre pas.' },
+          { if: '« Ajoute au moins un outil au kit ».', then: 'Un kit vide ne s\'enregistre pas.' },
           { if: '« Un exemplaire est déjà dans un autre kit ».', then: 'Un même exemplaire ne peut être que dans un kit : choisis-en un autre ou « N\'importe lequel ».' },
         ],
       },
@@ -152,8 +152,8 @@ export const MATERIEL: HelpArticle[] = [
         ],
         result: 'Le plan apparaît avec son état : « À jour », « Bientôt » ou « Échu ».',
         problems: [
-          { if: '« Choisissez au moins un outil ».', then: 'Ajoute un outil au plan.' },
-          { if: '« Indiquez un intervalle en mois et/ou en sorties ».', then: 'Remplis au moins un des deux.' },
+          { if: '« Choisis au moins un outil ».', then: 'Ajoute un outil au plan.' },
+          { if: '« Indique un intervalle en mois et/ou en sorties ».', then: 'Remplis au moins un des deux.' },
         ],
       },
       {

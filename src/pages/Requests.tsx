@@ -217,7 +217,7 @@ const Requests: React.FC = () => {
         <div className="py-12 text-center text-gray-600 dark:text-gray-400">Chargement…</div>
       ) : visible.length === 0 ? (
         <MxEmpty icon={ClipboardList} title={requests.length === 0 ? 'Aucune demande pour l\'instant' : 'Aucune demande dans cette liste'}
-          description={requests.length === 0 ? 'Créez la première avec « Nouvelle demande ».' : undefined} />
+          description={requests.length === 0 ? 'Crée la première avec « Nouvelle demande ».' : undefined} />
       ) : (
         <ul className="grid gap-3">
           {visible.map(r => (
@@ -439,9 +439,9 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!supabase) return;
-    if (!requesterId) return toast.error('Choisissez la personne qui fait la demande');
+    if (!requesterId) return toast.error('Choisis la personne qui fait la demande');
     if (!periodOk) return toast.error('La fin doit être après le début');
-    if (items.length === 0) return toast.error('Ajoutez au moins un article ou un véhicule');
+    if (items.length === 0) return toast.error('Ajoute au moins un article ou un véhicule');
     setSaving(true);
     const { data, error } = await supabase.rpc('create_request', {
       p_requester_id: requesterId,
@@ -549,7 +549,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
         <div>
           <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Contenu de la demande ({items.length})</h3>
           {items.length === 0 ? (
-            <p className="text-sm text-gray-600 dark:text-gray-400">Rien pour l'instant : choisissez des articles ci-dessus.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Rien pour l'instant : choisis des articles ci-dessus.</p>
           ) : (
             <ul className="space-y-2">
               {items.map(item => (
@@ -560,7 +560,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
                       {item.name}
                     </div>
                     <div className={`text-xs ${/réservé|échue|dépassé|maintenance|retiré|permis|^0 /.test(availability[item.id] || '') ? 'text-tone-danger' : 'text-gray-600 dark:text-gray-400'}`}>
-                      {availability[item.id] || (periodOk ? 'Vérification…' : 'Choisissez une période valide')}
+                      {availability[item.id] || (periodOk ? 'Vérification…' : 'Choisis une période valide')}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -861,7 +861,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
             </div>
             {articleLines.length > 0 && (
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Scannez chaque article préparé (ou cochez-le à la main).</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Scanne chaque article préparé (ou coche-le à la main).</p>
                 <QRCodeScanner onScan={onScan} disableAutoFocus />
               </div>
             )}

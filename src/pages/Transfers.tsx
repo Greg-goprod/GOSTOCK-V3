@@ -105,7 +105,7 @@ const Transfers: React.FC = () => {
   }, [search, from, equipment, lines, consumableStock, depots]);
 
   const send = async () => {
-    if (!lines.length) return toast.error('Ajoutez au moins un article');
+    if (!lines.length) return toast.error('Ajoute au moins un article');
     setBusy(true);
     const { data, error } = await supabase.rpc('send_transfer', { p_from: from, p_to: to, p_lines: lines, p_notes: notes.trim() || null });
     setBusy(false);
@@ -173,7 +173,7 @@ const Transfers: React.FC = () => {
         options={[{ value: 'open', label: 'En route' }, { value: 'all', label: 'Historique' }]} />
 
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
-        {shown.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">{depots.length > 1 ? 'Aucun transfert.' : 'Un seul dépôt : créez-en un autre dans Paramètres pour transférer du matériel.'}</li>}
+        {shown.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">{depots.length > 1 ? 'Aucun transfert.' : 'Un seul dépôt : crées-en un autre dans Paramètres pour transférer du matériel.'}</li>}
         {shown.map(t => {
           const done = t.transfer_lines.filter(l => l.received >= l.quantity).length;
           const canReceive = t.status === 'in_transit' && myDepotIds.includes(t.to_depot_id);
@@ -272,7 +272,7 @@ const Transfers: React.FC = () => {
       <Modal isOpen={receiving !== null} onClose={() => setReceiving(null)} title={receiving ? `Réception ${receiving.number}` : 'Réception'} size="lg">
         {receiving && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-700 dark:text-gray-300">Scannez chaque article arrivé à {depotName(receiving.to_depot_id)}.</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">Scanne chaque article arrivé à {depotName(receiving.to_depot_id)}.</p>
             {receiving.status === 'in_transit' && <QRCodeScanner onScan={onScan} />}
             <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
               {receiving.transfer_lines.map(l => {

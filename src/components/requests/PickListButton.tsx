@@ -33,7 +33,7 @@ const PickListButton: React.FC<PickListButtonProps> = ({ requestId, title, subti
     // La fenêtre s'ouvre tout de suite (sinon le navigateur la bloque), puis se remplit
     const win = window.open('', '_blank');
     if (!win) {
-      toast.error('Autorisez les fenêtres pour imprimer la liste');
+      toast.error('Autorise les fenêtres pour imprimer la liste');
       return;
     }
     setBusy(true);

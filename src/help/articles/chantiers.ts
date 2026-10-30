@@ -22,7 +22,7 @@ export const CHANTIERS: HelpArticle[] = [
         result: '« Chantier créé : les sorties déjà faites sous ce nom y sont rattachées ».',
         problems: [
           { if: '« Un chantier porte déjà ce nom ».', then: 'Ajoute une précision (ville, étape).' },
-          { if: '« Adresse introuvable sur la carte : précisez la localité ».', then: 'Ajoute le NPA et la localité.' },
+          { if: '« Adresse introuvable sur la carte : précise la localité ».', then: 'Ajoute le NPA et la localité.' },
         ],
       },
       {

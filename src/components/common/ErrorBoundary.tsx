@@ -51,7 +51,7 @@ class ErrorBoundary extends Component<Props, State> {
               
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {isSupabaseError 
-                  ? 'La connexion à la base de données Supabase a échoué. Vérifiez la configuration.'
+                  ? 'La connexion à la base de données Supabase a échoué. Vérifie la configuration.'
                   : 'L\'application a rencontré une erreur inattendue.'
                 }
               </p>
@@ -78,25 +78,25 @@ class ErrorBoundary extends Component<Props, State> {
                 </h3>
                 <div className="space-y-3 text-sm text-primary-700 dark:text-primary-300">
                   <div>
-                    <strong>1. Accédez aux paramètres Netlify :</strong>
-                    <p className="ml-4">Dashboard Netlify → Votre site → Site settings → Environment variables</p>
+                    <strong>1. Accède aux paramètres Netlify :</strong>
+                    <p className="ml-4">Dashboard Netlify → Ton site → Site settings → Environment variables</p>
                   </div>
                   <div>
-                    <strong>2. Ajoutez ces variables :</strong>
+                    <strong>2. Ajoute ces variables :</strong>
                     <ul className="ml-4 space-y-1">
-                      <li>• <code className="bg-primary-100 dark:bg-primary-800 px-1 rounded">VITE_SUPABASE_URL</code> : URL de votre projet Supabase</li>
+                      <li>• <code className="bg-primary-100 dark:bg-primary-800 px-1 rounded">VITE_SUPABASE_URL</code> : URL de ton projet Supabase</li>
                       <li>• <code className="bg-primary-100 dark:bg-primary-800 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> : Clé anonyme Supabase</li>
                     </ul>
                   </div>
                   <div>
-                    <strong>3. Redéployez le site</strong>
+                    <strong>3. Redéploie le site</strong>
                     <p className="ml-4">Netlify → Deploys → Trigger deploy</p>
                   </div>
                 </div>
                 
                 <div className="mt-4 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded">
                   <p className="text-xs text-tone-warning">
-                    <strong><LightbulbIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Astuce :</strong> Vous pouvez trouver ces informations dans votre dashboard Supabase → Settings → API
+                    <strong><LightbulbIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Astuce :</strong> Tu peux trouver ces informations dans ton dashboard Supabase → Settings → API
                   </p>
                 </div>
               </div>
@@ -155,7 +155,7 @@ class ErrorBoundary extends Component<Props, State> {
             {/* Informations de contact */}
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Si le problème persiste, vérifiez les logs de déploiement Netlify ou contactez le support.
+                Si le problème persiste, vérifie les logs de déploiement Netlify ou contacte le support.
               </p>
             </div>
           </div>

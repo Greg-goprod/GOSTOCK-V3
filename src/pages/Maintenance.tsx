@@ -110,7 +110,7 @@ const Maintenance: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-400">Chargement…</p>
       ) : shown.length === 0 ? (
         <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-gray-700 dark:text-gray-300">
-          {tab === 'todo' ? 'Rien à faire : tous les entretiens sont à jour.' : 'Aucun plan. Créez-en un pour chaque outil à réviser ou à contrôler (OIBT).'}
+          {tab === 'todo' ? 'Rien à faire : tous les entretiens sont à jour.' : 'Aucun plan. Crées-en un pour chaque outil à réviser ou à contrôler (OIBT).'}
         </div>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -193,8 +193,8 @@ const NewPlanModal: React.FC<{ onClose: () => void; onDone: () => Promise<void> 
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selected.length) return toast.error('Choisissez au moins un outil');
-    if (!months && !uses) return toast.error('Indiquez un intervalle en mois et/ou en sorties');
+    if (!selected.length) return toast.error('Choisis au moins un outil');
+    if (!months && !uses) return toast.error('Indique un intervalle en mois et/ou en sorties');
     setSaving(true);
     const { error } = await supabase.from('maintenance_plans').insert(selected.map(equipment_id => ({
       equipment_id,

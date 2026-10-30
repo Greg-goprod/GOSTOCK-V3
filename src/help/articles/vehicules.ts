@@ -55,7 +55,7 @@ export const VEHICULES: HelpArticle[] = [
         title: 'Enregistrer le retour du véhicule',
         steps: [
           { text: 'Sur la page « Véhicules », clique sur « Retour » sur la ligne du véhicule.' },
-          { text: 'Compare avec « Photos au départ : comparez avec l\'état actuel ».' },
+          { text: 'Compare avec « Photos au départ : compare avec l\'état actuel ».' },
           { text: 'Tape le « Kilométrage au retour », le carburant, et note les nouveaux dégâts avec photo.' },
           { text: 'Clique sur « Valider le retour ».' },
         ],
@@ -130,8 +130,8 @@ export const VEHICULES: HelpArticle[] = [
         ],
         result: 'La location est « Rendu ». Le PV met les deux états des lieux côte à côte.',
         problems: [
-          { if: '« L\'outil est encore sorti : enregistrez son retour au comptoir d\'abord ».', then: 'Fais le retour au comptoir, puis reviens.' },
-          { if: '« Le véhicule est encore en route : clôturez le trajet d\'abord ».', then: 'Fais « Retour » sur la page Véhicules.' },
+          { if: '« L\'outil est encore sorti : enregistre son retour au comptoir d\'abord ».', then: 'Fais le retour au comptoir, puis reviens.' },
+          { if: '« Le véhicule est encore en route : clôture le trajet d\'abord ».', then: 'Fais « Retour » sur la page Véhicules.' },
         ],
       },
     ],

@@ -29,7 +29,7 @@ const TrainingSelect: React.FC<TrainingSelectProps> = ({ id, value, onChange, la
         {others.length > 0 && <optgroup label="Formations">{others.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
       </select>
       <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-        Sortie et réservation refusées sans attestation valable{trainings.length === 0 ? ' (créez les formations dans « Formations »)' : ''}
+        Sortie et réservation refusées sans attestation valable{trainings.length === 0 ? ' (crée les formations dans « Formations »)' : ''}
       </p>
     </div>
   );

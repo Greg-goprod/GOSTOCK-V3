@@ -88,7 +88,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
 
   const print = () => {
     const win = window.open('', '_blank');
-    if (!win) return toast.error('Autorisez les fenêtres pour imprimer la liste');
+    if (!win) return toast.error('Autorise les fenêtres pour imprimer la liste');
     const items = [
       ...held.map(c => `${label(c.equipmentId, c.instanceId)} (sorti le ${new Date(c.checkoutDate).toLocaleDateString('fr-CH')})`),
       ...ppe.map(p => `EPI : ${p.ppe_types?.name ?? ''}${p.size ? ` taille ${p.size}` : ''}`),

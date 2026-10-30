@@ -208,7 +208,7 @@ const Planning: React.FC = () => {
       <p className="text-xs text-gray-600 dark:text-gray-400">
         <span className="inline-block w-3 h-3 rounded bg-primary-500 align-middle" /> réservé ou sorti ·{' '}
         <span className="inline-block w-3 h-3 rounded bg-warning-200 align-middle" /> demande à valider ·{' '}
-        <span className="inline-block w-3 h-3 rounded bg-danger-600 align-middle" /> conflit. Touchez une ligne pour le détail.
+        <span className="inline-block w-3 h-3 rounded bg-danger-600 align-middle" /> conflit. Touche une ligne pour le détail.
       </p>
     </div>
   );

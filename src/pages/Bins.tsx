@@ -216,7 +216,7 @@ const Bins: React.FC = () => {
               ))}
             </ul>
           )}
-          {shown.length > 200 && <p className="text-xs text-gray-600 dark:text-gray-400">200 premiers affichés : affinez la recherche.</p>}
+          {shown.length > 200 && <p className="text-xs text-gray-600 dark:text-gray-400">200 premiers affichés : affine la recherche.</p>}
         </section>
       </div>
     </div>

@@ -484,13 +484,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       console.error('Error deleting equipment:', error);
       const isReferenced = (error as { code?: string })?.code === '23503';
       toast.error(isReferenced
-        ? 'Ce matériel a un historique de sorties : passez-le en « Retiré du service » plutôt que de le supprimer'
+        ? 'Ce matériel a un historique de sorties : passe-le en « Retiré du service » plutôt que de le supprimer'
         : 'Erreur lors de la suppression de l\'équipement');
       throw error;
     }
   };
 
-  // Ajoutez cette fonction au contexte pour permettre un rafraîchissement explicite des données
+  // Ajoute cette fonction au contexte pour permettre un rafraîchissement explicite des données
   const refreshEquipmentData = async () => {
     try {
       const { data: equipmentData, error: equipmentError } = await supabase

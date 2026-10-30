@@ -31,7 +31,7 @@ export const REGLAGES: HelpArticle[] = [
         ],
         result: 'Les alertes partent par e-mail dans les 5 minutes.',
         problems: [
-          { if: '« Choisissez au moins un type d\'alerte ».', then: 'Coche au moins une alerte.' },
+          { if: '« Choisis au moins un type d\'alerte ».', then: 'Coche au moins une alerte.' },
           { if: 'Le test n\'arrive pas.', then: 'Regarde les indésirables, puis vérifie l\'adresse. Si rien n\'arrive, préviens l\'administrateur technique.' },
         ],
       },

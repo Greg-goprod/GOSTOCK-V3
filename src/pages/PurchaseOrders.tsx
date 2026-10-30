@@ -87,7 +87,7 @@ const PurchaseOrders: React.FC = () => {
 
       {shown.length === 0 ? (
         <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-gray-700 dark:text-gray-300 print:hidden">
-          Aucune commande. Créez-les depuis la feuille de commande (« Créer les bons de commande »).
+          Aucune commande. Crée-les depuis la feuille de commande (« Créer les bons de commande »).
         </div>
       ) : (
         <ul className="space-y-2 print:hidden">
@@ -160,7 +160,7 @@ const OrderModal: React.FC<{ order: PurchaseOrder; onClose: () => void; onChange
 
   const receive = async (line: OrderLine) => {
     const value = Number((receiving[line.id] ?? '').replace(',', '.'));
-    if (!value || value <= 0) return toast.error('Indiquez la quantité reçue');
+    if (!value || value <= 0) return toast.error('Indique la quantité reçue');
     const ok = await run(() => supabase.rpc('receive_order_line', { p_line_id: line.id, p_quantity: value }), `${qty(value)} reçu(s) : entrée en stock`);
     if (ok) {
       setReceiving(r => ({ ...r, [line.id]: '' }));

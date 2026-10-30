@@ -48,7 +48,7 @@ const group = (lines: ReportLine[]) => {
 // Rapport imprimable (« Enregistrer en PDF » dans la fenêtre d'impression), à joindre à la facture du client
 export async function printSiteReport(site: ReportSite) {
   const win = window.open('', '_blank');
-  if (!win) throw new Error('Autorisez les fenêtres pour imprimer le rapport');
+  if (!win) throw new Error('Autorise les fenêtres pour imprimer le rapport');
   const [lines, org, logo] = await Promise.all([
     loadSiteLines(site.id),
     supabase.from('organizations').select('name').limit(1).maybeSingle(),

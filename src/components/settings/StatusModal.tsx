@@ -134,7 +134,7 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
                   placeholder="Généré automatiquement si vide"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Laissez vide pour générer automatiquement
+                  Laisse vide pour générer automatiquement
                 </p>
               </div>
             )}

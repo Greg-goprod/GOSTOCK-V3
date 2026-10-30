@@ -106,7 +106,7 @@ const Home: React.FC = () => {
     ];
     if (!isLead) return store;
     const lead: Action[] = [
-      { to: '/demandes', label: 'Demandes à valider', hint: 'En attente de votre décision', icon: Inbox, count: toApprove, tone: 'warn', primary: true },
+      { to: '/demandes', label: 'Demandes à valider', hint: 'En attente de ta décision', icon: Inbox, count: toApprove, tone: 'warn', primary: true },
       { to: '/checkouts', label: 'Retours en retard', hint: 'À relancer', icon: Undo2, count: overdue, tone: 'bad' },
       { to: '/commande', label: 'À commander', hint: 'Consommables sous le seuil', icon: ClipboardList, count: lowStock, tone: 'warn' },
       { to: '/planning', label: 'Planning', hint: 'Outils et véhicules réservés, conflits', icon: CalendarRange },
@@ -161,7 +161,7 @@ const Home: React.FC = () => {
               <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1">Détail <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
             {loadingAppData ? <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p> : mine.length === 0 ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">Vous n'avez rien en prêt.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Tu n'as rien en prêt.</p>
             ) : (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {mine.slice(0, 8).map(c => {

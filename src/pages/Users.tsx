@@ -506,7 +506,7 @@ const Users: React.FC = () => {
       >
         {selectedUser && badgeCode === undefined && <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p>}
         {selectedUser && badgeCode === null && (
-          <p className="text-sm text-gray-700 dark:text-gray-300">Aucun badge trouvé pour cette personne. Ouvrez sa fiche « Mon badge » ou « Imprimer les badges » pour en créer un.</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">Aucun badge trouvé pour cette personne. Ouvre sa fiche « Mon badge » ou « Imprimer les badges » pour en créer un.</p>
         )}
         {selectedUser && badgeCode && (
           <div className="flex justify-center">
@@ -539,7 +539,7 @@ const Users: React.FC = () => {
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteConfirm}
         title="Confirmer la suppression"
-        message={`Êtes-vous sûr de vouloir supprimer l'utilisateur ${userToDelete?.first_name} ${userToDelete?.last_name} ? Cette action est irréversible.`}
+        message={`Es-tu sûr de vouloir supprimer l'utilisateur ${userToDelete?.first_name} ${userToDelete?.last_name} ? Cette action est irréversible.`}
         confirmLabel="SUPPRIMER"
         cancelLabel="ANNULER"
       />

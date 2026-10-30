@@ -29,8 +29,8 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onDecode }) => {
       } catch (e) {
         const message = String((e as Error)?.message ?? e);
         setError(/permission|NotAllowed/i.test(message)
-          ? "Accès à la caméra refusé. Autorisez la caméra pour ce site dans les réglages du navigateur."
-          : "Caméra indisponible sur cet appareil. Utilisez un lecteur ou saisissez le code.");
+          ? "Accès à la caméra refusé. Autorise la caméra pour ce site dans les réglages du navigateur."
+          : "Caméra indisponible sur cet appareil. Utilise un lecteur ou saisis le code.");
       }
     })();
 

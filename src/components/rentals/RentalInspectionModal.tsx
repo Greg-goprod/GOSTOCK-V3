@@ -76,11 +76,11 @@ const RentalInspectionModal: React.FC<Props> = ({ rental, kind, reception, onClo
     event.preventDefault();
     // Noms des vues traduits un par un : la liste entière ne correspond à aucune phrase du dictionnaire
     if (missing.length) return toast.error(`Photos manquantes : ${missing.map(label => translateText(label)).join(', ')}`);
-    if (type === 'vehicle' && km.trim() === '') return toast.error('Relevez le kilométrage');
+    if (type === 'vehicle' && km.trim() === '') return toast.error('Relève le kilométrage');
     if (type === 'vehicle' && reception?.km != null && Number(km) < reception.km) {
       return toast.error(`Le kilométrage ne peut pas être inférieur à celui de la réception (${reception.km.toLocaleString('fr-CH')} km)`);
     }
-    if (damages.some(d => !d.description.trim())) return toast.error('Décrivez chaque dégât');
+    if (damages.some(d => !d.description.trim())) return toast.error('Décris chaque dégât');
     if (!staffSignature) return toast.error('Signature de notre collaborateur manquante');
     setSaving(true);
     const { error } = await supabase.rpc('record_rental_inspection', {
@@ -115,8 +115,8 @@ const RentalInspectionModal: React.FC<Props> = ({ rental, kind, reception, onClo
       <form onSubmit={submit} className="space-y-6">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {kind === 'reception'
-            ? `État des lieux chez ${rental.rental_company}, avant de prendre ${type === 'vehicle' ? 'le véhicule' : 'le matériel'}. Photographiez tout dégât déjà présent : il ne pourra pas nous être facturé.`
-            : `État des lieux au moment de rendre ${type === 'vehicle' ? 'le véhicule' : 'le matériel'} à ${rental.rental_company}. Prenez les mêmes vues qu'à la réception.`}
+            ? `État des lieux chez ${rental.rental_company}, avant de prendre ${type === 'vehicle' ? 'le véhicule' : 'le matériel'}. Photographie tout dégât déjà présent : il ne pourra pas nous être facturé.`
+            : `État des lieux au moment de rendre ${type === 'vehicle' ? 'le véhicule' : 'le matériel'} à ${rental.rental_company}. Prends les mêmes vues qu'à la réception.`}
         </p>
 
         <section className="space-y-3">

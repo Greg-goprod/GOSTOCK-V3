@@ -135,7 +135,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
     if (lastScanStatus === 'success') return 'Scan réussi !';
     if (lastScanStatus === 'error') return lastError ? `Erreur de scan : ${lastError}` : 'Erreur de scan';
     if (lastScanStatus === 'duplicate') return 'Doublon ignoré';
-    if (scannedValue) return 'Appuyez sur Entrée pour valider';
+    if (scannedValue) return 'Appuie sur Entrée pour valider';
     return 'Prêt pour le scan...';
   };
 
@@ -169,7 +169,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
           value={scannedValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Scannez ou saisissez un code..."
+          placeholder="Scanne ou saisis un code..."
           disabled={isProcessing}
           className={`w-full px-3 py-2.5 text-center border-[1.5px] rounded-md font-mono text-[14px] text-gray-900 dark:text-white transition-colors ${getStatusColor()}`}
           autoComplete="off"

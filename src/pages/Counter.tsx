@@ -255,7 +255,7 @@ const Counter: React.FC = () => {
         throw new Error('Kit pas emprunté');
       }
       setReturns(ids => [...ids, ...heldKit.map(c => c.id)]);
-      toast(`Kit « ${kit.name} » : ${heldKit.length} outil${heldKit.length > 1 ? 's' : ''} en retour. Retirez du panier ce qui manque : cela restera à son nom.`, { duration: 7000, icon: <Briefcase size={18} aria-hidden="true" /> });
+      toast(`Kit « ${kit.name} » : ${heldKit.length} outil${heldKit.length > 1 ? 's' : ''} en retour. Retire du panier ce qui manque : cela restera à son nom.`, { duration: 7000, icon: <Briefcase size={18} aria-hidden="true" /> });
       return;
     }
     const problems: string[] = [];
@@ -312,7 +312,7 @@ const Counter: React.FC = () => {
     }
 
     if (!person) {
-      toast.error("Scannez d'abord le badge de la personne");
+      toast.error("Scanne d'abord le badge de la personne");
       throw new Error('Aucune personne');
     }
 
@@ -350,7 +350,7 @@ const Counter: React.FC = () => {
       throw new Error('Retiré');
     }
     if (item.rentalUntil && due.slice(0, 10) > item.rentalUntil) {
-      toast.error(`« ${item.name} » est loué jusqu'au ${new Date(`${item.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')} : choisissez un retour avant`);
+      toast.error(`« ${item.name} » est loué jusqu'au ${new Date(`${item.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')} : choisis un retour avant`);
       throw new Error('Location');
     }
     if (item.requiredTrainingId && navigator.onLine && owner) {
@@ -387,7 +387,7 @@ const Counter: React.FC = () => {
     for (const id of returns) {
       const check = checkOf(id);
       if (check.condition !== 'ok' && check.condition !== 'dirty' && !check.notes.trim() && !check.photos.length) {
-        toast.error('Décrivez le problème (remarque ou photo) pour chaque retour non conforme');
+        toast.error('Décris le problème (remarque ou photo) pour chaque retour non conforme');
         return;
       }
     }
@@ -564,7 +564,7 @@ const Counter: React.FC = () => {
             ) : (
               <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                 <UserRound size={22} aria-hidden="true" />
-                <p className="text-sm">Scannez le badge (carte ou téléphone), ou <button type="button" className="text-primary-700 dark:text-primary-300 underline" onClick={() => setPickerOpen(o => !o)}>choisissez la personne</button>.</p>
+                <p className="text-sm">Scanne le badge (carte ou téléphone), ou <button type="button" className="text-primary-700 dark:text-primary-300 underline" onClick={() => setPickerOpen(o => !o)}>choisis la personne</button>.</p>
               </div>
             )}
 
@@ -636,7 +636,7 @@ const Counter: React.FC = () => {
         <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-4">
           <h2 className="font-bold text-gray-900 dark:text-white">Panier ({count})</h2>
 
-          {count === 0 && <p className="text-sm text-gray-600 dark:text-gray-400">Rien pour l'instant. Scannez les articles.</p>}
+          {count === 0 && <p className="text-sm text-gray-600 dark:text-gray-400">Rien pour l'instant. Scanne les articles.</p>}
 
           {returns.length > 0 && (
             <ul className="space-y-1">

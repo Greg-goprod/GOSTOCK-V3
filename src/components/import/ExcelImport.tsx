@@ -161,7 +161,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       if (!/\.xlsx$/i.test(selectedFile.name)) {
-        toast.error('Veuillez sélectionner un fichier Excel .xlsx (enregistrez les anciens .xls au format .xlsx)');
+        toast.error('Sélectionne un fichier Excel .xlsx (enregistre les anciens .xls au format .xlsx)');
         return;
       }
       setFile(selectedFile);
@@ -185,7 +185,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
       setFile(excelFile);
       parseExcelFile(excelFile);
     } else {
-      toast.error('Veuillez déposer un fichier Excel .xlsx');
+      toast.error('Dépose un fichier Excel .xlsx');
     }
   };
 
@@ -218,7 +218,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
       toast.success(`${parsedData.length} lignes lues avec succès`);
     } catch (error) {
       console.error('Error parsing Excel file:', error);
-      toast.error('Erreur lors de la lecture du fichier. Utilisez un fichier .xlsx (Excel 2007 ou plus récent).');
+      toast.error('Erreur lors de la lecture du fichier. Utilise un fichier .xlsx (Excel 2007 ou plus récent).');
     } finally {
       setIsLoading(false);
     }
@@ -261,7 +261,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
       // Validation du statut
       const validStatuses = ['available', 'checked-out', 'maintenance', 'retired'];
       if (row.status && !validStatuses.includes(row.status)) {
-        errors.push({ row: rowNumber, field: 'status', message: 'Statut invalide. Utilisez: available, checked-out, maintenance, retired' });
+        errors.push({ row: rowNumber, field: 'status', message: 'Statut invalide. Utilise: available, checked-out, maintenance, retired' });
       }
 
       // Validation de l'URL d'image
@@ -293,7 +293,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
 
   const handleImport = async () => {
     if (validationErrors.length > 0) {
-      toast.error('Veuillez corriger les erreurs avant d\'importer');
+      toast.error('Corrige les erreurs avant d\'importer');
       return;
     }
 
@@ -449,7 +449,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                 Import de matériel depuis Excel
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                Téléchargez le modèle Excel, remplissez-le avec vos données, puis importez-le.
+                Télécharge le modèle Excel, remplis-le avec tes données, puis importe-le.
               </p>
             </div>
 
@@ -472,7 +472,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                 <Upload size={32} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
                 <div className="space-y-2">
                   <p className="text-gray-600 dark:text-gray-400">
-                    Glissez-déposez votre fichier Excel ici ou
+                    Glisse-dépose ton fichier Excel ici ou
                   </p>
                   <Button
                     variant="primary"
@@ -668,7 +668,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                     Import en cours...
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400">
-                    Veuillez patienter pendant l'import des données.
+                    Patiente pendant l'import des données.
                   </p>
                 </div>
               ) : (

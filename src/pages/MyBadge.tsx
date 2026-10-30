@@ -59,7 +59,7 @@ const MyBadge: React.FC = () => {
     <div className="space-y-6">
       <div className="print:hidden">
         <h1 className="mx-page-title">Mon badge</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Présentez ce code au magasin pour sortir ou rendre du matériel.</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Présente ce code au magasin pour sortir ou rendre du matériel.</p>
       </div>
 
       <div className="print:hidden flex flex-col items-center gap-4">
@@ -76,7 +76,7 @@ const MyBadge: React.FC = () => {
           <p className="text-sm text-gray-600 dark:text-gray-400">{ROLE_LABELS[profile.role]}</p>
         </div>
         <p className="text-xs text-gray-600 dark:text-gray-400 text-center max-w-xs">
-          Astuce : montez la luminosité de l'écran. Sur téléphone, ajoutez GO-Mat à l'écran d'accueil pour ouvrir votre badge d'un geste.
+          Astuce : monte la luminosité de l'écran. Sur téléphone, ajoute GO-Mat à l'écran d'accueil pour ouvrir ton badge d'un geste.
         </p>
         <PushToggle />
         {canInstall && (
@@ -84,7 +84,7 @@ const MyBadge: React.FC = () => {
         )}
         {iosHint && (
           <p className="text-xs text-gray-700 dark:text-gray-300 text-center max-w-xs">
-            Sur iPhone : touchez <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong> pour installer GO-Mat.
+            Sur iPhone : touche <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong> pour installer GO-Mat.
           </p>
         )}
         <div className="flex flex-wrap justify-center gap-2">

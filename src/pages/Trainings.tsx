@@ -150,7 +150,7 @@ const Trainings: React.FC = () => {
       : await supabase.from('user_trainings').update(row).eq('id', (editingHolder as UserTraining).id);
     setSaving(false);
     if (error) {
-      toast.error(error.code === '23505' ? 'Cette personne a déjà cette formation : modifiez la ligne existante' : errorMessage(error));
+      toast.error(error.code === '23505' ? 'Cette personne a déjà cette formation : modifie la ligne existante' : errorMessage(error));
       return;
     }
     setEditingHolder(null);

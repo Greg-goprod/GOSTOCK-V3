@@ -101,7 +101,7 @@ const Onboarding: React.FC = () => {
 
   const steps: { id: string; title: string; text: string; auto?: boolean; content?: React.ReactNode; link?: [string, string] }[] = [
     {
-      id: 'company', title: 'Votre entreprise', auto: Boolean(orgName && orgName !== 'Ma société'),
+      id: 'company', title: 'Ton entreprise', auto: Boolean(orgName && orgName !== 'Ma société'),
       text: 'Le nom apparaît sur les rapports, les bons et la page « outil trouvé ».',
       content: (
         <div className="flex flex-wrap gap-2">
@@ -112,10 +112,10 @@ const Onboarding: React.FC = () => {
       ),
       link: ['/settings', 'Série des numéros d\'articles, logo'],
     },
-    { id: 'depots', title: 'Les dépôts', auto: depots.length > 0, text: `${depots.length} dépôt(s). Ajoutez chaque lieu de stockage (magasin principal, conteneur de chantier…).`, link: ['/consommables', 'Gérer les dépôts (bouton « Dépôts »)'] },
+    { id: 'depots', title: 'Les dépôts', auto: depots.length > 0, text: `${depots.length} dépôt(s). Ajoute chaque lieu de stockage (magasin principal, conteneur de chantier…).`, link: ['/consommables', 'Gérer les dépôts (bouton « Dépôts »)'] },
     {
       id: 'people', title: 'Les personnes', auto: users.length > 1,
-      text: `${users.length} personne(s). Importez la liste depuis Excel : chaque personne reçoit son badge et pourra se connecter avec son e-mail.`,
+      text: `${users.length} personne(s). Importe la liste depuis Excel : chaque personne reçoit son badge et pourra se connecter avec son e-mail.`,
       content: (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2 items-center">
@@ -138,12 +138,12 @@ const Onboarding: React.FC = () => {
       ),
       link: ['/users', 'Voir les personnes'],
     },
-    { id: 'equipment', title: 'Le matériel', auto: equipment.length > 0, text: `${equipment.length} article(s). Importez la liste depuis Excel, ou créez chaque outil depuis le catalogue fournisseur.`, link: ['/equipment', 'Outils : importer ou ajouter'] },
+    { id: 'equipment', title: 'Le matériel', auto: equipment.length > 0, text: `${equipment.length} article(s). Importe la liste depuis Excel, ou crée chaque outil depuis le catalogue fournisseur.`, link: ['/equipment', 'Outils : importer ou ajouter'] },
     { id: 'bins', title: 'Les emplacements (facultatif)', text: 'Allées, étagères, bacs : la liste de préparation suit le parcours du dépôt.', link: ['/emplacements', 'Créer les emplacements'] },
-    { id: 'labels', title: 'Les étiquettes', text: 'Imprimez et collez une étiquette QR sur chaque outil (option « outil trouvé » recommandée).', link: ['/etiquettes', 'Imprimer les étiquettes'] },
-    { id: 'badges', title: 'Les badges', text: 'Imprimez les cartes, ou demandez à chacun d\'ouvrir « Mon badge » sur son téléphone.', link: ['/badges', 'Imprimer les badges'] },
+    { id: 'labels', title: 'Les étiquettes', text: 'Imprime et colle une étiquette QR sur chaque outil (option « outil trouvé » recommandée).', link: ['/etiquettes', 'Imprimer les étiquettes'] },
+    { id: 'badges', title: 'Les badges', text: 'Imprime les cartes, ou demande à chacun d\'ouvrir « Mon badge » sur son téléphone.', link: ['/badges', 'Imprimer les badges'] },
     { id: 'login', title: 'Connexion et e-mails', text: 'Dans Supabase : adresse du site, code dans l\'e-mail de connexion, compte d\'envoi (SMTP). Voir BACKLOG.md.', link: ['/settings', 'Destinataires des alertes'] },
-    { id: 'health', title: 'Contrôle final', text: 'Vérifiez les prix, seuils, permis et doublons avant d\'ouvrir aux équipes.', link: ['/donnees', 'Santé des données'] },
+    { id: 'health', title: 'Contrôle final', text: 'Vérifie les prix, seuils, permis et doublons avant d\'ouvrir aux équipes.', link: ['/donnees', 'Santé des données'] },
   ];
   const completed = steps.filter(s => s.auto || done[s.id]).length;
 

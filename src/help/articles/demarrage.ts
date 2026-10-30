@@ -200,7 +200,7 @@ export const DEMARRAGE: HelpArticle[] = [
         who: 'Administrateur.',
         steps: [
           { text: 'Ouvre « Réglages » › « Démarrage ». La page liste les étapes, dans l\'ordre, avec un compteur « x / y faites ».', shot: 'demarrage-1' },
-          { text: '« Votre entreprise » : tape le nom de l\'entreprise, puis « Enregistrer ». Il apparaît sur les rapports, les bons et la page « outil trouvé ».' },
+          { text: '« Ton entreprise » : tape le nom de l\'entreprise, puis « Enregistrer ». Il apparaît sur les rapports, les bons et la page « outil trouvé ».' },
           { text: '« Les dépôts » : vérifie le dépôt par défaut, ajoute les autres.' },
           { text: '« Les personnes » : télécharge le « Modèle Excel », remplis une ligne par personne (prénom, nom, e-mail, rôle, permis), puis importe-le. Ou ajoute-les une par une dans « Personnes ».' },
           { text: '« Le matériel » : « Outils : importer ou ajouter ». Puis crée les emplacements et imprime les étiquettes.' },

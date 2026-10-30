@@ -104,7 +104,7 @@ const Workshop: React.FC = () => {
 
   const send = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.equipment_id) return toast.error('Choisissez l\'outil');
+    if (!form.equipment_id) return toast.error('Choisis l\'outil');
     setBusy(true);
     const { data, error } = await supabase.rpc('send_repair', {
       p_equipment_id: form.equipment_id,

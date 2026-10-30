@@ -97,7 +97,7 @@ const Kits: React.FC = () => {
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!lines.length) {
-      toast.error('Ajoutez au moins un outil au kit');
+      toast.error('Ajoute au moins un outil au kit');
       return;
     }
     setSaving(true);

@@ -110,7 +110,7 @@ const Sites: React.FC = () => {
     setLocating(true);
     try {
       const found = source === 'address' ? await geocodeAddress(form.address) : await currentPosition();
-      if (!found) return toast.error('Adresse introuvable sur la carte : précisez la localité');
+      if (!found) return toast.error('Adresse introuvable sur la carte : précise la localité');
       setForm(f => ({ ...f, ...found }));
       toast.success(`Position enregistrée : ${formatCoordinates(found)}`);
     } catch (error) {
@@ -205,7 +205,7 @@ const Sites: React.FC = () => {
 
       {shown.length === 0 && (
         <MxEmpty icon={HardHat} title={sites.length === 0 ? 'Aucun chantier' : 'Aucun chantier dans ce filtre'}
-          description={sites.length === 0 ? 'Créez-en un : le nom doit être celui saisi dans « Chantier ou service » lors des sorties.' : undefined} />
+          description={sites.length === 0 ? 'Crées-en un : le nom doit être celui saisi dans « Chantier ou service » lors des sorties.' : undefined} />
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">

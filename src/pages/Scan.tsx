@@ -408,7 +408,7 @@ const Scan: React.FC = () => {
         <div>
           <h1 className="mx-page-title">Scanner</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Scannez un QR code pour identifier un matériel, un utilisateur, un emprunt ou un bon de sortie
+            Scanne un QR code pour identifier un matériel, un utilisateur, un emprunt ou un bon de sortie
           </p>
         </div>
         
@@ -434,7 +434,7 @@ const Scan: React.FC = () => {
               </p>
             </div>
             <p className="text-xs text-tone-danger mt-2 pl-6">
-              Essayez de scanner à nouveau ou saisissez manuellement le code dans le champ ci-dessus.
+              Essaie de scanner à nouveau ou saisis manuellement le code dans le champ ci-dessus.
             </p>
           </div>
         )}

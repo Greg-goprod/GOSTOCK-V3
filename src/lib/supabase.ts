@@ -21,7 +21,7 @@ const validateEnvironmentVariables = () => {
 
   // Vérifier si ce sont les valeurs par défaut
   if (supabaseUrl.includes('votre-projet.supabase.co') || supabaseAnonKey.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...')) {
-    console.error('❌ Veuillez remplacer les valeurs par défaut par vos vraies valeurs Supabase');
+    console.error('❌ Remplace les valeurs par défaut par tes vraies valeurs Supabase');
     return false;
   }
 
@@ -77,7 +77,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
     if (!isSupabaseConfigured) {
       return {
         success: false,
-        error: 'Configuration Supabase invalide. Vérifiez vos variables d\'environnement VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans le fichier .env'
+        error: 'Configuration Supabase invalide. Vérifie tes variables d\'environnement VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans le fichier .env'
       };
     }
 
@@ -85,7 +85,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
     if (supabaseUrl.includes('votre-projet.supabase.co') || supabaseAnonKey.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...')) {
       return {
         success: false,
-        error: 'Veuillez remplacer les valeurs par défaut dans le fichier .env par vos vraies valeurs Supabase. Consultez https://supabase.com/dashboard pour obtenir vos clés.'
+        error: 'Remplace les valeurs par défaut dans le fichier .env par tes vraies valeurs Supabase. Consulte https://supabase.com/dashboard pour obtenir tes clés.'
       };
     }
 
@@ -104,21 +104,21 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
       if (!healthResponse.ok) {
         return {
           success: false,
-          error: `Serveur Supabase inaccessible (HTTP ${healthResponse.status}). Vérifiez que votre projet Supabase est actif.`
+          error: `Serveur Supabase inaccessible (HTTP ${healthResponse.status}). Vérifie que ton projet Supabase est actif.`
         };
       }
     } catch (networkError: any) {
       if (networkError.name === 'TimeoutError') {
         return {
           success: false,
-          error: 'Délai de connexion dépassé. Vérifiez votre connexion internet et l\'URL Supabase.'
+          error: 'Délai de connexion dépassé. Vérifie ta connexion internet et l\'URL Supabase.'
         };
       }
       
       if (networkError.message?.includes('Failed to fetch')) {
         return {
           success: false,
-          error: 'Impossible de se connecter à Supabase. Vérifiez votre connexion internet et que l\'URL Supabase est correcte.'
+          error: 'Impossible de se connecter à Supabase. Vérifie ta connexion internet et que l\'URL Supabase est correcte.'
         };
       }
 
@@ -142,21 +142,21 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
         if (error.message.includes('relation "equipment" does not exist')) {
           return { 
             success: false, 
-            error: 'La table "equipment" n\'existe pas. Veuillez exécuter les migrations Supabase.' 
+            error: 'La table "equipment" n\'existe pas. Exécute les migrations Supabase.' 
           };
         }
         
         if (error.message.includes('RLS') || error.message.includes('policy')) {
           return { 
             success: false, 
-            error: `Erreur RLS: ${error.message}. Vérifiez que RLS est correctement configuré.` 
+            error: `Erreur RLS: ${error.message}. Vérifie que RLS est correctement configuré.` 
           };
         }
 
         if (error.message.includes('Invalid API key')) {
           return {
             success: false,
-            error: 'Clé API Supabase invalide. Vérifiez votre VITE_SUPABASE_ANON_KEY dans le fichier .env'
+            error: 'Clé API Supabase invalide. Vérifie ta VITE_SUPABASE_ANON_KEY dans le fichier .env'
           };
         }
         
@@ -174,7 +174,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
       if (fetchError.name === 'AbortError' || fetchError.name === 'TimeoutError') {
         return {
           success: false,
-          error: 'Délai de connexion dépassé. Vérifiez votre connexion internet et l\'URL Supabase.'
+          error: 'Délai de connexion dépassé. Vérifie ta connexion internet et l\'URL Supabase.'
         };
       }
       
@@ -188,14 +188,14 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
     if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
       return {
         success: false,
-        error: 'Impossible de se connecter à Supabase. Vérifiez votre connexion internet et que l\'URL Supabase est correcte.'
+        error: 'Impossible de se connecter à Supabase. Vérifie ta connexion internet et que l\'URL Supabase est correcte.'
       };
     }
     
     if (error.message?.includes('Invalid URL')) {
       return {
         success: false,
-        error: 'URL Supabase invalide. Vérifiez la valeur de VITE_SUPABASE_URL dans votre fichier .env'
+        error: 'URL Supabase invalide. Vérifie la valeur de VITE_SUPABASE_URL dans ton fichier .env'
       };
     }
 

@@ -67,7 +67,7 @@ const SelfService: React.FC = () => {
     }
     const item = found.equipment;
     if (!(item.id in selfService)) {
-      toast.error(`« ${item.name} » n'est pas en libre-service : passez au magasin`);
+      toast.error(`« ${item.name} » n'est pas en libre-service : passe au magasin`);
       throw new Error('Pas libre-service');
     }
     setLines(ls => {
@@ -82,7 +82,7 @@ const SelfService: React.FC = () => {
     const found = await findEquipmentByCode(text);
     const match = found && returnable.find(c => c.equipmentId === found.equipment.id && (!found.instance || c.instanceId === found.instance.id) && !toReturn.includes(c.id));
     if (!match) {
-      toast.error(found ? `Vous n'avez pas « ${found.equipment.name} » (ou déjà coché)` : `Code inconnu : ${text}`);
+      toast.error(found ? `Tu n'as pas « ${found.equipment.name} » (ou déjà coché)` : `Code inconnu : ${text}`);
       throw new Error('Pas emprunté');
     }
     setToReturn(ids => [...ids, match.id]);
@@ -100,7 +100,7 @@ const SelfService: React.FC = () => {
     });
     setBusy(false);
     if (error) return toast.error(errorMessage(error));
-    toast.success('Pris en libre-service : c\'est noté à votre nom');
+    toast.success('Pris en libre-service : c\'est noté à ton nom');
     setLines([]);
     await refreshData();
   };
@@ -120,7 +120,7 @@ const SelfService: React.FC = () => {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="mx-page-title">Libre-service</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Prenez les consommables de l'armoire ou déposez vos outils dans la boîte de retour, avec votre téléphone.</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Prends les consommables de l'armoire ou dépose tes outils dans la boîte de retour, avec ton téléphone.</p>
       </div>
 
       <MxSegmented aria-label="Prendre ou rendre" value={tab} onChange={v => setTab(v as typeof tab)}
@@ -166,8 +166,8 @@ const SelfService: React.FC = () => {
 
       {tab === 'return' && (
         <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-4">
-          <p className="text-sm text-gray-700 dark:text-gray-300">Le magasin est fermé ? Déposez l'outil dans la boîte, scannez-le (ou cochez-le). Il reste à votre nom jusqu'au contrôle du magasin, mais vous n'êtes plus relancé.</p>
-          {returnable.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Vous n'avez rien à rendre.</p> : (
+          <p className="text-sm text-gray-700 dark:text-gray-300">Le magasin est fermé ? Dépose l'outil dans la boîte, scanne-le (ou coche-le). Il reste à ton nom jusqu'au contrôle du magasin, mais tu n'es plus relancé.</p>
+          {returnable.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Tu n'as rien à rendre.</p> : (
             <>
               <QRCodeScanner onScan={onScanReturn} disableAutoFocus />
               <ul className="space-y-1">

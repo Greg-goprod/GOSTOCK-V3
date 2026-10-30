@@ -83,7 +83,7 @@ const CatalogImport: React.FC<CatalogImportProps> = ({ suppliers, onSuppliersCha
       if (!targetId) {
         const name = newSupplierName.trim();
         if (!name) {
-          toast.error('Choisissez ou nommez le fournisseur');
+          toast.error('Choisis ou nomme le fournisseur');
           return;
         }
         const { data, error } = await supabase.from('suppliers').insert({ name }).select('id').single();
@@ -126,8 +126,8 @@ const CatalogImport: React.FC<CatalogImportProps> = ({ suppliers, onSuppliersCha
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-600 dark:text-gray-400">
-        Le catalogue sert de référence : il ne crée pas de stock. Quand vous ajoutez un outil ou un consommable,
-        cherchez-le par référence, nom ou code EAN et la fiche se remplit toute seule. Réimporter un fichier met les fiches à jour.
+        Le catalogue sert de référence : il ne crée pas de stock. Quand tu ajoutes un outil ou un consommable,
+        cherche-le par référence, nom ou code EAN et la fiche se remplit toute seule. Réimporter un fichier met les fiches à jour.
       </p>
 
       {Object.keys(counts).length > 0 && (

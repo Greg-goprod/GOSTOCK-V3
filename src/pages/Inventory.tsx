@@ -86,7 +86,7 @@ const Inventory: React.FC = () => {
     const { error } = await supabase.rpc('start_inventory_count', { p_depot_id: depotId, p_size: size });
     setBusy(false);
     if (error) return toast.error(errorMessage(error));
-    toast.success('Inventaire lancé : comptez les articles de la liste');
+    toast.success('Inventaire lancé : compte les articles de la liste');
     await load();
   };
 
@@ -158,7 +158,7 @@ const Inventory: React.FC = () => {
               Démarré le {new Date(session.started_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })} · <span className="font-mono">{counted}/{lines.length}</span> compté{counted > 1 ? 's' : ''}
             </p>
             <QRCodeScanner onScan={onScan} disableAutoFocus={review} />
-            <p className="text-xs text-gray-600 dark:text-gray-400">Chaque scan compte une unité (une boîte, un outil). Pour un lot, saisissez la quantité dans la liste.</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Chaque scan compte une unité (une boîte, un outil). Pour un lot, saisis la quantité dans la liste.</p>
           </div>
 
           <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3">
