@@ -43,7 +43,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onDecode }) => {
   return (
     <div className="space-y-2">
       <div id={regionId} className="w-full overflow-hidden rounded-md bg-black aspect-square" />
-      {error && <p role="alert" className="text-sm text-danger-700 dark:text-danger-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-tone-danger">{error}</p>}
     </div>
   );
 };

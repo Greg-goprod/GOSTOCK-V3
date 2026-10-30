@@ -44,7 +44,7 @@ const ActionTile: React.FC<{ action: Action }> = ({ action }) => {
       </span>
       {action.count !== undefined && action.count > 0 && (
         <span className={`shrink-0 font-mono text-[22px] font-bold tabular-nums ${
-          action.primary ? 'text-white' : action.tone === 'bad' ? 'text-danger-600 dark:text-danger-400' : action.tone === 'warn' ? 'text-warning-700 dark:text-warning-300' : 'text-gray-900 dark:text-white'
+          action.primary ? 'text-white' : action.tone === 'bad' ? 'text-tone-danger' : action.tone === 'warn' ? 'text-tone-warning' : 'text-gray-900 dark:text-white'
         }`}>{action.count}</span>
       )}
     </button>
@@ -169,7 +169,7 @@ const Home: React.FC = () => {
                   return (
                     <li key={c.id} className="flex justify-between gap-3 py-2 text-sm">
                       <span className="truncate text-gray-900 dark:text-gray-100">{itemName(c.equipmentId)}</span>
-                      <span className={`shrink-0 font-mono ${late ? 'text-danger-600 dark:text-danger-400 font-semibold' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <span className={`shrink-0 font-mono ${late ? 'text-tone-danger font-semibold' : 'text-gray-600 dark:text-gray-400'}`}>
                         {c.dueDate ? `à rendre le ${new Date(c.dueDate).toLocaleDateString('fr-CH')}` : ''}
                       </span>
                     </li>

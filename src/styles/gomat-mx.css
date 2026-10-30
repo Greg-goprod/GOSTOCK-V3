@@ -15,10 +15,10 @@
   --g-200: 226 227 233;  /* bordure */
   --g-300: 203 205 214;  /* bordure de champ */
   --g-400: 130 133 143;  /* texte tertiaire */
-  --g-500: 107 110 120;
+  --g-500: 74 77 87;     /* texte secondaire (--text2) */
   --g-600: 74 77 87;     /* texte secondaire */
-  --g-700: 51 54 63;
-  --g-800: 30 32 38;
+  --g-700: 74 77 87;     /* texte secondaire (--text2) */
+  --g-800: 16 17 20;     /* texte (--text) */
   --g-900: 16 17 20;     /* texte */
   --g-950: 10 11 13;
 
@@ -44,7 +44,7 @@
   --g-100: 245 246 248;
   --g-200: 226 227 233;
   --g-300: 180 183 192;  /* texte secondaire */
-  --g-400: 157 160 170;
+  --g-400: 180 183 192;  /* texte secondaire (--text2) */
   --g-500: 125 129 140;  /* texte tertiaire */
   --g-600: 46 50 63;     /* bordure de champ */
   --g-700: 40 44 55;     /* bordure, surface2 */
@@ -178,7 +178,7 @@ input[type='radio'] {
 }
 .mx-btn-primary {
   background: var(--mx-accent);
-  color: #fff;
+  color: var(--mx-tone-on-accent, #fff);
   box-shadow: 0 2px 0 var(--mx-accent-deep);
 }
 .mx-btn-primary:not(:disabled):hover {
@@ -206,12 +206,12 @@ input[type='radio'] {
 }
 .mx-btn-danger {
   background: var(--mx-danger);
-  color: #fff;
+  color: var(--mx-tone-on-danger, #fff);
   box-shadow: 0 2px 0 color-mix(in srgb, var(--mx-danger) 72%, #000);
 }
 .mx-btn-success {
-  background: var(--mx-green, #0f9d6e);
-  color: #fff;
+  background: var(--mx-tone-fill-success);
+  color: var(--mx-tone-on-success);
 }
 .mx-btn-warning {
   background: var(--mx-band, #f5c518);
@@ -295,4 +295,197 @@ main :where(h2, h3) {
 /* Boutons de la charte : jamais en capitales forcées */
 .mx-btn {
   text-transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   Lot 19 (audit DA) — règles transversales
+   -------------------------------------------------------------------------- */
+
+/* DA11 : texte sur aplat accent = --mx-tone-on-accent (quasi-noir en sombre), jamais blanc fixe */
+.bg-primary-600.text-white,
+.bg-primary-500.text-white {
+  color: var(--mx-tone-on-accent);
+}
+
+/* DA10 : aplats de statut aux tons de la charte, texte contrasté selon le thème */
+.mx-fill-success { background: var(--mx-tone-fill-success); color: var(--mx-tone-on-success); }
+.mx-fill-warning { background: var(--mx-tone-fill-warning); color: var(--mx-tone-on-warning); }
+.mx-fill-danger { background: var(--mx-tone-fill-danger); color: var(--mx-tone-on-danger); }
+.mx-fill-info { background: var(--mx-tone-fill-info); color: var(--mx-tone-on-info); }
+.mx-fill-accent { background: var(--mx-accent); color: var(--mx-tone-on-accent); }
+
+/* DA13 : encart neutre (.mx-dr-muted) et encart teinté par ton */
+.mx-muted-box {
+  background: var(--mx-muted-box);
+  border: 1.5px solid var(--mx-border);
+  border-radius: 8px;
+}
+.mx-tint-success { background: color-mix(in srgb, var(--mx-green) 10%, var(--mx-surface)); border: 1.5px solid color-mix(in srgb, var(--mx-green) 35%, var(--mx-border)); border-radius: 8px; }
+.mx-tint-warning { background: color-mix(in srgb, var(--mx-tone-fill-warning) 8%, var(--mx-surface)); border: 1.5px solid color-mix(in srgb, var(--mx-tone-fill-warning) 30%, var(--mx-border)); border-radius: 8px; }
+.mx-tint-accent { background: var(--mx-accent-lt); border: 1.5px solid color-mix(in srgb, var(--mx-accent) 30%, var(--mx-border)); border-radius: 8px; }
+
+/* DA15, DA16 : texte saisi 500, champs à 34px (hors zones de texte) */
+:where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']), select, textarea) {
+  font-weight: 500;
+}
+@media (min-width: 1024px) {
+  :where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']), select:not([multiple]):not([size])) {
+    min-height: 34px;
+  }
+}
+
+/* DA17 : case à cocher 16px (rayon 4, filet 1,5) et radio 18px dessinées, comme le catalogue */
+input[type='checkbox']:not(.sr-only):not(.peer) {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1.5px solid var(--mx-input-border);
+  border-radius: 4px;
+  background: var(--mx-surface) center / 12px no-repeat;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+input[type='checkbox']:not(.sr-only):not(.peer):checked {
+  background-color: var(--mx-accent);
+  border-color: var(--mx-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.dark input[type='checkbox']:not(.sr-only):not(.peer):checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2314110a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+input[type='radio']:not(.sr-only):not(.peer) {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--mx-input-border);
+  border-radius: 50%;
+  background: var(--mx-surface);
+  cursor: pointer;
+  vertical-align: middle;
+}
+input[type='radio']:not(.sr-only):not(.peer):checked {
+  border-color: var(--mx-accent);
+  background: radial-gradient(circle, var(--mx-accent) 0 4px, var(--mx-surface) 4.5px);
+}
+:is(input[type='checkbox'], input[type='radio']):disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* Carte radio sélectionnée (.radio-card) : accent sur accent-lt */
+label:has(> input[type='radio']:checked).border {
+  border-color: var(--mx-accent) !important;
+  background: var(--mx-accent-lt);
+}
+
+/* DA2 : boutons du pied de drawer (.mx-dr-btn) — rayon 8px, 12 × 16px, le principal s'étire */
+[role='dialog'] [data-mx-scroll] :is(.mx-drawer-footer, form > div:last-child:has(> button[type='submit'])) .mx-btn {
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-height: 0;
+}
+[role='dialog'] [data-mx-scroll] :is(.mx-drawer-footer, form > div:last-child:has(> button[type='submit'])) .mx-btn-primary {
+  flex-grow: 1;
+}
+
+/* DA30 : contrôles de la carte en Geist */
+.leaflet-container,
+.leaflet-container :is(a, button, .leaflet-control-attribution) {
+  font-family: var(--mx-font-ui);
+}
+
+/* DA6, DA7 : accordéon (catalogue #s-accordion) */
+.mx-acc {
+  background: var(--mx-surface);
+  border: 1.5px solid var(--mx-border);
+  border-radius: 6px;
+  overflow: clip;
+}
+.mx-acc + .mx-acc {
+  margin-top: 8px !important;
+}
+.mx-acc.is-open {
+  border-color: color-mix(in srgb, var(--mx-accent) 45%, var(--mx-border));
+}
+.mx-acc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 14px 16px;
+  text-align: left;
+  color: var(--mx-text);
+  transition: background-color 0.12s, box-shadow 0.12s;
+}
+.mx-acc-head:hover {
+  background: var(--mx-surface2);
+}
+.mx-acc-head:focus-visible {
+  outline: 1px solid var(--mx-accent);
+  outline-offset: -1px;
+}
+.mx-acc.is-open > .mx-acc-head {
+  box-shadow: inset 3px 0 0 var(--mx-accent);
+}
+.mx-acc-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.mx-acc-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--mx-text3);
+}
+.mx-acc-icon svg {
+  width: 18px;
+  height: 18px;
+  color: inherit !important;
+}
+.mx-acc-chevron {
+  flex-shrink: 0;
+  color: var(--mx-text3);
+  transition: transform 0.2s;
+}
+.mx-acc.is-open > .mx-acc-head :is(.mx-acc-icon, .mx-acc-chevron) {
+  color: var(--mx-accent);
+}
+.mx-acc.is-open > .mx-acc-head .mx-acc-chevron {
+  transform: rotate(180deg);
+}
+.mx-acc-body {
+  padding: 16px;
+  border-top: 1.5px solid var(--mx-border);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mx-acc-chevron { transition: none; }
+}
+
+/* DA21 : libellés de section dans un drawer (.mx-dr-label) — 11px / 700 / 0.08em, majuscules, --text3 */
+[role='dialog'] fieldset > legend,
+[role='dialog'] .mx-section-label,
+.mx-dr-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+  color: var(--mx-text3) !important;
+  margin-bottom: 6px;
+}
+
+/* DA23 : lignes de liste dans un drawer (.mx-dr-list-item) */
+.mx-dr-list-item {
+  padding: 10px 12px;
+  background: var(--mx-surface2);
+  border: 1.5px solid var(--mx-border);
+  border-radius: 6px;
 }

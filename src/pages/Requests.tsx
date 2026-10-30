@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, Minus, PackageCheck, Plus, Search, Truck, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Minus, PackageCheck, Plus, Search, Truck, X, XCircle , ClipboardList } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -21,6 +21,7 @@ import { RequestItemRow, RequestOverview, RequestStatus } from '../types';
 import { DateTimeInput } from '../components/common/DateInput';
 import { promptAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 // Objet loué : disponible seulement jusqu'à la fin du contrat
 const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
@@ -215,9 +216,8 @@ const Requests: React.FC = () => {
       {loading ? (
         <div className="py-12 text-center text-gray-600 dark:text-gray-400">Chargement…</div>
       ) : visible.length === 0 ? (
-        <div className="py-12 text-center text-gray-600 dark:text-gray-400">
-          {requests.length === 0 ? 'Aucune demande pour l\'instant. Créez la première avec « Nouvelle demande ».' : 'Aucune demande dans cette liste.'}
-        </div>
+        <MxEmpty icon={ClipboardList} title={requests.length === 0 ? 'Aucune demande pour l\'instant' : 'Aucune demande dans cette liste'}
+          description={requests.length === 0 ? 'Créez la première avec « Nouvelle demande ».' : undefined} />
       ) : (
         <ul className="grid gap-3">
           {visible.map(r => (
@@ -244,7 +244,7 @@ const Requests: React.FC = () => {
                   </div>
                 </div>
                 {r.status === 'requested' && r.approval_reason && (
-                  <p className="mt-2 text-sm text-warning-800 dark:text-warning-200">Validation requise : {r.approval_reason}</p>
+                  <p className="mt-2 text-sm text-tone-warning">Validation requise : {r.approval_reason}</p>
                 )}
               </button>
             </li>
@@ -532,13 +532,13 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
             ))}
           </div>
           <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…" aria-label="Rechercher un article" className={inputClass} />
-          <ul className="max-h-48 overflow-y-auto divide-y divide-gray-200 dark:divide-gray-700 rounded-md border border-gray-200 dark:border-gray-700">
+          <ul className="max-h-56 overflow-y-auto space-y-1.5">
             {candidates.length === 0 ? (
               <li className="p-3 text-sm text-gray-600 dark:text-gray-400">Aucun résultat</li>
             ) : candidates.map(c => (
               <li key={c.id}>
-                <button type="button" onClick={() => addItem(c)} className="w-full flex justify-between items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 min-h-[44px]">
-                  <span className="text-sm text-gray-900 dark:text-gray-100">{c.name} <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{c.detail}</span></span>
+                <button type="button" onClick={() => addItem(c)} className="mx-dr-list-item w-full flex justify-between items-center gap-3 text-left hover:border-primary-400">
+                  <span className="text-[13px] font-semibold text-gray-900 dark:text-gray-100">{c.name} <span className="font-mono text-[12px] font-medium text-gray-500 dark:text-gray-400">{c.detail}</span></span>
                   <Plus size={16} className="text-primary-600 dark:text-primary-300 shrink-0" aria-hidden="true" />
                 </button>
               </li>
@@ -553,13 +553,13 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
           ) : (
             <ul className="space-y-2">
               {items.map(item => (
-                <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-gray-50 dark:bg-gray-700/40 px-3 py-2">
+                <li key={item.id} className="mx-dr-list-item flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {item.kind === 'vehicle' && <Truck size={14} className="inline mr-1 align-text-bottom" aria-hidden="true" />}
                       {item.name}
                     </div>
-                    <div className={`text-xs ${/réservé|échue|dépassé|maintenance|retiré|permis|^0 /.test(availability[item.id] || '') ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                    <div className={`text-xs ${/réservé|échue|dépassé|maintenance|retiré|permis|^0 /.test(availability[item.id] || '') ? 'text-tone-danger' : 'text-gray-600 dark:text-gray-400'}`}>
                       {availability[item.id] || (periodOk ? 'Vérification…' : 'Choisissez une période valide')}
                     </div>
                   </div>
@@ -802,7 +802,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
                       className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center"
                     >
                       {i.prepared
-                        ? <CheckCircle2 size={20} className="text-success-600 dark:text-success-400" />
+                        ? <CheckCircle2 size={20} className="text-tone-success" />
                         : <Circle size={20} className="text-gray-400" />}
                     </button>
                   ) : i.item_kind === 'vehicle' ? <Truck size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" /> : null}
@@ -873,7 +873,9 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
                 <SignaturePad label={`Signature de ${pickupName}`} onChange={setHandoverSignature} />
               </div>
             )}
-            <div className="flex flex-wrap justify-end gap-2">
+            {/* Pied de fiche (pied entité) : actions de la demande */}
+            <div className="mx-drawer-footer flex flex-wrap justify-end gap-2">
+              {!allPrepared && <p className="w-full text-right text-xs text-gray-600 dark:text-gray-400">Tous les articles doivent être préparés avant la sortie.</p>}
               <PickListButton requestId={request.id} title={`Préparation ${request.number}`}
                 subtitle={[request.requester_name, request.destination, `pour le ${new Date(request.start_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}`].filter(Boolean).join(' · ')} />
               <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>Annuler la demande</Button>
@@ -890,7 +892,6 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
                 {vehicleItem ? 'Sortir : état des lieux' : 'Sortir'}
               </Button>
             </div>
-            {!allPrepared && <p className="text-right text-xs text-gray-600 dark:text-gray-400">Tous les articles doivent être préparés avant la sortie.</p>}
           </div>
         )}
 

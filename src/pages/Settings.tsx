@@ -210,7 +210,7 @@ const Settings: React.FC = () => {
       .select('article_series')
       .eq('id', DEFAULT_ORGANIZATION_ID)
       .maybeSingle();
-    if (organization) setArticleSeries(organization.article_series);
+    if (organization) setArticleSeries(organization.article_series ?? '');
     const { data: preview } = await supabase!.rpc('preview_article_number');
     setNextArticleNumber(preview || '');
     
@@ -355,7 +355,7 @@ const Settings: React.FC = () => {
 
       {/* Paramètres système */}
       <Accordion
-        title="PARAMÈTRES SYSTÈME"
+        title="Paramètres système"
         icon={<SettingsIcon size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={true}
       >
@@ -534,7 +534,7 @@ const Settings: React.FC = () => {
 
       {/* Notifications par e-mail */}
       <Accordion
-        title="NOTIFICATIONS PAR E-MAIL ET SMS"
+        title="Notifications par e-mail et SMS"
         icon={<Mail size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
@@ -548,7 +548,7 @@ const Settings: React.FC = () => {
 
       {/* Outil trouvé : page publique */}
       <Accordion
-        title="OUTIL TROUVÉ (PAGE PUBLIQUE)"
+        title="Outil trouvé (page publique)"
         icon={<PhoneCall size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
@@ -561,7 +561,7 @@ const Settings: React.FC = () => {
 
       {/* Sauvegarde complète */}
       <Accordion
-        title="SAUVEGARDE"
+        title="Sauvegarde"
         icon={<HardDriveDownload size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
@@ -574,7 +574,7 @@ const Settings: React.FC = () => {
 
       {/* Catalogues fournisseurs */}
       <Accordion
-        title="CATALOGUES FOURNISSEURS"
+        title="Catalogues fournisseurs"
         icon={<BookOpen size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
@@ -587,8 +587,8 @@ const Settings: React.FC = () => {
 
       {/* Catégories */}
       <Accordion
-        title={`CATÉGORIES (${categories.length})`}
-        icon={<Tag size={20} className="text-success-600 dark:text-success-400" />}
+        title={`Catégories (${categories.length})`}
+        icon={<Tag size={20} className="text-tone-success" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
@@ -651,7 +651,7 @@ const Settings: React.FC = () => {
 
       {/* Fournisseurs */}
       <Accordion
-        title={`FOURNISSEURS (${suppliers.length})`}
+        title={`Fournisseurs (${suppliers.length})`}
         icon={<Truck size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
@@ -711,7 +711,7 @@ const Settings: React.FC = () => {
 
       {/* Groupes et sous-groupes */}
       <Accordion
-        title={`GROUPES ET SOUS-GROUPES (${groups.length} groupes, ${subgroups.length} sous-groupes)`}
+        title={`Groupes et sous-groupes (${groups.length} groupes, ${subgroups.length} sous-groupes)`}
         icon={<Layers size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
@@ -858,8 +858,8 @@ const Settings: React.FC = () => {
 
       {/* Départements */}
       <Accordion
-        title={`DÉPARTEMENTS (${departments.length})`}
-        icon={<Building size={20} className="text-warning-600 dark:text-warning-400" />}
+        title={`Départements (${departments.length})`}
+        icon={<Building size={20} className="text-tone-warning" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
@@ -924,8 +924,8 @@ const Settings: React.FC = () => {
 
       {/* Types de maintenance */}
       <Accordion
-        title={`TYPES DE MAINTENANCE (${maintenanceTypes.length})`}
-        icon={<Wrench size={20} className="text-warning-600 dark:text-warning-400" />}
+        title={`Types de maintenance (${maintenanceTypes.length})`}
+        icon={<Wrench size={20} className="text-tone-warning" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
@@ -988,13 +988,13 @@ const Settings: React.FC = () => {
 
       {/* Administration */}
       <Accordion
-        title="ADMINISTRATION"
-        icon={<SettingsIcon size={20} className="text-danger-600 dark:text-danger-400" />}
+        title="Administration"
+        icon={<SettingsIcon size={20} className="text-tone-danger" />}
         defaultOpen={false}
       >
         <div className="space-y-6">
           <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
-            <h4 className="font-semibold text-danger-800 dark:text-danger-200 mb-3">
+            <h4 className="font-semibold text-tone-danger mb-3">
               <AlertTriangleIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Zone d'administration - Actions irréversibles
             </h4>
             <div className="space-y-4">

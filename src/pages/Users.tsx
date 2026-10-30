@@ -323,7 +323,7 @@ const Users: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   <span className="font-bold uppercase">{ROLE_LABELS[user.role] ?? user.role}</span>
-                  <span className={`block text-xs ${user.active === false ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                  <span className={`block text-xs ${user.active === false ? 'text-tone-danger' : 'text-gray-600 dark:text-gray-400'}`}>
                     {accessLabel(user)}
                   </span>
                 </td>
@@ -381,7 +381,7 @@ const Users: React.FC = () => {
               <div>
                 <h3 className="text-lg font-black text-gray-800 dark:text-gray-100">{user.first_name} {user.last_name}</h3>
                 <p className="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase">{ROLE_LABELS[user.role] ?? user.role}</p>
-                <p className={`text-xs ${user.active === false ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                <p className={`text-xs ${user.active === false ? 'text-tone-danger' : 'text-gray-600 dark:text-gray-400'}`}>
                   {accessLabel(user)}
                 </p>
               </div>
@@ -483,7 +483,7 @@ const Users: React.FC = () => {
             to="/badges"
             className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 min-h-[44px] lg:min-h-0 text-sm lg:text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
-            <Contact size={16} aria-hidden="true" /> IMPRIMER LES BADGES
+            <Contact size={16} aria-hidden="true" /> Imprimer les badges
           </Link>
           <Button 
             variant="primary" 
@@ -501,7 +501,7 @@ const Users: React.FC = () => {
       <Modal
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
-        title="QR CODE UTILISATEUR"
+        title="QR code de la personne"
         size="sm"
       >
         {selectedUser && badgeCode === undefined && <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p>}
@@ -538,7 +538,7 @@ const Users: React.FC = () => {
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteConfirm}
-        title="CONFIRMER LA SUPPRESSION"
+        title="Confirmer la suppression"
         message={`Êtes-vous sûr de vouloir supprimer l'utilisateur ${userToDelete?.first_name} ${userToDelete?.last_name} ? Cette action est irréversible.`}
         confirmLabel="SUPPRIMER"
         cancelLabel="ANNULER"

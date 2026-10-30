@@ -94,13 +94,13 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={status ? 'MODIFIER LE STATUT' : 'AJOUTER UN STATUT'}
+      title={status ? 'Modifier le statut' : 'Ajouter un statut'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
+          title="Informations de base"
           icon={<Settings size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -151,7 +151,7 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'SAUVEGARDE...' : status ? 'MODIFIER' : 'AJOUTER'}
+                {isLoading ? 'Enregistrement…' : status ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>
           </form>
@@ -159,7 +159,7 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
+          title="Couleur"
           icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >

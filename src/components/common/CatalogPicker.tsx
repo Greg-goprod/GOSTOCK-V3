@@ -68,7 +68,7 @@ const CatalogPicker: React.FC<CatalogPickerProps> = ({ onSelect, family }) => {
       </div>
 
       {loading && <p className="text-xs text-gray-600 dark:text-gray-400">Recherche…</p>}
-      {error && <p className="text-xs text-danger-700 dark:text-danger-300">{error}</p>}
+      {error && <p className="text-xs text-tone-danger">{error}</p>}
       {!loading && !error && query.trim().length >= 2 && results.length === 0 && (
         <p className="text-xs text-gray-600 dark:text-gray-400">Aucun produit trouvé. Le catalogue s'importe dans Paramètres.</p>
       )}

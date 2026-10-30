@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import DateInput from '../components/common/DateInput';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 interface Repair {
   id: string;
@@ -154,14 +155,8 @@ const Workshop: React.FC = () => {
         {canAct && <Button icon={<Send size={16} />} onClick={() => startSend()}>Envoyer en réparation</Button>}
       </div>
 
-      <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="tablist" aria-label="Rubrique">
-        {tabs.map(([id, label, n]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-            className={`px-3 py-2 min-h-[40px] text-sm font-semibold ${tab === id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-            {label}{n ? ` (${n})` : ''}
-          </button>
-        ))}
-      </div>
+      <MxSegmented aria-label="Rubrique" value={tab} onChange={v => setTab(v as Tab)}
+        options={tabs.map(([id, label, n]) => ({ value: id, label: `${label}${n ? ` (${n})` : ''}` }))} />
 
       {tab === 'repairs' && (
         <div className="space-y-4">
@@ -185,7 +180,7 @@ const Workshop: React.FC = () => {
                       {r.status === 'returned' ? ` · revenu le ${fmt(r.returned_on!)}${r.cost !== null ? ` · ${chf(r.cost)}` : ''}` : ''}
                       {r.status === 'cancelled' ? ' · annulé' : ''}
                     </p>
-                    {late && <p className="text-xs font-semibold text-danger-700 dark:text-danger-300">En retard : relancer {r.repairer}</p>}
+                    {late && <p className="text-xs font-semibold text-tone-danger">En retard : relancer {r.repairer}</p>}
                   </div>
                   {r.status === 'sent' && canAct && (
                     <Button size="sm" icon={<CheckCircle2 size={14} />} onClick={() => { setClosing(r); setCloseForm({ returned_on: today, cost: r.under_warranty ? '0' : '', notes: '' }); }}>Revenu</Button>
@@ -205,9 +200,9 @@ const Workshop: React.FC = () => {
             const soon = !expired && e.warrantyUntil! <= in30;
             return (
               <li key={e.id} className="p-3 flex flex-wrap items-center gap-2 text-sm">
-                <ShieldCheck size={16} aria-hidden="true" className={expired ? 'text-gray-400' : soon ? 'text-warning-600' : 'text-success-600'} />
+                <ShieldCheck size={16} aria-hidden="true" className={expired ? 'text-gray-400' : soon ? 'text-tone-warning' : 'text-tone-success'} />
                 <span className={`flex-1 min-w-[12rem] ${expired ? 'text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{e.name}{e.articleNumber ? <span className="font-mono text-xs text-gray-500"> · {e.articleNumber}</span> : null}</span>
-                <span className={`text-xs ${soon ? 'font-semibold text-warning-700 dark:text-warning-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                <span className={`text-xs ${soon ? 'font-semibold text-tone-warning' : 'text-gray-600 dark:text-gray-400'}`}>
                   {expired ? 'expirée le' : 'jusqu\'au'} {fmt(e.warrantyUntil!)}
                 </span>
                 {!expired && canAct && <Button size="sm" variant="outline" onClick={() => startSend(e.id)}>Faire réparer</Button>}
@@ -222,7 +217,7 @@ const Workshop: React.FC = () => {
           {batteries.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune batterie suivie (fiche de l'article → cocher « Batterie »).</li>}
           {batteries.map(b => (
             <li key={`${b.equipment_id}:${b.instance_id ?? ''}`} className="p-3 flex flex-wrap items-center gap-2 text-sm">
-              <BatteryWarning size={16} aria-hidden="true" className={b.state === 'end' ? 'text-danger-600' : b.state === 'soon' ? 'text-warning-600' : 'text-success-600'} />
+              <BatteryWarning size={16} aria-hidden="true" className={b.state === 'end' ? 'text-tone-danger' : b.state === 'soon' ? 'text-tone-warning' : 'text-tone-success'} />
               <span className="flex-1 min-w-[12rem] text-gray-900 dark:text-gray-100">{b.name}{b.code ? <span className="font-mono text-xs text-gray-500"> · {b.code}</span> : null}</span>
               <span className="text-xs text-gray-600 dark:text-gray-400 font-mono">
                 {b.age_months}{b.battery_life_months ? `/${b.battery_life_months}` : ''} mois · {b.uses}{b.battery_max_uses ? `/${b.battery_max_uses}` : ''} sorties
@@ -252,7 +247,7 @@ const Workshop: React.FC = () => {
                     {candidates.map(e => (
                       <li key={e.id}>
                         <button type="button" onClick={() => startSend(e.id)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100">
-                          {e.name}{e.warrantyUntil && e.warrantyUntil >= today ? <span className="text-xs text-success-700 dark:text-success-300"> · garantie jusqu'au {fmt(e.warrantyUntil)}</span> : null}
+                          {e.name}{e.warrantyUntil && e.warrantyUntil >= today ? <span className="text-xs text-tone-success"> · garantie jusqu'au {fmt(e.warrantyUntil)}</span> : null}
                         </button>
                       </li>
                     ))}

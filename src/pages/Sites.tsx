@@ -12,6 +12,8 @@ import { errorMessage } from '../lib/requests';
 import { currentPosition, formatCoordinates, geocodeAddress } from '../lib/geo';
 import DateInput from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
+import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 interface Site {
   id: string;
@@ -197,20 +199,13 @@ const Sites: React.FC = () => {
 
       <div className="flex flex-wrap gap-2">
         <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nom, client, adresse…" aria-label="Rechercher un chantier" className={`${inputClass} max-w-xs`} />
-        <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Filtre">
-          {([['open', 'En cours'], ['closed', 'Clôturés'], ['all', 'Tous']] as const).map(([id, label]) => (
-            <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}
-              className={`px-3 py-2 min-h-[40px] text-sm font-semibold ${filter === id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+          options={[{ value: 'open', label: 'En cours' }, { value: 'closed', label: 'Clôturés' }, { value: 'all', label: 'Tous' }]} />
       </div>
 
       {shown.length === 0 && (
-        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-sm text-gray-600 dark:text-gray-400">
-          {sites.length === 0 ? 'Aucun chantier. Créez-en un : le nom doit être celui saisi dans « Chantier ou service » lors des sorties.' : 'Aucun chantier dans ce filtre.'}
-        </div>
+        <MxEmpty icon={HardHat} title={sites.length === 0 ? 'Aucun chantier' : 'Aucun chantier dans ce filtre'}
+          description={sites.length === 0 ? 'Créez-en un : le nom doit être celui saisi dans « Chantier ou service » lors des sorties.' : undefined} />
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -254,13 +249,13 @@ const Sites: React.FC = () => {
                 )}
                 <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                   Consommables {chf(site.consumables_cost)} · Outils {chf(site.tools_cost)} · Locations {chf(site.rentals_cost)}
-                  {ratio > 1 && <span className="text-danger-700 dark:text-danger-300 font-semibold"> · budget dépassé</span>}
+                  {ratio > 1 && <span className="text-tone-danger font-semibold"> · budget dépassé</span>}
                 </p>
               </div>
 
               <div>
                 <button type="button" aria-expanded={expanded === site.id} onClick={() => setExpanded(expanded === site.id ? null : site.id)}
-                  className={`text-sm font-semibold ${remaining ? 'text-warning-700 dark:text-warning-300' : 'text-gray-600 dark:text-gray-400'} hover:underline`}>
+                  className={`text-sm font-semibold ${remaining ? 'text-tone-warning' : 'text-gray-600 dark:text-gray-400'} hover:underline`}>
                   {remaining ? `${remaining} élément${remaining > 1 ? 's' : ''} encore sur le chantier` : 'Rien sur le chantier'}
                 </button>
                 {expanded === site.id && items.length > 0 && (
@@ -268,7 +263,7 @@ const Sites: React.FC = () => {
                     {items.map(i => (
                       <li key={i.item_id} className="py-1.5 flex justify-between gap-2 text-gray-800 dark:text-gray-200">
                         <span className="truncate">{i.kind === 'rental' ? 'Location · ' : ''}{i.label}{i.holder ? <span className="text-gray-500"> · {i.holder}</span> : null}</span>
-                        <span className={`shrink-0 text-xs ${i.late ? 'text-danger-700 dark:text-danger-300 font-semibold' : 'text-gray-500'}`}>
+                        <span className={`shrink-0 text-xs ${i.late ? 'text-tone-danger font-semibold' : 'text-gray-500'}`}>
                           {i.late ? 'en retard' : `→ ${new Date(i.due_at).toLocaleDateString('fr-CH')}`}
                         </span>
                       </li>

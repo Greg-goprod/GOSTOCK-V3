@@ -124,6 +124,22 @@ if (!checkEnvironmentVariables()) {
                   boxShadow: 'var(--mx-shadow-lg)',
                   fontSize: '13px',
                   fontWeight: 500,
+                  padding: '12px 14px',
+                },
+                // Fond teinté selon le ton (catalogue .toast)
+                success: {
+                  style: {
+                    background: 'color-mix(in srgb, var(--mx-green) 10%, var(--mx-surface))',
+                    borderColor: 'color-mix(in srgb, var(--mx-green) 35%, var(--mx-border))',
+                  },
+                  iconTheme: { primary: 'var(--mx-green)', secondary: 'var(--mx-surface)' },
+                },
+                error: {
+                  style: {
+                    background: 'color-mix(in srgb, var(--mx-danger) 10%, var(--mx-surface))',
+                    borderColor: 'color-mix(in srgb, var(--mx-danger) 35%, var(--mx-border))',
+                  },
+                  iconTheme: { primary: 'var(--mx-danger)', secondary: 'var(--mx-surface)' },
                 },
               }}
             />

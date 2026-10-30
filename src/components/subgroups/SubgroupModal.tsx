@@ -102,13 +102,13 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={subgroup ? 'MODIFIER LE SOUS-GROUPE' : 'AJOUTER UN SOUS-GROUPE'}
+      title={subgroup ? 'Modifier le sous-groupe' : 'Ajouter un sous-groupe'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
+          title="Informations de base"
           icon={<Layers size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -171,7 +171,7 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
                 type="submit"
                 disabled={isLoading || !formData.groupId}
               >
-                {isLoading ? 'SAUVEGARDE...' : subgroup ? 'MODIFIER' : 'AJOUTER'}
+                {isLoading ? 'Enregistrement…' : subgroup ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>
           </form>
@@ -179,8 +179,8 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION"
-          icon={<FileText size={18} className="text-success-600 dark:text-success-400" />}
+          title="Description"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -200,7 +200,7 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
+          title="Couleur"
           icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >

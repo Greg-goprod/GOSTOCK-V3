@@ -66,16 +66,16 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderWarningStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-danger-600 dark:text-danger-400">
+      <div className="flex items-center gap-3 text-tone-danger">
         <AlertTriangle className="w-8 h-8" />
         <h3 className="text-xl font-bold"><AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Attention - remise à zéro du système</h3>
       </div>
 
       <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
-        <h4 className="font-semibold text-danger-800 dark:text-danger-200 mb-3">
+        <h4 className="font-semibold text-tone-danger mb-3">
           Cette opération supprimera DÉFINITIVEMENT :
         </h4>
-        <ul className="list-disc list-inside space-y-2 text-danger-700 dark:text-danger-300">
+        <ul className="list-disc list-inside space-y-2 text-tone-danger">
           <li><Trash2 className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les emprunts en cours et l'historique</li>
           <li><FileTextIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les bons de livraison générés</li>
           <li><WrenchIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les maintenances (en cours et passées)</li>
@@ -84,10 +84,10 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
       </div>
 
       <div className="bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg p-4">
-        <h4 className="font-semibold text-success-800 dark:text-success-200 mb-3">
+        <h4 className="font-semibold text-tone-success mb-3">
           Ce qui sera conservé :
         </h4>
-        <ul className="list-disc list-inside space-y-2 text-success-700 dark:text-success-300">
+        <ul className="list-disc list-inside space-y-2 text-tone-success">
           <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les équipements (remis en "disponible")</li>
           <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les utilisateurs et départements</li>
           <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les catégories et fournisseurs</li>
@@ -96,7 +96,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
       </div>
 
       <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
-        <p className="text-warning-800 dark:text-warning-200 font-medium">
+        <p className="text-tone-warning font-medium">
           <AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Cette action est IRRÉVERSIBLE ! Assurez-vous d'avoir une sauvegarde si nécessaire.
         </p>
       </div>
@@ -114,13 +114,13 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderConfirmationStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-danger-600 dark:text-danger-400">
+      <div className="flex items-center gap-3 text-tone-danger">
         <AlertTriangle className="w-6 h-6" />
         <h3 className="text-lg font-bold">Confirmation finale</h3>
       </div>
 
       <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
-        <p className="text-danger-800 dark:text-danger-200 font-medium mb-4">
+        <p className="text-tone-danger font-medium mb-4">
           Pour confirmer la remise à zéro, tapez exactement le texte suivant :
         </p>
         <p className="font-mono text-lg bg-danger-100 dark:bg-danger-800 p-2 rounded border text-center">
@@ -184,7 +184,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
     
     return (
       <div className="space-y-6">
-        <div className={`flex items-center gap-3 ${hasErrors ? 'text-danger-600 dark:text-danger-400' : 'text-success-600 dark:text-success-400'}`}>
+        <div className={`flex items-center gap-3 ${hasErrors ? 'text-tone-danger' : 'text-tone-success'}`}>
           {hasErrors ? <XCircle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
           <h3 className="text-lg font-bold">
             {hasErrors ? 'Remise à zéro terminée avec erreurs' : 'Remise à zéro réussie !'}
@@ -206,8 +206,8 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
             {hasErrors && (
               <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
-                <h4 className="font-semibold text-danger-800 dark:text-danger-200 mb-3">Erreurs rencontrées :</h4>
-                <ul className="list-disc list-inside space-y-1 text-danger-700 dark:text-danger-300 text-sm">
+                <h4 className="font-semibold text-tone-danger mb-3">Erreurs rencontrées :</h4>
+                <ul className="list-disc list-inside space-y-1 text-tone-danger text-sm">
                   {resetResults.errors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}

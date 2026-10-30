@@ -141,7 +141,7 @@ const LogbookModal: React.FC<{ vehicle: Vehicle; onClose: () => void }> = ({ veh
                     </span>
                   </button>
                   {(t.end_damages || t.start_damages) && (
-                    <p className="text-xs text-warning-700 dark:text-warning-300 mt-0.5">
+                    <p className="text-xs text-tone-warning mt-0.5">
                       {[t.start_damages && `Départ : ${t.start_damages}`, t.end_damages && `Retour : ${t.end_damages}`].filter(Boolean).join(' · ')}
                     </p>
                   )}

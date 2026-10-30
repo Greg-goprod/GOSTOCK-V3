@@ -384,14 +384,14 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={step === 'basic' ? "MODIFIER LE MATÉRIEL" : "CONFIGURATION DES QUANTITÉS"}
+      title={step === 'basic' ? "MODIFIER LE MATÉRIEL" : "Configuration des quantités"}
       size="lg"
     >
       {step === 'basic' ? (
         <div className="space-y-4">
           {/* Informations de base */}
           <Accordion
-            title="INFORMATIONS DE BASE"
+            title="Informations de base"
             icon={<Info size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen
           >
@@ -750,7 +750,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         <div className="space-y-4">
           {/* Configuration QR */}
           <Accordion
-            title="CONFIGURATION QR CODES"
+            title="Configuration des QR codes"
             icon={<QrCode size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen
           >
@@ -824,7 +824,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <Copy size={18} className="text-success-600 dark:text-success-400" />
+                          <Copy size={18} className="text-tone-success" />
                           <h4 className="font-medium text-gray-900 dark:text-gray-100">
                             QR Code unique pour le lot
                           </h4>
@@ -857,12 +857,12 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
               {currentQrType === 'individual' && formData.total_quantity !== instances.length && (
                 <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle size={18} className="text-warning-600 dark:text-warning-400 mt-0.5" />
+                    <AlertTriangle size={18} className="text-tone-warning mt-0.5" />
                     <div>
-                      <h4 className="font-medium text-warning-800 dark:text-warning-200">
+                      <h4 className="font-medium text-tone-warning">
                         Attention : Quantité modifiée
                       </h4>
-                      <p className="text-sm text-warning-700 dark:text-warning-300 mt-1">
+                      <p className="text-sm text-tone-warning mt-1">
                         La quantité totale ({formData.total_quantity}) ne correspond pas au nombre d'instances ({instances.length}). 
                         Les QR codes seront régénérés lors de la sauvegarde.
                       </p>

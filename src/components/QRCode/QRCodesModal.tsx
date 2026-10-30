@@ -170,14 +170,14 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`QR CODES - ${equipment.name.toUpperCase()}`}
+      title={`QR codes · ${equipment.name}`}
       size="xl"
     >
       <div className="space-y-6">
         {/* Info header */}
         <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
           <h3 className="text-lg font-black text-primary-800 dark:text-primary-200 mb-2 uppercase">
-            {equipment.qrType === 'individual' ? 'QR CODES INDIVIDUELS' : 'QR CODE UNIQUE'}
+            {equipment.qrType === 'individual' ? 'QR codes individuels' : 'QR code unique'}
           </h3>
           <p className="text-primary-700 dark:text-primary-300 text-sm font-medium">
             {equipment.qrType === 'individual' 

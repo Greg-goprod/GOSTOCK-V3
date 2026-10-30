@@ -13,7 +13,7 @@ const Kpi: React.FC<{ value: number | string; label: string; to: string; tone?: 
     to={to}
     className="mx-card mx-card-hover p-4 flex flex-col gap-1"
   >
-    <span className={`font-mono text-[29px] font-bold tracking-[-0.02em] tabular-nums ${tone === 'bad' ? 'text-danger-600 dark:text-danger-400' : tone === 'warn' ? 'text-warning-700 dark:text-warning-300' : 'text-gray-900 dark:text-white'}`}>
+    <span className={`font-mono text-[29px] font-bold tracking-[-0.02em] tabular-nums ${tone === 'bad' ? 'text-tone-danger' : tone === 'warn' ? 'text-tone-warning' : 'text-gray-900 dark:text-white'}`}>
       {value}
     </span>
     <span className="text-sm text-gray-600 dark:text-gray-300">{label}</span>
@@ -122,7 +122,7 @@ const Today: React.FC = () => {
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item?.name ?? 'Consommable'}</div>
                     <div className="text-xs text-gray-600 dark:text-gray-400">{depots.find(d => d.id === s.depotId)?.name}</div>
                   </div>
-                  <span className="shrink-0 font-mono text-sm text-warning-800 dark:text-warning-200">{s.quantity} / {s.minQuantity} {item?.unit}</span>
+                  <span className="shrink-0 font-mono text-sm text-tone-warning">{s.quantity} / {s.minQuantity} {item?.unit}</span>
                 </li>
               );
             })}

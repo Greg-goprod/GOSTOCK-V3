@@ -428,12 +428,12 @@ const Scan: React.FC = () => {
         {error && (
           <div className="mt-4 p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-md">
             <div className="flex items-center gap-2">
-              <AlertCircle size={18} className="text-danger-600 dark:text-danger-400" />
-              <p className="text-sm font-medium text-danger-700 dark:text-danger-300">
+              <AlertCircle size={18} className="text-tone-danger" />
+              <p className="text-sm font-medium text-tone-danger">
                 {error}
               </p>
             </div>
-            <p className="text-xs text-danger-600 dark:text-danger-400 mt-2 pl-6">
+            <p className="text-xs text-tone-danger mt-2 pl-6">
               Essayez de scanner à nouveau ou saisissez manuellement le code dans le champ ci-dessus.
             </p>
           </div>
@@ -449,8 +449,8 @@ const Scan: React.FC = () => {
         {success && item && (
           <div className="mt-4 p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-md">
             <div className="flex items-center gap-2">
-              <CheckCircle size={18} className="text-success-600 dark:text-success-400" />
-              <p className="text-sm font-medium text-success-700 dark:text-success-300">
+              <CheckCircle size={18} className="text-tone-success" />
+              <p className="text-sm font-medium text-tone-success">
                 {itemType === 'equipment' && `Équipement trouvé: ${item.name}`}
                 {itemType === 'user' && `Utilisateur trouvé: ${item.first_name} ${item.last_name}`}
                 {itemType === 'checkout' && `Emprunt trouvé pour: ${item.equipment?.name}`}

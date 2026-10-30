@@ -23,7 +23,7 @@ const HelpPrint: React.FC = () => {
         @media print { .no-print { display: none !important; } body { background: #fff; } }
       `}</style>
       <button type="button" onClick={() => window.print()}
-        className="no-print mb-6 inline-flex items-center gap-2 rounded-md bg-primary-600 px-4 py-2 font-semibold text-white">
+        className="no-print mx-btn mx-btn-primary mb-6 inline-flex items-center gap-2 px-4 py-2 text-[12.5px]">
         <Printer size={16} aria-hidden="true" /> Imprimer ou enregistrer en PDF
       </button>
 

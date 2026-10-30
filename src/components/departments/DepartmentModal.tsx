@@ -94,13 +94,13 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={department ? 'MODIFIER LE DÉPARTEMENT' : 'AJOUTER UN DÉPARTEMENT'}
+      title={department ? 'Modifier le département' : 'Ajouter un département'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
+          title="Informations de base"
           icon={<Building size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -131,7 +131,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'SAUVEGARDE...' : department ? 'MODIFIER' : 'AJOUTER'}
+                {isLoading ? 'Enregistrement…' : department ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>
           </form>
@@ -139,8 +139,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION"
-          icon={<FileText size={18} className="text-success-600 dark:text-success-400" />}
+          title="Description"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -159,7 +159,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
+          title="Couleur"
           icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >

@@ -647,7 +647,8 @@ export function MxDrawer({
                   flex: 1,
                   minHeight: 0,
                   overflowY: 'auto',
-                  padding: 'var(--mx-space-24) var(--mx-space-24) var(--mx-space-8)',
+                  // .mx-dr-body de la référence : 20 / 24 / 8
+                  padding: 'calc(20px * var(--mx-scale, 1)) var(--mx-space-24) var(--mx-space-8)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 'var(--mx-space-24)',

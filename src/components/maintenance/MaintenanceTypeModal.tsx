@@ -94,13 +94,13 @@ const MaintenanceTypeModal: React.FC<MaintenanceTypeModalProps> = ({ isOpen, onC
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={maintenanceType ? 'MODIFIER LE TYPE DE MAINTENANCE' : 'AJOUTER UN TYPE DE MAINTENANCE'}
+      title={maintenanceType ? 'Modifier le type de maintenance' : 'Ajouter un type de maintenance'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
+          title="Informations de base"
           icon={<Wrench size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -132,7 +132,7 @@ const MaintenanceTypeModal: React.FC<MaintenanceTypeModalProps> = ({ isOpen, onC
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'SAUVEGARDE...' : maintenanceType ? 'MODIFIER' : 'AJOUTER'}
+                {isLoading ? 'Enregistrement…' : maintenanceType ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>
           </form>
@@ -140,8 +140,8 @@ const MaintenanceTypeModal: React.FC<MaintenanceTypeModalProps> = ({ isOpen, onC
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION"
-          icon={<FileText size={18} className="text-success-600 dark:text-success-400" />}
+          title="Description"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -161,7 +161,7 @@ const MaintenanceTypeModal: React.FC<MaintenanceTypeModalProps> = ({ isOpen, onC
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
+          title="Couleur"
           icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >

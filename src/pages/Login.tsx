@@ -197,7 +197,7 @@ const Login: React.FC = () => {
           )}
 
           {error && (
-            <p role="alert" className="mt-4 rounded-md bg-danger-50 dark:bg-danger-900/30 text-danger-800 dark:text-danger-200 text-sm p-3">
+            <p role="alert" className="mt-4 rounded-md bg-danger-50 dark:bg-danger-900/30 text-tone-danger text-sm p-3">
               {error}
             </p>
           )}

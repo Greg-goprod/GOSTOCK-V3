@@ -9,6 +9,7 @@ import { fr } from "date-fns/locale";
 import { Plus, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft } from "lucide-react";
 import { CheckoutWithCalculatedStatus, DeliveryNote } from "../types";
 import toast from "react-hot-toast";
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 // Interface étendue pour les bons de livraison avec statut calculé
 interface DeliveryNoteWithStatus extends Omit<DeliveryNote, 'status'> {
@@ -36,7 +37,8 @@ export default function Checkouts() {
   const [selectedDeliveryNote, setSelectedDeliveryNote] = useState<DeliveryNoteWithStatus | null>(null);
   const [calculatedCheckouts, setCalculatedCheckouts] = useState<CheckoutWithCalculatedStatus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'equipment'>('list');
+  // Sur téléphone, les cartes plutôt que le tableau (trop large)
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'equipment'>(() => (window.innerWidth < 768 ? 'grid' : 'list'));
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -571,32 +573,8 @@ export default function Checkouts() {
           >
             Nouvelle sortie
           </Button>
-          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-            <Button
-              variant={viewMode === 'grid' ? 'primary' : 'outline'}
-              onClick={() => setViewMode('grid')}
-              className="flex items-center gap-2 rounded-none border-0"
-            >
-              <Grid3X3 className="w-4 h-4" />
-              Grille
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'primary' : 'outline'}
-              onClick={() => setViewMode('list')}
-              className="flex items-center gap-2 rounded-none border-0"
-            >
-              <List className="w-4 h-4" />
-              Liste
-            </Button>
-            <Button
-              variant={viewMode === 'equipment' ? 'primary' : 'outline'}
-              onClick={() => setViewMode('equipment')}
-              className="flex items-center gap-2 rounded-none border-0"
-            >
-              <CornerDownLeft className="w-4 h-4" />
-              Équipements
-            </Button>
-          </div>
+          <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as typeof viewMode)}
+            options={[{ value: 'grid', label: 'Grille', icon: Grid3X3 }, { value: 'list', label: 'Liste', icon: List }, { value: 'equipment', label: 'Équipements', icon: CornerDownLeft }]} />
         </div>
       </div>
 

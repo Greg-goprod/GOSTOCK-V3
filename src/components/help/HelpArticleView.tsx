@@ -55,15 +55,15 @@ export const HelpTaskView: React.FC<{ task: HelpTask; index: number }> = ({ task
       </ol>
 
       {task.result && (
-        <div className="flex gap-2 rounded-lg border-[1.5px] border-success-200 dark:border-success-800 bg-success-50 dark:bg-success-900/25 px-3 py-2.5">
-          <CheckCircle2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-success-700 dark:text-success-300" />
+        <div className="mx-tint-success flex gap-2 px-3 py-2.5">
+          <CheckCircle2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-[color:var(--mx-tone-text-success)]" />
           <p className="text-sm text-gray-900 dark:text-gray-100"><strong>Résultat : </strong>{task.result}</p>
         </div>
       )}
 
       {task.problems?.length ? (
-        <details className="group rounded-lg border-[1.5px] border-warning-200 dark:border-warning-800 bg-warning-50/60 dark:bg-warning-900/20">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold text-warning-900 dark:text-warning-200">
+        <details className="group mx-tint-warning">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-white">
             <Wrench size={16} aria-hidden="true" />
             Ça ne marche pas ? ({task.problems.length})
             <ChevronRight size={16} aria-hidden="true" className="ml-auto transition-transform group-open:rotate-90" />
@@ -125,8 +125,8 @@ const HelpArticleView: React.FC<{ article: HelpArticle; onNavigate?: () => void;
     </div>
 
     {article.tips?.length ? (
-      <div className="rounded-xl border-[1.5px] border-info-200 dark:border-info-800 bg-info-50 dark:bg-info-900/30 p-3">
-        <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-info-800 dark:text-info-200"><Lightbulb size={16} aria-hidden="true" /> Astuces</p>
+      <div className="mx-muted-box p-3">
+        <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-gray-900 dark:text-white"><Lightbulb size={16} aria-hidden="true" /> Astuces</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-gray-800 dark:text-gray-200">{article.tips.map(t => <li key={t}>{t}</li>)}</ul>
       </div>
     ) : null}

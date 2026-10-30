@@ -15,10 +15,10 @@ interface HistoryEvent {
 
 const ICONS = {
   out: <ArrowUpRight size={16} className="text-primary-600 dark:text-primary-300" aria-hidden="true" />,
-  return: <Undo2 size={16} className="text-success-600 dark:text-success-400" aria-hidden="true" />,
-  lost: <AlertTriangle size={16} className="text-danger-600 dark:text-danger-400" aria-hidden="true" />,
-  maintenance: <Wrench size={16} className="text-warning-600 dark:text-warning-400" aria-hidden="true" />,
-  incident: <AlertTriangle size={16} className="text-danger-600 dark:text-danger-400" aria-hidden="true" />,
+  return: <Undo2 size={16} className="text-tone-success" aria-hidden="true" />,
+  lost: <AlertTriangle size={16} className="text-tone-danger" aria-hidden="true" />,
+  maintenance: <Wrench size={16} className="text-tone-warning" aria-hidden="true" />,
+  incident: <AlertTriangle size={16} className="text-tone-danger" aria-hidden="true" />,
   inspection: <ClipboardCheck size={16} className="text-info-600 dark:text-info-100" aria-hidden="true" />,
 };
 

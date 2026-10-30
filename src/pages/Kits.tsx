@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Briefcase, Pencil, Plus, Printer, Trash2 } from 'lucide-react';
+import { Briefcase, Pencil, Plus, Printer, Trash2 , Boxes } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { Kit, KitItem, kitValue } from '../lib/kits';
 import { confirmAction } from '../lib/confirm';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -144,8 +145,8 @@ const Kits: React.FC = () => {
       </div>
 
       {kits.length === 0 && (
-        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-sm text-gray-600 dark:text-gray-400 print:hidden">
-          Aucun kit. Exemple : « Kit carrelage » = carrelette, malaxeur, niveau laser.
+        <div className="print:hidden">
+          <MxEmpty icon={Boxes} title="Aucun kit" description="Exemple : « Kit carrelage » = carrelette, malaxeur, niveau laser." />
         </div>
       )}
 
@@ -168,14 +169,14 @@ const Kits: React.FC = () => {
                   {canEdit && <Button size="sm" variant="danger" icon={<Trash2 size={14} />} ariaLabel={`Supprimer ${kit.name}`} onClick={() => remove(kit)} />}
                 </div>
               </div>
-              <p className={`text-sm font-semibold ${state.out.length ? 'text-info-700 dark:text-info-100' : state.missing.length ? 'text-warning-700 dark:text-warning-300' : 'text-success-700 dark:text-success-300'}`}>
+              <p className={`text-sm font-semibold ${state.out.length ? 'text-info-700 dark:text-info-100' : state.missing.length ? 'text-tone-warning' : 'text-tone-success'}`}>
                 {state.out.length ? `Sorti chez ${state.holders.join(', ')}` : state.missing.length ? `Incomplet : ${state.missing.length} outil${state.missing.length > 1 ? 's' : ''} pas disponible${state.missing.length > 1 ? 's' : ''}` : 'Complet, disponible'}
               </p>
               <ul className="text-sm text-gray-800 dark:text-gray-200 space-y-0.5">
                 {kit.kit_items.map(line => {
                   const missing = state.missing.includes(line);
                   return (
-                    <li key={line.id} className={missing && !state.out.length ? 'text-warning-700 dark:text-warning-300' : ''}>
+                    <li key={line.id} className={missing && !state.out.length ? 'text-tone-warning' : ''}>
                       {line.instance_id ? '' : `${line.quantity} × `}{itemName(line.equipment_id)}
                       {line.instance_id && <span className="font-mono text-xs text-gray-500"> · {instanceCode(line.instance_id)}</span>}
                     </li>

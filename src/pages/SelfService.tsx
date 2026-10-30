@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { findEquipmentByCode } from '../lib/scan';
 import { useSiteSuggestions } from '../lib/sites';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 interface TakeLine {
   equipment_id: string;
@@ -122,18 +123,12 @@ const SelfService: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-400 mt-1">Prenez les consommables de l'armoire ou déposez vos outils dans la boîte de retour, avec votre téléphone.</p>
       </div>
 
-      <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="tablist">
-        {([['take', 'Prendre'], ['return', `Rendre${returnable.length ? ` (${returnable.length})` : ''}`]] as const).map(([id, label]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-            className={`px-4 py-2 min-h-[44px] text-sm font-semibold ${tab === id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <MxSegmented aria-label="Prendre ou rendre" value={tab} onChange={v => setTab(v as typeof tab)}
+        options={[{ value: 'take', label: 'Prendre' }, { value: 'return', label: `Rendre${returnable.length ? ` (${returnable.length})` : ''}` }]} />
 
       {tab === 'take' && (
         <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-4">
-          {Object.keys(selfService).length === 0 && <p className="text-sm text-warning-700 dark:text-warning-300">Aucun consommable n'est encore en libre-service (fiche de l'article, côté magasin).</p>}
+          {Object.keys(selfService).length === 0 && <p className="text-sm text-tone-warning">Aucun consommable n'est encore en libre-service (fiche de l'article, côté magasin).</p>}
           <QRCodeScanner onScan={onScanTake} disableAutoFocus />
           {lines.length > 0 && (
             <ul className="space-y-2">
@@ -182,7 +177,7 @@ const SelfService: React.FC = () => {
                       <input type="checkbox" checked={toReturn.includes(c.id)} onChange={() => setToReturn(ids => (ids.includes(c.id) ? ids.filter(x => x !== c.id) : [...ids, c.id]))}
                         className="h-5 w-5 rounded border-gray-300 text-primary-600" />
                       <span className="flex-1 truncate">{itemName(c.equipmentId)}{qr(c.instanceId) ? ` · ${qr(c.instanceId)}` : ''}</span>
-                      <span className={`text-xs ${new Date(c.dueDate).getTime() < Date.now() ? 'text-danger-700 dark:text-danger-300 font-semibold' : 'text-gray-500'}`}>
+                      <span className={`text-xs ${new Date(c.dueDate).getTime() < Date.now() ? 'text-tone-danger font-semibold' : 'text-gray-500'}`}>
                         {new Date(c.dueDate).getTime() < Date.now() ? 'en retard' : `→ ${new Date(c.dueDate).toLocaleDateString('fr-CH')}`}
                       </span>
                     </label>

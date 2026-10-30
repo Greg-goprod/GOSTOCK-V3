@@ -50,7 +50,7 @@ const PushToggle: React.FC = () => {
       <Button variant={enabled ? 'outline' : 'primary'} icon={enabled ? <BellOff size={16} /> : <Bell size={16} />} onClick={toggle} loading={busy}>
         {enabled ? 'Couper les notifications sur ce téléphone' : 'Recevoir les avis sur ce téléphone'}
       </Button>
-      {enabled && <span className="text-xs text-success-700 dark:text-success-300">Activées</span>}
+      {enabled && <span className="text-xs text-tone-success">Activées</span>}
     </div>
   );
 };

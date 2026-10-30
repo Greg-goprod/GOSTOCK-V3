@@ -57,7 +57,7 @@ const SHOTS = [
       await p.waitForTimeout(600);
       const input = p.getByPlaceholder(/Scannez ou saisissez un code/i);
       for (const code of ['HT30-01', 'GOMAT-0042']) { await input.fill(code); await input.press('Enter'); await p.waitForTimeout(900); }
-    }, marks: p => [p.getByRole('group', { name: 'Mode de scan' }), byRole(p, 'button', /^Valider$/)] },
+    }, marks: p => [p.getByRole('radiogroup', { name: 'Mode de scan' }), byRole(p, 'button', /^Valider$/)] },
   { name: 'demandes-1', path: '/demandes', marks: p => [byRole(p, 'button', /Nouvelle demande/)] },
   { name: 'demandes-2', path: '/demandes', act: async p => { await byRole(p, 'button', /Nouvelle demande/).first().click(); await p.waitForTimeout(900); } },
   { name: 'demandes-3', path: '/demandes', act: async p => { await p.getByText('DEM2610-0002').first().click(); await p.waitForTimeout(1200); } },
@@ -85,9 +85,9 @@ const SHOTS = [
   { name: 'location-engin-1', path: '/locations', act: async p => {
       await byRole(p, 'button', /Nouvelle location/).first().click();
       await p.waitForTimeout(900);
-      await p.getByRole('button', { name: 'Outil ou engin' }).click();
+      await p.getByRole('radio', { name: 'Outil ou engin' }).click();
       await p.waitForTimeout(300);
-    }, marks: p => [p.getByRole('group').filter({ hasText: 'Outil ou engin' }).first(), p.getByLabel('Permis machine exigé')] },
+    }, marks: p => [p.getByRole('radiogroup', { name: 'Type de location' }), p.getByLabel('Permis machine exigé')] },
   { name: 'location-engin-2', path: '/locations', marks: p => [p.getByText('Coût seulement').first(), byRole(p, 'button', /^Réception$/)] },
   { name: 'chantiers-1', path: '/chantiers', marks: p => [byRole(p, 'button', /Rapport PDF/)] },
   { name: 'carte-1', path: '/carte' },

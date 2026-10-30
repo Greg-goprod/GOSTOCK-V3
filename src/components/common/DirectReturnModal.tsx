@@ -130,7 +130,7 @@ const DirectReturnModal: React.FC<DirectReturnModalProps> = ({
                     setIsLost(true);
                     setIsRecovered(false);
                   }}
-                  className="form-radio h-5 w-5 text-danger-600"
+                  className="form-radio h-5 w-5 text-tone-danger"
                 />
                 <span>Marquer comme perdu</span>
               </label>
@@ -144,7 +144,7 @@ const DirectReturnModal: React.FC<DirectReturnModalProps> = ({
                       setIsLost(false);
                       setIsRecovered(true);
                     }}
-                    className="form-radio h-5 w-5 text-success-600"
+                    className="form-radio h-5 w-5 text-tone-success"
                   />
                   <span>Marquer comme retrouvé</span>
                 </label>

@@ -530,7 +530,10 @@ const Dashboard: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-3">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight uppercase">Tableau de bord</h2>
+          <div>
+            <h1 className="mx-page-title">Statistiques</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Disponibilités, emprunts récents et matériel en maintenance.</p>
+          </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               {connectionStatus === 'connected' ? (
@@ -554,26 +557,16 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <div className="flex-1 flex justify-center">
-            <button
-              className="w-32 h-32 rounded-full bg-success-600 hover:bg-success-700 text-white shadow-lg flex flex-col items-center justify-center gap-2 transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => setShowCheckoutModal(true)}
-              disabled={connectionStatus !== 'connected'}
-            >
-              <LogOut size={36} />
-              <span className="font-bold text-base tracking-wide">Sortie</span>
-            </button>
+        <div className="flex gap-3">
+          <div className="flex-1 max-w-xs">
+            <Button size="lg" fullWidth icon={<LogOut size={18} />} onClick={() => setShowCheckoutModal(true)} disabled={connectionStatus !== 'connected'}>
+              Sortie
+            </Button>
           </div>
-          <div className="flex-1 flex justify-center">
-            <button
-              className="w-32 h-32 rounded-full bg-warning-500 hover:bg-warning-600 text-white shadow-lg flex flex-col items-center justify-center gap-2 transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => setShowReturnModal(true)}
-              disabled={connectionStatus !== 'connected'}
-            >
-              <LogIn size={36} />
-              <span className="font-bold text-base tracking-wide">Retour</span>
-            </button>
+          <div className="flex-1 max-w-xs">
+            <Button size="lg" variant="secondary" fullWidth icon={<LogIn size={18} />} onClick={() => setShowReturnModal(true)} disabled={connectionStatus !== 'connected'}>
+              Retour
+            </Button>
           </div>
         </div>
       </div>
@@ -584,7 +577,7 @@ const Dashboard: React.FC = () => {
             <Package size={20} className="text-primary-600 dark:text-primary-300" />
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Disponible</p>
+            <p className="mx-section-label">Disponible</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.availableEquipment}
               {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
@@ -594,10 +587,10 @@ const Dashboard: React.FC = () => {
         
         <Card className="flex items-center p-3 hover:shadow-md transition-shadow">
           <div className="rounded-full bg-success-100 dark:bg-success-900/50 p-2 mr-3">
-            <CheckSquare size={20} className="text-success-600 dark:text-success-300" />
+            <CheckSquare size={20} className="text-tone-success" />
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Emprunté</p>
+            <p className="mx-section-label">Emprunté</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.checkedOutEquipment}
               {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
@@ -607,10 +600,10 @@ const Dashboard: React.FC = () => {
         
         <Card className="flex items-center p-3 hover:shadow-md transition-shadow">
           <div className="rounded-full bg-warning-100 dark:bg-warning-900/50 p-2 mr-3">
-            <AlertTriangle size={20} className="text-warning-600 dark:text-warning-300" />
+            <AlertTriangle size={20} className="text-tone-warning" />
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">En retard</p>
+            <p className="mx-section-label">En retard</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.overdueEquipment}
               {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
@@ -623,7 +616,7 @@ const Dashboard: React.FC = () => {
             <Wrench size={20} className="text-primary-600 dark:text-primary-300" />
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Maintenance</p>
+            <p className="mx-section-label">Maintenance</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.maintenanceEquipment}
               {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
@@ -633,10 +626,10 @@ const Dashboard: React.FC = () => {
         
         <Card className="flex items-center p-3 hover:shadow-md transition-shadow">
           <div className="rounded-full bg-danger-100 dark:bg-danger-900/50 p-2 mr-3">
-            <Bell size={20} className="text-danger-600 dark:text-danger-300" />
+            <Bell size={20} className="text-tone-danger" />
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Notifications</p>
+            <p className="mx-section-label">Notifications</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
               {stats.unreadNotifications}
               {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
@@ -647,7 +640,7 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Emprunts récents */}
-        <Card title="EMPRUNTS RÉCENTS">
+        <Card title="Emprunts récents">
           {recentCheckouts.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-compact">
@@ -705,7 +698,7 @@ const Dashboard: React.FC = () => {
         </Card>
 
         {/* Matériel en maintenance */}
-        <Card title="MATÉRIEL EN MAINTENANCE">
+        <Card title="Matériel en maintenance">
           {maintenanceEquipment.length > 0 ? (
             <div className="space-y-2">
               {maintenanceEquipment.map(equipment => {
@@ -746,7 +739,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock size={10} />
-                            <span className={daysSinceMaintenance > 7 ? 'text-danger-600 dark:text-danger-400 font-medium' : ''}>
+                            <span className={daysSinceMaintenance > 7 ? 'text-tone-danger font-medium' : ''}>
                               {daysSinceMaintenance} jour{daysSinceMaintenance > 1 ? 's' : ''}
                             </span>
                           </div>
@@ -758,7 +751,7 @@ const Dashboard: React.FC = () => {
                           {equipment.serial_number}
                         </p>
                         {daysSinceMaintenance > 7 && (
-                          <div className="flex items-center gap-1 text-danger-600 dark:text-danger-400 text-[10px] font-medium mt-1">
+                          <div className="flex items-center gap-1 text-tone-danger text-[10px] font-medium mt-1">
                             <AlertTriangle size={10} />
                             <span>Maintenance prolongée</span>
                           </div>

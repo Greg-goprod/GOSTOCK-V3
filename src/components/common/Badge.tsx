@@ -10,9 +10,9 @@ interface BadgeProps {
 
 const Badge: React.FC<BadgeProps> = ({ variant = 'neutral', children, className = '' }) => {
   const variantClasses = {
-    success: 'bg-success-100 dark:bg-success-900/50 text-success-800 dark:text-success-200',
-    warning: 'bg-warning-100 dark:bg-warning-900/50 text-warning-800 dark:text-warning-200',
-    danger: 'bg-danger-100 dark:bg-danger-900/50 text-danger-800 dark:text-danger-200',
+    success: 'bg-success-100 dark:bg-success-900/50 text-tone-success',
+    warning: 'bg-warning-100 dark:bg-warning-900/50 text-tone-warning',
+    danger: 'bg-danger-100 dark:bg-danger-900/50 text-tone-danger',
     info: 'bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200',
     neutral: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
     outline: 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300',

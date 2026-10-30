@@ -105,13 +105,13 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-success-100 dark:bg-success-900/50 text-success-800 dark:text-success-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-success-100 dark:bg-success-900/50 text-tone-success">
             Terminée
           </span>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-danger-100 dark:bg-danger-900/50 text-danger-800 dark:text-danger-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-danger-100 dark:bg-danger-900/50 text-tone-danger">
             Annulée
           </span>
         );
@@ -141,7 +141,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={`HISTORIQUE DE MAINTENANCE - ${equipment.name}`}
+        title={`Historique de maintenance · ${equipment.name}`}
         size="xl"
       >
         <div className="space-y-6">
@@ -277,12 +277,12 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                           <span>En cours</span>
                         </div>
                       ) : maintenance.status === 'completed' ? (
-                        <div className="flex items-center gap-1 text-success-600 dark:text-success-400 text-xs font-medium">
+                        <div className="flex items-center gap-1 text-tone-success text-xs font-medium">
                           <CheckCircle size={14} />
                           <span>Terminée</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 text-danger-600 dark:text-danger-400 text-xs font-medium">
+                        <div className="flex items-center gap-1 text-tone-danger text-xs font-medium">
                           <AlertTriangle size={14} />
                           <span>Annulée</span>
                         </div>

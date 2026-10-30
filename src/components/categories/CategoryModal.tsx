@@ -96,13 +96,13 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={category ? 'MODIFIER LA CATÉGORIE' : 'AJOUTER UNE CATÉGORIE'}
+      title={category ? 'Modifier la catégorie' : 'Ajouter une catégorie'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
+          title="Informations de base"
           icon={<Tag size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -141,8 +141,8 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION"
-          icon={<FileText size={18} className="text-success-600 dark:text-success-400" />}
+          title="Description"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -161,7 +161,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
+          title="Couleur"
           icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >

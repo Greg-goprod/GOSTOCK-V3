@@ -201,7 +201,7 @@ const Trainings: React.FC = () => {
                       <span className="flex-1 truncate">{t.name}</span>
                       <span className="font-mono text-xs text-gray-500">{holders.filter(h => h.training_id === t.id).length}</span>
                     </span>
-                    {soon > 0 && <span className="block text-xs text-warning-700 dark:text-warning-300 font-normal">{soon} à renouveler</span>}
+                    {soon > 0 && <span className="block text-xs text-tone-warning font-normal">{soon} à renouveler</span>}
                   </button>
                 </li>
               );

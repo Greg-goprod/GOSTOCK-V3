@@ -770,7 +770,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="SORTIE DE MATÉRIEL"
+      title="Sortie de matériel"
       size="xl"
     >
       <div className="space-y-6">
@@ -1051,7 +1051,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                   Date de retour prévue *
                 </label>
                 <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-3 mb-2">
-                  <p className="text-sm text-warning-800 dark:text-warning-200 font-medium">
+                  <p className="text-sm text-tone-warning font-medium">
                     <CalendarDaysIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Par défaut : retour le jour même ({new Date().toLocaleDateString('fr-FR')})
                   </p>
                 </div>

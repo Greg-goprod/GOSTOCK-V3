@@ -391,7 +391,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={step === 'basic' ? "AJOUTER DU MATÉRIEL" : "CONFIGURATION DES QUANTITÉS"}
+      title={step === 'basic' ? "Ajouter du matériel" : "Configuration des quantités"}
       size="lg"
     >
       {step === 'basic' ? (
@@ -405,7 +405,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
           )}
           {/* Informations de base */}
           <Accordion
-            title="INFORMATIONS DE BASE"
+            title="Informations de base"
             icon={<Info size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen
           >
@@ -764,7 +764,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         <div className="space-y-4">
           {/* Configuration QR */}
           <Accordion
-            title="CONFIGURATION QR CODES"
+            title="Configuration des QR codes"
             icon={<QrCode size={18} className="text-primary-600 dark:text-primary-400" />}
             defaultOpen
           >
@@ -838,7 +838,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <Copy size={18} className="text-success-600 dark:text-success-400" />
+                          <Copy size={18} className="text-tone-success" />
                           <h4 className="font-medium text-gray-900 dark:text-gray-100">
                             QR Code unique pour le lot
                           </h4>

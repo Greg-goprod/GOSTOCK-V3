@@ -266,7 +266,7 @@ const Ppe: React.FC = () => {
               return (
                 <li key={i.id} className="py-2 flex flex-wrap items-center gap-2">
                   <span className="flex-1 min-w-[12rem] text-gray-900 dark:text-gray-100">{userName(i.user_id)} · {typeOf(i.ppe_type_id)?.name}{i.size ? ` · ${i.size}` : ''}</span>
-                  <span className={`text-xs font-semibold ${late ? 'text-danger-700 dark:text-danger-300' : 'text-warning-700 dark:text-warning-300'}`}>{late ? 'échu le' : 'le'} {fmt(i.renew_on!)}</span>
+                  <span className={`text-xs font-semibold ${late ? 'text-tone-danger' : 'text-tone-warning'}`}>{late ? 'échu le' : 'le'} {fmt(i.renew_on!)}</span>
                   {canIssue && <Button size="sm" variant="outline" onClick={() => renew(i)}>Renouveler</Button>}
                 </li>
               );

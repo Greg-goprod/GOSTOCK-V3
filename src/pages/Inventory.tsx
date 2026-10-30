@@ -195,7 +195,7 @@ const Inventory: React.FC = () => {
                     <span className="text-xs text-gray-600 dark:text-gray-400 w-10">{e?.unit ?? 'pce'}</span>
                     {review && gap !== null && gap !== 0 && (
                       <>
-                        <span className={`font-mono text-xs font-semibold ${gap < 0 ? 'text-danger-700 dark:text-danger-300' : 'text-success-700 dark:text-success-300'}`}>{gap > 0 ? '+' : ''}{qty(gap)}</span>
+                        <span className={`font-mono text-xs font-semibold ${gap < 0 ? 'text-tone-danger' : 'text-tone-success'}`}>{gap > 0 ? '+' : ''}{qty(gap)}</span>
                         <select
                           value={line.reason ?? ''}
                           onChange={ev => record(line.equipment_id, { counted: line.counted ?? 0, reason: ev.target.value }).catch(err => toast.error(err.message))}
@@ -229,7 +229,7 @@ const Inventory: React.FC = () => {
               return (
                 <li key={h.id} className="py-1.5 flex justify-between text-gray-800 dark:text-gray-200">
                   <span>{new Date(h.closed_at ?? h.started_at).toLocaleDateString('fr-CH')} · {h.inventory_count_lines.length} articles</span>
-                  <span className={n ? 'text-warning-700 dark:text-warning-300' : 'text-success-700 dark:text-success-300'}>{n ? `${n} écart${n > 1 ? 's' : ''}` : 'sans écart'}</span>
+                  <span className={n ? 'text-tone-warning' : 'text-tone-success'}>{n ? `${n} écart${n > 1 ? 's' : ''}` : 'sans écart'}</span>
                 </li>
               );
             })}

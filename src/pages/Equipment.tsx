@@ -371,7 +371,7 @@ export default function Equipment() {
                   <Button variant="outline" size="sm" ariaLabel={`Maintenance de ${eq.name}`} onClick={() => handleMaintenance(eq.id)}>
                     <Wrench className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-danger-600 hover:text-danger-700">
+                  <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-tone-danger hover:text-tone-danger">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </>
@@ -499,7 +499,7 @@ export default function Equipment() {
                             <Button variant="outline" size="sm" ariaLabel={`Modifier ${eq.name}`} onClick={() => handleEdit(eq.id)}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-danger-600 hover:text-danger-700">
+                            <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-tone-danger hover:text-tone-danger">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </>

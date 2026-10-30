@@ -86,6 +86,12 @@ export default {
           900: '#6e1622',
           950: '#3d0b12',
         },
+        // Textes de statut aux tons de la charte (suivent le thème) : text-tone-warning…
+        tone: {
+          success: 'var(--mx-tone-text-success)',
+          warning: 'var(--mx-tone-text-warning)',
+          danger: 'var(--mx-tone-text-danger)',
+        },
         info: {
           50: '#e6f5fa',
           100: '#cceaf5',

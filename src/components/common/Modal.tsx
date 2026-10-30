@@ -12,12 +12,12 @@ interface ModalProps {
 }
 
 // Toutes les fenêtres de GO-Mat s'ouvrent en drawer (panneau latéral de la charte Mannyx).
-// Largeurs : les formulaires gardent la place qu'ils avaient dans l'ancienne fenêtre centrée.
+// Largeurs dans l'échelle fermée de la charte (360 / 420 / 520 / 680 px) : le plus grand cran est 680 px.
 const SIZE: Record<NonNullable<ModalProps['size']>, MxDrawerSize> = {
   sm: 'md',
   md: 'lg',
   lg: 'xl',
-  xl: 'full',
+  xl: 'xl',
 };
 
 // Durée du glissement de fermeture (0.32s dans la charte) avant de démonter le contenu

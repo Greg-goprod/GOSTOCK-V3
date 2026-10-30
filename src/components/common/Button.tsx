@@ -42,11 +42,11 @@ const Button: React.FC<ButtonProps> = ({
     danger: 'mx-btn-danger',
   };
 
-  // Sur mobile/tablette : cible tactile d'au moins 44px ; compact sur grand écran
+  // Libellé 12,5px / 600 (tronc MX). Sur mobile/tablette : cible tactile d'au moins 44px ; compact sur grand écran
   const sizeClasses = {
-    sm: 'text-sm lg:text-xs px-2 py-1 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0',
-    md: 'text-sm lg:text-xs px-3 py-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0',
-    lg: 'text-sm px-4 py-2 min-h-[44px] min-w-[44px]',
+    sm: 'text-[12.5px] px-2.5 py-1 min-h-[44px] min-w-[44px] lg:min-h-[28px] lg:min-w-0',
+    md: 'text-[12.5px] px-3.5 py-[7px] min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0',
+    lg: 'text-[13px] px-4 py-2 min-h-[44px] min-w-[44px]',
   };
 
   return (

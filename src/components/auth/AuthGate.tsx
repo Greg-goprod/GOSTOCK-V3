@@ -30,7 +30,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
         <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-lg shadow border border-gray-200 dark:border-gray-800 p-6 space-y-4 text-center">
-          <ShieldAlert size={36} className="mx-auto text-warning-600 dark:text-warning-400" aria-hidden="true" />
+          <ShieldAlert size={36} className="mx-auto text-tone-warning" aria-hidden="true" />
           <h1 className="text-lg font-bold text-gray-900 dark:text-white">Accès non autorisé</h1>
           <p className="text-sm text-gray-700 dark:text-gray-300">
             L'adresse <span className="font-medium">{session.user.email}</span> n'est pas enregistrée dans GO-Mat,

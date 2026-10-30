@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 interface RequestRow {
   id: string;
@@ -134,23 +135,17 @@ const Planning: React.FC = () => {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Type">
-          {([['vehicles', 'Véhicules'], ['tools', 'Outils']] as const).map(([id, label]) => (
-            <button key={id} type="button" aria-pressed={mode === id} onClick={() => { setMode(id); setOpen(null); }}
-              className={`px-3 py-2 min-h-[40px] text-sm font-semibold ${mode === id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <MxSegmented aria-label="Type" value={mode} onChange={v => { setMode(v as typeof mode); setOpen(null); }}
+          options={[{ value: 'vehicles', label: 'Véhicules' }, { value: 'tools', label: 'Outils' }]} />
         <div className="inline-flex items-center gap-1">
-          <button type="button" aria-label="Semaine précédente" onClick={() => setFrom(f => f - 7 * DAY)} className="min-h-[40px] min-w-[40px] rounded-md border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-700 dark:text-gray-300"><ChevronLeft size={18} /></button>
-          <button type="button" onClick={() => setFrom(startOfDay(Date.now()))} className="min-h-[40px] px-3 rounded-md border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">Aujourd'hui</button>
-          <button type="button" aria-label="Semaine suivante" onClick={() => setFrom(f => f + 7 * DAY)} className="min-h-[40px] min-w-[40px] rounded-md border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-700 dark:text-gray-300"><ChevronRight size={18} /></button>
+          <button type="button" aria-label="Semaine précédente" onClick={() => setFrom(f => f - 7 * DAY)} className="mx-btn mx-btn-secondary min-h-[34px] min-w-[34px] flex items-center justify-center"><ChevronLeft size={18} /></button>
+          <button type="button" onClick={() => setFrom(startOfDay(Date.now()))} className="mx-btn mx-btn-secondary min-h-[34px] px-3.5 text-[12.5px]">Aujourd'hui</button>
+          <button type="button" aria-label="Semaine suivante" onClick={() => setFrom(f => f + 7 * DAY)} className="mx-btn mx-btn-secondary min-h-[34px] min-w-[34px] flex items-center justify-center"><ChevronRight size={18} /></button>
         </div>
         <input type="search" value={siteFilter} onChange={e => setSiteFilter(e.target.value)} placeholder="Chantier…" aria-label="Filtrer par chantier" className={`${inputClass} w-44`} />
         <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
           <input type="checkbox" checked={onlyConflicts} onChange={e => setOnlyConflicts(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-primary-600" />
-          Conflits seulement {conflictCount ? <span className="font-semibold text-danger-700 dark:text-danger-300">({conflictCount})</span> : null}
+          Conflits seulement {conflictCount ? <span className="font-semibold text-tone-danger">({conflictCount})</span> : null}
         </label>
       </div>
 
@@ -183,7 +178,7 @@ const Planning: React.FC = () => {
                     <td key={days[i]} className="px-0.5 py-1">
                       {d.units > 0 && (
                         <div title={d.inDay.map(b => `${b.who} · ${b.site} · ${b.label}`).join('\n')}
-                          className={`h-8 rounded flex items-center justify-center text-xs font-semibold ${d.conflict ? 'bg-danger-600 text-white' : d.inDay.every(b => b.pending) ? 'bg-warning-200 text-warning-900 dark:bg-warning-800 dark:text-warning-100' : d.mine ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
+                          className={`h-8 rounded flex items-center justify-center text-xs font-semibold ${d.conflict ? 'mx-fill-danger' : d.inDay.every(b => b.pending) ? 'bg-warning-200 text-warning-900 dark:bg-warning-800 dark:text-warning-100' : d.mine ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
                           {row.capacity > 1 || d.conflict ? `${d.units}/${row.capacity}` : ''}
                         </div>
                       )}

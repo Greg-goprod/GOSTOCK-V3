@@ -60,10 +60,10 @@ class ErrorBoundary extends Component<Props, State> {
             {/* Informations de débogage */}
             {import.meta.env.DEV && this.state.error && (
               <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4 mb-6 text-left">
-                <h3 className="font-medium text-danger-800 dark:text-danger-200 mb-2">
+                <h3 className="font-medium text-tone-danger mb-2">
                   Détails de l'erreur (développement uniquement) :
                 </h3>
-                <pre className="text-xs text-danger-700 dark:text-danger-300 overflow-auto whitespace-pre-wrap">
+                <pre className="text-xs text-tone-danger overflow-auto whitespace-pre-wrap">
                   {this.state.error.message}
                 </pre>
               </div>
@@ -95,7 +95,7 @@ class ErrorBoundary extends Component<Props, State> {
                 </div>
                 
                 <div className="mt-4 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded">
-                  <p className="text-xs text-warning-800 dark:text-warning-200">
+                  <p className="text-xs text-tone-warning">
                     <strong><LightbulbIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Astuce :</strong> Vous pouvez trouver ces informations dans votre dashboard Supabase → Settings → API
                   </p>
                 </div>

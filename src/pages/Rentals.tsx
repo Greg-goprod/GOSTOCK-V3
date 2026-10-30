@@ -15,6 +15,7 @@ import RentalInspectionModal from '../components/rentals/RentalInspectionModal';
 import { InspectionKind, RentalInspection, RentalKind, loadInspections, printInspection } from '../lib/rentalInspection';
 import { LICENSE_CATEGORIES } from '../lib/licenses';
 import TrainingSelect from '../components/trainings/TrainingSelect';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 interface Rental {
   id: string;
@@ -248,7 +249,7 @@ const Rentals: React.FC = () => {
           <p className="text-sm text-gray-600 dark:text-gray-300">En cours</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className={`font-mono text-2xl font-semibold ${overdue.length ? 'text-danger-600 dark:text-danger-400' : 'text-gray-900 dark:text-white'}`}>{overdue.length}</p>
+          <p className={`font-mono text-2xl font-semibold ${overdue.length ? 'text-tone-danger' : 'text-gray-900 dark:text-white'}`}>{overdue.length}</p>
           <p className="text-sm text-gray-600 dark:text-gray-300">
             En retard{overdue.length ? ` · ${chf(overdue.reduce((s, r) => s + r.overdue_cost, 0))} de plus` : ''}
           </p>
@@ -259,14 +260,8 @@ const Rentals: React.FC = () => {
         </div>
       </div>
 
-      <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Filtre">
-        {([['open', 'En cours'], ['all', 'Historique']] as const).map(([id, label]) => (
-          <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}
-            className={`px-3 py-2 min-h-[40px] text-sm font-semibold ${filter === id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+        options={[{ value: 'open', label: 'En cours' }, { value: 'all', label: 'Historique' }]} />
 
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
         {shown.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune location{filter === 'open' ? ' en cours' : ''}.</li>}
@@ -296,7 +291,7 @@ const Rentals: React.FC = () => {
                   {name(r.responsible_id) ? ` · ${name(r.responsible_id)}` : ''}
                   {' · '}<span>{`${chf(r.daily_rate)}/jour`}</span>{' · '}<span>{`${r.days_billed} j facturés`}</span>{' · '}<strong className="font-mono">{chf(r.cost)}</strong>
                 </p>
-                <p className={`text-xs font-semibold ${r.state === 'overdue' ? 'text-danger-700 dark:text-danger-300' : r.state === 'returned' ? 'text-success-700 dark:text-success-300' : daysLeft <= 2 ? 'text-warning-700 dark:text-warning-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                <p className={`text-xs font-semibold ${r.state === 'overdue' ? 'text-tone-danger' : r.state === 'returned' ? 'text-tone-success' : daysLeft <= 2 ? 'text-tone-warning' : 'text-gray-600 dark:text-gray-400'}`}>
                   {r.kind !== 'other' && r.state !== 'returned' && !inspectionOf(r, 'reception') ? 'Réception à faire chez le loueur'
                     : r.state === 'returned' ? `Rendu le ${fmt(r.returned_on!)}`
                     : r.state === 'overdue' ? `En retard de ${-daysLeft} jour${-daysLeft > 1 ? 's' : ''} (${chf(r.overdue_cost)} de plus)`
@@ -333,19 +328,13 @@ const Rentals: React.FC = () => {
         <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">
           <fieldset className="sm:col-span-2">
             <legend className={labelClass}>Type de location</legend>
-            <div className="inline-flex flex-wrap rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group">
-              {KINDS.map(k => {
-                // Après la réception, le type ne change plus (l'objet est déjà dans le stock)
-                const locked = editing !== 'new' && editing !== null && Boolean(inspectionOf(editing, 'reception'));
-                return (
-                  <button key={k.id} type="button" aria-pressed={form.kind === k.id} disabled={locked && form.kind !== k.id}
-                    onClick={() => setForm({ ...form, kind: k.id })}
-                    className={`px-3 py-2 min-h-[40px] text-sm font-semibold disabled:opacity-40 ${form.kind === k.id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-                    {k.label}
-                  </button>
-                );
-              })}
-            </div>
+            {editing !== 'new' && editing !== null && Boolean(inspectionOf(editing, 'reception')) ? (
+              // Après la réception, le type ne change plus (l'objet est déjà dans le stock)
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{KINDS.find(k => k.id === form.kind)?.label}</p>
+            ) : (
+              <MxSegmented aria-label="Type de location" value={form.kind} onChange={v => setForm({ ...form, kind: v as typeof form.kind })}
+                options={KINDS.map(k => ({ value: k.id, label: k.label }))} />
+            )}
             <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
               {form.kind === 'other'
                 ? 'Suivi du coût seulement : rien n\'entre dans le stock.'

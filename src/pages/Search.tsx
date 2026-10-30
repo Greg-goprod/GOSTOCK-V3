@@ -171,13 +171,13 @@ const Search: React.FC = () => {
       <form onSubmit={submit} className="flex gap-2">
         <label htmlFor="search-q" className="sr-only">Question</label>
         <input id="search-q" type="search" value={text} onChange={e => setText(e.target.value)} autoFocus placeholder="qui a la meule 230 ?"
-          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-base text-gray-900 dark:text-gray-100" />
-        <button type="submit" aria-label="Chercher" className="min-w-[48px] rounded-md bg-primary-600 px-4 text-white"><SearchIcon size={20} /></button>
+          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-[14px] text-gray-900 dark:text-gray-100" />
+        <button type="submit" aria-label="Chercher" className="mx-btn mx-btn-primary min-w-[48px] px-4 flex items-center justify-center"><SearchIcon size={20} /></button>
       </form>
       <div className="flex flex-wrap gap-2">
         {EXAMPLES.map(ex => (
           <button key={ex} type="button" onClick={() => { setText(ex); setParams({ q: ex }); }}
-            className="rounded-full border border-gray-300 dark:border-gray-600 px-3 py-1 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+            className="rounded border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1 text-[12px] font-semibold text-gray-700 dark:text-gray-300 hover:border-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
             {ex}
           </button>
         ))}
@@ -192,7 +192,7 @@ const Search: React.FC = () => {
               <ul className="mt-1 divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 {block.lines.map((line, j) => (
                   <li key={j} className="py-1.5">
-                    <p className={line.alert ? 'font-semibold text-danger-700 dark:text-danger-300' : 'text-gray-900 dark:text-gray-100'}>{line.main}</p>
+                    <p className={line.alert ? 'font-semibold text-tone-danger' : 'text-gray-900 dark:text-gray-100'}>{line.main}</p>
                     {line.sub && <p className="text-xs text-gray-600 dark:text-gray-400">{line.sub}</p>}
                   </li>
                 ))}

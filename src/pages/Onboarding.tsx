@@ -162,7 +162,7 @@ const Onboarding: React.FC = () => {
           return (
             <li key={step.id} className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-2">
               <div className="flex items-start gap-3">
-                {ok ? <CheckCircle2 size={22} className="text-success-600 shrink-0" aria-hidden="true" /> : <Circle size={22} className="text-gray-400 shrink-0" aria-hidden="true" />}
+                {ok ? <CheckCircle2 size={22} className="text-tone-success shrink-0" aria-hidden="true" /> : <Circle size={22} className="text-gray-400 shrink-0" aria-hidden="true" />}
                 <div className="flex-1 min-w-0">
                   <h2 className="font-bold text-gray-900 dark:text-white">{index + 1}. {step.title}</h2>
                   <p className="text-sm text-gray-700 dark:text-gray-300">{step.text}</p>

@@ -124,7 +124,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
   return (
     <Modal isOpen onClose={onClose} title={`Départ de ${fullName}`} size="lg">
       <div className="space-y-4">
-        <p className={`text-sm font-semibold ${remaining ? 'text-warning-700 dark:text-warning-300' : 'text-success-700 dark:text-success-300'}`}>
+        <p className={`text-sm font-semibold ${remaining ? 'text-tone-warning' : 'text-tone-success'}`}>
           {remaining
             ? `${remaining} point${remaining > 1 ? 's' : ''} à régler avant le départ${depositDue ? ` (dont la caution de ${chf(depositDue)} à rembourser)` : ''}`
             : 'Tout est réglé : le départ peut être clôturé.'}
@@ -137,7 +137,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
               {held.map(c => (
                 <li key={c.id} className="py-1.5 flex justify-between gap-2 text-gray-800 dark:text-gray-200">
                   <span className="truncate">{label(c.equipmentId, c.instanceId)}</span>
-                  <span className={`shrink-0 text-xs ${new Date(c.dueDate).getTime() < Date.now() ? 'text-danger-700 dark:text-danger-300 font-semibold' : 'text-gray-500'}`}>
+                  <span className={`shrink-0 text-xs ${new Date(c.dueDate).getTime() < Date.now() ? 'text-tone-danger font-semibold' : 'text-gray-500'}`}>
                     depuis le {new Date(c.checkoutDate).toLocaleDateString('fr-CH')}
                   </span>
                 </li>

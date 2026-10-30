@@ -87,11 +87,11 @@ const PrevNext: React.FC<{ article: HelpArticle }> = ({ article }) => {
 
 const SearchBox: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
   <div className="relative">
-    <Search size={20} aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+    <Search size={18} aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
     <input type="text" value={value} onChange={e => onChange(e.target.value)}
       placeholder="Que veux-tu faire ? Ex. rendre un kit, réserver un véhicule, code de connexion…"
       aria-label="Chercher dans l'aide"
-      className="w-full rounded-xl border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-3.5 pl-12 pr-10 text-base text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
+      className="w-full rounded-xl border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 pl-11 pr-10 text-[14px] text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
     {value && (
       <button type="button" onClick={() => onChange('')} aria-label="Effacer la recherche"
         className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">

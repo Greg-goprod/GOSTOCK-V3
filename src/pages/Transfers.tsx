@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { findEquipmentByCode } from '../lib/scan';
 import { confirmAction, promptAction } from '../lib/confirm';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 interface TransferLine {
   id: string;
@@ -168,14 +169,8 @@ const Transfers: React.FC = () => {
         {depots.length > 1 && <Button icon={<Plus size={16} />} onClick={openCreate}>Nouveau transfert</Button>}
       </div>
 
-      <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Filtre">
-        {([['open', 'En route'], ['all', 'Historique']] as const).map(([id, label]) => (
-          <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}
-            className={`px-3 py-2 min-h-[40px] text-sm font-semibold ${filter === id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+        options={[{ value: 'open', label: 'En route' }, { value: 'all', label: 'Historique' }]} />
 
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
         {shown.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">{depots.length > 1 ? 'Aucun transfert.' : 'Un seul dépôt : créez-en un autre dans Paramètres pour transférer du matériel.'}</li>}
@@ -285,7 +280,7 @@ const Transfers: React.FC = () => {
                 const complete = l.received >= l.quantity;
                 return (
                   <li key={l.id} className="py-2 flex flex-wrap items-center gap-2">
-                    <span className={`flex-1 min-w-[10rem] ${complete ? 'text-success-700 dark:text-success-300' : 'text-gray-900 dark:text-gray-100'}`}>{complete && <PackageCheck size={14} aria-hidden="true" className="inline mr-1 -mt-0.5" />}{it?.name}</span>
+                    <span className={`flex-1 min-w-[10rem] ${complete ? 'text-tone-success' : 'text-gray-900 dark:text-gray-100'}`}>{complete && <PackageCheck size={14} aria-hidden="true" className="inline mr-1 -mt-0.5" />}{it?.name}</span>
                     <span className="font-mono text-xs text-gray-600 dark:text-gray-400">{l.received} / {l.quantity} {it?.itemType === 'consumable' ? it.unit : ''}</span>
                     {!complete && receiving.status === 'in_transit' && (
                       <Button size="sm" variant="outline" onClick={() => receiveLine(l).then(() => toast.success(`Reçu : ${it?.name}`)).catch(e => toast.error(errorMessage(e)))}>Reçu</Button>
@@ -299,7 +294,7 @@ const Transfers: React.FC = () => {
                 <Button variant="outline" onClick={() => close(receiving, false)}>Clôturer la réception</Button>
               </div>
             )}
-            {receiving.status === 'received' && <p className="text-sm font-semibold text-success-700 dark:text-success-300">Tout est arrivé : transfert réceptionné.</p>}
+            {receiving.status === 'received' && <p className="text-sm font-semibold text-tone-success">Tout est arrivé : transfert réceptionné.</p>}
           </div>
         )}
       </Modal>

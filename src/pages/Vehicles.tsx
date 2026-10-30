@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, ChevronLeft, ChevronRight, Pencil, Plus, Undo2, Wrench } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Pencil, Plus, Undo2, Wrench , Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -16,6 +16,7 @@ import { RequestOverview, Vehicle } from '../types';
 import DateInput from '../components/common/DateInput';
 import RentalBadge from '../components/common/RentalBadge';
 import { LICENSE_CATEGORIES } from '../lib/licenses';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -102,7 +103,7 @@ const Vehicles: React.FC = () => {
   };
 
   const barClass = (b: RequestOverview) =>
-    b.status === 'requested' ? 'bg-warning-500 text-white' : b.status === 'out' ? 'bg-success-600 text-white' : 'bg-primary-600 text-white';
+    b.status === 'requested' ? 'mx-fill-warning' : b.status === 'out' ? 'mx-fill-success' : 'mx-fill-accent';
 
   const toggleMaintenance = async (v: Vehicle) => {
     if (!supabase) return;
@@ -136,7 +137,7 @@ const Vehicles: React.FC = () => {
           </div>
         </div>
         {activeVehicles.length === 0 ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400">Aucun véhicule. Ajoutez-en un pour voir son planning.</p>
+          <MxEmpty icon={Truck} title="Aucun véhicule" description="Ajoutez-en un pour voir son planning." />
         ) : (
           <div className="overflow-x-auto">
             <div className="min-w-[640px] grid grid-cols-[10rem_1fr] gap-x-3 gap-y-2 items-center">
@@ -173,9 +174,9 @@ const Vehicles: React.FC = () => {
           </div>
         )}
         <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-warning-500" aria-hidden="true" />À valider</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary-600" aria-hidden="true" />Validée</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-success-600" aria-hidden="true" />Sortie</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded mx-fill-warning" aria-hidden="true" />À valider</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded mx-fill-accent" aria-hidden="true" />Validée</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded mx-fill-success" aria-hidden="true" />Sortie</span>
         </div>
       </section>
 

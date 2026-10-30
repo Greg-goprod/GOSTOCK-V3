@@ -124,14 +124,14 @@ const Maintenance: React.FC = () => {
                 <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-bold ${STATE[plan.state].className}`}>{STATE[plan.state].label}</span>
               </div>
               <div className="text-sm text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                {plan.kind === 'electrical_check' ? <Zap size={14} className="text-warning-600" aria-hidden="true" /> : <ClipboardCheck size={14} className="text-primary-600" aria-hidden="true" />}
+                {plan.kind === 'electrical_check' ? <Zap size={14} className="text-tone-warning" aria-hidden="true" /> : <ClipboardCheck size={14} className="text-primary-600" aria-hidden="true" />}
                 {plan.title}
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 {[plan.interval_months && `tous les ${plan.interval_months} mois`, plan.interval_checkouts && `toutes les ${plan.interval_checkouts} sorties`].filter(Boolean).join(' ou ')}
                 {' · '}dernier le {new Date(plan.last_done_at).toLocaleDateString('fr-CH')}
                 {' · '}prochain {nextDue(plan)}
-                {plan.blocks_checkout && <span className="block text-danger-700 dark:text-danger-300">Sorties bloquées une fois échu</span>}
+                {plan.blocks_checkout && <span className="block text-tone-danger">Sorties bloquées une fois échu</span>}
               </p>
               <div className="flex flex-wrap gap-2 mt-auto">
                 <Button size="sm" icon={<CheckCircle2 size={14} />} onClick={() => setCompleting(plan)} disabled={!plan.active}>Fait</Button>
@@ -313,7 +313,7 @@ const CompleteModal: React.FC<{ plan: PlanStatus; onClose: () => void; onDone: (
             </label>
           ))}
         </div>
-        {result === 'failed' && <p className="text-sm text-danger-700 dark:text-danger-300">L'outil passera en maintenance et ne pourra plus sortir tant qu'elle n'est pas terminée.</p>}
+        {result === 'failed' && <p className="text-sm text-tone-danger">L'outil passera en maintenance et ne pourra plus sortir tant qu'elle n'est pas terminée.</p>}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="run-date" className={labelClass}>Date</label>

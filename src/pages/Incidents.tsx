@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus , ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 export type IncidentKind = 'lost' | 'stolen' | 'broken';
 type Decision = 'pending' | 'replaced' | 'deducted' | 'insurance' | 'written_off' | 'found';
@@ -125,14 +126,14 @@ const Incidents: React.FC = () => {
       </div>
 
       {shown.length === 0 ? (
-        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-gray-700 dark:text-gray-300">Aucun incident.</div>
+        <MxEmpty icon={ShieldCheck} title="Aucun incident" />
       ) : (
         <ul className="space-y-2">
           {shown.map(i => (
             <li key={i.id} className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  <AlertTriangle size={16} className="text-danger-600 dark:text-danger-400" aria-hidden="true" />
+                  <AlertTriangle size={16} className="text-tone-danger" aria-hidden="true" />
                   {INCIDENT_KINDS[i.kind]} · {itemName(i.equipment_id)}
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -140,7 +141,7 @@ const Incidents: React.FC = () => {
                   {i.description ? ` · ${i.description}` : ''}
                 </p>
                 <p className="text-xs mt-1">
-                  <span className={i.decision === 'pending' ? 'text-warning-700 dark:text-warning-300 font-semibold' : 'text-gray-700 dark:text-gray-300'}>{DECISIONS[i.decision]}</span>
+                  <span className={i.decision === 'pending' ? 'text-tone-warning font-semibold' : 'text-gray-700 dark:text-gray-300'}>{DECISIONS[i.decision]}</span>
                   {i.decided_by ? <span className="text-gray-500"> · {i.decided_by}{i.decision_note ? ` : ${i.decision_note}` : ''}</span> : null}
                 </p>
               </div>

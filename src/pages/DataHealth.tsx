@@ -86,7 +86,7 @@ const DataHealth: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-400 mt-1">Ce qui manque ou se répète. Une base propre, ce sont des coûts justes et des alertes utiles.</p>
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-center gap-4">
-        <span className={`font-mono text-4xl font-bold ${score >= 80 ? 'text-success-600' : score >= 50 ? 'text-warning-600' : 'text-danger-600'}`}>{score} %</span>
+        <span className={`font-mono text-4xl font-bold ${score >= 80 ? 'text-tone-success' : score >= 50 ? 'text-tone-warning' : 'text-tone-danger'}`}>{score} %</span>
         <span className="text-sm text-gray-700 dark:text-gray-300">{issues.length ? `${issues.length} point${issues.length > 1 ? 's' : ''} à reprendre` : 'Tout est en ordre.'}</span>
       </div>
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
@@ -96,13 +96,13 @@ const DataHealth: React.FC = () => {
             <li key={c.id}>
               <button type="button" aria-expanded={open === c.id} disabled={ok} onClick={() => setOpen(open === c.id ? null : c.id)}
                 className="w-full px-4 py-3 flex items-center gap-3 text-left disabled:cursor-default">
-                {ok ? <CheckCircle2 size={18} className="text-success-600 shrink-0" aria-hidden="true" />
+                {ok ? <CheckCircle2 size={18} className="text-tone-success shrink-0" aria-hidden="true" />
                   : open === c.id ? <ChevronDown size={18} className="shrink-0 text-gray-500" aria-hidden="true" /> : <ChevronRight size={18} className="shrink-0 text-gray-500" aria-hidden="true" />}
                 <span className="flex-1 min-w-0">
                   <span className={`block text-sm font-medium ${ok ? 'text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{c.title}</span>
                   {!ok && <span className="block text-xs text-gray-600 dark:text-gray-400">{c.why}</span>}
                 </span>
-                <span className={`font-mono text-sm ${ok ? 'text-gray-400' : 'font-bold text-warning-700 dark:text-warning-300'}`}>{c.items.length}</span>
+                <span className={`font-mono text-sm ${ok ? 'text-gray-400' : 'font-bold text-tone-warning'}`}>{c.items.length}</span>
               </button>
               {open === c.id && !ok && (
                 <div className="px-11 pb-3 space-y-2">

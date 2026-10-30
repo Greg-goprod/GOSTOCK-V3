@@ -110,13 +110,13 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={supplier ? 'MODIFIER LE FOURNISSEUR' : 'AJOUTER UN FOURNISSEUR'}
+      title={supplier ? 'Modifier le fournisseur' : 'Ajouter un fournisseur'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
+          title="Informations de base"
           icon={<Building size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -155,8 +155,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
 
         {/* Contact */}
         <Accordion
-          title="CONTACT"
-          icon={<User size={18} className="text-success-600 dark:text-success-400" />}
+          title="Contact"
+          icon={<User size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div className="space-y-4">

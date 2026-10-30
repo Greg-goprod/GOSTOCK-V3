@@ -538,12 +538,12 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                   {data.length} lignes trouvées
                 </span>
                 {validationErrors.length === 0 ? (
-                  <div className="flex items-center text-success-600">
+                  <div className="flex items-center text-tone-success">
                     <CheckCircle size={16} className="mr-1" />
                     <span className="text-sm">Validation réussie</span>
                   </div>
                 ) : (
-                  <div className="flex items-center text-danger-600">
+                  <div className="flex items-center text-tone-danger">
                     <AlertCircle size={16} className="mr-1" />
                     <span className="text-sm">{validationErrors.length} erreurs</span>
                   </div>
@@ -553,17 +553,17 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
 
             {validationErrors.length > 0 && (
               <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
-                <h4 className="font-medium text-danger-800 dark:text-danger-200 mb-2">
+                <h4 className="font-medium text-tone-danger mb-2">
                   Erreurs de validation ({validationErrors.length})
                 </h4>
                 <div className="max-h-40 overflow-y-auto space-y-1">
                   {validationErrors.slice(0, 20).map((error, index) => (
-                    <div key={index} className="text-sm text-danger-700 dark:text-danger-300">
+                    <div key={index} className="text-sm text-tone-danger">
                       <span className="font-medium">Ligne {error.row}</span>, champ "{error.field}": {error.message}
                     </div>
                   ))}
                   {validationErrors.length > 20 && (
-                    <div className="text-sm text-danger-600 dark:text-danger-400 font-medium">
+                    <div className="text-sm text-tone-danger font-medium">
                       ... et {validationErrors.length - 20} autres erreurs
                     </div>
                   )}
@@ -678,11 +678,11 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                     Import terminé
                   </h3>
                   <div className="space-y-2">
-                    <p className="text-success-600 dark:text-success-400">
+                    <p className="text-tone-success">
                       <CheckIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.success} équipements importés avec succès
                     </p>
                     {importResults.errors > 0 && (
-                      <p className="text-danger-600 dark:text-danger-400">
+                      <p className="text-tone-danger">
                         <X className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.errors} erreurs lors de l'import
                       </p>
                     )}

@@ -127,7 +127,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
     if (lastScanStatus === 'success') return 'border-success-400 bg-success-50 dark:bg-success-900/20';
     if (lastScanStatus === 'error') return 'border-danger-400 bg-danger-50 dark:bg-danger-900/20';
     if (lastScanStatus === 'duplicate') return 'border-warning-400 bg-warning-50 dark:bg-warning-900/20';
-    return 'border-primary-300 dark:border-primary-600 bg-white dark:bg-gray-800';
+    return 'border-[color:var(--mx-input-border)] bg-[color:var(--mx-surface)]';
   };
 
   const getStatusMessage = () => {
@@ -141,12 +141,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
 
   return (
     <div className="w-full max-w-md mx-auto">
-      {/* HEADER SIMPLIFIE POUR DEBUG */}
-      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-3 mb-3">
+      {/* État du scanner */}
+      <div className="mx-tint-accent p-3 mb-3">
         <div className="flex items-center gap-2 mb-1">
           <Zap size={16} className="text-primary-600 dark:text-primary-400" />
           <h3 className="font-bold text-primary-800 dark:text-primary-200 text-sm">
-            SCANNER QR - {disableAutoFocus ? 'SUSPENDU' : 'ACTIF'}
+            Scanner QR : {disableAutoFocus ? 'suspendu' : 'actif'}
           </h3>
         </div>
         <p className="text-xs text-primary-700 dark:text-primary-300">
@@ -157,7 +157,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
         </p>
       </div>
 
-      {/* CHAMP DE SAISIE SIMPLIFIE */}
+      {/* Champ de saisie (douchette ou clavier) */}
       <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         Code scanné
       </label>
@@ -171,7 +171,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
           onKeyDown={handleKeyDown}
           placeholder="Scannez ou saisissez un code..."
           disabled={isProcessing}
-          className={`w-full px-3 py-3 text-center border-2 rounded-md font-mono text-base focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${getStatusColor()}`}
+          className={`w-full px-3 py-2.5 text-center border-[1.5px] rounded-md font-mono text-[14px] text-gray-900 dark:text-white transition-colors ${getStatusColor()}`}
           autoComplete="off"
           autoFocus={!disableAutoFocus}
         />
@@ -190,7 +190,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
         type="button"
         onClick={() => setCameraOn(on => !on)}
         aria-pressed={cameraOn}
-        className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 min-h-[44px] text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+        className="mx-btn mx-btn-secondary mt-2 w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 min-h-[44px] lg:min-h-[34px] text-[12.5px]"
       >
         <Camera size={16} aria-hidden="true" /> {cameraOn ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
       </button>
@@ -200,13 +200,13 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
         </div>
       )}
 
-      {/* MESSAGE DE STATUT SIMPLIFIE */}
+      {/* Message de statut */}
       <div className="mt-2 text-center">
         <p className={`text-sm font-medium ${
-          lastScanStatus === 'success' ? 'text-success-600' :
-          lastScanStatus === 'error' ? 'text-danger-600' :
-          lastScanStatus === 'duplicate' ? 'text-warning-600' :
-          isProcessing ? 'text-warning-600' :
+          lastScanStatus === 'success' ? 'text-tone-success' :
+          lastScanStatus === 'error' ? 'text-tone-danger' :
+          lastScanStatus === 'duplicate' ? 'text-tone-warning' :
+          isProcessing ? 'text-tone-warning' :
           'text-primary-600'
         }`}>
           {getStatusMessage()}

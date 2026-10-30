@@ -29,7 +29,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const Kpi: React.FC<{ label: string; value: string; to?: string; tone?: 'bad' | 'warn' }> = ({ label, value, to, tone }) => {
   const body = (
     <>
-      <span className={`font-mono text-2xl font-semibold tabular-nums ${tone === 'bad' ? 'text-danger-600 dark:text-danger-400' : tone === 'warn' ? 'text-warning-700 dark:text-warning-300' : 'text-gray-900 dark:text-white'}`}>{value}</span>
+      <span className={`font-mono text-2xl font-semibold tabular-nums ${tone === 'bad' ? 'text-tone-danger' : tone === 'warn' ? 'text-tone-warning' : 'text-gray-900 dark:text-white'}`}>{value}</span>
       <span className="text-sm text-gray-600 dark:text-gray-300">{label}</span>
     </>
   );
@@ -149,7 +149,7 @@ const Steering: React.FC = () => {
                   <span>{l.name}</span>
                   <span className="font-mono">
                     {l.late_returns} en retard / {l.checkouts}
-                    {l.overdue_now > 0 && <span className="text-danger-700 dark:text-danger-300"> · {l.overdue_now} en cours</span>}
+                    {l.overdue_now > 0 && <span className="text-tone-danger"> · {l.overdue_now} en cours</span>}
                   </span>
                 </li>
               ))}

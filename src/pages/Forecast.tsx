@@ -121,7 +121,7 @@ const Forecast: React.FC = () => {
               <tr key={`${r.equipment_id}:${r.depot_id}`}>
                 <td className="px-3 py-2">{r.name}<span className="block text-xs text-gray-500">{r.depot_name}{r.article_number ? ` · ${r.article_number}` : ''}</span></td>
                 <td className="px-3 py-2">{r.supplier_name ?? <span className="text-gray-500">—</span>}{r.lead_time_days ? <span className="block text-xs text-gray-500">délai {r.lead_time_days} j</span> : null}</td>
-                <td className={`px-3 py-2 text-right font-mono ${r.stock <= r.min_quantity ? 'text-danger-700 dark:text-danger-300' : ''}`}>{num(r.stock)}<span className="block text-xs text-gray-500">seuil {num(r.min_quantity)}</span></td>
+                <td className={`px-3 py-2 text-right font-mono ${r.stock <= r.min_quantity ? 'text-tone-danger' : ''}`}>{num(r.stock)}<span className="block text-xs text-gray-500">seuil {num(r.min_quantity)}</span></td>
                 <td className="px-3 py-2 text-right font-mono">{num(r.usual_30)}</td>
                 <td className="px-3 py-2 text-right font-mono">{r.planned_30 ? num(r.planned_30) : '—'}</td>
                 <td className="px-3 py-2 text-right font-mono">{r.on_order ? num(r.on_order) : '—'}</td>

@@ -199,7 +199,7 @@ const CatalogImport: React.FC<CatalogImportProps> = ({ suppliers, onSuppliersCha
                 return (
                   <li key={c.reference} className="py-1 flex justify-between gap-2 text-gray-800 dark:text-gray-200">
                     <span className="truncate"><span className="font-mono text-xs text-gray-500">{c.reference}</span> {c.name}</span>
-                    <span className={`font-mono shrink-0 ${up ? 'text-danger-700 dark:text-danger-300' : 'text-success-700 dark:text-success-300'}`}>
+                    <span className={`font-mono shrink-0 ${up ? 'text-tone-danger' : 'text-tone-success'}`}>
                       {c.oldPrice?.toFixed(2) ?? '—'} → {c.newPrice?.toFixed(2)}{pct !== null ? ` (${up ? '+' : ''}${pct.toFixed(1)} %)` : ''}
                     </span>
                   </li>
@@ -231,7 +231,7 @@ const CatalogImport: React.FC<CatalogImportProps> = ({ suppliers, onSuppliersCha
       )}
 
       <Button variant="primary" icon={<Upload size={16} />} onClick={run} disabled={!rows.length || running}>
-        {running ? 'IMPORT EN COURS…' : 'IMPORTER LE CATALOGUE'}
+        {running ? 'Import en cours…' : 'Importer le catalogue'}
       </Button>
     </div>
   );

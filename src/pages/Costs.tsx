@@ -119,7 +119,7 @@ const Costs: React.FC = () => {
       </div>
 
       {(missingRates || missingPrices) && (
-        <p className="rounded-md bg-warning-50 dark:bg-warning-900/30 text-warning-800 dark:text-warning-200 text-sm p-3">
+        <p className="rounded-md bg-warning-50 dark:bg-warning-900/30 text-tone-warning text-sm p-3">
           {missingPrices && 'Certains consommables n\'ont pas de prix d\'achat. '}
           {missingRates && 'Certains outils n\'ont pas de tarif interne par jour (à renseigner dans leur fiche). '}
           Ils comptent pour 0.

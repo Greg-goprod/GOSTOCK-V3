@@ -135,7 +135,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={maintenance ? 'MODIFIER LA MAINTENANCE' : 'NOUVELLE MAINTENANCE'}
+      title={maintenance ? 'Modifier la maintenance' : 'Nouvelle maintenance'}
       size="lg"
     >
       <div className="space-y-4">
@@ -158,7 +158,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
         {/* Informations de base */}
         <Accordion
-          title="TYPE DE MAINTENANCE/PANNE"
+          title="Type de maintenance ou de panne"
           icon={<Wrench size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -237,7 +237,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'SAUVEGARDE...' : maintenance ? 'MODIFIER' : 'CRÉER'}
+                {isLoading ? 'Enregistrement…' : maintenance ? 'Modifier' : 'Créer'}
               </Button>
             </div>
           </form>
@@ -245,8 +245,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION DE L'INTERVENTION"
-          icon={<FileText size={18} className="text-success-600 dark:text-success-400" />}
+          title="Description de l'intervention"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -266,7 +266,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
         {/* Informations techniques */}
         <Accordion
-          title="INFORMATIONS TECHNIQUES"
+          title="Informations techniques"
           icon={<User size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
@@ -305,8 +305,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
         {/* Notes */}
         <Accordion
-          title="NOTES ADDITIONNELLES"
-          icon={<FileText size={18} className="text-warning-600 dark:text-warning-400" />}
+          title="Notes additionnelles"
+          icon={<FileText size={18} className="text-tone-warning" />}
           defaultOpen={false}
         >
           <div>

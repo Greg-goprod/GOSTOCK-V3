@@ -23,6 +23,7 @@ import { DateTimeInput } from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
 import { canBorrowNow } from '../lib/people';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 type Mode = 'auto' | 'out' | 'in';
 
@@ -33,11 +34,11 @@ interface ReturnCheck {
   photos: string[];
 }
 const CONDITIONS: { id: Condition; label: string; className: string }[] = [
-  { id: 'ok', label: 'OK', className: 'bg-success-600 text-white' },
-  { id: 'dirty', label: 'Sale', className: 'bg-warning-500 text-white' },
-  { id: 'incomplete', label: 'Incomplet', className: 'bg-warning-600 text-white' },
-  { id: 'to_repair', label: 'À réparer', className: 'bg-danger-500 text-white' },
-  { id: 'broken', label: 'Cassé', className: 'bg-danger-700 text-white' },
+  { id: 'ok', label: 'OK', className: 'mx-fill-success' },
+  { id: 'dirty', label: 'Sale', className: 'mx-fill-warning' },
+  { id: 'incomplete', label: 'Incomplet', className: 'mx-fill-warning' },
+  { id: 'to_repair', label: 'À réparer', className: 'mx-fill-danger' },
+  { id: 'broken', label: 'Cassé', className: 'mx-fill-danger' },
 ];
 const DEFAULT_CHECK: ReturnCheck = { condition: 'ok', notes: '', photos: [] };
 
@@ -465,19 +466,8 @@ const Counter: React.FC = () => {
           <h1 className="mx-page-title">Comptoir</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Badge de la personne, puis les articles ou le QR d'un kit. Un article qu'elle a déjà part en retour.</p>
         </div>
-        <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Mode de scan">
-          {([['auto', 'Auto'], ['out', 'Sortie'], ['in', 'Retour']] as [Mode, string][]).map(([m, label]) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={mode === m}
-              onClick={() => setMode(m)}
-              className={`px-3 py-2 min-h-[44px] text-sm font-semibold ${mode === m ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <MxSegmented aria-label="Mode de scan" value={mode} onChange={v => setMode(v as Mode)}
+          options={[{ value: 'auto', label: 'Auto' }, { value: 'out', label: 'Sortie' }, { value: 'in', label: 'Retour' }]} />
       </div>
 
       {!online && (
@@ -535,7 +525,7 @@ const Counter: React.FC = () => {
                       op.consumables.length ? `Consommables : ${op.consumables.map(c => c.label).join(', ')}` : '',
                     ].filter(Boolean).join(' · ')}
                   </p>
-                  {op.error && <p className="text-xs text-danger-700 dark:text-danger-300">Refusé : {op.error}</p>}
+                  {op.error && <p className="text-xs text-tone-danger">Refusé : {op.error}</p>}
                 </div>
                 {op.error && (
                   <Button size="sm" variant="outline" icon={<Trash2 size={14} />} ariaLabel="Abandonner cette opération"
@@ -630,7 +620,7 @@ const Counter: React.FC = () => {
                             className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
                           <span className="truncate">{itemName(c.equipmentId)}{instance ? ` · ${instance.qrCode}` : ''}</span>
-                          <span className={`ml-auto shrink-0 text-xs ${late ? 'text-danger-700 dark:text-danger-300 font-semibold' : 'text-gray-500'}`}>
+                          <span className={`ml-auto shrink-0 text-xs ${late ? 'text-tone-danger font-semibold' : 'text-gray-500'}`}>
                             {late ? 'en retard' : `→ ${new Date(c.dueDate).toLocaleDateString('fr-CH')}`}
                           </span>
                         </label>
@@ -688,7 +678,7 @@ const Counter: React.FC = () => {
                         />
                         {online && <PhotoInput folder="retours" value={check.photos} onChange={photos => setCheck(id, { photos })} />}
                         {(check.condition === 'to_repair' || check.condition === 'broken') && (
-                          <p className="text-xs text-danger-700 dark:text-danger-300">L'outil passera en maintenance{check.condition === 'broken' ? ' et un incident sera ouvert' : ''}.</p>
+                          <p className="text-xs text-tone-danger">L'outil passera en maintenance{check.condition === 'broken' ? ' et un incident sera ouvert' : ''}.</p>
                         )}
                       </div>
                     )}
