@@ -8,6 +8,93 @@
 
 ---
 
+## 0. Contre-test des corrections — version `d401aaf`
+
+- **Date** : 30 octobre 2026, de 11:50 à 12:10 (heure de Zurich)
+- **Version testée** : `d401aaf` « Backlog : suivi des corrections du rapport de tests », avec `3037948` « Corrections du rapport de tests Chrome » et la migration `20261030000024_corrections_tests_chrome.sql`.
+- **Montage** : dossier de travail séparé (`git worktree`, détaché sur `origin/claude/loving-thompson-6zfo06`), `npm ci`, puis Vite démarré sur ce dossier (port 5175, même session de connexion).
+- **Pourquoi un dossier séparé** : le dossier principal contenait une fusion inachevée, lancée à 11:44 hors de mes actions (`MERGE_HEAD` vide, index égal à `ef13bf3`, donc sans les corrections). Je ne l'ai pas modifiée.
+
+### Verdict du contre-test : **NO-GO maintenu, pour une seule raison : P5**
+
+Les quatre défauts critiques du premier passage (P10, P9, P12, P1) sont **corrigés et vérifiés**. En revanche, P5 était classé « environnement, non reproduit » : il est maintenant **reproduit, et sa cause est identifiée**. Il est critique : revenir sur l'onglet ou sur l'application fait perdre toute fenêtre ou saisie en cours.
+
+### Résultats point par point
+
+| # | Point à retester | Résultat | Preuve |
+|---|---|---|---|
+| 1 | Sortie d'un outil à QR individuel : exemplaire attaché (P10) | ✅ | Kit : sortie `a8772f19` avec `instance_id = 3f56bde7…`, exemplaire `checked-out`. Demande DEM2610-0002 : sortie `dcee4019` avec le même `instance_id`. Aucune sortie active sans exemplaire dans toute la base. |
+| 2 | Préparation conservée après « Marquer prête » puis rechargement (P8) | ✅ | En base : `prepared: true`, `prepared_instance_ids` renseigné. Après rechargement complet : « 1 / 1 préparé(s) », « Sortir » actif. Capture `18`. |
+| 3 | Retour d'un kit par scan du QR du kit (P7) | ✅ | « Kit « TEST Kit perçage » : 1 outil en retour… », puis « TEST Badge Comptoir : 1 retour ». Sortie `returned`, exemplaire `available`. |
+| 4 | Badge d'une personne créée pendant la session (P2) | ✅ | « TEST Badge Nouveau » créé puis scanné au comptoir, sans rechargement (page chargée 141 s plus tôt) : personne sélectionnée. |
+| 5 | Départ avec une caution non rendue (P12) | ✅ | « 1 point à régler avant le départ (dont la caution de 150.00 CHF à rembourser) ». Clôture : « Clôturer le départ quand même ? La caution de 150.00 CHF n'est pas remboursée. » ; « Annuler » laisse la personne active. Après « Caution rendue » : « Tout est réglé », puis départ enregistré. Capture `21`. |
+| 6 | QR du badge sur la fiche personne (P1) | ✅ | Le QR affiche `GOMAT-USER:8d4d786e397d80c071`, identique au code en base (`user_badges`). |
+| 7 | « Pour qui » sans les personnes parties (P13) | ✅ | Les deux intérimaires partis (`active=false`) n'apparaissent plus. Le cas « accès expiré » n'a pas été testé. |
+| 8 | Supprimer un outil qui a un historique (P6) | ✅ | « TEST Perceuse comptoir a un historique de 6 sortie(s) : il ne peut pas être supprimé. Le retirer du service à la place ? Il n'apparaîtra plus comme disponible, son historique est conservé. » Capture `22`. Un outil sans historique se supprime bien (« Équipement supprimé avec succès »). |
+| 9 | Formulaire d'outil : boutons toujours visibles (P14) | ⚠️ **Partiel** | Étape 2 : section dépliée, boutons visibles (capture `23`). Étape 1 : « Suivant » n'est pas visible sans défiler, et le champ « URL de l'image » est masqué sous le pied du formulaire (capture `24`). Voir R2. |
+| 10 | Date obligatoire laissée vide (P11) | ✅ | « Ce champ est obligatoire. » en rouge sous « Accès jusqu'au ». Capture `19`. |
+| 11 | Carte : bulle d'un chantier en haut à gauche (P15) | ✅ | Bulle entièrement dans la carte, sans chevaucher les boutons de zoom. Pastille jaune `#f0b429`, cohérente avec la légende. Capture `25`. |
+| 12 | Restauration d'une sauvegarde : aucun doublon (P9) | ✅ | Sauvegarde téléchargée (8,9 Mo, 52 tables, 0 erreur). Article TEST supprimé par l'interface puis restauré avec le même identifiant. Comptes identiques avant et après (6 sorties, 3 exemplaires, 0 QR en double). Remettre les sorties alors qu'une sortie active de la sauvegarde porte sur un outil sorti : `200`, 0 ligne, plus d'erreur « Plus de stock ». Le journal de restauration n'a pas pu être lu à l'écran : voir P5. |
+| 13 | Chantier saisi sans fiche (P18) | ✅ | « Aucune fiche chantier à ce nom : le matériel ne sera rattaché à aucun chantier ni visible sur la carte. Choisissez un chantier de la liste ou créez sa fiche dans « Chantiers ». » Pas d'avertissement pour « TEST Chantier carte ». Voir R3. |
+| — | P3 : console au démarrage | ✅ | Aucun avertissement ni erreur au démarrage. |
+| — | P16 : motif de l'erreur de scan | ✅ | « Erreur de scan : Badge inconnu, accès suspendu ou personne partie ». |
+| — | P17 : jours des autres mois | ✅ | Opacité 0,4 et gris pour les jours d'octobre et de décembre dans la grille de novembre. Capture `20`. |
+| — | P4 : outil à moitié créé | Non retesté | Cas d'échec non provoqué. Une annulation à l'étape 2 ne crée rien. |
+
+### P5 — CRITIQUE (reclassé) — Revenir sur l'onglet démonte toute l'application
+
+- **Pages** : toutes.
+- **Ce que j'ai fait** : ouvert le dialogue « Supprimer l'équipement », puis enregistré pendant 30 s les événements de la page (`visibilitychange`) et l'état du DOM. Le panneau de prévisualisation repasse « visible » toutes les 6 s environ, ce qui reproduit un utilisateur qui revient sur l'onglet ou sur l'application.
+- **Attendu** : revenir sur l'onglet ne change rien à l'écran.
+- **Constaté** : à **chaque** passage en visible, l'écran « Chargement… » (`role="status"`, `AuthGate`) s'affiche 2 à 3 ms plus tard. Toute l'application est démontée : le dialogue ouvert disparaît. Elle revient environ 100 ms après, dans son état initial. Extrait du journal :
+  ```
+  8715  loader=false dialog=true
+  10087 visibilitychange vis=visible
+  10089 loader=true  dialog=false
+  10191 loader=false dialog=false
+  16086 visibilitychange vis=visible
+  16089 loader=true  dialog=false
+  ```
+- **Effets observés pendant les tests** : formulaires de demande, de chantier et d'outil fermés ; dialogue de suppression fermé avant confirmation ; journal de restauration effacé ; captures figées sur « Chargement… ». Pour un utilisateur : le panier du comptoir, une demande en cours de saisie ou une préparation non validée sont perdus dès qu'il change d'application sur son téléphone et revient. (La perte du panier du comptoir découle du mécanisme, mais n'a pas été observée directement.)
+- **Cause** :
+  - `@supabase/auth-js` 2.118 : `_onVisibilityChanged` appelle `_recoverAndRefresh`, qui émet `SIGNED_IN` pour une session valide (`GoTrueClient.js`, ligne 4155) ;
+  - `src/contexts/AuthContext.tsx` (ligne 65) : sur `SIGNED_IN`, `setLoading(true)` puis rechargement du profil ;
+  - `src/components/auth/AuthGate.tsx` (ligne 19) : `if (loading) return <… Chargement…>`, qui remplace tout l'arbre de l'application.
+- **Correction proposée** : sur `SIGNED_IN`, ne repasser en chargement que si l'utilisateur change (comparer `next?.user.id` à l'utilisateur courant) ; sinon, mettre à jour la session sans toucher à `loading`. Mieux encore : ne jamais démonter l'application pour un rechargement de profil (indicateur discret, état conservé).
+- **Capture** : `captures/26-retest-chargement-au-retour-onglet.jpg`
+
+### Défauts résiduels ou nouveaux
+
+**R1 — MINEUR — Accessibilité : dialogues cachés toujours exposés**
+- Le dialogue global « Confirmation » et les panneaux « Menu » et « Filtres » restent dans le DOM avec `role="dialog"`, hors écran (`pointer-events: none`), sans `aria-hidden` ni `inert`. Un lecteur d'écran les annonce. Le dialogue de confirmation garde aussi le texte de la dernière question posée.
+- **Correction proposée** : `aria-hidden="true"` et `inert` quand ils sont fermés, ou ne les monter qu'à l'ouverture.
+
+**R2 — MINEUR — Formulaire d'outil, étape 1 : bouton hors écran et champ masqué (suite de P14)**
+- Sur un écran de 1018 px de haut, « Suivant » est à 1215 px : il n'est pas visible sans défiler. Après défilement, le pied « collant » masque le dernier champ « URL de l'image », qui n'est plus atteignable.
+- **Cause** : le pied (`position: sticky`) est dans une section repliable `transition-all … overflow: hidden` dont la hauteur est bornée (1018 px pour 1141 px de contenu). Le pied colle au bas de cette section, pas à la fenêtre, et la fin du formulaire est coupée.
+- **Correction proposée** : sortir le pied des sections repliables (au niveau du conteneur qui défile), ou retirer la hauteur maximale de la section une fois dépliée.
+- **Captures** : `captures/24-retest-formulaire-outil-champ-image-masque.jpg`, `captures/23-retest-formulaire-outil-etape2-boutons.jpg`
+
+**R3 — MINEUR — Suggestions de chantier sans fiche**
+- La liste de suggestions de « Chantier ou service » propose aussi des noms saisis par le passé sans fiche (ici « TEST Chantier demande »). En choisir un déclenche l'avertissement de P18.
+- **Correction proposée** : ne suggérer que les chantiers qui ont une fiche, ou les distinguer dans la liste.
+
+### Données de test ajoutées au contre-test
+
+| Type | Nom | État final |
+|---|---|---|
+| Personne | TEST Badge Nouveau (`test.nouveau@example.com`) | active |
+| Personne | TEST Intérimaire Départ (`test.depart@example.com`) | partie, caution 150 CHF rendue |
+| Sortie | DEM2610-0002 (TEST Perceuse comptoir, exemplaire `GOMAT1-000001-001`) | active, retour prévu le 04.11.2026 |
+| Outil | TEST Article suppression | supprimé par l'interface, puis restauré (même identifiant) |
+| Bons | DN2610-0005 (kit) | rendu |
+
+Aucun nettoyage fait.
+
+---
+
+> Les sections 1 à 8 ci-dessous décrivent le **premier passage** (versions `6a8e96f`, puis `d1c26f8`). Leur verdict est remplacé par celui de la section 0.
+
 ## 1. Synthèse
 
 ### Verdict : **NO-GO pour une mise en production en l'état**
