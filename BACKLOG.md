@@ -50,7 +50,7 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
   « Mes demandes » ; envoyés par e-mail à la personne dès que l'envoi est configuré.
 - Appli installable (PWA) : le service worker n'est actif qu'en production (`npm run build`), pas avec
   `npm run dev`.
-- Conseiller de sécurité : 36 avertissements « SECURITY DEFINER » voulus (chaque fonction vérifie les
+- Conseiller de sécurité : 39 avertissements « SECURITY DEFINER » voulus depuis le lot 7 (chaque fonction vérifie les
   droits elle-même).
 
 ## Ajouts du 30.10 (lot 7) — points d'attention
