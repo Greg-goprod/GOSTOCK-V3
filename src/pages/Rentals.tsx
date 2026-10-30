@@ -277,6 +277,12 @@ const Rentals: React.FC = () => {
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 dark:text-gray-100">
                   {r.quantity > 1 ? `${r.quantity} × ` : ''}{r.description}{r.plate ? ` · ${r.plate}` : ''}
+                  {r.kind === 'other' && r.state !== 'returned' && (
+                    <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                      title="Suivi du coût seulement : n'entre pas dans le stock (modifie le type pour la rendre réservable)">
+                      Coût seulement
+                    </span>
+                  )}
                   {r.kind !== 'other' && inspectionOf(r, 'reception') && r.state !== 'returned' && (
                     <span className="ml-2 rounded-full bg-primary-50 dark:bg-primary-900/40 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:text-primary-200">
                       {r.kind === 'vehicle' ? 'Dans la flotte' : 'Dans le stock'}

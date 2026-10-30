@@ -79,6 +79,13 @@ const SHOTS = [
   { name: 'vehicules-1', path: '/vehicules' },
   { name: 'locations-1', path: '/locations', marks: p => [byRole(p, 'button', /Nouvelle location/), byRole(p, 'button', /^Réception$/)] },
   { name: 'locations-2', path: '/locations', act: async p => { await byRole(p, 'button', /^Réception$/).first().click(); await p.waitForTimeout(1200); } },
+  { name: 'location-engin-1', path: '/locations', act: async p => {
+      await byRole(p, 'button', /Nouvelle location/).first().click();
+      await p.waitForTimeout(900);
+      await p.getByRole('button', { name: 'Outil ou engin' }).click();
+      await p.waitForTimeout(300);
+    }, marks: p => [p.getByRole('group').filter({ hasText: 'Outil ou engin' }).first(), p.getByLabel('Permis machine exigé')] },
+  { name: 'location-engin-2', path: '/locations', marks: p => [p.getByText('Coût seulement').first(), byRole(p, 'button', /^Réception$/)] },
   { name: 'chantiers-1', path: '/chantiers', marks: p => [byRole(p, 'button', /Rapport PDF/)] },
   { name: 'carte-1', path: '/carte' },
   { name: 'planning-1', path: '/planning' },
@@ -98,7 +105,7 @@ const SHOTS = [
 ];
 
 async function newPage(browser, role, viewport) {
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: viewport === MOBILE ? 2 : 1, colorScheme: 'light', locale: 'fr-CH' });
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, colorScheme: 'light', locale: 'fr-CH' });
   const page = await ctx.newPage();
   const tables = { ...data, whoami: role === 'none' ? null : { id: 'u1', first_name: 'Marc', last_name: 'Dubois', email: 'm@d.ch', role, permissions: PERMS[role] ?? PERMS.admin, depot_ids: [] } };
   await page.route('http://mock.supabase.test/**', route => {
@@ -143,7 +150,7 @@ async function newPage(browser, role, viewport) {
       // Les messages passagers (toasts) gêneraient la capture
       await page.addStyleTag({ content: '[role="status"][aria-live], div[style*="z-index: 9999"] { display: none !important; }' });
       for (const [i, loc] of (shot.marks ? shot.marks(page) : []).entries()) await mark(page, loc, i + 1);
-      await page.screenshot({ path: path.join(OUT, `${shot.name}.jpg`), type: 'jpeg', quality: 80 });
+      await page.screenshot({ path: path.join(OUT, `${shot.name}.jpg`), type: 'jpeg', quality: 72 });
       console.log('✓', shot.name);
     } catch (error) {
       failed.push(shot.name);

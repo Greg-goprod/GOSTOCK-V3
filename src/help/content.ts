@@ -375,6 +375,25 @@ export const ARTICLES: HelpArticle[] = [
     tips: ['« + 7 jours » prolonge la location : la date limite suit sur le véhicule ou l\'outil.'],
     warnings: ['La restitution est refusée tant que l\'objet est sorti, en route ou prévu dans une demande ouverte.'],
   },
+  {
+    id: 'location-engin',
+    category: 'vehicules',
+    title: 'Pas à pas : louer un engin et le rendre réservable',
+    summary: 'Exemple d\'un chariot télescopique (Manitou) loué chez Loxam, du contrat jusqu\'à la réservation.',
+    route: '/locations',
+    steps: [
+      { text: 'Choisis d\'abord le bon type. Un engin de chantier (chariot télescopique, nacelle, mini-pelle) est un « Outil ou engin » ; un fourgon ou une voiture est un « Véhicule » ; « Autre » ne sert qu\'à suivre le coût, rien n\'entre dans le stock.', shot: 'location-engin-1' },
+      { text: 'Pour un engin, choisis le « Permis machine exigé » (ici : Chariot élévateur télescopique). Seules les personnes qui ont ce permis pourront le sortir ou le réserver.' },
+      { text: 'Enregistre. La ligne indique « Réception à faire chez le loueur » et propose le bouton « Réception ». Tant que la réception n\'est pas faite, l\'engin n\'est pas dans le stock.', shot: 'location-engin-2' },
+      { text: 'Chez le loueur, fais la « Réception » : vue d\'ensemble, plaque signalétique, compteur d\'heures, dégâts déjà présents, accessoires, signature.' },
+      { text: 'L\'engin apparaît alors dans « Outils » avec « Loué jusqu\'au … ». Pour le réserver, fais une demande et cherche-le dans l\'onglet « Outils » (un engin n\'est pas dans l\'onglet « Véhicule »).' },
+    ],
+    tips: [
+      'Une location déjà saisie en « Autre » ? Ouvre-la avec le crayon et change le type tant que la réception n\'est pas faite.',
+      'La pastille « Coût seulement » signale les locations de type « Autre » dans la liste.',
+    ],
+    warnings: ['Après la réception, le type ne peut plus changer : vérifie-le avant.'],
+  },
 
   // ---------------------------------------------------------------- Chantiers
   {
@@ -567,6 +586,7 @@ export const FAQ: { group: string; items: FaqItem[] }[] = [
     group: 'Demandes et véhicules',
     items: [
       { q: 'Ma demande est « À valider ».', a: 'Un article ou le véhicule exige l\'accord d\'un responsable. Il reçoit une alerte ; tu es prévenu de sa décision.', article: 'demandes' },
+      { q: 'Une location n\'apparaît pas quand je veux la réserver.', a: 'Deux causes possibles : la location est de type « Autre (coût seulement) » (pastille « Coût seulement »), ou la réception chez le loueur n\'a pas encore été faite (« Réception à faire »). Un engin (chariot, nacelle) se trouve dans l\'onglet « Outils » de la demande, pas « Véhicule ».', article: 'location-engin' },
       { q: 'Je ne peux pas réserver de véhicule.', a: 'Ton permis n\'est pas saisi dans « Personnes », a expiré, ou ne couvre pas la catégorie du véhicule. Le message l\'indique dès le choix du véhicule.', article: 'vehicules' },
       { q: 'Comment annuler une demande ?', a: 'Ouvre-la puis « Annuler ma demande », tant qu\'elle n\'est pas préparée. Le magasin peut aussi l\'annuler.', article: 'demandes' },
       { q: '« Libre sur la période » puis refus ?', a: 'Un objet loué n\'est disponible que jusqu\'à la fin de la location : choisis un retour avant, ou fais prolonger la location.', article: 'locations' },
