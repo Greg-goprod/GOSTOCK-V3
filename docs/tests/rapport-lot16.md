@@ -11,13 +11,15 @@
 
 ## 0. Contre-test des corrections — version `4a4fa16`
 
-- **Date** : 30 octobre 2026, de 14:55 à 16:05 (heure de Zurich)
+- **Date** : 30 octobre 2026, de 14:55 à 15:55 (heure de Zurich)
 - **Version** : `4a4fa16` « Corrections du rapport de tests du lot 16 » (`GOMAT-essai` mis à jour par `git fetch` puis `checkout` de `FETCH_HEAD`, Vite redémarré sur le port 5190). Nouvelle migration `00027_message_permis` : **appliquée sur GO-MAT** (le nouveau message de L8 sort de la base).
 - **Session** : expirée au redémarrage ; reconnexion par l'utilisateur.
 
 ### Verdict
 
-**P5, le dernier blocage, est corrigé.** R1 à R3 et L1 à L12 sont corrigés. Les rôles se comportent comme prévu (menus, pages et refus côté base). Un défaut **majeur de confidentialité** est apparu avec les rôles (N4 : un Collaborateur lit les données personnelles de tout le monde), plus trois défauts mineurs (N1 à N3). Seul P15 reste en attente : il faut le panneau du navigateur affiché.
+**P5, le dernier blocage, est corrigé.** R1 à R3 et L1 à L12 sont corrigés. Les rôles se comportent comme prévu (menus, pages et refus côté base). Un défaut **majeur de confidentialité** est apparu avec les rôles (N4 : un Collaborateur lit les données personnelles de tout le monde), plus trois défauts mineurs (N1 à N3). P15, mesuré panneau affiché, est corrigé : **tous les points du contre-test sont couverts**.
+
+**Mise en production** : plus de défaut bloquant de fonctionnement. Avant d'ouvrir l'application aux collaborateurs, corriger **N4** (confidentialité des données personnelles).
 
 ### Résultats
 
@@ -29,7 +31,7 @@
 | **R1** dialogues fermés | ✅ | « Confirmation », « Menu », « Filtres » fermés portent `aria-hidden` et `inert` ; le dialogue de confirmation est vidé après usage. |
 | **R3** suggestions de chantier | ✅ | Les options sont distinguées : « Chantier » et « Sans fiche chantier ». |
 | **P12** texte de confirmation | ✅ | « 1 point à régler avant le départ (dont la caution de 80.00 CHF à rembourser) » ; « Clôturer le départ quand même ? La caution de 80.00 CHF n'est pas remboursée. » ; « Annuler » laisse la personne active ; ensuite caution rendue et départ clôturé. |
-| **P15** panneau affiché | ⏳ En attente | Le panneau de prévisualisation était masqué pendant le test (il passe visible quelques millisecondes toutes les 6 s) : la carte ne se recentre pas. À refaire panneau affiché. |
+| **P15** panneau affiché | ✅ | Mesuré panneau affiché (`visibilityState: visible`), connecté en Responsable sur le port 5191. Pastille amenée au coin supérieur gauche (centre à 18 × 23 px), sous les boutons de zoom (10→44 × 10→74 px). À l'ouverture, la carte se recentre (pastille à 385 × 171 px) ; bulle « TEST Chantier carte · Rue du Simplon 1, 1800 Vevey · Rien sur le chantier » entièrement dans la carte (283→486 × 80→158 px), sans chevaucher les boutons de zoom. Capture `captures/L16-05-p15-bulle-coin-haut-gauche.jpg`. |
 | **L1** listes après création | ✅ | « TEST L1 Alpha » et « TEST L1 Beta » créés, sans rechargement (page chargée 15 min plus tôt) : présents dans « Pour qui » et dans « Ajouter une personne » (attestation IPAF 3b). |
 | **L2** outil loué rendu au comptoir | ✅ | Refus au scan : « « TEST Nacelle 3b » est rendu au loueur : il ne peut plus sortir » ; panier vide. |
 | **L3** « Matériel » | ✅ | « TEST Nacelle 3b · Rendu au loueur ». |
