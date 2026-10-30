@@ -21,7 +21,7 @@ const authMessage = (message: string) => {
   return message;
 };
 
-// Connexion par code à 6 chiffres envoyé par e-mail, ou par mot de passe si la personne en a choisi un
+// Connexion par code envoyé par e-mail (6 à 10 chiffres selon le réglage Supabase, 8 sur GO-MAT), ou par mot de passe si la personne en a choisi un
 const Login: React.FC = () => {
   const [step, setStep] = useState<'email' | 'code' | 'password'>('email');
   const [password, setPassword] = useState('');
@@ -170,7 +170,7 @@ const Login: React.FC = () => {
                   value={code}
                   onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                   className={`${inputClass} font-mono text-center text-2xl tracking-[0.4em]`}
-                  placeholder="••••••"
+                  placeholder="••••••••"
                 />
               </div>
               <Button type="submit" variant="primary" fullWidth disabled={busy || code.length < 6}>

@@ -4,12 +4,16 @@ Travaux commencés mais pas terminés, et dettes connues. Mis à jour le 30.10.2
 
 ## En cours (non terminé)
 
-### Notifications par e-mail — ⚠️ inachevé
+### Notifications par e-mail — ✅ en service depuis le 30.10
 
 **Choix du 30.10 :** relais SMTP propre à GO-Mat sur Fly.io (`smtp-relay/`, copie isolée de celui de Mannyx avec
 sa propre clé, limité à `mail.infomaniak.com` et au domaine d'expédition), compte d'envoi Infomaniak dédié
 (`noreply@…`). Codes de connexion : même compte saisi dans Supabase → Authentication → SMTP Settings.
-Planification : `docs/sql/planification-envoi.sql` (à coller dans l'éditeur SQL).
+Planification : `docs/sql/planification-envoi.sql` (appliquée sur GO-MAT le 30.10).
+Essais réussis le 30.10 : e-mail de test (bouton « Tester ») et code de connexion (8 chiffres), expéditeur
+« Mannyx <noreply@gc-entertainment.ch> ». Le texte des alertes dit encore « GO-Mat » (à adapter à l'intégration Mannyx).
+Reste : notifications téléphone (clés VAPID) et SMS (Twilio) si souhaités ; redéployer `send-notification-emails`
+pour que la sauvegarde mensuelle inclue `rental_inspections`.
 
 Fait :
 - Destinataires par type d'alerte et par dépôt (Paramètres → Notifications par e-mail)
