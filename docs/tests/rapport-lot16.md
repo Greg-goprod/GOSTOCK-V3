@@ -9,6 +9,76 @@
 
 ---
 
+## 0 bis. Contre-test N1 à N4 et rubrique Aide — version `48b8165`
+
+- **Date** : 30 octobre 2026, de 16:00 à 16:30 (heure de Zurich)
+- **Version** : `48b8165` « Contre-test du lot 16 : confidentialité des personnes (N4), N1 à N3 » (avec `284f356` « Rubrique Aide »). `GOMAT-essai` mis à jour (`git fetch` puis `checkout` de `FETCH_HEAD`), Vite redémarré : port 5190 (administrateur) et port 5191 (comptes de rôle). Migration `00028_confidentialite_personnes` appliquée sur GO-MAT.
+- **Comptes** : administrateur ; `test.collaborateur`, `test.magasinier`, `test.responsable` (`@example.com`, mot de passe de test non reproduit).
+
+### Verdict
+
+**N1 à N4 sont corrigés.** La rubrique Aide fonctionne (page, bouton « ? », recherche, PDF, version imprimable). Il reste un nouveau défaut sur la Recherche du Collaborateur (N5) et deux textes d'aide qui ne correspondent pas à l'application (A1, A2), plus deux remarques de rédaction (A3, A4).
+
+### Résultats
+
+| Point | Résultat | Preuve |
+|---|---|---|
+| **N4** Collaborateur : API | ✅ | `GET /rest/v1/users?select=*` → **1 fiche** (la sienne, `test.collaborateur@example.com`). Annuaire `people_directory` : 16 personnes, colonnes `id`, `first_name`, `last_name`, `department`, `active` uniquement. Autres tables cloisonnées (sorties, demandes, locations, états des lieux, attestations, EPI, journal, bons : seulement les siennes ou rien). `system_settings` reste lisible, sans donnée sensible (préfixe d'article, seuils, dates de sauvegarde). |
+| **N4** Collaborateur : noms affichés | ✅ | Recherche « matériel de TEST Badge Comptoir » → « TEST Badge Comptoir · … » ; « Mes demandes » : « TEST Rôle Collaborateur · TEST Chantier carte ». Voir aussi N5. |
+| **N4** Magasinier | ✅ | 16 fiches lisibles (e-mails compris). Modifier une personne : sans effet (0 ligne), comme avant (pas de droit `manage_people`). |
+| **N4** Responsable | ✅ | 16 fiches lisibles. Création par l'interface : « TEST ajouté(e) : connexion possible avec test.parresp@example.com » ; modification : service « TEST Service » enregistré. |
+| **N1** « Pour le compte de » | ✅ | Après le scan de TEST Badge Comptoir : 11 choix, sans « TEST Accès Expiré ». |
+| **N1** « choisissez la personne » | ✅ | Liste du comptoir sans « TEST Accès Expiré ». |
+| **N1** planche de badges | ✅ | `/badges` sans « TEST Accès Expiré ». |
+| **N2** badge au comptoir | ✅ | « Erreur de scan : Accès de TEST Accès Expiré échu le 29.10.2026 : prolongez la date « accès jusqu'au » dans « Personnes » ». |
+| **N2** création avec date passée | ✅ | « TEST Échu Création », accès jusqu'au 28.10.2026 : confirmation « La date « accès jusqu'au » (28.10.2026) est déjà passée : cette personne ne pourra ni se connecter, ni utiliser son badge, ni emprunter. Enregistrer quand même ? », puis « TEST ajouté(e), accès déjà échu ». |
+| **N3** PV en allemand | ✅ | Outil (TEST Nacelle 3b) : « Zubehör ☑ Schlüssel oder Badge ☑ Ladegerät oder Kabel ☑ Bedienungsanleitung », zone « Arbeitswerkzeug » ; plus aucun accessoire en français. Véhicule (TEST Utilitaire) : « Schlüssel, Fahrzeugausweis, Tankkarte, Pannendreieck, Warnweste, Reserverad oder Pannenset », vues « Vorne, Hinten, Linke Seite, Rechte Seite, Tacho (km und Treibstoff), Innenraum », « Treibstoff: Voll ». |
+| **N3** PV en anglais | ✅ | « Accessories ☑ Keys or badge ☑ Charger or cables ☑ User manual », zone « Working tool », aucun reste en français. |
+| **Aide** page et rail | ✅ | Bouton « Aide » en bas du rail, sous « Réglages » ; page `/aide` : « Modes d'emploi, questions fréquentes et glossaire » avec démarrage rapide par rôle et 37 articles. |
+| **Aide** bouton « ? » | ✅ | « Aide de cette page » dans l'en-tête : sur le comptoir, les demandes et les locations, il ouvre l'article de la page dans un panneau (« Le comptoir : sortir et rendre du matériel », « Les demandes : réserver, valider, préparer, sortir », « Les locations et l'état des lieux avec le loueur »). |
+| **Aide** recherche | ✅ | « caution » → « Les personnes : fiche, badge, intérimaires, départ » ; mot inconnu → « Rien trouvé. Essaie un autre mot. » |
+| **Aide** PDF | ✅ | `/aide/GO-Mat-mode-emploi.pdf` : 200, `application/pdf`, 2,96 Mo, en-tête `%PDF-1.4`. |
+| **Aide** version imprimable | ✅ | `/aide/imprimer` : « Mode d'emploi » complet (44 images), bouton « Imprimer ou enregistrer en PDF » qui lance l'impression. |
+
+### Textes d'aide comparés à l'application
+
+Articles relus : comptoir, demandes, locations, connexion, personnes, permis, véhicules. Conformes pour l'essentiel : badge puis articles, mode « Auto », états de retour, kits, hors ligne, « Pour le compte de » ; « Marquer prête », « Enregistrer comme panier », annulation par le demandeur (« Annuler ma demande » vue en Collaborateur) ; « Réception », « Restitution », « + 7 jours », refus si sorti ou demande ouverte ; code à 8 chiffres, « J'ai un mot de passe », « Accès non autorisé » ; bouton « Départ » ; alerte d'échéance 30 jours avant (migration `00016`) ; « ni sortie ni réservation » sans permis (vérifié : demande refusée avec « … exige le permis machine … ») ; « Valider le retour » du carnet véhicule ; B couvre F, G et M, CE couvre BE et C1E (vérifié avec `license_covers`).
+
+**A1 — MINEUR — Demandes : bouton « Valider la sortie » inexistant**
+- **Aide** (`/aide/demandes`, étape 5) : « Au départ, « Valider la sortie » crée le bon ».
+- **Écran réel** : la fiche d'une demande prête propose « Liste de préparation », « Annuler la demande », « Marquer prête », **« Sortir »**.
+
+**A2 — MOYEN — Personnes : « Coche seulement la catégorie de permis la plus haute » mène à des refus**
+- **Aide** (`/aide/personnes`, astuce) : « Coche seulement la catégorie de permis la plus haute : B inclut F, G et M ; CE inclut BE et C1E. »
+- **Vérifié** (`license_covers`, personne TEST avec le seul permis **CE**) : BE et C1E acceptés, mais **C, C1 et B refusés** (« … n'a pas le permis C requis », « … B requis »). En suivant l'astuce, un chauffeur poids lourd ne pourrait plus réserver un camion C ni une voiture B.
+- **À corriger** : soit l'astuce (« coche toutes les catégories du permis »), soit la règle (CE couvre aussi C, C1, C1E, BE et B ; même logique pour D et DE).
+
+**A3 — REMARQUE — Tutoiement dans l'aide, vouvoiement dans l'application**
+- Aide : « Te connecter… », « Scanne le badge… », « Choisis… ». Application : « Scannez le badge… », « Choisissez… », « Prolongez la date… ». Choisir un seul registre.
+
+**A4 — REMARQUE — Validation des demandes de véhicule**
+- `/aide/demandes`, étape 3 : « validée automatiquement, sauf si un article ou le véhicule exige l'accord d'un responsable ». À l'écran : « Une demande avec véhicule est toujours validée par un responsable. » Préciser que tout véhicule passe par la validation.
+
+### Nouveau défaut
+
+**N5 — MAJEUR — Recherche du Collaborateur : disponibilité et matériel des autres personnes faux**
+- **Page** : Recherche (`/recherche`), connecté en Collaborateur.
+- **Ce que j'ai fait** : « qui a la perceuse », puis « matériel de TEST Badge Comptoir », alors que TEST Badge Comptoir a TEST Perceuse comptoir en sortie (`available_quantity = 0` en base, et « DISPONIBLE: 0 » dans la liste Outils du même Collaborateur).
+- **Attendu** : « Chez TEST Badge Comptoir · retour 31.10.2026 », ou au minimum « non disponible » (c'est ce que voit l'administrateur).
+- **Constaté** : « TEST Perceuse comptoir · GOMAT1-000001 · **1 disponible au Dépôt principal** » et « TEST Badge Comptoir · **0 article(s) · Rien en cours** ».
+- **Cause probable** : la Recherche déduit la disponibilité et « qui a quoi » des sorties lisibles par l'utilisateur ; un Collaborateur ne lit que les siennes. Le défaut existait sans doute avant N4 (les sorties étaient déjà cloisonnées).
+- **Proposition** : s'appuyer sur `equipment.available_quantity` pour la disponibilité, et soit afficher « sorti » sans le nom, soit exposer un « qui a quoi » limité (nom et date de retour) par une fonction dédiée, comme `people_directory`.
+- **Capture** : `captures/L16-06-n5-recherche-collaborateur.jpg`
+
+### Données TEST ajoutées
+
+| Type | Nom | État final |
+|---|---|---|
+| Personnes | TEST Créé par Responsable (service « TEST Service ») ; TEST Échu Création (accès au 28.10.2026) | actives (la seconde, accès échu) |
+| Modifications | TEST L1 Beta : catégories de permis passées à CE puis rétablies ; TEST Article suppression : IPAF 3b exigé puis retiré | — |
+
+---
+
 ## 0. Contre-test des corrections — version `4a4fa16`
 
 - **Date** : 30 octobre 2026, de 14:55 à 15:55 (heure de Zurich)
