@@ -175,10 +175,10 @@ const Rentals: React.FC = () => {
           <p className="text-sm text-gray-600 dark:text-gray-300">En cours</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className={`font-mono text-2xl font-semibold ${overdue.length ? 'text-danger-600 dark:text-danger-400' : 'text-gray-900 dark:text-white'}`}>
-            {overdue.length}{overdue.length ? ` · ${chf(overdue.reduce((s, r) => s + r.overdue_cost, 0))}` : ''}
+          <p className={`font-mono text-2xl font-semibold ${overdue.length ? 'text-danger-600 dark:text-danger-400' : 'text-gray-900 dark:text-white'}`}>{overdue.length}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            En retard{overdue.length ? ` · ${chf(overdue.reduce((s, r) => s + r.overdue_cost, 0))} de plus` : ''}
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">En retard (coût du retard)</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 col-span-2 lg:col-span-1">
           <p className="font-mono text-2xl font-semibold text-gray-900 dark:text-white">{chf(open.reduce((s, r) => s + r.cost, 0))}</p>

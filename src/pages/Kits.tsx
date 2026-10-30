@@ -189,7 +189,7 @@ const Kits: React.FC = () => {
 
       {printing && (
         <div className="hidden print:block">
-          <div className="w-[90mm] border border-black p-3 text-black">
+          <div className="w-[90mm] border border-black bg-white p-3 text-black">
             <div className="flex gap-3 items-start">
               <QRCodeSVG value={kitValue(printing.code)} size={110} level="M" />
               <div className="min-w-0">

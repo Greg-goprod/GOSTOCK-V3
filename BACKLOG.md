@@ -1,6 +1,6 @@
 # GO-Mat — Backlog
 
-Travaux commencés mais pas terminés, et dettes connues. Mis à jour le 29.10.2026.
+Travaux commencés mais pas terminés, et dettes connues. Mis à jour le 30.10.2026.
 
 ## En cours (non terminé)
 
@@ -52,6 +52,23 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
   `npm run dev`.
 - Conseiller de sécurité : 36 avertissements « SECURITY DEFINER » voulus (chaque fonction vérifie les
   droits elle-même).
+
+## Ajouts du 30.10 (lot 7) — points d'attention
+
+- **Chantiers** : une sortie est rattachée à la fiche chantier par son nom (texte « Chantier ou service »).
+  Créer la fiche après coup rattache l'historique portant ce nom. Un chantier clôturé refuse les nouvelles
+  sorties (les retours restent possibles).
+- **Formations** : dès qu'un outil a une « Formation obligatoire », il ne sort plus (comptoir, bon, demande)
+  pour une personne sans formation valable jusqu'à la date de retour. Saisir les attestations **avant**
+  d'activer l'exigence sur les outils.
+- **Kits** : seuls les outils (pas les consommables). Au retour d'un kit, ce qui est retiré du panier reste
+  au nom de la personne.
+- **Comptoir hors ligne** : la copie locale (personnes, codes des badges, articles, emprunts en cours) est
+  gardée dans le navigateur de l'appareil du comptoir. Hors ligne, pas de photo au retour ni de recherche par
+  code EAN. Si le réseau coupe juste après l'enregistrement d'une sortie mais avant la réponse, la sortie
+  peut être renvoyée en double (outil sans exemplaire numéroté) : à vérifier dans « Sorties ».
+- Nouvelles alertes à cocher pour les destinataires e-mail : « Locations à rendre / en retard »,
+  « Formations à renouveler ».
 
 ## Dettes techniques
 

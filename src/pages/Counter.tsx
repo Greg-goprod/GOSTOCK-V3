@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Minus, Plus, Trash2, Undo2, UserRound, X } from 'lucide-react';
+import { Briefcase, CheckCircle2, UploadCloud, Minus, Plus, Trash2, Undo2, UserRound, WifiOff, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
@@ -10,8 +10,12 @@ import { supabase } from '../lib/supabase';
 import { useSiteSuggestions } from '../lib/sites';
 import { findEquipmentByCode } from '../lib/scan';
 import { isBadgeCode } from '../lib/badges';
+import { Kit, isKitCode, kitCodeOf } from '../lib/kits';
+import {
+  CounterOperation, NetworkDown, dropQueued, enqueue, flushQueue, isNetworkError, loadQueue, loadSnapshot, saveSnapshot, submitOperation,
+} from '../lib/offlineCounter';
 import { errorMessage, toLocalInput } from '../lib/requests';
-import { Equipment, EquipmentInstance, User } from '../types';
+import { CheckoutRecord, Equipment, EquipmentInstance, User } from '../types';
 
 type Mode = 'auto' | 'out' | 'in';
 
@@ -35,6 +39,7 @@ interface CartLine {
   equipment: Equipment;
   instance?: EquipmentInstance;
   quantity: number;
+  kitId?: string;
 }
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -55,8 +60,27 @@ const endOfWeek = () => {
 // Comptoir du magasin : badge de la personne, puis les articles ; sorties et retours en une validation
 const Counter: React.FC = () => {
   const sites = useSiteSuggestions();
-  const { users, equipment, equipmentInstances, checkouts, depots, refreshData } = useApp();
+  const app = useApp();
+  const { depots, refreshData } = app;
   const { profile } = useAuth();
+  const [online, setOnline] = useState(() => navigator.onLine);
+  const [kits, setKits] = useState<Kit[]>([]);
+  const [badges, setBadges] = useState<Record<string, string>>({});
+  const [queue, setQueue] = useState<CounterOperation[]>(loadQueue);
+  const [syncing, setSyncing] = useState(false);
+
+  // Hors ligne dès l'ouverture : on travaille sur la dernière copie locale (personnes, articles, emprunts)
+  const snapshot = useMemo(loadSnapshot, []);
+  const live = app.users.length > 0 && app.equipment.length > 0;
+  const users = live ? app.users : ((snapshot?.users ?? []) as unknown as User[]);
+  const equipment = live ? app.equipment : ((snapshot?.equipment ?? []) as unknown as Equipment[]);
+  const equipmentInstances = live ? app.equipmentInstances : ((snapshot?.instances ?? []) as unknown as EquipmentInstance[]);
+  const checkouts = useMemo(
+    () => (live ? app.checkouts : ((snapshot?.held ?? []) as unknown as CheckoutRecord[])),
+    [live, app.checkouts, snapshot]
+  );
+  const kitList = kits.length ? kits : snapshot?.kits ?? [];
+  const badgeMap = Object.keys(badges).length ? badges : snapshot?.badges ?? {};
   const [person, setPerson] = useState<User | null>(null);
   // « Pour le compte de » : un chef d'équipe retire pour quelqu'un, qui reste responsable du matériel
   const [beneficiary, setBeneficiary] = useState<User | null>(null);
@@ -81,11 +105,59 @@ const Counter: React.FC = () => {
   }, [depotId, myDepots]);
   const [pickerSearch, setPickerSearch] = useState('');
 
+  useEffect(() => {
+    supabase.from('kits').select('*, kit_items(*)').eq('active', true).then(({ data }) => { if (data) setKits(data as Kit[]); });
+    supabase.from('user_badges').select('user_id, code').then(({ data }) => {
+      if (data) setBadges(Object.fromEntries(data.map(b => [String(b.code).toLowerCase(), b.user_id as string])));
+    });
+  }, []);
+
+  // Copie locale tenue à jour tant que le réseau est là
+  useEffect(() => {
+    if (!live) return;
+    saveSnapshot({
+      savedAt: new Date().toISOString(),
+      users: app.users.map(({ id, first_name, last_name, department, active }) => ({ id, first_name, last_name, department, active })),
+      badges,
+      equipment: app.equipment.map(({ id, name, itemType, unit, articleNumber, serialNumber, availableQuantity, status }) => ({ id, name, itemType, unit, articleNumber, serialNumber, availableQuantity, status })),
+      instances: app.equipmentInstances.map(({ id, equipmentId, qrCode }) => ({ id, equipmentId, qrCode })),
+      held: app.checkouts.filter(c => c.status === 'active' || c.status === 'overdue')
+        .map(({ id, equipmentId, userId, instanceId, kitId, dueDate, status }) => ({ id, equipmentId, userId, instanceId, kitId, dueDate, status })),
+      kits,
+    });
+  }, [live, app.users, app.equipment, app.equipmentInstances, app.checkouts, kits, badges]);
+
+  const sync = async () => {
+    if (syncing || !loadQueue().length) return;
+    setSyncing(true);
+    const result = await flushQueue();
+    setQueue(loadQueue());
+    setSyncing(false);
+    if (result.sent) toast.success(`${result.sent} opération${result.sent > 1 ? 's' : ''} faite${result.sent > 1 ? 's' : ''} hors ligne envoyée${result.sent > 1 ? 's' : ''}`);
+    if (result.failed) toast.error(`${result.failed} opération${result.failed > 1 ? 's' : ''} refusée${result.failed > 1 ? 's' : ''} : voir « En attente d'envoi »`);
+    if (result.sent || result.failed) await refreshData();
+  };
+
+  useEffect(() => {
+    const up = () => { setOnline(true); sync(); };
+    const down = () => setOnline(false);
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    if (navigator.onLine) sync();
+    return () => {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const held = useMemo(
     () => (owner ? checkouts.filter(c => c.userId === owner.id && (c.status === 'active' || c.status === 'overdue')) : []),
     [checkouts, owner]
   );
   const itemName = (id: string) => equipment.find(e => e.id === id)?.name ?? 'Article';
+  const outNow = checkouts.filter(c => c.status === 'active' || c.status === 'overdue');
+  const kitName = (id?: string) => (id ? kitList.find(k => k.id === id)?.name : undefined);
 
   const reset = () => {
     setCart([]);
@@ -106,19 +178,88 @@ const Counter: React.FC = () => {
     setPickerOpen(false);
   };
 
-  const addToCart = (item: Equipment, instance?: EquipmentInstance) => {
+  const addToCart = (item: Equipment, instance?: EquipmentInstance, kitId?: string, quantity = 1) => {
     setCart(lines => {
       if (instance) {
         if (lines.some(l => l.instance?.id === instance.id)) {
           toast(`${instance.qrCode} est déjà dans le panier`);
           return lines;
         }
-        return [...lines, { key: instance.id, equipment: item, instance, quantity: 1 }];
+        return [...lines, { key: instance.id, equipment: item, instance, quantity: 1, kitId }];
       }
-      const existing = lines.find(l => l.key === item.id);
-      if (existing) return lines.map(l => (l.key === item.id ? { ...l, quantity: l.quantity + 1 } : l));
-      return [...lines, { key: item.id, equipment: item, quantity: 1 }];
+      const key = kitId ? `${kitId}:${item.id}` : item.id;
+      const existing = lines.find(l => l.key === key);
+      if (existing) return lines.map(l => (l.key === key ? { ...l, quantity: l.quantity + quantity } : l));
+      return [...lines, { key, equipment: item, quantity, kitId }];
     });
+  };
+
+  // Recherche dans la copie locale (hors ligne) : identifiant, QR d'exemplaire, n° d'article ou de série
+  const findLocal = (text: string): { item: Equipment; instance?: EquipmentInstance } | null => {
+    const code = text.trim().toLowerCase();
+    const byId = equipment.find(e => e.id === code);
+    if (byId) return { item: byId };
+    const instance = equipmentInstances.find(i => i.qrCode.toLowerCase() === code);
+    if (instance) {
+      const item = equipment.find(e => e.id === instance.equipmentId);
+      return item ? { item, instance } : null;
+    }
+    for (const field of ['articleNumber', 'serialNumber'] as const) {
+      const matches = equipment.filter(e => (e[field] ?? '').toLowerCase() === code);
+      if (matches.length === 1) return { item: matches[0] };
+    }
+    return null;
+  };
+
+  const findByCode = async (text: string) => {
+    if (navigator.onLine) {
+      try {
+        const found = await findEquipmentByCode(text);
+        if (!found) return null;
+        const item = equipment.find(e => e.id === found.equipment.id);
+        if (!item) throw new Error('Article introuvable');
+        return { item, instance: found.instance ? equipmentInstances.find(i => i.id === found.instance!.id) : undefined };
+      } catch (error) {
+        if (!isNetworkError(error)) throw error;
+      }
+    }
+    return findLocal(text);
+  };
+
+  const scanKit = (text: string) => {
+    const kit = kitList.find(k => k.code.toUpperCase() === kitCodeOf(text));
+    if (!kit) {
+      toast.error('Kit inconnu ou désactivé');
+      throw new Error('Kit inconnu');
+    }
+    const heldKit = held.filter(c => c.kitId === kit.id && !returns.includes(c.id));
+    if (mode === 'in' || (mode === 'auto' && heldKit.length)) {
+      if (!heldKit.length) {
+        toast.error(`${owner?.first_name ?? ''} n'a pas le kit « ${kit.name} »`);
+        throw new Error('Kit pas emprunté');
+      }
+      setReturns(ids => [...ids, ...heldKit.map(c => c.id)]);
+      toast(`Kit « ${kit.name} » : ${heldKit.length} outil${heldKit.length > 1 ? 's' : ''} en retour. Retirez du panier ce qui manque : cela restera à son nom.`, { duration: 7000, icon: '🧰' });
+      return;
+    }
+    const problems: string[] = [];
+    for (const line of kit.kit_items) {
+      const item = equipment.find(e => e.id === line.equipment_id);
+      if (!item) continue;
+      if (line.instance_id) {
+        const instance = equipmentInstances.find(i => i.id === line.instance_id);
+        if (!instance || outNow.some(c => c.instanceId === line.instance_id)) {
+          problems.push(`${item.name}${instance ? ` (${instance.qrCode})` : ''} déjà sorti`);
+          continue;
+        }
+        addToCart(item, instance, kit.id);
+      } else {
+        if ((item.availableQuantity ?? line.quantity) < line.quantity) problems.push(`${item.name} : ${item.availableQuantity ?? 0} sur ${line.quantity} disponibles`);
+        addToCart(item, undefined, kit.id, line.quantity);
+      }
+    }
+    if (problems.length) toast.error(`Kit « ${kit.name} » incomplet : ${problems.join(', ')}`, { duration: 8000 });
+    else toast.success(`Sortie : kit « ${kit.name} »`);
   };
 
   // Un emprunt en cours de cette personne pour cet article (et cet exemplaire), pas encore coché
@@ -127,9 +268,16 @@ const Counter: React.FC = () => {
 
   const onScan = async (text: string) => {
     if (isBadgeCode(text)) {
-      const { data, error } = await supabase.rpc('find_user_by_badge', { p_code: text });
-      if (error) throw new Error(errorMessage(error));
-      const user = users.find(u => u.id === data);
+      let userId: string | null = null;
+      const code = text.trim().replace(/^GOMAT-USER:/i, '').toLowerCase();
+      if (navigator.onLine) {
+        const { data, error } = await supabase.rpc('find_user_by_badge', { p_code: text });
+        if (error && !isNetworkError(error)) throw new Error(errorMessage(error));
+        userId = error ? badgeMap[code] ?? null : (data as string | null);
+      } else {
+        userId = badgeMap[code] ?? null;
+      }
+      const user = users.find(u => u.id === userId);
       if (!user) throw new Error('Badge inconnu ou accès suspendu');
       selectPerson(user);
       toast.success(`${user.first_name} ${user.last_name}`);
@@ -141,14 +289,14 @@ const Counter: React.FC = () => {
       throw new Error('Aucune personne');
     }
 
-    const found = await findEquipmentByCode(text);
+    if (isKitCode(text)) return scanKit(text);
+
+    const found = await findByCode(text);
     if (!found) {
       toast.error(`Code inconnu : ${text}`);
       throw new Error('Code inconnu');
     }
-    const item = equipment.find(e => e.id === found.equipment.id);
-    if (!item) throw new Error('Article introuvable');
-    const instance = found.instance ? equipmentInstances.find(i => i.id === found.instance!.id) : undefined;
+    const { item, instance } = found;
 
     if (item.itemType === 'consumable') {
       if (mode === 'in') {
@@ -177,61 +325,67 @@ const Counter: React.FC = () => {
   const consumableLines = cart.filter(l => l.equipment.itemType === 'consumable');
 
   const validate = async () => {
-    if (!person) return;
-    setBusy(true);
-    const done: string[] = [];
-    try {
-      const damaged = returns.filter(id => ['to_repair', 'broken'].includes(checkOf(id).condition)).length;
-      for (const id of returns) {
+    if (!person || !owner) return;
+    for (const id of returns) {
+      const check = checkOf(id);
+      if (check.condition !== 'ok' && check.condition !== 'dirty' && !check.notes.trim() && !check.photos.length) {
+        toast.error('Décrivez le problème (remarque ou photo) pour chaque retour non conforme');
+        return;
+      }
+    }
+    const damaged = returns.filter(id => ['to_repair', 'broken'].includes(checkOf(id).condition)).length;
+    const op: CounterOperation = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      ownerId: owner.id,
+      ownerName: `${owner.first_name} ${owner.last_name}`,
+      pickedUpBy: beneficiary ? `${person.first_name} ${person.last_name}` : null,
+      returns: returns.map(id => {
         const check = checkOf(id);
-        if (check.condition !== 'ok' && check.condition !== 'dirty' && !check.notes.trim() && !check.photos.length) {
-          throw new Error('Décrivez le problème (remarque ou photo) pour chaque retour non conforme');
-        }
-        const { error } = await supabase.rpc('return_with_check', {
-          p_checkout_id: id,
-          p_condition: check.condition,
-          p_notes: check.notes.trim() || null,
-          p_photos: check.photos,
-        });
-        if (error) throw error;
-      }
-      if (returns.length) done.push(`${returns.length} retour${returns.length > 1 ? 's' : ''}${damaged ? ` (dont ${damaged} en maintenance)` : ''}`);
+        const c = held.find(x => x.id === id);
+        return { checkoutId: id, label: c ? itemName(c.equipmentId) : 'article', condition: check.condition, notes: check.notes.trim() || null, photos: check.photos };
+      }),
+      tools: toolLines.map(l => (l.instance
+        ? { equipment_id: l.equipment.id, instance_id: l.instance.id, kit_id: l.kitId }
+        : { equipment_id: l.equipment.id, quantity: l.quantity, kit_id: l.kitId })),
+      toolLabels: toolLines.map(l => `${l.quantity > 1 ? `${l.quantity} × ` : ''}${l.equipment.name}`),
+      consumables: consumableLines.map(l => ({ equipment_id: l.equipment.id, quantity: l.quantity, label: `${l.quantity} ${l.equipment.unit ?? ''} ${l.equipment.name}`.replace(/\s+/g, ' ') })),
+      due,
+      destination: destination.trim() || null,
+      depotId,
+    };
 
-      let noteId: string | null = null;
-      if (toolLines.length) {
-        const { data, error } = await supabase.rpc('create_checkout', {
-          p_user_id: owner!.id,
-          p_due_date: new Date(due).toISOString(),
-          p_items: toolLines.map(l => (l.instance
-            ? { equipment_id: l.equipment.id, instance_id: l.instance.id }
-            : { equipment_id: l.equipment.id, quantity: l.quantity })),
-          p_notes: [destination.trim(), beneficiary ? `retiré par ${person.first_name} ${person.last_name}` : ''].filter(Boolean).join(' · ') || null,
-        });
-        if (error) throw error;
-        noteId = data?.id ?? null;
-        done.push(`bon ${data?.note_number ?? ''}`.trim());
-      }
-
-      for (const line of consumableLines) {
-        const { error } = await supabase.rpc('consume_stock', {
-          p_equipment_id: line.equipment.id,
-          p_depot_id: depotId,
-          p_quantity: line.quantity,
-          p_user_id: owner!.id,
-          p_destination: destination.trim() || null,
-          p_notes: beneficiary ? `Sortie au comptoir, retirée par ${person.first_name} ${person.last_name}` : 'Sortie au comptoir',
-          p_delivery_note_id: noteId,
-        });
-        if (error) throw error;
-      }
-      if (consumableLines.length) done.push(`${consumableLines.length} consommable${consumableLines.length > 1 ? 's' : ''}`);
-
-      toast.success(`${owner!.first_name} ${owner!.last_name} : ${done.join(', ')}`);
+    const finish = () => {
       reset();
       setPerson(null);
       setBeneficiary(null);
+    };
+    const keepForLater = (doneSteps: string[]) => {
+      enqueue(op);
+      setQueue(loadQueue());
+      toast(`Pas de réseau : ${doneSteps.length ? `fait ${doneSteps.join(', ')} ; ` : ''}le reste est gardé sur cet appareil et partira tout seul au retour du réseau.`, { icon: '📶', duration: 7000 });
+      finish();
+    };
+
+    if (!navigator.onLine) {
+      keepForLater([]);
+      return;
+    }
+
+    setBusy(true);
+    const done: string[] = [];
+    try {
+      await submitOperation(op, false, done);
+      const summary = [
+        returns.length ? `${returns.length} retour${returns.length > 1 ? 's' : ''}${damaged ? ` (dont ${damaged} en maintenance)` : ''}` : '',
+        ...done.filter(d => d.startsWith('bon')),
+        consumableLines.length ? `${consumableLines.length} consommable${consumableLines.length > 1 ? 's' : ''}` : '',
+      ].filter(Boolean);
+      toast.success(`${op.ownerName} : ${summary.join(', ')}`);
+      finish();
     } catch (error) {
-      toast.error(`${done.length ? `Fait : ${done.join(', ')}. ` : ''}Arrêt : ${errorMessage(error)}`);
+      if (error instanceof NetworkDown) keepForLater(done);
+      else toast.error(`${done.length ? `Fait : ${done.join(', ')}. ` : ''}Arrêt : ${errorMessage(error)}`);
     } finally {
       setBusy(false);
       await refreshData();
@@ -250,7 +404,7 @@ const Counter: React.FC = () => {
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Comptoir</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Badge de la personne, puis les articles. Un article qu'elle a déjà part en retour.</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Badge de la personne, puis les articles ou le QR d'un kit. Un article qu'elle a déjà part en retour.</p>
         </div>
         <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Mode de scan">
           {([['auto', 'Auto'], ['out', 'Sortie'], ['in', 'Retour']] as [Mode, string][]).map(([m, label]) => (
@@ -266,6 +420,54 @@ const Counter: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {!online && (
+        <div role="status" className="flex items-start gap-3 rounded-lg bg-warning-100 dark:bg-warning-900/40 px-4 py-3 text-sm text-warning-900 dark:text-warning-100">
+          <WifiOff size={20} aria-hidden="true" className="shrink-0 mt-0.5" />
+          <p>
+            <strong>Hors ligne.</strong> Les scans continuent avec la copie locale
+            {snapshot ? ` du ${new Date(snapshot.savedAt).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}` : ''} ;
+            chaque validation est gardée sur cet appareil et part toute seule au retour du réseau. Photos indisponibles.
+          </p>
+        </div>
+      )}
+
+      {queue.length > 0 && (
+        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-bold text-gray-900 dark:text-white">En attente d'envoi ({queue.length})</h2>
+            <Button size="sm" variant="outline" icon={<UploadCloud size={14} />} onClick={sync} loading={syncing} disabled={!online}>Envoyer maintenant</Button>
+          </div>
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            {queue.map(op => (
+              <li key={op.id} className="py-2 flex items-start gap-2">
+                <div className="flex-1 min-w-0 text-gray-800 dark:text-gray-200">
+                  <p>
+                    <span className="font-medium">{op.ownerName}</span>
+                    <span className="text-xs text-gray-500"> · {new Date(op.createdAt).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 break-words">
+                    {[
+                      op.returns.length ? `Retours : ${op.returns.map(r => r.label).join(', ')}` : '',
+                      op.toolLabels.length ? `Sorties : ${op.toolLabels.join(', ')}` : '',
+                      op.consumables.length ? `Consommables : ${op.consumables.map(c => c.label).join(', ')}` : '',
+                    ].filter(Boolean).join(' · ')}
+                  </p>
+                  {op.error && <p className="text-xs text-danger-700 dark:text-danger-300">Refusé : {op.error}</p>}
+                </div>
+                {op.error && (
+                  <Button size="sm" variant="outline" icon={<Trash2 size={14} />} ariaLabel="Abandonner cette opération"
+                    onClick={() => {
+                      if (!window.confirm('Abandonner cette opération ? Elle ne sera pas enregistrée.')) return;
+                      dropQueued(op.id);
+                      setQueue(loadQueue());
+                    }} />
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <div className="space-y-4">
@@ -373,7 +575,10 @@ const Counter: React.FC = () => {
                   <li key={id} className="rounded-md bg-info-50 dark:bg-info-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 space-y-2">
                     <div className="flex items-center gap-2">
                       <Undo2 size={16} aria-hidden="true" className="text-info-600 dark:text-info-100" />
-                      <span className="flex-1 truncate">Retour · {c ? itemName(c.equipmentId) : 'Article'}</span>
+                      <span className="flex-1 truncate">
+                        Retour · {c ? itemName(c.equipmentId) : 'Article'}
+                        {c?.kitId && <span className="ml-1 inline-flex items-center gap-1 text-xs text-primary-700 dark:text-primary-300"><Briefcase size={12} aria-hidden="true" />{kitName(c.kitId)}</span>}
+                      </span>
                       <Button size="sm" variant="outline" icon={<X size={14} />} ariaLabel="Retirer du panier" onClick={() => setReturns(ids => ids.filter(x => x !== id))} />
                     </div>
                     <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="État au retour">
@@ -399,7 +604,7 @@ const Counter: React.FC = () => {
                           aria-label="Remarque sur l'état"
                           className={inputClass}
                         />
-                        <PhotoInput folder="retours" value={check.photos} onChange={photos => setCheck(id, { photos })} />
+                        {online && <PhotoInput folder="retours" value={check.photos} onChange={photos => setCheck(id, { photos })} />}
                         {(check.condition === 'to_repair' || check.condition === 'broken') && (
                           <p className="text-xs text-danger-700 dark:text-danger-300">L'outil passera en maintenance{check.condition === 'broken' ? ' et un incident sera ouvert' : ''}.</p>
                         )}
@@ -418,6 +623,7 @@ const Counter: React.FC = () => {
                   <span className="flex-1 min-w-0 truncate">
                     Sortie · {line.equipment.name}
                     {line.instance ? <span className="font-mono text-xs"> · {line.instance.qrCode}</span> : null}
+                    {line.kitId && <span className="ml-1 inline-flex items-center gap-1 text-xs text-primary-700 dark:text-primary-300"><Briefcase size={12} aria-hidden="true" />{kitName(line.kitId)}</span>}
                   </span>
                   {!line.instance && (
                     <span className="inline-flex items-center gap-1">
