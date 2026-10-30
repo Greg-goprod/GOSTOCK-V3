@@ -25,6 +25,7 @@ export interface Equipment {
   dailyRate?: number;
   requiresApproval?: boolean;
   depotId?: string;
+  requiredTrainingId?: string;
 }
 
 export interface Depot {
@@ -183,6 +184,7 @@ export interface CheckoutRecord {
   status: 'active' | 'returned' | 'overdue' | 'lost';
   notes?: string;
   instanceId?: string; // Pour les équipements individuels
+  kitId?: string; // Sorti avec un kit
 }
 
 export interface Notification {

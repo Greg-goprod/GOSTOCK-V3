@@ -1,0 +1,282 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { HardHat, Lock, Pencil, Plus, Unlock } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Button from '../components/common/Button';
+import Modal from '../components/common/Modal';
+import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { errorMessage } from '../lib/requests';
+
+interface Site {
+  id: string;
+  name: string;
+  client: string | null;
+  address: string | null;
+  manager_id: string | null;
+  start_on: string | null;
+  end_on: string | null;
+  budget: number | null;
+  status: 'open' | 'closed';
+  closed_at: string | null;
+  notes: string | null;
+  consumables_cost: number;
+  tools_cost: number;
+  rentals_cost: number;
+  spent: number;
+  open_tools: number;
+  open_rentals: number;
+}
+
+interface OpenItem {
+  site_id: string;
+  kind: 'tool' | 'rental';
+  item_id: string;
+  label: string;
+  holder: string | null;
+  due_at: string;
+  late: boolean;
+}
+
+const EMPTY = { name: '', client: '', address: '', manager_id: '', start_on: '', end_on: '', budget: '', notes: '' };
+
+const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
+const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+const chf = (n: number) => n.toLocaleString('fr-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 });
+const date = (d: string | null) => (d ? new Date(d).toLocaleDateString('fr-CH') : '…');
+
+// Fiches chantier : budget matériel, dépenses, et ce qui doit revenir à la clôture
+const Sites: React.FC = () => {
+  const { users } = useApp();
+  const { can } = useAuth();
+  const canEdit = can('manage_stock') || can('approve');
+  const [sites, setSites] = useState<Site[]>([]);
+  const [openItems, setOpenItems] = useState<OpenItem[]>([]);
+  const [filter, setFilter] = useState<'open' | 'closed' | 'all'>('open');
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Site | 'new' | null>(null);
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    const [s, o] = await Promise.all([
+      supabase.from('site_summary').select('*').order('name'),
+      supabase.from('site_open_items').select('*').order('due_at'),
+    ]);
+    if (s.error) toast.error(errorMessage(s.error));
+    setSites(((s.data || []) as Site[]).map(x => ({
+      ...x,
+      budget: x.budget === null ? null : Number(x.budget),
+      consumables_cost: Number(x.consumables_cost), tools_cost: Number(x.tools_cost), rentals_cost: Number(x.rentals_cost),
+      spent: Number(x.spent), open_tools: Number(x.open_tools), open_rentals: Number(x.open_rentals),
+    })));
+    setOpenItems((o.data || []) as OpenItem[]);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const shown = useMemo(() => sites
+    .filter(s => filter === 'all' || s.status === filter)
+    .filter(s => `${s.name} ${s.client ?? ''} ${s.address ?? ''}`.toLowerCase().includes(search.toLowerCase())), [sites, filter, search]);
+
+  const openForm = (site: Site | 'new') => {
+    setEditing(site);
+    setForm(site === 'new' ? EMPTY : {
+      name: site.name, client: site.client ?? '', address: site.address ?? '', manager_id: site.manager_id ?? '',
+      start_on: site.start_on ?? '', end_on: site.end_on ?? '', budget: site.budget === null ? '' : String(site.budget), notes: site.notes ?? '',
+    });
+  };
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    const row = {
+      name: form.name.trim().replace(/\s+/g, ' '),
+      client: form.client.trim() || null,
+      address: form.address.trim() || null,
+      manager_id: form.manager_id || null,
+      start_on: form.start_on || null,
+      end_on: form.end_on || null,
+      budget: form.budget === '' ? null : Number(form.budget),
+      notes: form.notes.trim() || null,
+    };
+    const { error } = editing === 'new'
+      ? await supabase.from('sites').insert(row)
+      : await supabase.from('sites').update(row).eq('id', (editing as Site).id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.code === '23505' ? 'Un chantier porte déjà ce nom' : errorMessage(error));
+      return;
+    }
+    toast.success(editing === 'new' ? 'Chantier créé : les sorties déjà faites sous ce nom y sont rattachées' : 'Chantier enregistré');
+    setEditing(null);
+    await load();
+  };
+
+  const toggleClosed = async (site: Site) => {
+    const closing = site.status === 'open';
+    const remaining = site.open_tools + site.open_rentals;
+    if (closing && remaining > 0
+      && !window.confirm(`${remaining} élément${remaining > 1 ? 's sont' : ' est'} encore sur ce chantier. Clôturer quand même ? La liste reste visible ici.`)) return;
+    const { error } = await supabase.from('sites')
+      .update({ status: closing ? 'closed' : 'open', closed_at: closing ? new Date().toISOString() : null })
+      .eq('id', site.id);
+    if (error) return toast.error(errorMessage(error));
+    toast.success(closing ? 'Chantier clôturé : plus aucune sortie possible' : 'Chantier rouvert');
+    await load();
+  };
+
+  const name = (id: string | null) => {
+    const u = users.find(x => x.id === id);
+    return u ? `${u.first_name} ${u.last_name}` : null;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Chantiers</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Budget matériel, dépenses et matériel encore sur place. Les sorties sont rattachées par le nom du chantier.</p>
+        </div>
+        {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau chantier</Button>}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nom, client, adresse…" aria-label="Rechercher un chantier" className={`${inputClass} max-w-xs`} />
+        <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Filtre">
+          {([['open', 'En cours'], ['closed', 'Clôturés'], ['all', 'Tous']] as const).map(([id, label]) => (
+            <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}
+              className={`px-3 py-2 min-h-[40px] text-sm font-semibold ${filter === id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {shown.length === 0 && (
+        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-sm text-gray-600 dark:text-gray-400">
+          {sites.length === 0 ? 'Aucun chantier. Créez-en un : le nom doit être celui saisi dans « Chantier ou service » lors des sorties.' : 'Aucun chantier dans ce filtre.'}
+        </div>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {shown.map(site => {
+          const items = openItems.filter(i => i.site_id === site.id);
+          const ratio = site.budget ? site.spent / site.budget : 0;
+          const remaining = site.open_tools + site.open_rentals;
+          return (
+            <article key={site.id} className={`rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3 min-w-0 ${site.status === 'closed' ? 'opacity-80' : ''}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <HardHat size={18} aria-hidden="true" className="shrink-0 text-primary-600" />
+                    <span className="truncate">{site.name}</span>
+                    {site.status === 'closed' && <span className="rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:text-gray-300">Clôturé</span>}
+                  </h2>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {[site.client, site.address, name(site.manager_id) && `resp. ${name(site.manager_id)}`].filter(Boolean).join(' · ') || 'Aucun détail'}
+                  </p>
+                  {(site.start_on || site.end_on) && <p className="text-xs text-gray-600 dark:text-gray-400">Du {date(site.start_on)} au {date(site.end_on)}</p>}
+                </div>
+                {canEdit && (
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier ${site.name}`} onClick={() => openForm(site)} />
+                    <Button size="sm" variant="outline" icon={site.status === 'open' ? <Lock size={14} /> : <Unlock size={14} />} onClick={() => toggleClosed(site)}>
+                      {site.status === 'open' ? 'Clôturer' : 'Rouvrir'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex justify-between text-sm text-gray-800 dark:text-gray-200">
+                  <span>Dépensé <strong className="font-mono">{chf(site.spent)}</strong></span>
+                  {site.budget !== null && <span className="font-mono">budget {chf(site.budget)}</span>}
+                </div>
+                {site.budget !== null && site.budget > 0 && (
+                  <div className="mt-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(ratio * 100)} aria-label="Part du budget dépensée">
+                    <div className={`h-full ${ratio > 1 ? 'bg-danger-600' : ratio > 0.8 ? 'bg-warning-500' : 'bg-success-600'}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
+                  </div>
+                )}
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Consommables {chf(site.consumables_cost)} · Outils {chf(site.tools_cost)} · Locations {chf(site.rentals_cost)}
+                  {ratio > 1 && <span className="text-danger-700 dark:text-danger-300 font-semibold"> · budget dépassé</span>}
+                </p>
+              </div>
+
+              <div>
+                <button type="button" aria-expanded={expanded === site.id} onClick={() => setExpanded(expanded === site.id ? null : site.id)}
+                  className={`text-sm font-semibold ${remaining ? 'text-warning-700 dark:text-warning-300' : 'text-gray-600 dark:text-gray-400'} hover:underline`}>
+                  {remaining ? `${remaining} élément${remaining > 1 ? 's' : ''} encore sur le chantier` : 'Rien sur le chantier'}
+                </button>
+                {expanded === site.id && items.length > 0 && (
+                  <ul className="mt-2 divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    {items.map(i => (
+                      <li key={i.item_id} className="py-1.5 flex justify-between gap-2 text-gray-800 dark:text-gray-200">
+                        <span className="truncate">{i.kind === 'rental' ? 'Location · ' : ''}{i.label}{i.holder ? <span className="text-gray-500"> · {i.holder}</span> : null}</span>
+                        <span className={`shrink-0 text-xs ${i.late ? 'text-danger-700 dark:text-danger-300 font-semibold' : 'text-gray-500'}`}>
+                          {i.late ? 'en retard' : `→ ${new Date(i.due_at).toLocaleDateString('fr-CH')}`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {site.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{site.notes}</p>}
+            </article>
+          );
+        })}
+      </div>
+
+      <Modal isOpen={editing !== null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Nouveau chantier' : 'Modifier le chantier'}>
+        <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label htmlFor="site-name" className={labelClass}>Nom du chantier</label>
+            <input id="site-name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputClass} required placeholder="ex. Chantier Renens" />
+            <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Le même nom que dans « Chantier ou service » : les sorties s'y rattachent toutes seules.</p>
+          </div>
+          <div>
+            <label htmlFor="site-client" className={labelClass}>Client</label>
+            <input id="site-client" value={form.client} onChange={e => setForm({ ...form, client: e.target.value })} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="site-manager" className={labelClass}>Responsable</label>
+            <select id="site-manager" value={form.manager_id} onChange={e => setForm({ ...form, manager_id: e.target.value })} className={inputClass}>
+              <option value="">—</option>
+              {users.filter(u => u.active !== false).map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="site-address" className={labelClass}>Adresse</label>
+            <input id="site-address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="site-start" className={labelClass}>Début</label>
+            <input id="site-start" type="date" value={form.start_on} onChange={e => setForm({ ...form, start_on: e.target.value })} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="site-end" className={labelClass}>Fin prévue</label>
+            <input id="site-end" type="date" value={form.end_on} min={form.start_on || undefined} onChange={e => setForm({ ...form, end_on: e.target.value })} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="site-budget" className={labelClass}>Budget matériel (CHF)</label>
+            <input id="site-budget" type="number" min={0} step="1" inputMode="decimal" value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })} className={`${inputClass} font-mono`} />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="site-notes" className={labelClass}>Remarques</label>
+            <textarea id="site-notes" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className={inputClass} />
+          </div>
+          <div className="sm:col-span-2 flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setEditing(null)}>Annuler</Button>
+            <Button type="submit" loading={saving}>Enregistrer</Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default Sites;

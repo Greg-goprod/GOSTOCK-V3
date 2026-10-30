@@ -46,7 +46,8 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   requiresApproval: Boolean(item.requires_approval),
   dailyRate: item.daily_rate === null || item.daily_rate === undefined ? undefined : Number(item.daily_rate),
   purchasePrice: item.purchase_price === null || item.purchase_price === undefined ? undefined : Number(item.purchase_price),
-  depotId: item.depot_id
+  depotId: item.depot_id,
+  requiredTrainingId: item.required_training_id ?? undefined
 });
 
 // Nombre de jours avant l'échéance à partir duquel un retour est signalé
@@ -106,6 +107,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.rpc('check_maintenance_due'),
         supabase.rpc('check_due_reminders'),
         supabase.rpc('check_monthly_report'),
+        supabase.rpc('check_training_rental_deadlines'),
       ]);
 
       // Charger toutes les données nécessaires en parallèle
@@ -327,7 +329,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         returnDate: c.return_date,
         status: c.status,
         notes: c.notes,
-        instanceId: c.instance_id
+        instanceId: c.instance_id,
+        kitId: c.kit_id ?? undefined
       })));
       
     } catch (error) {

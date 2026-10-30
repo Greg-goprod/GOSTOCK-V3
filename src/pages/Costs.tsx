@@ -8,7 +8,7 @@ import { downloadWorkbook } from '../lib/excel';
 import { errorMessage } from '../lib/requests';
 
 interface CostLine {
-  source: 'consumable' | 'tool';
+  source: 'consumable' | 'tool' | 'rental';
   site: string;
   at: string;
   equipment_id: string;
@@ -57,20 +57,22 @@ const Costs: React.FC = () => {
   }, [month]);
 
   const bySite = useMemo(() => {
-    const map = new Map<string, { consumables: number; tools: number; lines: CostLine[] }>();
+    const map = new Map<string, { consumables: number; tools: number; rentals: number; lines: CostLine[] }>();
     for (const l of lines) {
       // « Chantier Renens » et « chantier renens » : même chantier
       const key = l.site.trim().replace(/\s+/g, ' ');
       const k = [...map.keys()].find(x => x.toLowerCase() === key.toLowerCase()) ?? key;
-      const t = map.get(k) ?? { consumables: 0, tools: 0, lines: [] };
-      if (l.source === 'consumable') t.consumables += l.amount; else t.tools += l.amount;
+      const t = map.get(k) ?? { consumables: 0, tools: 0, rentals: 0, lines: [] };
+      if (l.source === 'consumable') t.consumables += l.amount;
+      else if (l.source === 'rental') t.rentals += l.amount;
+      else t.tools += l.amount;
       t.lines.push(l);
       map.set(k, t);
     }
-    return [...map.entries()].sort((a, b) => (b[1].consumables + b[1].tools) - (a[1].consumables + a[1].tools));
+    return [...map.entries()].sort((a, b) => (b[1].consumables + b[1].tools + b[1].rentals) - (a[1].consumables + a[1].tools + a[1].rentals));
   }, [lines]);
 
-  const total = bySite.reduce((s, [, t]) => s + t.consumables + t.tools, 0);
+  const total = bySite.reduce((s, [, t]) => s + t.consumables + t.tools + t.rentals, 0);
   const userName = (id: string | null) => {
     const u = users.find(x => x.id === id);
     return u ? `${u.first_name} ${u.last_name}` : '';
@@ -81,13 +83,13 @@ const Costs: React.FC = () => {
   const exportExcel = () => downloadWorkbook([
     {
       name: 'Par chantier',
-      rows: bySite.map(([site, t]) => ({ Chantier: site, Consommables: Number(t.consumables.toFixed(2)), Outils: Number(t.tools.toFixed(2)), Total: Number((t.consumables + t.tools).toFixed(2)) })),
-      widths: [30, 15, 15, 15],
+      rows: bySite.map(([site, t]) => ({ Chantier: site, Consommables: Number(t.consumables.toFixed(2)), Outils: Number(t.tools.toFixed(2)), Locations: Number(t.rentals.toFixed(2)), Total: Number((t.consumables + t.tools + t.rentals).toFixed(2)) })),
+      widths: [30, 15, 15, 15, 15],
     },
     {
       name: 'Détail',
       rows: lines.map(l => ({
-        Date: new Date(l.at).toLocaleDateString('fr-CH'), Chantier: l.site, Type: l.source === 'tool' ? 'Outil' : 'Consommable',
+        Date: new Date(l.at).toLocaleDateString('fr-CH'), Chantier: l.site, Type: l.source === 'tool' ? 'Outil' : l.source === 'rental' ? 'Location' : 'Consommable',
         Article: l.name, Quantité: l.quantity, Unité: l.unit ?? '', 'Prix unitaire': l.unit_cost, Montant: Number(l.amount.toFixed(2)), Personne: userName(l.user_id),
       })),
       widths: [12, 25, 12, 30, 10, 8, 12, 12, 20],
@@ -136,6 +138,7 @@ const Costs: React.FC = () => {
                 <th className="px-4 py-2">Chantier</th>
                 <th className="px-4 py-2 text-right">Consommables</th>
                 <th className="px-4 py-2 text-right">Outils</th>
+                <th className="px-4 py-2 text-right">Locations</th>
                 <th className="px-4 py-2 text-right">Total</th>
               </tr>
             </thead>
@@ -148,12 +151,13 @@ const Costs: React.FC = () => {
                     </td>
                     <td className="px-4 py-2 text-right font-mono">{chf(t.consumables)}</td>
                     <td className="px-4 py-2 text-right font-mono">{chf(t.tools)}</td>
-                    <td className="px-4 py-2 text-right font-mono font-semibold">{chf(t.consumables + t.tools)}</td>
+                    <td className="px-4 py-2 text-right font-mono">{chf(t.rentals)}</td>
+                    <td className="px-4 py-2 text-right font-mono font-semibold">{chf(t.consumables + t.tools + t.rentals)}</td>
                   </tr>
                   {openSite === site && t.lines.map((l, i) => (
                     <tr key={`${site}-${i}`} className="bg-gray-50/60 dark:bg-gray-900/40 text-xs text-gray-700 dark:text-gray-300">
                       <td className="px-6 py-1.5">{new Date(l.at).toLocaleDateString('fr-CH')} · {l.name} · {userName(l.user_id)}</td>
-                      <td className="px-4 py-1.5 text-right font-mono" colSpan={2}>{l.quantity.toLocaleString('fr-CH')} {l.unit ?? ''} × {chf(l.unit_cost)}</td>
+                      <td className="px-4 py-1.5 text-right font-mono" colSpan={3}>{l.quantity.toLocaleString('fr-CH')} {l.unit ?? ''} × {chf(l.unit_cost)}</td>
                       <td className="px-4 py-1.5 text-right font-mono">{chf(l.amount)}</td>
                     </tr>
                   ))}
@@ -162,7 +166,7 @@ const Costs: React.FC = () => {
             </tbody>
             <tfoot>
               <tr className="border-t border-gray-200 dark:border-gray-700 font-bold text-gray-900 dark:text-gray-100">
-                <td className="px-4 py-2" colSpan={3}>Total du mois</td>
+                <td className="px-4 py-2" colSpan={4}>Total du mois</td>
                 <td className="px-4 py-2 text-right font-mono">{chf(total)}</td>
               </tr>
             </tfoot>

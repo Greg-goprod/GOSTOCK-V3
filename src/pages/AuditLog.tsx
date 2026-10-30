@@ -31,6 +31,12 @@ const TABLES: Record<string, string> = {
   incidents: 'Perte / casse',
   notification_recipients: 'Destinataire d\'alertes',
   consumable_stock: 'Stock / seuil',
+  sites: 'Chantier',
+  kits: 'Kit',
+  kit_items: 'Contenu de kit',
+  trainings: 'Formation',
+  user_trainings: 'Formation d\'une personne',
+  rentals: 'Location',
 };
 
 const ACTIONS = { insert: 'Création', update: 'Modification', delete: 'Suppression' };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
+import TrainingSelect from '../trainings/TrainingSelect';
 
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -43,7 +44,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
     available_quantity: 1,
     requires_approval: false,
     purchase_price: '',
-    daily_rate: ''
+    daily_rate: '',
+    required_training_id: ''
   });
   const [quantityData, setQuantityData] = useState({
     qrType: 'individual' as 'individual' | 'batch',
@@ -71,7 +73,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         available_quantity: equipment.availableQuantity || 1,
         requires_approval: Boolean(equipment.requiresApproval),
         purchase_price: equipment.purchasePrice === undefined ? '' : String(equipment.purchasePrice),
-        daily_rate: equipment.dailyRate === undefined ? '' : String(equipment.dailyRate)
+        daily_rate: equipment.dailyRate === undefined ? '' : String(equipment.dailyRate),
+        required_training_id: equipment.requiredTrainingId ?? ''
       });
       setCurrentQrType(equipment.qrType || 'individual');
       setOriginalQuantity(equipment.totalQuantity || 1);
@@ -295,6 +298,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         serial_number: formData.serial_number?.trim() || null,
         purchase_price: formData.purchase_price === '' ? null : Number(formData.purchase_price),
         daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
+        required_training_id: formData.required_training_id || null,
         qr_type: quantityData.qrType,
         total_quantity: quantityData.totalQuantity
       };
@@ -572,6 +576,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
                   <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Coût imputé au chantier par jour de sortie</p>
                 </div>
+                <TrainingSelect id="eq-training" value={formData.required_training_id}
+                  onChange={required_training_id => setFormData(prev => ({ ...prev, required_training_id }))} />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

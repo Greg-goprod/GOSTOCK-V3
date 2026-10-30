@@ -25,7 +25,11 @@ import {
   ShoppingCart,
   Coins,
   Gauge,
-  History
+  History,
+  HardHat,
+  Briefcase,
+  GraduationCap,
+  KeyRound
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -41,10 +45,13 @@ const NAV_SECTIONS = [
     { to: '/scan', label: 'Scanner', icon: ScanLine },
     { to: '/badge', label: 'Mon badge', icon: Contact },
     { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
+    { to: '/chantiers', label: 'Chantiers', icon: HardHat },
   ] },
   { title: 'Stock', links: [
     { to: '/equipment', label: 'Outils', icon: Package },
     { to: '/consommables', label: 'Consommables', icon: Droplets },
+    { to: '/kits', label: 'Kits', icon: Briefcase },
+    { to: '/locations', label: 'Locations', icon: KeyRound },
     { to: '/inventaire', label: 'Inventaire', icon: ListChecks },
     { to: '/commande', label: 'À commander', icon: ClipboardList },
     { to: '/commandes', label: 'Commandes', icon: ShoppingCart },
@@ -63,6 +70,7 @@ const NAV_SECTIONS = [
   ] },
   { title: 'Réglages', links: [
     { to: '/users', label: 'Personnes', icon: Users },
+    { to: '/formations', label: 'Formations', icon: GraduationCap },
     { to: '/journal', label: 'Journal', icon: History },
     { to: '/settings', label: 'Paramètres', icon: Settings },
   ] },

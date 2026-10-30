@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Category, Supplier, EquipmentGroup, EquipmentSubgroup, Equipment } from '../../types';
 import { Package, Copy, QrCode, Info, Folder as FolderIcon, FolderOpen as FolderOpenIcon, Tag as TagIcon } from 'lucide-react';
+import TrainingSelect from '../trainings/TrainingSelect';
 
 interface AddEquipmentModalProps {
   isOpen?: boolean;
@@ -39,6 +40,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     requires_approval: false,
     purchase_price: '',
     daily_rate: '',
+    required_training_id: '',
     catalog_product_id: '',
     ean: '',
     supplier_reference: ''
@@ -75,6 +77,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         requires_approval: false,
         purchase_price: '',
         daily_rate: '',
+        required_training_id: '',
         catalog_product_id: '',
         ean: '',
         supplier_reference: ''
@@ -223,6 +226,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         serial_number: formData.serial_number.trim() || null,
         purchase_price: formData.purchase_price === '' ? null : Number(formData.purchase_price),
         daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
+        required_training_id: formData.required_training_id || null,
         catalog_product_id: formData.catalog_product_id || null,
         ean: formData.ean || null,
         supplier_reference: formData.supplier_reference || null,
@@ -580,6 +584,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
                   <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Coût imputé au chantier par jour de sortie</p>
                 </div>
+                <TrainingSelect id="eq-training" value={formData.required_training_id}
+                  onChange={required_training_id => setFormData(prev => ({ ...prev, required_training_id }))} />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
