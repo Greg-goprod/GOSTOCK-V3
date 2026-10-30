@@ -158,7 +158,7 @@ const Home: React.FC = () => {
           <section className="mx-card p-5" aria-labelledby="home-mine">
             <div className="flex justify-between items-baseline gap-2 mb-2">
               <h2 id="home-mine" className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{`Mon matériel (${mine.length})`}</h2>
-              <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1">Détail <ArrowRight size={14} aria-hidden="true" /></Link>
+              <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Détail <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
             {loadingAppData ? <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p> : mine.length === 0 ? (
               <p className="text-sm text-gray-600 dark:text-gray-400">Tu n'as rien en prêt.</p>
@@ -181,7 +181,7 @@ const Home: React.FC = () => {
           <section className="mx-card p-5" aria-labelledby="home-requests">
             <div className="flex justify-between items-baseline gap-2 mb-2">
               <h2 id="home-requests" className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">Mes demandes en cours</h2>
-              <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1">Toutes <ArrowRight size={14} aria-hidden="true" /></Link>
+              <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Toutes <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
             {myRequests.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucune demande en cours.</p> : (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">

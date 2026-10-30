@@ -50,12 +50,12 @@ const SHOTS = [
   { name: 'badge-1', path: '/badge', role: 'user', viewport: MOBILE },
   { name: 'pilotage-1', path: '/pilotage' },
   { name: 'demarrage-1', path: '/demarrage' },
-  { name: 'comptoir-1', path: '/comptoir', marks: p => [p.getByPlaceholder(/Scannez ou saisissez un code/i), byRole(p, 'button', 'choisissez la personne')] },
+  { name: 'comptoir-1', path: '/comptoir', marks: p => [p.getByPlaceholder(/Scanne ou saisis un code/i), byRole(p, 'button', 'choisis la personne')] },
   { name: 'comptoir-2', path: '/comptoir', act: async p => {
-      await byRole(p, 'button', 'choisissez la personne').click();
+      await byRole(p, 'button', 'choisis la personne').click();
       await p.locator('li > button', { hasText: 'Marc Dubois' }).first().click();
       await p.waitForTimeout(600);
-      const input = p.getByPlaceholder(/Scannez ou saisissez un code/i);
+      const input = p.getByPlaceholder(/Scanne ou saisis un code/i);
       for (const code of ['HT30-01', 'GOMAT-0042']) { await input.fill(code); await input.press('Enter'); await p.waitForTimeout(900); }
     }, marks: p => [p.getByRole('radiogroup', { name: 'Mode de scan' }), byRole(p, 'button', /^Valider$/)] },
   { name: 'demandes-1', path: '/demandes', marks: p => [byRole(p, 'button', /Nouvelle demande/)] },

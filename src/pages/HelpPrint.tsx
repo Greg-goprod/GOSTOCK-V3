@@ -29,7 +29,7 @@ const HelpPrint: React.FC = () => {
 
       <header className="mb-10 border-b-2 border-gray-900 pb-6">
         <p className="text-sm font-semibold uppercase tracking-wide text-primary-700">GO-Mat · gestion du matériel</p>
-        <h1 className="mt-2 text-4xl font-bold">Mode d'emploi</h1>
+        <h1 className="mx-page-title mt-2" style={{ color: '#101114' }}>Mode d'emploi</h1>
         <p className="mt-2 text-gray-700">Chaque manipulation pas à pas, par métier, questions fréquentes et glossaire.</p>
         <ol className="mt-6 columns-2 text-sm">
           {CATEGORIES.map(c => <li key={c.id}>{c.label}</li>)}

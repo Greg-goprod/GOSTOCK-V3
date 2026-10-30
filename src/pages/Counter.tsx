@@ -564,7 +564,7 @@ const Counter: React.FC = () => {
             ) : (
               <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                 <UserRound size={22} aria-hidden="true" />
-                <p className="text-sm">Scanne le badge (carte ou téléphone), ou <button type="button" className="text-primary-700 dark:text-primary-300 underline" onClick={() => setPickerOpen(o => !o)}>choisis la personne</button>.</p>
+                <p className="text-sm">Scanne le badge (carte ou téléphone), ou <button type="button" className="text-primary-700 dark:text-primary-300 underline inline-flex items-center min-h-[44px] lg:min-h-0 px-1" onClick={() => setPickerOpen(o => !o)}>choisis la personne</button>.</p>
               </div>
             )}
 

@@ -28,9 +28,9 @@ const startOfToday = () => {
 };
 
 const Column: React.FC<{ title: string; count: number; tone: string; children: React.ReactNode }> = ({ title, count, tone, children }) => (
-  <section className="flex flex-col min-h-0 rounded-2xl bg-gray-900 border border-gray-800 p-5">
+  <section className="flex flex-col min-h-0 rounded-md bg-[#14161d] border-[1.5px] border-[#282c37] p-5">
     <h2 className="flex items-baseline justify-between gap-3 mb-4">
-      <span className="text-2xl font-black uppercase tracking-tight text-white">{title}</span>
+      <span className="text-2xl font-bold tracking-[-0.02em] text-[#f5f6f8]">{title}</span>
       <span className={`font-mono text-5xl font-bold ${tone}`}>{count}</span>
     </h2>
     <ul className="space-y-2 overflow-hidden">{children}</ul>
@@ -38,9 +38,9 @@ const Column: React.FC<{ title: string; count: number; tone: string; children: R
 );
 
 const Row: React.FC<{ main: string; sub: string; alert?: boolean }> = ({ main, sub, alert }) => (
-  <li className={`rounded-lg px-4 py-3 ${alert ? 'bg-danger-900/60' : 'bg-gray-800'}`}>
-    <p className="text-xl font-semibold text-white truncate">{main}</p>
-    <p className={`text-base truncate ${alert ? 'text-danger-200' : 'text-gray-300'}`}>{sub}</p>
+  <li className={`rounded-md border-[1.5px] px-4 py-3 ${alert ? 'border-[#ff6b6b]/50 bg-[#ff6b6b]/10' : 'border-[#282c37] bg-[#191c24]'}`}>
+    <p className="text-xl font-semibold text-[#f5f6f8] truncate">{main}</p>
+    <p className={`text-base truncate ${alert ? 'text-[#ff8f8f]' : 'text-[#b4b7c0]'}`}>{sub}</p>
   </li>
 );
 
@@ -75,7 +75,7 @@ const WallScreen: React.FC = () => {
           key: x.id, label: `Transfert ${x.number} (${(x.transfer_lines as unknown[]).length} lignes)`, when: `envoyé le ${new Date(x.sent_at).toLocaleDateString('fr-CH')}`,
         })),
         ...(l.data || []).filter(x => (!depotId || !x.depot_id || x.depot_id === depotId) && x.end_on <= soon).map(x => ({
-          key: x.id, label: `Location à rendre : ${x.description}`, when: `${x.rental_company} · ${x.state === 'overdue' ? 'EN RETARD' : `le ${new Date(x.end_on).toLocaleDateString('fr-CH')}`}`,
+          key: x.id, label: `Location à rendre : ${x.description}`, when: `${x.rental_company} · ${x.state === 'overdue' ? 'en retard' : `le ${new Date(x.end_on).toLocaleDateString('fr-CH')}`}`,
         })),
       ]);
     };
@@ -106,12 +106,15 @@ const WallScreen: React.FC = () => {
   const time = (iso: string) => new Date(iso).toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 flex flex-col gap-5">
+    <div className="min-h-screen bg-[#0f1015] text-[#f5f6f8] p-6 flex flex-col gap-5">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link to="/" className="text-3xl font-black tracking-tight text-primary-300">GO-Mat</Link>
+          <div>
+            <Link to="/" className="mb-1 block text-sm font-bold uppercase tracking-[0.14em] text-[#82858f]">GO-Mat</Link>
+            <h1 className="text-[44px] font-bold leading-[0.95] tracking-[-0.05em] text-[#f5f6f8]">Écran du dépôt</h1>
+          </div>
           <select value={depotId} onChange={e => setParams(e.target.value ? { depot: e.target.value } : {})} aria-label="Dépôt"
-            className="rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-lg text-white">
+            className="rounded-md bg-[#191c24] border-[1.5px] border-[#2e323f] px-3 py-2 text-lg font-medium text-[#f5f6f8]">
             <option value="">Tous les dépôts</option>
             {depots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
@@ -120,7 +123,7 @@ const WallScreen: React.FC = () => {
           <p className="font-mono text-5xl font-bold">{new Date(now).toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' })}</p>
           {/* Le navigateur exige un clic pour passer en plein écran (pas d'activation automatique) */}
           <button type="button" onClick={toggleFullscreen}
-            className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-base text-gray-200 hover:bg-gray-800"
+            className="flex items-center gap-2 rounded border-[1.5px] border-[#282c37] bg-[#14161d] px-3.5 py-2 text-base font-semibold text-[#f5f6f8] hover:border-[#8672f5] hover:text-[#a99bf8]"
             aria-label={fullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
             {fullscreen ? <Minimize size={20} aria-hidden="true" /> : <Maximize size={20} aria-hidden="true" />}
             <span>{fullscreen ? 'Quitter le plein écran' : 'Plein écran'}</span>

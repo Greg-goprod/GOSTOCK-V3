@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { MxSegmented } from '../components/mx/MxSegmented';
@@ -168,10 +168,14 @@ const Planning: React.FC = () => {
             {rows.map(row => (
               <React.Fragment key={row.id}>
                 <tr className="border-t border-gray-200 dark:border-gray-700">
-                  <th scope="row" className="sticky left-0 z-10 bg-white dark:bg-gray-800 px-3 py-1.5 text-left font-normal">
-                    <button type="button" aria-expanded={open === row.id} onClick={() => setOpen(open === row.id ? null : row.id)} className="text-left">
+                  <th scope="row" className="sticky left-0 z-10 bg-white dark:bg-gray-800 px-3 py-1.5 text-left font-normal"
+                    style={open === row.id ? { boxShadow: 'inset 3px 0 0 var(--mx-accent)' } : undefined}>
+                    <button type="button" aria-expanded={open === row.id} onClick={() => setOpen(open === row.id ? null : row.id)} className="flex items-center gap-2 text-left">
+                      <ChevronDown size={16} aria-hidden="true" className={`shrink-0 transition-transform ${open === row.id ? 'rotate-180 text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
+                      <span className="min-w-0">
                       <span className="block font-medium text-gray-900 dark:text-gray-100 truncate max-w-[14rem]">{row.name}</span>
                       <span className="block text-xs text-gray-500 font-mono">{row.sub}{row.capacity > 1 ? ` · ${row.capacity} ex.` : ''}</span>
+                      </span>
                     </button>
                   </th>
                   {row.perDay.map((d, i) => (

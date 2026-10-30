@@ -24,7 +24,7 @@ const Block: React.FC<{ title: string; to: string; link: string; children: React
   <section className="mx-card p-5 flex flex-col gap-3 min-w-0">
     <div className="flex justify-between items-baseline gap-2">
       <h2 className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{title}</h2>
-      <Link to={to} className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1">
+      <Link to={to} className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">
         {link} <ArrowRight size={14} aria-hidden="true" />
       </Link>
     </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 
@@ -89,27 +89,31 @@ const DataHealth: React.FC = () => {
         <span className={`font-mono text-4xl font-bold ${score >= 80 ? 'text-tone-success' : score >= 50 ? 'text-tone-warning' : 'text-tone-danger'}`}>{score} %</span>
         <span className="text-sm text-gray-700 dark:text-gray-300">{issues.length ? `${issues.length} point${issues.length > 1 ? 's' : ''} à reprendre` : 'Tout est en ordre.'}</span>
       </div>
-      <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
+      {/* Accordéon séparé de la charte (#s-accordion) : un contrôle par élément */}
+      <ul>
         {checks.map(c => {
           const ok = c.items.length === 0;
+          const isOpen = open === c.id && !ok;
           return (
-            <li key={c.id}>
-              <button type="button" aria-expanded={open === c.id} disabled={ok} onClick={() => setOpen(open === c.id ? null : c.id)}
-                className="w-full px-4 py-3 flex items-center gap-3 text-left disabled:cursor-default">
-                {ok ? <CheckCircle2 size={18} className="text-tone-success shrink-0" aria-hidden="true" />
-                  : open === c.id ? <ChevronDown size={18} className="shrink-0 text-gray-500" aria-hidden="true" /> : <ChevronRight size={18} className="shrink-0 text-gray-500" aria-hidden="true" />}
-                <span className="flex-1 min-w-0">
-                  <span className={`block text-sm font-medium ${ok ? 'text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{c.title}</span>
-                  {!ok && <span className="block text-xs text-gray-600 dark:text-gray-400">{c.why}</span>}
+            <li key={c.id} className={`mx-acc ${isOpen ? 'is-open' : ''}`}>
+              <button type="button" aria-expanded={isOpen} disabled={ok} onClick={() => setOpen(open === c.id ? null : c.id)}
+                className="mx-acc-head disabled:cursor-default">
+                <span className="mx-acc-icon" aria-hidden="true">
+                  {ok ? <CheckCircle2 size={18} className="text-tone-success" style={{ color: 'var(--mx-tone-text-success)' }} /> : <AlertTriangle size={18} />}
+                </span>
+                <span className="mx-acc-title">
+                  <span className={`block ${ok ? 'text-gray-500 dark:text-gray-400 font-semibold' : ''}`}>{c.title}</span>
+                  {!ok && <span className="block text-xs font-normal text-gray-600 dark:text-gray-400">{c.why}</span>}
                 </span>
                 <span className={`font-mono text-sm ${ok ? 'text-gray-400' : 'font-bold text-tone-warning'}`}>{c.items.length}</span>
+                {!ok && <ChevronDown size={18} className="mx-acc-chevron" aria-hidden="true" />}
               </button>
-              {open === c.id && !ok && (
-                <div className="px-11 pb-3 space-y-2">
+              {isOpen && (
+                <div className="mx-acc-body space-y-2">
                   <ul className="text-sm text-gray-800 dark:text-gray-200 max-h-64 overflow-y-auto space-y-0.5">
                     {c.items.slice(0, 200).map((item, i) => <li key={i}>{item}</li>)}
                   </ul>
-                  <Link to={c.to} className="inline-block text-sm text-primary-700 dark:text-primary-300 underline">Corriger →</Link>
+                  <Link to={c.to} className="mx-btn mx-btn-secondary inline-flex items-center px-3.5 py-1.5 text-[12.5px]">Corriger →</Link>
                 </div>
               )}
             </li>

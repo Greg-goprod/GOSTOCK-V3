@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download } from 'lucide-react';
+import { ChevronDown, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import { useApp } from '../contexts/AppContext';
@@ -146,8 +146,11 @@ const Costs: React.FC = () => {
               {bySite.map(([site, t]) => (
                 <React.Fragment key={site}>
                   <tr className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40" onClick={() => setOpenSite(openSite === site ? null : site)}>
-                    <td className="px-4 py-2 font-medium">
-                      <button type="button" aria-expanded={openSite === site} className="text-left">{site}</button>
+                    <td className="px-4 py-2 font-medium" style={openSite === site ? { boxShadow: 'inset 3px 0 0 var(--mx-accent)' } : undefined}>
+                      <button type="button" aria-expanded={openSite === site} className="flex items-center gap-2 text-left">
+                        <ChevronDown size={16} aria-hidden="true" className={`shrink-0 transition-transform ${openSite === site ? 'rotate-180 text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
+                        {site}
+                      </button>
                     </td>
                     <td className="px-4 py-2 text-right font-mono">{chf(t.consumables)}</td>
                     <td className="px-4 py-2 text-right font-mono">{chf(t.tools)}</td>
