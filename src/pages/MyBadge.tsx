@@ -10,6 +10,7 @@ import { errorMessage } from '../lib/requests';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLE_LABELS } from '../lib/roles';
 import { useInstallPrompt } from '../lib/install';
+import PushToggle from '../components/common/PushToggle';
 
 // Badge personnel à présenter au magasin, depuis le téléphone ou imprimé
 const MyBadge: React.FC = () => {
@@ -75,6 +76,7 @@ const MyBadge: React.FC = () => {
         <p className="text-xs text-gray-600 dark:text-gray-400 text-center max-w-xs">
           Astuce : montez la luminosité de l'écran. Sur téléphone, ajoutez GO-Mat à l'écran d'accueil pour ouvrir votre badge d'un geste.
         </p>
+        <PushToggle />
         {canInstall && (
           <Button icon={<Download size={16} />} onClick={install}>Installer GO-Mat sur ce téléphone</Button>
         )}

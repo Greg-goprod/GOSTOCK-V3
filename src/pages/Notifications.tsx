@@ -5,6 +5,7 @@ import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import { supabase } from '../lib/supabase';
+import PushToggle from '../components/common/PushToggle';
 import { AlertTriangle, Clock, CheckCircle, Bell, Calendar, Package, User, Trash2, BookMarked as MarkAsRead } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -314,6 +315,7 @@ const Notifications: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Événements spéciaux, rappels de retard et mouvements de matériel
           </p>
+          <div className="mt-2"><PushToggle /></div>
         </div>
         
         <div className="flex flex-wrap gap-3">

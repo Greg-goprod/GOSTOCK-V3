@@ -39,6 +39,9 @@ const Labels: React.FC = () => {
   const [search, setSearch] = useState('');
   const [copies, setCopies] = useState<Record<string, number>>({});
   const [startAt, setStartAt] = useState(1);
+  // QR avec lien : qui trouve l'outil voit à qui le rendre ; le scanner du magasin lit le même QR
+  const [withLink, setWithLink] = useState(false);
+  const qrValue = (value: string) => (withLink ? `${window.location.origin}/t/${encodeURIComponent(value)}` : value);
   const format = FORMATS.find(f => f.id === formatId)!;
   const perPage = format.cols * format.rows;
 
@@ -115,6 +118,10 @@ const Labels: React.FC = () => {
             </div>
           )}
           <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un article…" aria-label="Rechercher un article" className={`${inputClass} flex-1 min-w-[220px]`} />
+          <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200 min-h-[40px]">
+            <input type="checkbox" checked={withLink} onChange={e => setWithLink(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-primary-600" />
+            QR « outil trouvé » (lien vers le contact de l'entreprise)
+          </label>
         </div>
 
         <ul className="divide-y divide-gray-200 dark:divide-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow">
@@ -175,7 +182,7 @@ const Labels: React.FC = () => {
                     padding: '1.5mm',
                   }}
                 >
-                  <QRCodeSVG value={label.value} size={128} level="M" style={{ width: `${qrSize}mm`, height: `${qrSize}mm`, flexShrink: 0 }} />
+                  <QRCodeSVG value={qrValue(label.value)} size={128} level="M" style={{ width: `${qrSize}mm`, height: `${qrSize}mm`, flexShrink: 0 }} />
                   <div className="min-w-0 leading-tight">
                     <p className="font-bold" style={{ fontSize: format.label.height < 25 ? '6pt' : '8pt' }}>{label.title}</p>
                     <p className="font-mono" style={{ fontSize: format.label.height < 25 ? '5.5pt' : '7pt' }}>{label.code}</p>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Briefcase, CheckCircle2, UploadCloud, Minus, Plus, Trash2, Undo2, UserRound, WifiOff, X } from 'lucide-react';
+import { Briefcase, CheckCircle2, Inbox, UploadCloud, Minus, Plus, Trash2, Undo2, UserRound, WifiOff, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
@@ -11,7 +11,7 @@ import { useSiteSuggestions } from '../lib/sites';
 import { useSignatureRule } from '../lib/signature';
 import Modal from '../components/common/Modal';
 import SignaturePad from '../components/common/SignaturePad';
-import { findEquipmentByCode } from '../lib/scan';
+import { findEquipmentByCode, normalizeScannedCode } from '../lib/scan';
 import { isBadgeCode } from '../lib/badges';
 import { Kit, isKitCode, kitCodeOf } from '../lib/kits';
 import {
@@ -166,6 +166,7 @@ const Counter: React.FC = () => {
   );
   const itemName = (id: string) => equipment.find(e => e.id === id)?.name ?? 'Article';
   const outNow = checkouts.filter(c => c.status === 'active' || c.status === 'overdue');
+  const droppedBox = outNow.filter(c => c.droppedAt);
   const kitName = (id?: string) => (id ? kitList.find(k => k.id === id)?.name : undefined);
 
   const reset = () => {
@@ -205,7 +206,7 @@ const Counter: React.FC = () => {
 
   // Recherche dans la copie locale (hors ligne) : identifiant, QR d'exemplaire, n° d'article ou de série
   const findLocal = (text: string): { item: Equipment; instance?: EquipmentInstance } | null => {
-    const code = text.trim().toLowerCase();
+    const code = normalizeScannedCode(text).toLowerCase();
     const byId = equipment.find(e => e.id === code);
     if (byId) return { item: byId };
     const instance = equipmentInstances.find(i => i.qrCode.toLowerCase() === code);
@@ -453,6 +454,29 @@ const Counter: React.FC = () => {
             {snapshot ? ` du ${new Date(snapshot.savedAt).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}` : ''} ;
             chaque validation est gardée sur cet appareil et part toute seule au retour du réseau. Photos indisponibles.
           </p>
+        </div>
+      )}
+
+      {!person && droppedBox.length > 0 && (
+        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-2">
+          <h2 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Inbox size={18} aria-hidden="true" /> Boîte de retour ({droppedBox.length})</h2>
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            {[...new Set(droppedBox.map(c => c.userId))].map(userId => {
+              const u = users.find(x => x.id === userId);
+              const items = droppedBox.filter(c => c.userId === userId);
+              return (
+                <li key={userId} className="py-2 flex flex-wrap items-center gap-2">
+                  <span className="flex-1 min-w-[12rem] text-gray-800 dark:text-gray-200">
+                    <span className="font-medium">{u ? `${u.first_name} ${u.last_name}` : 'Personne'}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400"> · {items.map(c => itemName(c.equipmentId)).join(', ')} · déposé le {new Date(items[0].droppedAt!).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                  </span>
+                  {u && (
+                    <Button size="sm" variant="outline" onClick={() => { selectPerson(u); setReturns(items.map(c => c.id)); }}>Contrôler</Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 

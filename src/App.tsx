@@ -35,6 +35,9 @@ import Planning from './pages/Planning';
 import Ppe from './pages/Ppe';
 import Workshop from './pages/Workshop';
 import Accounting from './pages/Accounting';
+import SelfService from './pages/SelfService';
+import WallScreen from './pages/WallScreen';
+import Search from './pages/Search';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 
@@ -43,6 +46,13 @@ const Guard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { can } = useAuth();
   const { pathname } = useLocation();
   return canAccess(pathname, can) ? <MainLayout>{children}</MainLayout> : <Navigate to="/" replace />;
+};
+
+// Écran mural : plein écran, sans menu
+const BareGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { can } = useAuth();
+  const { pathname } = useLocation();
+  return canAccess(pathname, can) ? <>{children}</> : <Navigate to="/" replace />;
 };
 
 // L'accueil « Aujourd'hui » sert le magasin ; un collaborateur arrive sur ses demandes
@@ -88,6 +98,9 @@ function App() {
         <Route path="/epi" element={<Guard><Ppe /></Guard>} />
         <Route path="/atelier" element={<Guard><Workshop /></Guard>} />
         <Route path="/comptabilite" element={<Guard><Accounting /></Guard>} />
+        <Route path="/libre-service" element={<Guard><SelfService /></Guard>} />
+        <Route path="/recherche" element={<Guard><Search /></Guard>} />
+        <Route path="/ecran" element={<BareGuard><WallScreen /></BareGuard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

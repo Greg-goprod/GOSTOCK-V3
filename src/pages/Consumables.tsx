@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Minus, Plus, Search, Settings2, Warehouse } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Hand, Minus, Plus, Search, Settings2, Warehouse } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import CatalogPicker from '../components/common/CatalogPicker';
+import SelfServiceModal from '../components/settings/SelfServiceModal';
 import { CatalogProduct, catalogDescription } from '../lib/catalog';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
@@ -57,6 +58,7 @@ const Consumables: React.FC = () => {
   const [showNew, setShowNew] = useState(false);
   const [showDepots, setShowDepots] = useState(false);
   const [showThresholds, setShowThresholds] = useState(false);
+  const [showSelfService, setShowSelfService] = useState(false);
 
   const consumables = useMemo(
     () => equipment.filter(eq => eq.itemType === 'consumable'),
@@ -123,6 +125,7 @@ const Consumables: React.FC = () => {
             <ClipboardList size={16} aria-hidden="true" />
             Feuille de commande
           </Link>
+          <Button variant="outline" icon={<Hand size={16} />} onClick={() => setShowSelfService(true)}>Libre-service</Button>
           <Button variant="outline" icon={<Settings2 size={16} />} onClick={() => setShowThresholds(true)}>
             Seuils proposés
           </Button>
@@ -270,6 +273,7 @@ const Consumables: React.FC = () => {
 
       {showDepots && <DepotsModal onClose={() => setShowDepots(false)} />}
       {showThresholds && <ThresholdsModal onClose={() => setShowThresholds(false)} />}
+      {showSelfService && <SelfServiceModal onClose={() => setShowSelfService(false)} />}
 
     </div>
   );

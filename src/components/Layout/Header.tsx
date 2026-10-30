@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Sun, Moon, ScanLine, LogOut, Contact, Download } from 'lucide-react';
+import { Bell, Sun, Moon, ScanLine, LogOut, Contact, Download, Search } from 'lucide-react';
 import { useInstallPrompt } from '../../lib/install';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -68,6 +68,8 @@ const Header: React.FC = () => {
     if (path.startsWith('/epi')) return 'EPI';
     if (path.startsWith('/atelier')) return 'ATELIER';
     if (path.startsWith('/comptabilite')) return 'COMPTABILITÉ';
+    if (path.startsWith('/libre-service')) return 'LIBRE-SERVICE';
+    if (path.startsWith('/recherche')) return 'RECHERCHE';
     
     return 'GO-MAT';
   };
@@ -88,6 +90,14 @@ const Header: React.FC = () => {
         >
           <ScanLine size={22} />
         </Link>}
+
+        <Link
+          to="/recherche"
+          aria-label="Rechercher : qui a quoi, où, quel chantier"
+          className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 p-1.5 flex items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <Search size={20} />
+        </Link>
 
         <button
           type="button"

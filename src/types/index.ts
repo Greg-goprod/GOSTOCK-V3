@@ -197,6 +197,7 @@ export interface CheckoutRecord {
   notes?: string;
   instanceId?: string; // Pour les équipements individuels
   kitId?: string; // Sorti avec un kit
+  droppedAt?: string; // Déposé dans la boîte de retour, à contrôler
 }
 
 export interface Notification {

@@ -9,6 +9,17 @@ export interface ScannedEquipment {
   instance?: { id: string; instance_number: number; qr_code: string; status: string };
 }
 
+// Étiquette « outil trouvé » : le QR contient un lien https://…/t/<code> ; on garde le code
+export const normalizeScannedCode = (text: string) => {
+  const match = text.trim().match(/\/t\/([^/?#\s]+)/);
+  if (!match) return text.trim();
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+};
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Comparaison exacte insensible à la casse : on neutralise les jokers de ILIKE
@@ -23,7 +34,7 @@ const exactILike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 export async function findEquipmentByCode(rawCode: string): Promise<ScannedEquipment | null> {
   if (!supabase) throw new Error('Supabase client not initialized');
 
-  const code = rawCode.trim();
+  const code = normalizeScannedCode(rawCode);
   if (!code) return null;
 
   if (UUID_PATTERN.test(code)) {

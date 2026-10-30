@@ -35,7 +35,10 @@ import {
   CalendarRange,
   ShieldCheck,
   Hammer,
-  Calculator
+  Calculator,
+  Hand,
+  MonitorPlay,
+  Search as SearchIcon
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -50,6 +53,8 @@ const NAV_SECTIONS = [
     { to: '/demandes', label: 'Demandes', icon: Inbox },
     { to: '/scan', label: 'Scanner', icon: ScanLine },
     { to: '/badge', label: 'Mon badge', icon: Contact },
+    { to: '/libre-service', label: 'Libre-service', icon: Hand },
+    { to: '/recherche', label: 'Recherche', icon: SearchIcon },
     { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
     { to: '/chantiers', label: 'Chantiers', icon: HardHat },
     { to: '/planning', label: 'Planning', icon: CalendarRange },
@@ -75,6 +80,7 @@ const NAV_SECTIONS = [
     { to: '/atelier', label: 'Atelier', icon: Hammer },
     { to: '/incidents', label: 'Pertes et casse', icon: AlertTriangle },
     { to: '/pilotage', label: 'Pilotage', icon: Gauge },
+    { to: '/ecran', label: 'Écran du magasin', icon: MonitorPlay },
     { to: '/couts', label: 'Coûts', icon: Coins },
     { to: '/comptabilite', label: 'Comptabilité', icon: Calculator },
     { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },

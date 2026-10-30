@@ -3,10 +3,18 @@ import { LogOut, ShieldAlert } from 'lucide-react';
 import Button from '../common/Button';
 import Login from '../../pages/Login';
 import { useAuth } from '../../contexts/AuthContext';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import FoundTool from '../../pages/FoundTool';
 
 // L'application (et le chargement de ses données) ne démarre qu'avec une personne reconnue
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, profile, loading, signOut } = useAuth();
+  const { pathname } = useLocation();
+
+  // Seule page sans connexion : le contact à qui trouve un outil oublié
+  if (pathname.startsWith('/t/')) {
+    return <Routes><Route path="/t/:code" element={<FoundTool />} /></Routes>;
+  }
 
   if (loading) {
     return (

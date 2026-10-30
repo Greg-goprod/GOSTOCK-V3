@@ -11,6 +11,8 @@ import MaintenanceTypeModal from '../components/settings/MaintenanceTypeModal';
 import ExcelImport from '../components/import/ExcelImport';
 import CatalogImport from '../components/import/CatalogImport';
 import NotificationRecipients from '../components/settings/NotificationRecipients';
+import FoundToolSettings from '../components/settings/FoundToolSettings';
+import BackupPanel from '../components/settings/BackupPanel';
 import { SystemResetModal } from '../components/admin/SystemResetModal';
 import { useApp } from '../contexts/AppContext';
 import { 
@@ -31,8 +33,7 @@ import {
   Sun,
   Truck,
   Building2,
-  AlertTriangle as AlertTriangleIcon 
-} from 'lucide-react';
+  AlertTriangle as AlertTriangleIcon, PhoneCall, HardDriveDownload } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
@@ -548,6 +549,32 @@ const Settings: React.FC = () => {
         <Card>
           <div className="p-4">
             <NotificationRecipients />
+          </div>
+        </Card>
+      </Accordion>
+
+      {/* Outil trouvé : page publique */}
+      <Accordion
+        title="OUTIL TROUVÉ (PAGE PUBLIQUE)"
+        icon={<PhoneCall size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <FoundToolSettings />
+          </div>
+        </Card>
+      </Accordion>
+
+      {/* Sauvegarde complète */}
+      <Accordion
+        title="SAUVEGARDE"
+        icon={<HardDriveDownload size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <BackupPanel />
           </div>
         </Card>
       </Accordion>

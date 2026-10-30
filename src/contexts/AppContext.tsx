@@ -117,6 +117,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.rpc('check_training_rental_deadlines'),
         supabase.rpc('check_people_deadlines'),
         supabase.rpc('check_equipment_deadlines'),
+        supabase.rpc('check_backup_reminder'),
       ]);
 
       // Charger toutes les données nécessaires en parallèle
@@ -343,7 +344,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         status: c.status,
         notes: c.notes,
         instanceId: c.instance_id,
-        kitId: c.kit_id ?? undefined
+        kitId: c.kit_id ?? undefined,
+        droppedAt: c.dropped_at ?? undefined
       })));
       
     } catch (error) {

@@ -1,12 +1,15 @@
-// Envoi des alertes GO-Mat par e-mail, via le relais SMTP de Mannyx (Fly.io)
+// Envoi des alertes GO-Mat : e-mail (relais SMTP de Mannyx, Fly.io) et notifications sur le téléphone (Web Push)
 //
-// Appelée toutes les 5 minutes par pg_cron (corps vide) : génère les échéances véhicules,
-// réserve les alertes en attente, envoie un e-mail par destinataire, note le résultat.
+// Appelée toutes les 5 minutes par pg_cron (corps vide) : crée les échéances et relances,
+// envoie les e-mails en attente, puis les notifications aux téléphones abonnés.
+// Chaque canal ne fonctionne que si ses secrets sont saisis ; l'autre continue sans lui.
 // Corps { "test": "adresse@exemple.ch" } : e-mail de test vers un destinataire enregistré.
 //
-// Secrets : SMTP_RELAY_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
+// Secrets e-mail : SMTP_RELAY_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
 // SMTP_FROM_EMAIL ; facultatifs : SMTP_RELAY_URL, SMTP_FROM_NAME, APP_URL.
+// Secrets téléphone : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (ex. mailto:magasin@exemple.ch).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import webpush from 'npm:web-push@3.6.7';
 
 const RELAY_URL = Deno.env.get('SMTP_RELAY_URL') ?? 'https://go-prod-smtp-relay.fly.dev';
 const RELAY_KEY = Deno.env.get('SMTP_RELAY_API_KEY');
@@ -19,6 +22,13 @@ const SMTP = {
 const FROM_EMAIL = Deno.env.get('SMTP_FROM_EMAIL');
 const FROM_NAME = Deno.env.get('SMTP_FROM_NAME') ?? 'GO-Mat';
 const APP_URL = (Deno.env.get('APP_URL') ?? '').replace(/\/$/, '');
+const VAPID = {
+  publicKey: Deno.env.get('VAPID_PUBLIC_KEY'),
+  privateKey: Deno.env.get('VAPID_PRIVATE_KEY'),
+  subject: Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@go-mat.ch',
+};
+const pushReady = Boolean(VAPID.publicKey && VAPID.privateKey);
+if (pushReady) webpush.setVapidDetails(VAPID.subject, VAPID.publicKey!, VAPID.privateKey!);
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -44,6 +54,9 @@ const KIND_LABEL: Record<string, { label: string; path: string; action: string }
   rental_due: { label: 'Location', path: '/locations', action: 'Voir les locations' },
   training_expiry: { label: 'Formation', path: '/formations', action: 'Voir les formations' },
   transfer: { label: 'Transfert', path: '/transferts', action: 'Voir les transferts' },
+  drop_box: { label: 'Boîte de retour', path: '/comptoir', action: 'Ouvrir le comptoir' },
+  tool_found: { label: 'Outil trouvé', path: '/notifications', action: 'Voir les notifications' },
+  backup_due: { label: 'Sauvegarde', path: '/settings', action: 'Ouvrir les paramètres' },
   ppe_renewal: { label: 'EPI', path: '/epi', action: 'Voir les EPI' },
   mission_end: { label: 'Fin de mission', path: '/users', action: 'Voir les personnes' },
   warranty_end: { label: 'Garantie', path: '/atelier', action: "Ouvrir l'atelier" },
@@ -119,13 +132,12 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Méthode non autorisée' }, 405);
 
   const missing = missingConfig();
-  if (missing.length) return json({ error: `Envoi d'e-mails non configuré : secrets manquants (${missing.join(', ')})` }, 500);
-
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const body = await req.json().catch(() => ({}));
 
   // E-mail de test : uniquement vers une adresse déjà enregistrée comme destinataire
   if (typeof body?.test === 'string') {
+    if (missing.length) return json({ error: `Envoi d'e-mails non configuré : secrets manquants (${missing.join(', ')})` }, 500);
     const address = body.test.trim().toLowerCase();
     const { data: recipient } = await supabase
       .from('notification_recipients')
@@ -156,10 +168,16 @@ Deno.serve(async (req) => {
     supabase.rpc('check_training_rental_deadlines'),
     supabase.rpc('check_people_deadlines'),
     supabase.rpc('check_equipment_deadlines'),
+    supabase.rpc('check_backup_reminder'),
   ]);
 
+  const pushed = await sendPush(supabase);
+
+  // Sans secrets SMTP, les e-mails restent en attente (visibles dans l'app) ; le reste a tourné
+  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed });
+
   const { data: pending, error } = await supabase.rpc('claim_notification_emails', { p_limit: 50 });
-  if (error) return json({ error: error.message }, 500);
+  if (error) return json({ error: error.message, push: pushed }, 500);
 
   let sent = 0;
   let failed = 0;
@@ -187,5 +205,37 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ notifications: pending?.length ?? 0, sent, failed });
+  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed });
 });
+
+interface PendingPush {
+  id: string;
+  kind: string;
+  title: string;
+  message: string;
+  subscriptions: { id: string; endpoint: string; p256dh: string; auth: string }[];
+}
+
+// Notifications sur les téléphones abonnés ; un abonnement expiré (404/410) est supprimé
+async function sendPush(supabase: ReturnType<typeof createClient>) {
+  if (!pushReady) return 'non configuré';
+  const { data, error } = await supabase.rpc('claim_push_notifications', { p_limit: 100 });
+  if (error) return `erreur : ${error.message}`;
+  let delivered = 0;
+  const expired: string[] = [];
+  for (const n of (data ?? []) as PendingPush[]) {
+    const meta = KIND_LABEL[n.kind];
+    const payload = JSON.stringify({ title: n.title, body: n.message, url: meta?.path ?? '/notifications', tag: n.id });
+    for (const s of n.subscriptions) {
+      try {
+        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 24 * 3600 });
+        delivered++;
+      } catch (e) {
+        const status = (e as { statusCode?: number }).statusCode;
+        if (status === 404 || status === 410) expired.push(s.id);
+      }
+    }
+  }
+  if (expired.length) await supabase.from('push_subscriptions').delete().in('id', expired);
+  return { notifications: data?.length ?? 0, delivered, expired: expired.length };
+}
