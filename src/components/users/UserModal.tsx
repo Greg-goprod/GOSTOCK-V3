@@ -289,7 +289,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             <label htmlFor="user-license-exp" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Valable jusqu'au (facultatif)</label>
             <DateInput id="user-license-exp" value={form.license_expires_on} onChange={e => setForm({ ...form, license_expires_on: e.target.value })} className={inputClass} />
           </div>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie. Cochez la catégorie la plus haute : B inclut F, G et M ; CE inclut BE et C1E. Les permis machines (cariste, nacelle, grutier…) se saisissent dans « Formations ».</p>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie. Cochez la catégorie la plus haute : elle inclut celles qu'elle exige (B inclut F, G et M ; CE inclut C, C1, C1E, BE et B ; DE inclut D, D1, D1E, BE et B). Les permis machines (cariste, nacelle, grutier…) se saisissent dans « Formations ».</p>
         </fieldset>
 
         <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 p-3">

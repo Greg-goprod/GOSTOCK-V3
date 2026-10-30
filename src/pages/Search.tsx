@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search as SearchIcon } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { CheckoutRecord, Equipment, User } from '../types';
 
@@ -33,6 +34,11 @@ const EXAMPLES = ['qui a la meule 230 ?', 'où est le laser', 'chantier Renens',
 // Recherche en langage courant sur les données visibles : qui a quoi, où, sur quel chantier, en retard, en stock
 const Search: React.FC = () => {
   const { equipment, checkouts, users, depots, consumableStock } = useApp();
+  const { can, profile } = useAuth();
+  // Un collaborateur ne lit que ses propres emprunts : on ne déduit rien des emprunts des autres
+  const seesAll = can('view_all') || can('scan');
+  const me = profile?.id;
+  const OTHERS_HIDDEN = { main: 'Seul le magasin voit le matériel des autres personnes.', sub: 'Demandez au magasin ou à votre responsable.' };
   const [params, setParams] = useSearchParams();
   const [text, setText] = useState(params.get('q') ?? '');
   const query = params.get('q') ?? '';
@@ -57,14 +63,22 @@ const Search: React.FC = () => {
   const whereIs = (item: Equipment): ResultBlock => {
     const out = active.filter(c => c.equipmentId === item.id);
     const lines = out.map(c => ({
-      main: `Chez ${name(users.find(u => u.id === c.userId))}`,
+      main: c.userId === me && !seesAll ? 'Chez vous' : `Chez ${name(users.find(u => u.id === c.userId))}`,
       sub: `depuis le ${fmt(c.checkoutDate)}${siteOf(c) ? ` · ${siteOf(c)}` : ''} · retour ${fmt(c.dueDate)}${c.droppedAt ? ' · déposé dans la boîte' : ''}`,
       alert: new Date(c.dueDate).getTime() < Date.now() && !c.droppedAt,
     }));
     const total = item.totalQuantity ?? 1;
+    // Disponibilité calculée en base (juste pour tout le monde), plutôt que déduite des emprunts visibles
+    const available = Math.max(0, item.availableQuantity ?? total - out.length);
+    const elsewhere = total - available - out.length;
     if (item.status === 'maintenance') lines.push({ main: 'En maintenance ou en réparation', sub: '', alert: false });
-    if (out.length < total && item.status !== 'retired') {
-      lines.push({ main: `${total - out.length} disponible${total - out.length > 1 ? 's' : ''} au ${depotName(item.depotId)}`, sub: item.location ?? '', alert: false });
+    if (!seesAll && elsewhere > 0 && item.status !== 'maintenance') {
+      lines.push({ main: `${elsewhere} sorti${elsewhere > 1 ? 's' : ''} chez quelqu'un d'autre`, sub: 'Seul le magasin voit qui l\'a.', alert: false });
+    }
+    if (available > 0 && item.status !== 'retired') {
+      lines.push({ main: `${available} disponible${available > 1 ? 's' : ''} au ${depotName(item.depotId)}`, sub: item.location ?? '', alert: false });
+    } else if (item.status !== 'retired' && item.status !== 'maintenance') {
+      lines.push({ main: 'Aucun disponible pour l\'instant', sub: '', alert: false });
     }
     return { title: `${item.name}${item.articleNumber ? ` · ${item.articleNumber}` : ''}`, lines };
   };
@@ -78,7 +92,7 @@ const Search: React.FC = () => {
     // « en retard »
     if (/\b(en )?retards?\b/.test(q)) {
       const late = active.filter(c => new Date(c.dueDate).getTime() < Date.now() && !c.droppedAt).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-      return [{ title: `En retard (${late.length})`, lines: late.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${name(users.find(u => u.id === c.userId))} · prévu le ${fmt(c.dueDate)}`, alert: true })) }];
+      return [{ title: `${seesAll ? 'En retard' : 'Vos retards'} (${late.length})`, lines: late.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${name(users.find(u => u.id === c.userId))} · prévu le ${fmt(c.dueDate)}`, alert: true })) }];
     }
 
     // « chantier Renens », « qu'est-ce qui est sur le chantier Renens »
@@ -116,6 +130,7 @@ const Search: React.FC = () => {
       const people = findPeople(words(personMatch[3]));
       if (people.length) {
         return people.map(u => {
+          if (!seesAll && u.id !== me) return { title: name(u), lines: [OTHERS_HIDDEN] };
           const held = active.filter(c => c.userId === u.id);
           return { title: `${name(u)} · ${held.length} article(s)`, lines: held.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `depuis le ${fmt(c.checkoutDate)}${siteOf(c) ? ` · ${siteOf(c)}` : ''} · retour ${fmt(c.dueDate)}`, alert: new Date(c.dueDate).getTime() < Date.now() })) };
         });
@@ -129,6 +144,7 @@ const Search: React.FC = () => {
     // Recherche libre : aussi les personnes et les chantiers qui correspondent
     if (itemQuery === q) {
       for (const u of findPeople(words(q)).slice(0, 5)) {
+        if (!seesAll && u.id !== me) { blocks.push({ title: name(u), lines: [OTHERS_HIDDEN] }); continue; }
         const held = active.filter(c => c.userId === u.id);
         blocks.push({ title: `${name(u)} · ${held.length} article(s)`, lines: held.slice(0, 10).map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `retour ${fmt(c.dueDate)}` })) });
       }
@@ -139,7 +155,7 @@ const Search: React.FC = () => {
     }
     return blocks;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, equipment, checkouts, users, sites, siteItems, consumableStock, depots]);
+  }, [query, equipment, checkouts, users, sites, siteItems, consumableStock, depots, seesAll, me]);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();

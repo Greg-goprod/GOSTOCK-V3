@@ -1,5 +1,5 @@
 // Catégories du permis de conduire suisse (OAC). La base sait ce que chacune autorise aussi
-// (ex. B → B1, F, G, M ; CE → C1E, BE) : seule la catégorie la plus haute est à cocher.
+// (ex. B → B1, F, G, M ; CE → C, C1, C1E, BE, B) : seule la catégorie la plus haute est à cocher.
 export const LICENSE_CATEGORIES: { code: string; label: string }[] = [
   { code: 'A1', label: 'Motocycle léger (125 cm³)' },
   { code: 'A', label: 'Motocycle' },

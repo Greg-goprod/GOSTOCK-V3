@@ -137,7 +137,7 @@ export const MAGASIN: HelpArticle[] = [
           { text: 'Sous chaque article ajouté, lis la disponibilité : « 3 disponibles sur la période », « Libre sur la période », ou un problème en rouge (ex. permis manquant, location terminée).' },
           { text: 'Règle les quantités, ajoute une « Remarque » si besoin, puis clique sur « Envoyer la demande ».' },
         ],
-        result: 'Un message donne le numéro (ex. DEM2610-0012) et l\'état : « Validée » (automatique) ou « À valider » (un responsable doit décider).',
+        result: 'Un message donne le numéro (ex. DEM2610-0012) et l\'état : « Validée » (automatique) ou « À valider » (un responsable doit décider). Une demande avec un véhicule est toujours « À valider ».',
         problems: [
           { if: '« Choisissez la personne qui fait la demande ».', then: 'Remplis « Pour qui ».' },
           { if: '« La fin doit être après le début ».', then: 'Corrige les dates « Du » / « Au ».' },

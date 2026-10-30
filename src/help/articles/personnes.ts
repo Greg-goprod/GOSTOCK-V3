@@ -19,7 +19,7 @@ export const PERSONNES: HelpArticle[] = [
           { text: 'Remplis « Prénom », « Nom », l\'e-mail (c\'est avec lui qu\'elle se connectera), « Téléphone », « Service ».', shot: 'personnes-2' },
           { text: 'Choisis le « Rôle » : Collaborateur (fait ses demandes), Magasinier (scanne et sort), Responsable (valide, gère), Administrateur (tout).' },
           { text: 'Coche les « Dépôts » qu\'elle gère (aucun coché = tous).' },
-          { text: '« Permis de conduire » : coche seulement la catégorie la plus haute (B inclut F, G et M).' },
+          { text: '« Permis de conduire » : coche seulement la catégorie la plus haute : elle inclut les autres (B inclut F, G et M ; CE inclut C, C1, C1E, BE et B ; DE inclut D, D1, D1E, BE et B).' },
           { text: 'Clique sur « Enregistrer ».' },
         ],
         result: 'La personne peut se connecter avec son e-mail. Elle apparaît « Jamais connecté » jusqu\'à sa première connexion.',

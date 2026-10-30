@@ -31,7 +31,7 @@ export const VEHICULES: HelpArticle[] = [
           { text: 'Onglet « Véhicule » : clique sur le « + » du véhicule voulu. Sa disponibilité sur la période s\'affiche.' },
           { text: 'Clique sur « Envoyer la demande ».' },
         ],
-        result: 'La réservation apparaît dans « Cette semaine » sur la page Véhicules.',
+        result: 'La demande est « À valider » : une demande avec véhicule est toujours validée par un responsable. La réservation apparaît dans « Cette semaine » sur la page Véhicules.',
         problems: [
           { if: 'Le véhicule est refusé à cause du permis.', then: 'Le permis de conduire du conducteur n\'est pas saisi dans « Personnes », a expiré, ou ne couvre pas la catégorie du véhicule.' },
           { if: 'Le véhicule est refusé à cause d\'une échéance.', then: 'L\'expertise ou le service est dépassé : la flotte doit le mettre à jour.' },
