@@ -62,6 +62,9 @@ const Header: React.FC = () => {
     if (path.startsWith('/kits')) return 'KITS';
     if (path.startsWith('/formations')) return 'FORMATIONS';
     if (path.startsWith('/locations')) return 'LOCATIONS';
+    if (path.startsWith('/transferts')) return 'TRANSFERTS';
+    if (path.startsWith('/emplacements')) return 'EMPLACEMENTS';
+    if (path.startsWith('/planning')) return 'PLANNING';
     
     return 'GO-MAT';
   };

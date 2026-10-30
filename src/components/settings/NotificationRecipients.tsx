@@ -27,6 +27,7 @@ const KINDS = [
   { id: 'monthly_report', label: 'Rapport mensuel' },
   { id: 'rental_due', label: 'Locations à rendre / en retard' },
   { id: 'training_expiry', label: 'Formations à renouveler' },
+  { id: 'transfer', label: 'Transferts entre dépôts' },
 ];
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';

@@ -6,6 +6,7 @@ import Modal from '../components/common/Modal';
 import FuelInput from '../components/common/FuelInput';
 import SignaturePad from '../components/common/SignaturePad';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
+import PickListButton from '../components/requests/PickListButton';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { DeclareIncidentModal } from './Incidents';
@@ -781,6 +782,8 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
               </div>
             )}
             <div className="flex flex-wrap justify-end gap-2">
+              <PickListButton requestId={request.id} title={`Préparation ${request.number}`}
+                subtitle={[request.requester_name, request.destination, `pour le ${new Date(request.start_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}`].filter(Boolean).join(' · ')} />
               <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>Annuler la demande</Button>
               {request.status === 'approved' ? (
                 <Button variant="outline" icon={<PackageCheck size={16} />} onClick={() => setStatus('ready', `Demande ${request.number} prête`)} loading={busy}>Marquer prête</Button>

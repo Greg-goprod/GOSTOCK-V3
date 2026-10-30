@@ -29,6 +29,9 @@ import Sites from './pages/Sites';
 import Kits from './pages/Kits';
 import Trainings from './pages/Trainings';
 import Rentals from './pages/Rentals';
+import Transfers from './pages/Transfers';
+import Bins from './pages/Bins';
+import Planning from './pages/Planning';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 
@@ -76,6 +79,9 @@ function App() {
         <Route path="/kits" element={<Guard><Kits /></Guard>} />
         <Route path="/formations" element={<Guard><Trainings /></Guard>} />
         <Route path="/locations" element={<Guard><Rentals /></Guard>} />
+        <Route path="/transferts" element={<Guard><Transfers /></Guard>} />
+        <Route path="/emplacements" element={<Guard><Bins /></Guard>} />
+        <Route path="/planning" element={<Guard><Planning /></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

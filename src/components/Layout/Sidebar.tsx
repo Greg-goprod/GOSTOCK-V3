@@ -29,7 +29,10 @@ import {
   HardHat,
   Briefcase,
   GraduationCap,
-  KeyRound
+  KeyRound,
+  ArrowLeftRight,
+  MapPin,
+  CalendarRange
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,6 +49,7 @@ const NAV_SECTIONS = [
     { to: '/badge', label: 'Mon badge', icon: Contact },
     { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
     { to: '/chantiers', label: 'Chantiers', icon: HardHat },
+    { to: '/planning', label: 'Planning', icon: CalendarRange },
   ] },
   { title: 'Stock', links: [
     { to: '/equipment', label: 'Outils', icon: Package },
@@ -53,6 +57,8 @@ const NAV_SECTIONS = [
     { to: '/kits', label: 'Kits', icon: Briefcase },
     { to: '/locations', label: 'Locations', icon: KeyRound },
     { to: '/inventaire', label: 'Inventaire', icon: ListChecks },
+    { to: '/transferts', label: 'Transferts', icon: ArrowLeftRight },
+    { to: '/emplacements', label: 'Emplacements', icon: MapPin },
     { to: '/commande', label: 'À commander', icon: ClipboardList },
     { to: '/commandes', label: 'Commandes', icon: ShoppingCart },
     { to: '/etiquettes', label: 'Étiquettes', icon: Tags },

@@ -43,6 +43,7 @@ const KIND_LABEL: Record<string, { label: string; path: string; action: string }
   return_overdue: { label: 'Retour de matériel', path: '/demandes', action: 'Voir mon matériel' },
   rental_due: { label: 'Location', path: '/locations', action: 'Voir les locations' },
   training_expiry: { label: 'Formation', path: '/formations', action: 'Voir les formations' },
+  transfer: { label: 'Transfert', path: '/transferts', action: 'Voir les transferts' },
 };
 
 interface PendingEmail {

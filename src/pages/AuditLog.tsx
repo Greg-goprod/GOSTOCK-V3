@@ -37,6 +37,8 @@ const TABLES: Record<string, string> = {
   trainings: 'Formation',
   user_trainings: 'Formation d\'une personne',
   rentals: 'Location',
+  storage_bins: 'Emplacement',
+  transfers: 'Transfert',
 };
 
 const ACTIONS = { insert: 'Création', update: 'Modification', delete: 'Suppression' };
