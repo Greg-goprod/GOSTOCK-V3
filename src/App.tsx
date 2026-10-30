@@ -45,6 +45,8 @@ import Onboarding from './pages/Onboarding';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 import DialogHost from './components/common/DialogHost';
+import Help from './pages/Help';
+import HelpPrint from './pages/HelpPrint';
 
 // Page refusée par les droits : retour à l'accueil (la base refuserait de toute façon les données)
 const Guard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -82,6 +84,8 @@ function App() {
         <Route path="/settings" element={<Guard><Settings /></Guard>} />
         <Route path="/comptoir" element={<Guard><Counter /></Guard>} />
         <Route path="/badge" element={<Guard><MyBadge /></Guard>} />
+        <Route path="/aide" element={<Guard><Help /></Guard>} />
+        <Route path="/aide/:id" element={<Guard><Help /></Guard>} />
         <Route path="/badges" element={<Guard><BadgePrint /></Guard>} />
         <Route path="/etiquettes" element={<Guard><Labels /></Guard>} />
         <Route path="/entretien" element={<Guard><Maintenance /></Guard>} />
@@ -108,6 +112,7 @@ function App() {
         <Route path="/donnees" element={<Guard><DataHealth /></Guard>} />
         <Route path="/demarrage" element={<Guard><Onboarding /></Guard>} />
         <Route path="/ecran" element={<BareGuard><WallScreen /></BareGuard>} />
+        <Route path="/aide/imprimer" element={<BareGuard><HelpPrint /></BareGuard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

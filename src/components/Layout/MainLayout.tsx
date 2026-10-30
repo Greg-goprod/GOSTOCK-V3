@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import MobileNav from './MobileNav';
 import CommandPalette from './CommandPalette';
+import HelpDrawer from '../help/HelpDrawer';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       <MobileNav />
       <CommandPalette />
+      <HelpDrawer />
     </div>
   );
 };

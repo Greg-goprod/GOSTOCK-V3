@@ -1,6 +1,6 @@
 // GO-Mat : l'application s'ouvre même sans réseau (badge, écrans déjà visités).
 // Les données (Supabase) ne sont jamais mises en cache ici : elles restent toujours à jour.
-const CACHE = 'gomat-v2';
+const CACHE = 'gomat-v3';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', event => {
@@ -25,8 +25,12 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(request)
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put('/index.html', copy));
+          // Seule une vraie page de l'application sert de copie hors ligne (pas une image ou le PDF de l'aide
+          // ouverts dans un onglet)
+          if (response.ok && (response.headers.get('content-type') || '').includes('text/html')) {
+            const copy = response.clone();
+            caches.open(CACHE).then(cache => cache.put('/index.html', copy));
+          }
           return response;
         })
         .catch(() => caches.match('/index.html'))

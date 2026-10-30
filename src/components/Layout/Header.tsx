@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Sun, Moon, LogOut, Contact, Download, Search, ChevronRight, QrCode } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut, Contact, Download, Search, ChevronRight, QrCode, HelpCircle } from 'lucide-react';
+import { OPEN_HELP } from '../help/HelpDrawer';
 import { locate } from '../../lib/navigation';
 import { OPEN_PALETTE } from './CommandPalette';
 import { useInstallPrompt } from '../../lib/install';
@@ -58,6 +59,17 @@ const Header: React.FC = () => {
           <Search size={18} aria-hidden="true" />
           <span className="hidden lg:inline flex-1 text-left">Rechercher…</span>
           <kbd className="hidden lg:inline rounded-sm border border-gray-200 dark:border-gray-700 px-1 text-[11px]">Ctrl K</kbd>
+        </button>
+
+        {/* Aide de la page en cours */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(OPEN_HELP))}
+          aria-label="Aide de cette page"
+          title="Aide de cette page"
+          className="p-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <HelpCircle size={18} className="text-gray-600 dark:text-gray-300" aria-hidden="true" />
         </button>
 
         <button

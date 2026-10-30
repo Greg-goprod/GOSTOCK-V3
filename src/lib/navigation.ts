@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Users, CalendarClock, Bell, Settings, ScanLine, Droplets, ClipboardList, Inbox, Truck,
   BarChart3, ScanBarcode, Contact, Tags, Wrench, AlertTriangle, ListChecks, ShoppingCart, Coins, Gauge, History,
   HardHat, Map as MapIcon, Briefcase, GraduationCap, KeyRound, ArrowLeftRight, MapPin, CalendarRange, ShieldCheck,
-  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse,
+  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse, LifeBuoy,
 } from 'lucide-react';
 
 export interface NavLinkItem {
@@ -83,10 +83,13 @@ export const NAV_SPACES: NavSpace[] = [
     { to: '/donnees', label: 'Santé des données', icon: Stethoscope },
     { to: '/demarrage', label: 'Démarrage', icon: Rocket },
   ] },
+  { id: 'help', label: 'Aide', short: 'Aide', icon: LifeBuoy, links: [
+    { to: '/aide', label: 'Aide et mode d\'emploi', icon: LifeBuoy },
+  ] },
 ];
 
 // Espaces rangés en bas du rail (réglages)
-export const BOTTOM_SPACES = ['settings'];
+export const BOTTOM_SPACES = ['help', 'settings'];
 
 // Pages hors menu, pour le fil d'Ariane
 const EXTRA_TITLES: Record<string, string> = {

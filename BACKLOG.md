@@ -177,6 +177,14 @@ Migration `20261030000024_corrections_tests_chrome.sql` appliquée sur GO-MAT.
   location dans la disponibilité ; L11 kilométrage ; L12 annulation par le magasin ; R1 panneaux fermés masqués
   (`inert`) ; R3 suggestions « Chantier » / « Sans fiche chantier ».
 
+## Rubrique Aide (lot 17, 30.10)
+
+- Page « Aide » (`/aide`, en bas du rail), « ? » dans l'en-tête de chaque page (aide de la page dans un drawer),
+  recherche, FAQ, glossaire, version imprimable (`/aide/imprimer`) et PDF `public/aide/GO-Mat-mode-emploi.pdf`.
+- Contenu : `src/help/content.ts` (français, tutoiement). Les autres langues affichent l'aide en français.
+- Captures avec données fictives : `node scripts/help-screenshots.cjs` (application lancée avec la base simulée,
+  voir l'en-tête du script). À relancer quand une page change ; le PDF est refait en même temps.
+
 ## Dettes techniques
 
 - **Vite 5 → 8** : failles limitées au serveur de développement ; saut majeur (Node ≥ 20.19).
