@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
   // Plan comptable bexio : numéro de compte → identifiant
   const accountsResponse = await bexio('/2.0/accounts?limit=2000');
-  if (!accountsResponse.ok) return json({ error: `bexio refuse l'accès au plan comptable (HTTP ${accountsResponse.status}). Vérifiez le jeton.` }, 502);
+  if (!accountsResponse.ok) return json({ error: `bexio refuse l'accès au plan comptable (HTTP ${accountsResponse.status}). Vérifie le jeton.` }, 502);
   const accounts = new Map<string, number>(
     ((await accountsResponse.json()) as { id: number; account_no: string }[]).map((a) => [String(a.account_no), a.id]),
   );

@@ -4,11 +4,32 @@ import { Search as SearchIcon } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { CheckoutRecord, Equipment, User } from '../types';
+import { Equipment, User } from '../types';
 
 interface ResultBlock {
   title: string;
   lines: { main: string; sub?: string; alert?: boolean }[];
+}
+
+// Un emprunt en cours, tel que la recherche l'affiche (emprunts complets pour le magasin, who_has sinon)
+interface Loan {
+  equipmentId: string;
+  userId: string;
+  holder?: string;
+  checkoutDate: string;
+  dueDate: string;
+  notes?: string;
+  droppedAt?: string;
+}
+
+interface WhoHasRow {
+  equipment_id: string;
+  user_id: string;
+  holder_name: string;
+  checkout_date: string;
+  due_date: string;
+  notes: string | null;
+  dropped_at: string | null;
 }
 
 interface SiteItem {
@@ -35,10 +56,11 @@ const EXAMPLES = ['qui a la meule 230 ?', 'où est le laser', 'chantier Renens',
 const Search: React.FC = () => {
   const { equipment, checkouts, users, depots, consumableStock } = useApp();
   const { can, profile } = useAuth();
-  // Un collaborateur ne lit que ses propres emprunts : on ne déduit rien des emprunts des autres
+  // Le magasin lit tous les emprunts ; les autres membres voient « qui a quoi » par la fonction who_has
+  // (nom, dates, chantier), les emprunts eux-mêmes leur restant fermés
   const seesAll = can('view_all') || can('scan');
   const me = profile?.id;
-  const OTHERS_HIDDEN = { main: 'Seul le magasin voit le matériel des autres personnes.', sub: 'Demande au magasin ou à ton responsable.' };
+  const [whoHas, setWhoHas] = useState<Loan[]>([]);
   const [params, setParams] = useSearchParams();
   const [text, setText] = useState(params.get('q') ?? '');
   const query = params.get('q') ?? '';
@@ -50,31 +72,39 @@ const Search: React.FC = () => {
   const [siteItems, setSiteItems] = useState<SiteItem[]>([]);
 
   useEffect(() => {
+    if (seesAll) return;
+    supabase.rpc('who_has').then(({ data }) => setWhoHas(((data || []) as WhoHasRow[]).map(r => ({
+      equipmentId: r.equipment_id, userId: r.user_id, holder: r.holder_name, checkoutDate: r.checkout_date,
+      dueDate: r.due_date, notes: r.notes ?? undefined, droppedAt: r.dropped_at ?? undefined,
+    }))));
+  }, [seesAll]);
+
+  useEffect(() => {
     Promise.all([supabase.from('sites').select('id, name, status'), supabase.from('site_open_items').select('*')])
       .then(([s, i]) => { setSites(s.data || []); setSiteItems((i.data || []) as SiteItem[]); });
   }, []);
 
   const name = (u?: User) => (u ? `${u.first_name} ${u.last_name}` : 'Quelqu\'un');
-  const active = checkouts.filter(c => c.status === 'active' || c.status === 'overdue');
+  const active: Loan[] = seesAll
+    ? checkouts.filter(c => c.status === 'active' || c.status === 'overdue')
+      .map(c => ({ equipmentId: c.equipmentId, userId: c.userId, checkoutDate: c.checkoutDate, dueDate: c.dueDate, notes: c.notes, droppedAt: c.droppedAt }))
+    : whoHas;
+  const holderOf = (c: Loan) => (c.userId === me ? 'toi' : c.holder ?? name(users.find(u => u.id === c.userId)));
   const depotName = (id?: string) => depots.find(d => d.id === id)?.name ?? depots.find(d => d.isDefault)?.name ?? 'dépôt';
-  const siteOf = (c: CheckoutRecord) => c.notes?.split(' · ').find(p => !p.startsWith('Demande ') && !p.startsWith('retiré par'))?.trim();
+  const siteOf = (c: Loan) => c.notes?.split(' · ').find(p => !p.startsWith('Demande ') && !p.startsWith('retiré par'))?.trim();
   const fmt = (iso: string) => new Date(iso).toLocaleDateString('fr-CH');
 
   const whereIs = (item: Equipment): ResultBlock => {
     const out = active.filter(c => c.equipmentId === item.id);
     const lines = out.map(c => ({
-      main: c.userId === me && !seesAll ? 'Chez toi' : `Chez ${name(users.find(u => u.id === c.userId))}`,
+      main: `Chez ${holderOf(c)}`,
       sub: `depuis le ${fmt(c.checkoutDate)}${siteOf(c) ? ` · ${siteOf(c)}` : ''} · retour ${fmt(c.dueDate)}${c.droppedAt ? ' · déposé dans la boîte' : ''}`,
       alert: new Date(c.dueDate).getTime() < Date.now() && !c.droppedAt,
     }));
     const total = item.totalQuantity ?? 1;
     // Disponibilité calculée en base (juste pour tout le monde), plutôt que déduite des emprunts visibles
     const available = Math.max(0, item.availableQuantity ?? total - out.length);
-    const elsewhere = total - available - out.length;
     if (item.status === 'maintenance') lines.push({ main: 'En maintenance ou en réparation', sub: '', alert: false });
-    if (!seesAll && elsewhere > 0 && item.status !== 'maintenance') {
-      lines.push({ main: `${elsewhere} sorti${elsewhere > 1 ? 's' : ''} chez quelqu'un d'autre`, sub: 'Seul le magasin voit qui l\'a.', alert: false });
-    }
     if (available > 0 && item.status !== 'retired') {
       lines.push({ main: `${available} disponible${available > 1 ? 's' : ''} au ${depotName(item.depotId)}`, sub: item.location ?? '', alert: false });
     } else if (item.status !== 'retired' && item.status !== 'maintenance') {
@@ -92,7 +122,7 @@ const Search: React.FC = () => {
     // « en retard »
     if (/\b(en )?retards?\b/.test(q)) {
       const late = active.filter(c => new Date(c.dueDate).getTime() < Date.now() && !c.droppedAt).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-      return [{ title: `${seesAll ? 'En retard' : 'Tes retards'} (${late.length})`, lines: late.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${name(users.find(u => u.id === c.userId))} · prévu le ${fmt(c.dueDate)}`, alert: true })) }];
+      return [{ title: `En retard (${late.length})`, lines: late.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${holderOf(c)} · prévu le ${fmt(c.dueDate)}`, alert: true })) }];
     }
 
     // « chantier Renens », « qu'est-ce qui est sur le chantier Renens »
@@ -108,7 +138,7 @@ const Search: React.FC = () => {
       }
       // Chantier sans fiche : d'après le texte des sorties
       const loose = active.filter(c => matchesAll(c.notes ?? '', terms));
-      return [{ title: `Sorties mentionnant « ${siteMatch[1]} » (${loose.length})`, lines: loose.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${name(users.find(u => u.id === c.userId))} · retour ${fmt(c.dueDate)}` })) }];
+      return [{ title: `Sorties mentionnant « ${siteMatch[1]} » (${loose.length})`, lines: loose.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `${holderOf(c)} · retour ${fmt(c.dueDate)}` })) }];
     }
 
     // « stock gants », « combien de disques »
@@ -130,7 +160,6 @@ const Search: React.FC = () => {
       const people = findPeople(words(personMatch[3]));
       if (people.length) {
         return people.map(u => {
-          if (!seesAll && u.id !== me) return { title: name(u), lines: [OTHERS_HIDDEN] };
           const held = active.filter(c => c.userId === u.id);
           return { title: `${name(u)} · ${held.length} article(s)`, lines: held.map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `depuis le ${fmt(c.checkoutDate)}${siteOf(c) ? ` · ${siteOf(c)}` : ''} · retour ${fmt(c.dueDate)}`, alert: new Date(c.dueDate).getTime() < Date.now() })) };
         });
@@ -144,7 +173,6 @@ const Search: React.FC = () => {
     // Recherche libre : aussi les personnes et les chantiers qui correspondent
     if (itemQuery === q) {
       for (const u of findPeople(words(q)).slice(0, 5)) {
-        if (!seesAll && u.id !== me) { blocks.push({ title: name(u), lines: [OTHERS_HIDDEN] }); continue; }
         const held = active.filter(c => c.userId === u.id);
         blocks.push({ title: `${name(u)} · ${held.length} article(s)`, lines: held.slice(0, 10).map(c => ({ main: equipment.find(e => e.id === c.equipmentId)?.name ?? 'Article', sub: `retour ${fmt(c.dueDate)}` })) });
       }
@@ -155,7 +183,7 @@ const Search: React.FC = () => {
     }
     return blocks;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, equipment, checkouts, users, sites, siteItems, consumableStock, depots, seesAll, me]);
+  }, [query, equipment, checkouts, whoHas, users, sites, siteItems, consumableStock, depots, seesAll, me]);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
