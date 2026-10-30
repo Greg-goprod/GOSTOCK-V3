@@ -11,6 +11,8 @@ const inputClass =
 
 // Messages Supabase Auth les plus courants, en clair
 const authMessage = (message: string) => {
+  // Limite d'envoi d'e-mails du projet (service d'envoi de Supabase sans SMTP propre : quelques e-mails par heure)
+  if (/email rate limit/i.test(message)) return "Limite d'envoi d'e-mails atteinte pour le moment (quelques e-mails par heure tant que le compte d'envoi n'est pas configuré). Réessayez dans une heure.";
   if (/rate limit|too many|seconds/i.test(message)) return 'Trop de demandes de code. Patientez une minute avant de réessayer.';
   if (/expired|invalid/i.test(message)) return 'Code incorrect ou expiré. Vérifiez le dernier e-mail reçu, ou demandez un nouveau code.';
   if (/signups not allowed/i.test(message)) return "Cette adresse n'a pas d'accès à GO-Mat. Demandez à votre responsable de vous ajouter.";

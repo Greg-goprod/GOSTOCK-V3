@@ -875,6 +875,7 @@
 "Lieu de stockage ou d'utilisation": "Storage or usage location",
 "Ligne": "Row",
 "Ligne retirée": "Line removed",
+"Limite d'envoi d'e-mails atteinte pour le moment (quelques e-mails par heure tant que le compte d'envoi n'est pas configuré). Réessayez dans une heure.": "E-mail sending limit reached for now (a few e-mails per hour until the sending account is set up). Try again in an hour.",
 "Liste": "List",
 "Liste de préparation": "Pick list",
 "Liste des changements": "List of changes",

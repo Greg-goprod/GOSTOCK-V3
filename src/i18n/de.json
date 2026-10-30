@@ -875,6 +875,7 @@
 "Lieu de stockage ou d'utilisation": "Lager- oder Einsatzort",
 "Ligne": "Zeile",
 "Ligne retirée": "Zeile entfernt",
+"Limite d'envoi d'e-mails atteinte pour le moment (quelques e-mails par heure tant que le compte d'envoi n'est pas configuré). Réessayez dans une heure.": "E-Mail-Versandlimit vorerst erreicht (einige E-Mails pro Stunde, solange kein eigenes Versandkonto eingerichtet ist). Versuchen Sie es in einer Stunde erneut.",
 "Liste": "Liste",
 "Liste de préparation": "Rüstliste",
 "Liste des changements": "Liste der Änderungen",
