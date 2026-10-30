@@ -70,6 +70,31 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
 - Nouvelles alertes à cocher pour les destinataires e-mail : « Locations à rendre / en retard »,
   « Formations à renouveler ».
 
+## Ajouts du 30.10 (lots 8 à 13) — points d'attention
+
+- **Notifications sur le téléphone (Web Push)** — à activer par le propriétaire :
+  1. Générer une paire de clés : `npx web-push generate-vapid-keys` (sur son PC).
+  2. Supabase → Edge Functions → Secrets : `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+     `VAPID_SUBJECT` (ex. `mailto:magasin@entreprise.ch`).
+  3. `.env` de l'application (et Netlify) : `VITE_VAPID_PUBLIC_KEY` = la clé **publique**.
+  4. Planifier la fonction `send-notification-emails` (pg_cron, SQL en fin de migration 00007) : elle
+     envoie désormais les notifications même sans SMTP, et crée les échéances (EPI, garanties, batteries…).
+  Sur iPhone, il faut d'abord installer GO-Mat sur l'écran d'accueil (iOS 16.4+).
+- **Intérimaires** : après la date « accès jusqu'au », plus de connexion, de badge ni d'emprunt.
+- **Signature à la remise** : seuil par défaut 500 CHF (Paramètres) ; un outil peut aussi l'exiger.
+- **Transferts** : un outil en route ne peut pas sortir ; il n'est rattaché au dépôt d'arrivée qu'à la
+  réception au scanner.
+- **Libre-service** : seuls les consommables cochés (Consommables → Libre-service) ; la règle « seul le
+  magasin scanne » reste vraie pour tout le reste.
+- **Outil trouvé** : la page publique `/t/<code>` ne montre que le nom de l'entreprise, le téléphone et le
+  message (Paramètres → Outil trouvé). Les étiquettes « outil trouvé » contiennent un lien ; le scanner
+  du magasin les lit normalement.
+- **Sauvegarde** : fichier JSON de toutes les tables, sans les photos (restent dans le stockage) ni les codes
+  de badge. Pas encore de restauration automatique depuis ce fichier.
+- **Export comptable** : comptes du plan PME suisse par défaut, à faire confirmer par la fiduciaire.
+- **Mise à jour du catalogue** : un nouveau fichier Makita (JSON) ou une liste de prix Excel est comparé
+  avant import ; les produits absents du fichier ne sont pas supprimés.
+
 ## Dettes techniques
 
 - **Vite 5 → 8** : failles limitées au serveur de développement ; saut majeur (Node ≥ 20.19).

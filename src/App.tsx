@@ -38,6 +38,9 @@ import Accounting from './pages/Accounting';
 import SelfService from './pages/SelfService';
 import WallScreen from './pages/WallScreen';
 import Search from './pages/Search';
+import Forecast from './pages/Forecast';
+import DataHealth from './pages/DataHealth';
+import Onboarding from './pages/Onboarding';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 
@@ -100,6 +103,9 @@ function App() {
         <Route path="/comptabilite" element={<Guard><Accounting /></Guard>} />
         <Route path="/libre-service" element={<Guard><SelfService /></Guard>} />
         <Route path="/recherche" element={<Guard><Search /></Guard>} />
+        <Route path="/prevision" element={<Guard><Forecast /></Guard>} />
+        <Route path="/donnees" element={<Guard><DataHealth /></Guard>} />
+        <Route path="/demarrage" element={<Guard><Onboarding /></Guard>} />
         <Route path="/ecran" element={<BareGuard><WallScreen /></BareGuard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

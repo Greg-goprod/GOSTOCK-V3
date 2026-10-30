@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { HardHat, Lock, Pencil, Plus, Unlock } from 'lucide-react';
+import { Copy, FileText, HardHat, Lock, Pencil, Plus, Unlock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { printSiteReport, similarSiteItems } from '../lib/siteReport';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -47,7 +49,8 @@ const date = (d: string | null) => (d ? new Date(d).toLocaleDateString('fr-CH') 
 
 // Fiches chantier : budget matériel, dépenses, et ce qui doit revenir à la clôture
 const Sites: React.FC = () => {
-  const { users } = useApp();
+  const { users, equipment } = useApp();
+  const navigate = useNavigate();
   const { can } = useAuth();
   const canEdit = can('manage_stock') || can('approve');
   const [sites, setSites] = useState<Site[]>([]);
@@ -127,6 +130,19 @@ const Sites: React.FC = () => {
     if (error) return toast.error(errorMessage(error));
     toast.success(closing ? 'Chantier clôturé : plus aucune sortie possible' : 'Chantier rouvert');
     await load();
+  };
+
+  const report = (site: Site) => printSiteReport(site).catch(error => toast.error(errorMessage(error)));
+
+  // Nouvelle demande préremplie avec le matériel utilisé sur ce chantier
+  const prepareSimilar = async (site: Site) => {
+    try {
+      const items = await similarSiteItems(site.id, id => equipment.find(e => e.id === id)?.totalQuantity ?? 1);
+      if (!items.length) return toast.error('Aucun matériel enregistré sur ce chantier');
+      navigate('/demandes', { state: { prefill: { items, destination: null } } });
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
   };
 
   const name = (id: string | null) => {
@@ -226,6 +242,10 @@ const Sites: React.FC = () => {
                 )}
               </div>
               {site.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{site.notes}</p>}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => report(site)}>Rapport PDF</Button>
+                <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => prepareSimilar(site)}>Préparer un chantier semblable</Button>
+              </div>
             </article>
           );
         })}

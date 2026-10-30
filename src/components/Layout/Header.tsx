@@ -70,6 +70,9 @@ const Header: React.FC = () => {
     if (path.startsWith('/comptabilite')) return 'COMPTABILITÉ';
     if (path.startsWith('/libre-service')) return 'LIBRE-SERVICE';
     if (path.startsWith('/recherche')) return 'RECHERCHE';
+    if (path.startsWith('/prevision')) return 'PRÉVISION D\'ACHAT';
+    if (path.startsWith('/donnees')) return 'SANTÉ DES DONNÉES';
+    if (path.startsWith('/demarrage')) return 'DÉMARRAGE';
     
     return 'GO-MAT';
   };

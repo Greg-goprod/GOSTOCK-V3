@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, Minus, PackageCheck, Plus, Search, Truck, X, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
@@ -133,6 +134,18 @@ const Requests: React.FC = () => {
   // Demande préremplie (« Refaire cette demande »)
   const [prefill, setPrefill] = useState<RequestPrefill | null>(null);
   const [selected, setSelected] = useState<RequestOverview | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Demande préparée depuis une fiche chantier (« Préparer un chantier semblable »)
+  useEffect(() => {
+    const incoming = (location.state as { prefill?: RequestPrefill } | null)?.prefill;
+    if (incoming) {
+      setPrefill(incoming);
+      setShowNew(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location, navigate]);
 
   const load = async () => {
     if (!supabase) return;

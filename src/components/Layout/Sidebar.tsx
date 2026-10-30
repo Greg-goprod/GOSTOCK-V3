@@ -38,7 +38,10 @@ import {
   Calculator,
   Hand,
   MonitorPlay,
-  Search as SearchIcon
+  Search as SearchIcon,
+  TrendingUp,
+  Stethoscope,
+  Rocket
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -69,6 +72,7 @@ const NAV_SECTIONS = [
     { to: '/emplacements', label: 'Emplacements', icon: MapPin },
     { to: '/commande', label: 'À commander', icon: ClipboardList },
     { to: '/commandes', label: 'Commandes', icon: ShoppingCart },
+    { to: '/prevision', label: 'Prévision d\'achat', icon: TrendingUp },
     { to: '/etiquettes', label: 'Étiquettes', icon: Tags },
   ] },
   { title: 'Flotte', links: [
@@ -90,6 +94,8 @@ const NAV_SECTIONS = [
     { to: '/formations', label: 'Formations', icon: GraduationCap },
     { to: '/epi', label: 'EPI', icon: ShieldCheck },
     { to: '/journal', label: 'Journal', icon: History },
+    { to: '/donnees', label: 'Santé des données', icon: Stethoscope },
+    { to: '/demarrage', label: 'Démarrage', icon: Rocket },
     { to: '/settings', label: 'Paramètres', icon: Settings },
   ] },
 ];
