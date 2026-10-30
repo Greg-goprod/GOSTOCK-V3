@@ -1,118 +1,292 @@
-# Rapport de tests Chrome — GO-Mat
+# Rapport de tests — GO-Mat (batterie complète)
 
-- Date : 2026-10-30
-- Environnement : `npm run dev` (navigateur de prévisualisation, http://localhost:5175), compte Administrateur GO-Mat, connexion par code e-mail.
-- Données de test : préfixe « TEST » uniquement. Rien d'autre n'a été supprimé ni modifié.
-- Code de l'application : non modifié. Les investigations dans le code étaient en lecture seule.
+- **Date** : 30 octobre 2026, de 10:16 à 11:25 (heure de Zurich)
+- **Testeur** : Claude (Claude Code), navigateur de prévisualisation intégré, piloté par script
+- **Compte** : Administrateur GO-Mat (connexion par code e-mail, faite par l'utilisateur)
+- **Base** : Supabase `xxzcaxizqndvhnzchqkp`
+- **Règles suivies** : uniquement des données préfixées « TEST » ; rien d'autre supprimé ni modifié ; code de l'application non modifié (lectures seules pour le diagnostic).
 
-## Données de test
+---
 
-| Type | Nom | Identifiant / code | État |
+## 1. Synthèse
+
+### Verdict : **NO-GO pour une mise en production en l'état**
+
+Le parcours principal fonctionne : badge, sortie et retour au comptoir, demandes, validation, carte des chantiers, langues, téléchargement de la sauvegarde. Mais quatre défauts touchent l'intégrité des données, l'argent ou la reprise après incident. Ils doivent être corrigés avant l'usage réel.
+
+| # | Défaut critique | Pourquoi c'est bloquant |
+|---|---|---|
+| **P10** | Une sortie par **demande** (et par **kit**) n'attache pas l'exemplaire scanné : l'exemplaire reste « disponible » alors que l'outil est sorti | Stock et traçabilité faux. Le comptoir propose de ressortir un outil déjà dehors, et l'outil ne peut pas être rendu par scan. |
+| **P9** | La restauration d'une sauvegarde échoue sur la table des sorties dès qu'un outil de la sauvegarde est actuellement sorti | La sauvegarde est la dernière protection : en cas de perte, l'historique des sorties ne revient pas. |
+| **P12** | Le départ d'un intérimaire se clôture avec la caution **non remboursée**, et l'écran affiche « Rien à rendre » | Risque financier direct, et litige avec l'intérimaire. |
+| **P1** | Le QR affiché dans **Personnes** n'est pas lu par le comptoir | Les badges imprimés depuis cet écran sont inutilisables. |
+
+### Chiffres
+
+- **Scénarios demandés** : 6, tous exécutés. 2 sont conformes (chantier et carte, langues) ; 4 le sont avec réserves : comptoir (retour de kit par scan), demande (préparation, exemplaire), intérimaire (caution), sauvegarde (restauration des sorties).
+- **Anomalies** : 18 au total, dont 4 critiques, 6 majeures, 7 mineures, et 1 point d'environnement (non reproduit).
+- **Captures** : 17, dans `captures/`.
+
+---
+
+## 2. Environnement et versions testées
+
+Le code a changé **pendant** la session : deux mises à jour du dossier de travail ont été faites hors de mes actions, et Vite a rechargé l'application à chaud.
+
+| Période (heure de Zurich) | Version du code | Tests concernés |
+|---|---|---|
+| 10:16 → 10:57 | `6a8e96f` « Connexion par mot de passe en plus du code par e-mail » | comptoir (badge, outil, kit), P1, P2, P4, P5, langues, 1re sauvegarde |
+| à partir de 10:57 | `d1c26f8`, fusion de `claude/loving-thompson-6zfo06` (dont `83484b0` « Charte Mannyx (MX) et nouvelle navigation ») | demande de bout en bout, validation, chantier, carte, intérimaire, restauration |
+
+La fusion `d1c26f8` a été faite à 10:57 dans ce dossier, sur la branche `tests/rapport-chrome` ; elle n'est pas de mon fait. Elle se retrouve donc dans cette branche avec le rapport. Les sélecteurs de date ont changé entre les deux versions (passage aux sélecteurs « MX »).
+
+---
+
+## 3. Résultats par scénario
+
+| Scénario | Étape | Résultat | Réf. |
 |---|---|---|---|
-| Personne | TEST Badge Comptoir (test.badge@example.com, Collaborateur) | `6ae6abc8-037f-45cb-a281-bfaf2b200e64` · badge `f58aec773e89dafc02` | active |
-| Outil | TEST Perceuse comptoir (TEST Atelier) | `c670bc06-ede3-4cf6-a3e0-f78e36702202` · exemplaire `GOMAT1-000001-001` | sortie active (`dc7e0923…`) pour la demande DEM2610-0001 |
-| Kit | TEST Kit perçage (contient la perceuse) | `aac07825-d81b-4b9b-b4f0-afd0ca2e1ba8` · code `A9C9CCB2` | sortie rendue |
-| Demande | DEM2610-0001 (TEST Badge Comptoir, TEST Chantier demande) | — | sortie faite |
-| Article | TEST Article suppression | `315cde03-b256-4e52-85f6-cf3df776fe84` | supprimé (par API, sans historique) ; **non restauré** (voir P9) |
+| **Comptoir** | Scan du badge | ✅ après rechargement de la page | P2 |
+| | Scan de l'outil, sortie | ✅ « Sortie : TEST Perceuse comptoir », bon de sortie créé | — |
+| | Retour de l'outil | ✅ l'exemplaire repasse « available » | — |
+| | Sortie d'un kit | ✅ « Sortie : kit « TEST Kit perçage » » | P10 (exemplaire non attaché) |
+| | Retour d'un kit par scan du QR du kit | ❌ rien d'enregistré (1 essai) | P7 |
+| | Retour d'un kit par case à cocher | ✅ | — |
+| **Demande** | Création | ✅ DEM2610-0001 | — |
+| | Envoi refusé si l'outil est indisponible | ✅ « 0 disponible(s), 1 demandé(s) » | — |
+| | Validation automatique (outil sans validation requise) | ✅ « Validée par Validation automatique » | — |
+| | Validation manuelle (outil avec « Validation requise ») | ✅ DEM2610-0002 en « À valider », puis « Demande DEM2610-0002 validée » | — |
+| | Refus sans motif | ✅ bloqué : « Indiquez la raison du refus » | — |
+| | Préparation | ⚠️ « Marquer prête » fait perdre la préparation | P8 |
+| | Sortie | ✅ sortie créée | P10 (exemplaire non attaché) |
+| **Chantier et carte** | Création avec adresse et géocodage | ✅ « Sur la carte : 46.45939, 6.84600 » (Vevey) | — |
+| | Carte : chantier vide | ✅ pastille grise, « Rien sur le chantier » | — |
+| | Carte : matériel sur place | ✅ pastille orange `#ea580c`, « 1 élément(s) sur le chantier » | P15 (bulle coupée) |
+| **Intérimaire** | Création avec caution | ✅ « Intérimaire · caution 200 CHF · jusqu'au 27.11.2026 » | P11 (date obligatoire invisible) |
+| | Bouton Départ | ❌ « Rien à rendre » avec la caution due, puis clôture sans alerte | **P12** |
+| | Badge après départ | ✅ refusé (« Badge inconnu ou accès suspendu », visible seulement en console) | P16 |
+| | Personne partie encore proposée dans les demandes | ❌ | P13 |
+| **Langues** | Allemand, puis retour en français | ✅ « EINSTELLUNGEN », nav « Theke », puis « PARAMÈTRES » | — |
+| **Sauvegarde** | Téléchargement | ✅ `GO-Mat_sauvegarde_2026-10-30.json`, 8,8 Mo, 52 tables, 0 erreur | — |
+| | Restauration d'un article TEST supprimé | ✅ « equipment : 1 ligne(s) remise(s) », « equipment_instances : 1 ligne(s) remise(s) » | — |
+| | Restauration de la table des sorties | ❌ « checkouts : erreur, Plus de stock disponible… » | **P9** |
 
-## Résultats par étape
+---
 
-| Étape | Résultat |
-|---|---|
-| Comptoir : scan du badge | OK après rechargement de la page (voir P2) |
-| Comptoir : sortie d'un outil | OK — « Sortie : TEST Perceuse comptoir » ; l'exemplaire passe à sorti |
-| Comptoir : retour d'un outil | OK — l'exemplaire repasse à `available` |
-| Comptoir : sortie d'un kit | OK — « Sortie : kit « TEST Kit perçage » » |
-| Comptoir : retour d'un kit | **Partiel** — le retour par scan du QR du kit ne s'enregistre pas (P7). Le retour par case à cocher « EN SA POSSESSION » fonctionne : les deux sorties passent à `returned` |
-| Demande : création | OK — DEM2610-0001 créée, statut « Validée » (pas de validation requise sur cet outil) |
-| Demande : validation | Automatique (pas d'approbation requise). La validation manuelle n'a pas été testée. |
-| Demande : envoi refusé si indisponible | OK — « 0 disponible(s), 1 demandé(s) » : l'envoi est bloqué tant que l'outil est sorti |
-| Demande : préparation | Partielle — « Marquer prête » fait perdre la préparation (P8) |
-| Demande : sortie | OK — une sortie `active` est créée, rattachée à la demande (onglet « Sorties ») |
-| Chantier avec adresse | Non testé de bout en bout (voir P5) |
-| Page Carte | Non testée |
-| Intérimaire avec caution, bouton Départ | Non testé |
-| Allemand, puis retour en français | OK — l'interface passe en allemand (« EINSTELLUNGEN », nav « Theke ») puis revient en français |
-| Téléchargement de la sauvegarde | OK — `GO-Mat_sauvegarde_2026-10-30.json`, 8,8 Mo, 52 tables, aucune erreur `_erreur_`, les articles TEST y figurent |
-| Restauration d'un article TEST supprimé | **Échec** — voir P9 |
+## 4. Anomalies détaillées
 
-## Problèmes
+Échelle : **Critique** (bloque la mise en production), **Majeur** (fonction faussée ou contournement obligatoire), **Mineur** (gêne, confusion, finition).
 
-### P1 — Le QR « Personnes » ne fonctionne pas au comptoir
-- **Page** : Personnes (`/users`), bouton « QR CODE » d'une carte.
-- **Ce que j'ai fait** : ouvert le QR de TEST Badge Comptoir, puis tenté de le lire au comptoir.
-- **Attendu** : le QR identifie la personne au comptoir, comme le QR de « Mon badge » ou d'une carte imprimée (`GOMAT-USER:<code>`).
-- **Constaté** : le modal affiche l'identifiant brut `6ae6abc8-037f-45cb-a281-bfaf2b200e64`, et le QR encode cette valeur. Le comptoir refuse : « Erreur de scan », console `❌ Erreur scan: Error: Badge inconnu ou accès suspendu`. Avec le préfixe `GOMAT-USER:` ajouté à la main, même erreur.
-- **Cause probable** : `src/pages/Users.tsx` (vers la ligne 497) passe `selectedUser` (l'id) comme `value` de `QRCodeGenerator`. Les autres écrans utilisent `badgeValue(code)` (`src/lib/badges.ts`).
+### P10 — CRITIQUE — Sortie par demande ou par kit : l'exemplaire n'est pas attaché
+- **Pages** : Demandes (« Sortir »), Comptoir (sortie d'un kit), puis Comptoir (scan).
+- **Ce que j'ai fait** : sorti DEM2610-0001 après avoir scanné l'exemplaire `GOMAT1-000001-001` pendant la préparation. Puis, au comptoir, scanné le badge de TEST Badge Comptoir et le même exemplaire.
+- **Attendu** : la sortie porte l'exemplaire ; il passe « checked-out » ; au comptoir, le scan le propose en **Retour** (mode Auto).
+- **Constaté** :
+  - En base, la sortie de la demande `dc7e0923-…` a `instance_id = null`. L'exemplaire reste `available`, alors que `available_quantity = 0`.
+  - Au comptoir, la perceuse figure dans « EN SA POSSESSION », mais son scan l'ajoute en **« Sortie »**.
+  - « Valider » échoue avec `Arrêt : Plus de stock disponible pour « TEST Perceuse comptoir »`. Console : `Failed to load resource: the server responded with a status of 400 ()`.
+  - Même défaut pour le kit : la sortie `982fe21d-…` a `instance_id = null`.
+  - Pour comparaison, une sortie directe au comptoir attache bien l'exemplaire (`checked-out`).
+- **Cause** : dans `supabase/migrations/20261029000003_demandes_vehicules.sql`, `issue_request` construit `{equipment_id, quantity}` et jamais `instance_id`. L'exemplaire scanné pendant la préparation n'est pas conservé (voir P8). Pour le kit, la ligne du kit ne contient pas d'exemplaire.
+- **Correction proposée** : enregistrer l'exemplaire scanné à la préparation (par exemple `request_items.instance_id`) et le passer à `create_checkout`. À défaut, refuser la sortie d'un outil à QR individuel sans exemplaire. Corriger les données existantes avec un script.
+- **Capture** : `captures/09-comptoir-article-possede-propose-en-sortie.jpg`
+
+### P9 — CRITIQUE — La restauration échoue sur les sorties dès qu'un outil est sorti
+- **Page** : Paramètres → Sauvegarde → « Restaurer depuis une sauvegarde ».
+- **Ce que j'ai fait** : sauvegarde téléchargée (contenant « TEST Article suppression »), article supprimé, fichier chargé, puis « Remettre les lignes manquantes » et « Confirmer ».
+- **Attendu** : les lignes absentes reviennent, les lignes présentes sont ignorées, sans erreur.
+- **Constaté** : journal affiché :
+  ```
+  equipment : 1 ligne(s) remise(s)
+  equipment_instances : 1 ligne(s) remise(s)
+  checkouts : erreur, Plus de stock disponible pour « TEST Perceuse comptoir »
+  ```
+  Aucune sortie ne manquait (3 dans la sauvegarde, toutes présentes en base). L'erreur vient d'une sortie `active` de la sauvegarde, pour un outil actuellement sorti.
+- **Cause** : `restore_missing_rows` (`supabase/migrations/20261030000022_caution_sauvegarde_sms_carte.sql`, vers la ligne 89) fait `INSERT … ON CONFLICT DO NOTHING`. Le déclencheur `checkouts_check_availability_trigger` (`BEFORE INSERT`, `20261029000001_stock_calcule_en_base.sql`, ligne 158) s'exécute **avant** la détection du conflit et lève l'exception. Tout le lot de 500 lignes est annulé, y compris les sorties réellement manquantes. Le déclencheur n'a pas d'effet de bord sur le stock (le recalcul est `AFTER INSERT`).
+- **Correction proposée** : dans `restore_missing_rows`, ne garder que les lignes dont la clé est absente (`WHERE NOT EXISTS …`) avant l'`INSERT`. Ou neutraliser le contrôle de disponibilité pendant une restauration (par exemple une variable de session lue par le déclencheur). Ajouter un test de restauration complète sur une base de recette.
+- **Note** : un premier essai avait semblé ne rien restaurer. C'était un artefact du test : j'avais cliqué un bouton « Confirmer » caché qui reste dans le DOM. Rejoué proprement, avec le dialogue visible, la restauration fonctionne, sauf pour les sorties.
+- **Capture** : `captures/16-restauration-journal-erreur-checkouts.jpg`
+
+### P12 — CRITIQUE — Départ clôturé avec une caution non remboursée, sans alerte
+- **Page** : Personnes → bouton « Départ » de TEST Intérimaire Caution.
+- **Ce que j'ai fait** : ouvert le départ (caution 200 CHF versée le 30.10.2026, non rendue), puis « Clôturer le départ » sans cliquer « Caution rendue ».
+- **Attendu** : la caution compte comme un élément à régler ; le message ne dit pas « Rien à rendre » ; la clôture demande une confirmation.
+- **Constaté** :
+  - En vert : « Rien à rendre : le départ peut être clôturé. », juste au-dessus de « Caution de 200.00 CHF versée le 30.10.2026 · à rembourser au départ ».
+  - La clôture passe sans confirmation : « TEST Intérimaire Caution : départ enregistré, accès et badge désactivés ».
+  - En base : `active=false`, `left_on=2026-10-30`, `deposit_amount=200.00`, `deposit_returned_on=null`.
+- **Cause** : `src/components/users/DepartureModal.tsx` calcule `remaining = held.length + ppe.length + rentals.length` sans `depositDue`. `close()` ne confirme que si `remaining > 0`.
+- **Correction proposée** : ajouter la caution due au compteur et au message, et exiger une confirmation explicite (« Caution non remboursée : clôturer quand même ? »). Ajouter une liste des cautions non remboursées pour les personnes parties.
+- **Capture** : `captures/11-depart-caution-rien-a-rendre.jpg`
+
+### P1 — CRITIQUE — Le QR de la page Personnes n'est pas lu par le comptoir
+- **Page** : Personnes → bouton « QR CODE ».
+- **Ce que j'ai fait** : affiché le QR de TEST Badge Comptoir et saisi sa valeur au comptoir.
+- **Attendu** : la personne est identifiée (format `GOMAT-USER:<code>`, comme « Mon badge » ou les cartes imprimées).
+- **Constaté** : le QR encode l'identifiant brut `6ae6abc8-037f-45cb-a281-bfaf2b200e64`. Comptoir : « Erreur de scan ». Console : `❌ Erreur scan: Error: Aucune personne` ; avec le préfixe ajouté, `❌ Erreur scan: Error: Badge inconnu ou accès suspendu`.
+- **Cause** : `src/pages/Users.tsx` (vers la ligne 497) passe `selectedUser` (l'id) à `QRCodeGenerator`, au lieu de `badgeValue(code)` (`src/lib/badges.ts`).
+- **Correction proposée** : utiliser le code de `user_badges` avec `badgeValue()`, ou réutiliser `BadgeCard`.
 - **Capture** : `captures/01-personnes-qr-contient-uuid.jpg`
 
-### P2 — Badge créé pendant la session non reconnu jusqu'au rechargement
-- **Page** : Comptoir (`/comptoir`), après création de TEST Badge Comptoir dans Personnes.
-- **Ce que j'ai fait** : scan de `GOMAT-USER:f58aec773e89dafc02` sans recharger la page.
-- **Attendu** : badge reconnu immédiatement après création.
-- **Constaté** : « Erreur de scan », console `❌ Erreur scan: Error: Badge inconnu ou accès suspendu`. Après rechargement complet, le même scan donne « Scan réussi ! ».
-- **Vérification** : la fonction `find_user_by_badge` renvoie bien l'id de TEST pour ce code (appel direct, lecture seule). Le problème vient donc de l'état de l'interface. Cause non confirmée.
-- **Capture** : `captures/02-comptoir-saisie-badge-avec-prefixe.jpg` (saisie ; l'erreur n'a pas été capturée).
+### P8 — MAJEUR — « Marquer prête » fait perdre la préparation
+- **Page** : Demandes → fiche DEM2610-0001.
+- **Ce que j'ai fait** : scanné l'exemplaire (« 1 / 1 préparé(s) »), cliqué « Marquer prête », puis rouvert la fiche.
+- **Attendu** : préparation conservée ; « Sortir » actif.
+- **Constaté** : la liste affiche « Prête », mais la fiche indique « 0 / 1 préparé(s) » et « Sortir » est désactivé (« Tous les articles doivent être préparés avant la sortie. »). Il faut rescanner.
+- **Cause** : `src/pages/Requests.tsx`, ligne 598 : `const [prepared, setPrepared] = useState(...)`. L'état n'existe que dans la fiche ouverte et n'est jamais enregistré en base.
+- **Correction proposée** : enregistrer la préparation par ligne (et l'exemplaire, voir P10). Un magasinier doit pouvoir préparer le soir et sortir le matin.
+- **Captures** : `captures/07-demande-fiche-avant-scan.jpg`, `captures/08-demande-prete-liste.jpg`
 
-### P3 — Erreurs « 401 » et « 400 » répétées dans la console
-- **Page** : toutes.
-- **Constaté** : `Failed to load resource: the server responded with a status of 401 ()`, et parfois `400` et `409`. Requête relevée : `GET /rest/v1/status_configs?select=id&limit=1` → 401 (`net::ERR_ABORTED`). Les corps de réponse des 400 et 409 n'ont pas pu être lus.
-- **Attendu** : aucune erreur pour une session connectée et des actions réussies.
-- **Statut** : non diagnostiqué.
+### P7 — MAJEUR (à reconfirmer) — Retour d'un kit par scan du QR du kit non enregistré
+- **Page** : Comptoir, mode « Retour ».
+- **Ce que j'ai fait** : badge TEST, puis `GOMAT-KIT:A9C9CCB2`, puis « Valider ».
+- **Attendu** : la sortie du kit passe à `returned`.
+- **Constaté** : le panier montrait « Retour · TEST Perceuse comptoir · TEST Kit perçage » ; après « Valider », le panier s'est vidé. En base, la sortie `982fe21d-…` est restée `active`. Console juste après : `status of 409 ()` et `status of 400 ()`. Le retour par case à cocher a ensuite fonctionné.
+- **Analyse** : le code (`scanKit`, `src/pages/Counter.tsx`, ligne 242) ajoute bien les sorties du kit aux retours ; la cause n'est pas trouvée. Ce test a eu lieu sur la version `6a8e96f`, et n'a pas pu être rejoué (outil sorti par ailleurs). **À retester** sur la version actuelle.
 
-### P4 — Création d'outil : formulaire en plusieurs étapes, liste en retard
-- **Page** : Outils (`/equipment`).
-- **Constaté** : le formulaire n'a pas de bouton « Enregistrer » : « Suivant », puis « Créer le matériel ». Après une première tentative, la liste n'affiche pas l'outil créé. Après rechargement, `TEST Perceuse comptoir` est présent, une seule fois.
+### P2 — MAJEUR — Badge d'une personne créée dans la session non reconnu avant rechargement
+- **Page** : Comptoir, juste après la création de TEST Badge Comptoir.
+- **Constaté** : « Erreur de scan » ; console `❌ Erreur scan: Error: Badge inconnu ou accès suspendu`. Après rechargement : « Scan réussi ! ». La fonction `find_user_by_badge` renvoie bien la personne (appel direct).
+- **Cause probable** : la liste des personnes et des badges du comptoir est chargée une fois et pas rafraîchie après une création.
+- **Correction proposée** : recharger personnes et badges quand un badge est inconnu, avant d'afficher l'erreur.
+- **Capture** : `captures/02-comptoir-saisie-badge-avec-prefixe.jpg`
+
+### P13 — MAJEUR — Une personne partie reste sélectionnable dans « Nouvelle demande »
+- **Page** : Demandes → « Nouvelle demande » → « Pour qui ».
+- **Constaté** : « TEST Intérimaire Caution » est proposé alors que son départ est clôturé (`active=false`).
+- **Correction proposée** : ne proposer que les personnes actives (et dont l'accès n'est pas échu).
+
+### P6 — MAJEUR — Suppression d'un outil avec historique : refus non expliqué
+- **Page** : Outils → « Supprimer » (dialogue « Cette action est irréversible »).
+- **Constaté** : la base refuse la suppression (appel direct) : `409 {"code":"23503","message":"update or delete on table \"equipment\" violates foreign key constraint \"checkouts_equipment_id_fkey\" on table \"checkouts\""}`. Le dialogue ne prévient pas. Le message affiché dans l'interface n'a pas pu être observé.
+- **Correction proposée** : proposer « Retirer du service » ou un archivage pour un outil avec historique ; si la suppression est refusée, afficher un message clair.
+
+### P14 — MAJEUR (UX) — « Modifier le matériel » : boutons invisibles à l'étape 2
+- **Page** : Outils → « Modifier » → « Suivant ».
+- **Constaté** : l'étape « Configuration des quantités » n'affiche aucun bouton tant que « Configuration QR codes » est repliée. « Retour », « Annuler » et « Modifier le matériel » n'apparaissent qu'après dépliage. On croit ne pas pouvoir enregistrer. Le même schéma s'applique à la création (« Créer le matériel »).
+- **Correction proposée** : boutons d'action toujours visibles en pied de fenêtre ; section dépliée par défaut.
+- **Captures** : `captures/12-modifier-materiel-boutons-invisibles.jpg`, `captures/13-modifier-materiel-boutons-apres-depliage.jpg`
+
+### P11 — MINEUR — Date obligatoire de l'intérimaire : erreur invisible
+- **Page** : Personnes → « Ajouter une personne », type « Intérimaire ».
+- **Constaté** : « Enregistrer » ne fait rien. La seule erreur est portée par un champ caché (`sr-only`) : `INPUT#user-until Veuillez renseigner ce champ.` Aucun message ni champ en rouge visible.
+- **Cause** : `src/components/common/DateInput.tsx` met `required` sur l'ancre cachée (`Anchor`), pas sur le sélecteur visible.
+- **Correction proposée** : message visible sous le sélecteur, et sélecteur mis en évidence.
+
+### P16 — MINEUR — Motif des erreurs de scan absent de l'écran
+- **Page** : Comptoir.
+- **Constaté** : pour un badge inconnu ou suspendu, l'écran affiche seulement « Erreur de scan ». Le motif (`Badge inconnu ou accès suspendu`) n'est que dans la console.
+- **Correction proposée** : afficher le motif (« Badge inconnu », « Accès suspendu depuis le … », « Personne partie »).
+
+### P4 — MINEUR — Création d'outil : liste non rafraîchie
+- **Page** : Outils.
+- **Constaté** : après la création, l'outil n'apparaît dans la liste qu'après rechargement (une seule occurrence en base, pas de doublon).
 - **Captures** : `captures/03-outil-formulaire-etape1.jpg`, `captures/04-outil-liste-apres-premiere-tentative.jpg`
 
-### P5 — Fenêtres qui se ferment seules et écran « Chargement… » (intermittent)
-- **Pages** : Demandes, Chantiers, Outils, Paramètres (restauration).
-- **Constaté pendant la première partie des tests** :
-  - Un formulaire (« Nouvelle demande », « Nouveau chantier », « Ajouter un équipement ») se fermait en 2 à 3 secondes sans action. Dans « Nouvelle demande », choisir une personne le fermait aussi (reproduit deux fois).
-  - Des captures montraient un écran plein « Chargement… » alors que le DOM contenait la page.
-- **Constaté plus tard** : le même choix de personne ne ferme plus le formulaire, et aucun « Chargement… » n'apparaît pendant plus de 30 secondes. Le problème est donc intermittent.
-- **Cause probable (non confirmée)** : `src/contexts/AuthContext.tsx` (vers la ligne 62) repasse `loading` à `true` sur les événements `SIGNED_IN`, `SIGNED_OUT` ou `USER_UPDATED`. `src/components/auth/AuthGate.tsx` (ligne 22) affiche alors « Chargement… » et démonte la page. Je n'ai pas pu observer ces événements.
-- **Capture** : `captures/05-chargement-plein-ecran-formulaire-ferme.jpg`. Attention : les captures d'écran de l'outil étaient parfois en retard sur le DOM.
+### P15 — MINEUR — Carte : bulle de la pastille coupée
+- **Page** : Carte.
+- **Constaté** : la bulle d'un chantier en haut à gauche est coupée (« e du Simplon… ») et passe sous les boutons de zoom.
+- **Correction proposée** : `autoPanPadding` sur la bulle, ou décaler les boutons de zoom.
+- **Capture** : `captures/10-carte-materiel-sur-place-bulle-coupee.jpg`
 
-### P6 — Suppression refusée pour un outil avec historique (base)
-- **Page** : Outils, bouton « Supprimer ».
-- **Ce que j'ai fait** : tenté de supprimer TEST Perceuse comptoir, qui a un historique de sorties. Via l'API, la suppression est refusée.
-- **Constaté** : `409` — `{"code":"23503","message":"update or delete on table \"equipment\" violates foreign key constraint \"checkouts_equipment_id_fkey\" on table \"checkouts\""}`.
-- **Attendu** : l'interface doit expliquer le refus (ou archiver l'outil). Le dialogue dit « Cette action est irréversible » sans mention de l'historique. Le message affiché dans l'interface n'a pas été vérifié (la confirmation a été fermée, voir P5).
+### P3 — MINEUR — Erreurs 401 et 400 répétées en console
+- **Constaté** : de nombreux `Failed to load resource: the server responded with a status of 401 ()`, notamment `HEAD /rest/v1/status_configs?select=id&limit=1` → 401 (`net::ERR_ABORTED`), et des `400` sans action visible.
+- **Correction proposée** : identifier l'appel (probablement un test de connexion fait avant l'authentification) et le supprimer ou le reporter.
 
-### P7 — Retour d'un kit par scan du QR : rien n'est enregistré
-- **Page** : Comptoir, mode « Retour ».
-- **Ce que j'ai fait** : badge TEST scanné, puis QR du kit `GOMAT-KIT:A9C9CCB2` scanné (mode Retour), puis « Valider ».
-- **Attendu** : la sortie du kit passe à `returned`.
-- **Constaté** : le panier affiche « Retour · TEST Perceuse comptoir · TEST Kit perçage », puis « Valider » vide le panier et affiche l'écran de réinitialisation (pas d'erreur visible). En base, la sortie du kit (`982fe21d-…`) reste `active`. Console : `409` et `400` juste après.
-- **Contournement vérifié** : cocher « TEST Perceuse comptoir » dans la liste « EN SA POSSESSION » puis « Valider » : les deux sorties passent à `returned`.
-- **Cause probable** : `src/lib/offlineCounter.ts` (`submitOperation`) envoie `return_with_check` avec `p_checkout_id` de la ligne du panier. Le retour via le kit ne transmet pas le même identifiant que la liste. Non confirmé.
+### P17 — MINEUR — Sélecteur de date : jours des mois voisins identiques aux jours du mois
+- **Constaté** : dans le sélecteur MX, les jours du mois précédent et du suivant sont affichés et cliquables comme ceux du mois courant. En novembre, cliquer « 27 » dans la première ligne choisit le **27 octobre** (date passée). C'est l'erreur que j'ai faite pendant le test.
+- **Correction proposée** : griser ces jours, ou les rendre non cliquables.
 
-### P8 — « Marquer prête » fait perdre la préparation
-- **Page** : Demandes, fiche DEM2610-0001.
-- **Ce que j'ai fait** : scanné `GOMAT1-000001-001` (compteur « 1 / 1 préparé(s) »), puis « Marquer prête ».
-- **Attendu** : la demande passe à « Prête » avec l'article préparé, et « Sortir » reste disponible.
-- **Constaté** : la liste affiche « Prête ». En rouvrant la fiche : « 0 / 1 préparé(s) » et « Sortir » désactivé. Il a fallu rescanner l'article (« 1 / 1 ») pour pouvoir sortir.
-- **Capture** : `captures/07-demande-fiche-avant-scan.jpg` (fiche avant scan), `captures/08-demande-prete-liste.jpg` (liste « Prête »).
+### P18 — MINEUR — Rattachement chantier par nom libre
+- **Constaté** : la demande DEM2610-0001 vers « TEST Chantier demande » n'est rattachée à aucun chantier (aucun chantier de ce nom) : le matériel n'apparaît ni sur la fiche chantier, ni sur la carte. Le rattachement repose sur la saisie exacte du nom.
+- **Correction proposée** : un sélecteur de chantier (avec saisie libre en option) dans les demandes et au comptoir.
 
-### P9 — Restauration d'un article supprimé : rien n'est remis
-- **Page** : Paramètres, section « Restaurer depuis une sauvegarde ».
-- **Ce que j'ai fait** :
-  1. créé TEST Article suppression, sans historique ;
-  2. téléchargé une sauvegarde qui le contient (vérifié : présent dans le fichier) ;
-  3. supprimé l'article par l'API (`DELETE` avec `id` et `name`, `200`) ; il ne reste que TEST Perceuse comptoir en base ;
-  4. chargé le fichier dans le champ « Fichier de sauvegarde », puis « Remettre les lignes manquantes », puis « Confirmer ».
-- **Attendu** : l'article revient en base, et un journal indique le nombre de lignes remises.
-- **Constaté** : après le clic, la section revient à son état initial : ni fichier affiché, ni bouton, ni journal. L'article n'est pas revenu en base. Trois fois de suite : même résultat. Des `400` et `409` apparaissent dans la console pendant l'opération, sans corps lisible.
-- **Cause** : non déterminée. Le code de restauration (`src/components/settings/BackupPanel.tsx`, fonction `restore`) affiche pourtant un journal par table, y compris en cas d'erreur. Le journal absent suggère que le composant a été démonté (lien possible avec P5), ou une erreur avant l'affichage.
-- **Pour reproduire** : relancer la restauration avec l'onglet Réseau ouvert, et relever les appels `restore_missing_rows` et leurs corps de réponse.
+### P5 — ENVIRONNEMENT (non reproduit) — Fenêtres fermées seules, écran « Chargement… »
+- **Constaté entre 10:35 et 10:50** : des formulaires (demande, chantier, outil) se fermaient en 2 à 3 secondes, et des captures montraient « Chargement… » en plein écran.
+- **Constaté ensuite** : plus reproduit (formulaire ouvert plus de 30 s, aucun « Chargement… »).
+- **Analyse** : coïncide avec les mises à jour du code pendant la session (rechargements à chaud de Vite). La piste `AuthContext.tsx` (passage à `loading=true` sur `SIGNED_IN`) reste possible mais non démontrée. À surveiller.
+- **Capture** : `captures/05-chargement-plein-ecran-formulaire-ferme.jpg`
 
-## Ce qui n'a pas été testé
-- Retour d'un kit par scan (P7 : contournement vérifié seulement).
-- Validation manuelle d'une demande (l'outil ne demandait pas d'approbation).
-- Chantier avec adresse et page Carte.
-- Intérimaire avec caution, et bouton Départ.
-- Restauration complète (P9).
+---
 
-## Annexe : vérifications en lecture seule
-- Requêtes `equipment_instances`, `user_badges`, `checkouts`, `kits`, `equipment`, avec le jeton de la session, pour contrôler les résultats affichés. Aucune écriture hors des actions de l'interface, sauf la suppression par API de TEST Article suppression (étape 3 de P9).
+## 5. Liste no-go
+
+À corriger et retester avant toute mise en production :
+
+1. **P10** : l'exemplaire n'est pas attaché aux sorties par demande et par kit (stock et traçabilité faux).
+2. **P9** : restauration des sorties impossible dès qu'un outil est dehors.
+3. **P12** : clôture d'un départ avec une caution non remboursée, sans alerte.
+4. **P1** : QR de la page Personnes illisible au comptoir.
+
+Fortement recommandé avant le lancement : **P8** (préparation perdue), **P2** (badge non reconnu), **P13** (personne partie sélectionnable), **P7** (à retester).
+
+---
+
+## 6. Propositions d'amélioration
+
+### Fiabilité des données
+- **Exemplaire obligatoire** pour tout outil à QR individuel : refus en base d'une sortie sans `instance_id` (contrainte ou déclencheur), pour rendre P10 impossible.
+- **Contrôle de cohérence** dans « Santé des données » : exemplaires `available` d'un outil à 0 disponible ; sorties actives sans exemplaire ; personnes parties avec matériel ou caution.
+- **Restauration testée** : un test automatique « sauvegarde → suppression → restauration » sur une base de recette, à chaque migration.
+
+### Comptoir
+- Afficher le **motif** de chaque refus de scan (P16), et proposer « Rendre » quand l'article scanné est déjà chez la personne.
+- **Recharger** personnes, badges et kits quand un code est inconnu, avant l'erreur (P2).
+- Indiquer à l'écran **qui a l'article** quand on scanne un article sorti au nom de quelqu'un d'autre.
+
+### Demandes
+- Enregistrer la préparation ligne par ligne (P8), avec l'exemplaire scanné (P10).
+- Choisir le chantier dans une liste (P18).
+- Filtrer « Pour qui » sur les personnes actives (P13).
+
+### Personnes et départs
+- Caution intégrée au solde de départ (P12) ; liste des cautions encaissées et non rendues.
+- Erreurs de formulaire visibles sur les sélecteurs de date (P11).
+
+### Interface
+- Boutons d'action toujours visibles dans les fenêtres en plusieurs étapes (P14).
+- Jours hors du mois grisés dans le sélecteur (P17).
+- Bulles de la carte entièrement visibles (P15).
+- Suppression d'un outil avec historique : proposer « Retirer du service » (P6).
+
+### Technique
+- Supprimer les appels en 401 et 400 au démarrage (P3).
+- Remplacer les dialogues de confirmation montés en permanence dans le DOM par des dialogues créés à l'ouverture. Cela simplifie aussi les tests automatisés.
+- Ajouter des identifiants de test (`data-testid`) sur le comptoir, les demandes et la sauvegarde pour automatiser cette batterie (Playwright).
+
+---
+
+## 7. Données de test laissées en base
+
+| Type | Nom | Identifiant | État final |
+|---|---|---|---|
+| Personne | TEST Badge Comptoir | `6ae6abc8-037f-45cb-a281-bfaf2b200e64` | active, a la perceuse en sortie |
+| Personne | TEST Intérimaire Caution | `test.interim@example.com` | partie, caution 200 CHF **non rendue** (scénario P12) |
+| Outil | TEST Perceuse comptoir | `c670bc06-ede3-4cf6-a3e0-f78e36702202` | sortie active, bon DN2610-0004, chantier « TEST Chantier carte » ; « Validation requise » activée |
+| Outil | TEST Article suppression | `315cde03-b256-4e52-85f6-cf3df776fe84` | supprimé deux fois (par API), puis restauré par l'interface |
+| Kit | TEST Kit perçage | `aac07825-d81b-4b9b-b4f0-afd0ca2e1ba8` | rendu |
+| Demande | DEM2610-0001 | — | sortie puis rendue |
+| Demande | DEM2610-0002 (3.11 → 4.11) | — | validée, à préparer |
+| Chantier | TEST Chantier carte (Rue du Simplon 1, 1800 Vevey) | — | en cours |
+| Paramètre | `last_backup_at` | — | mis à jour par les deux téléchargements de sauvegarde |
+
+Aucun nettoyage n'a été fait. À supprimer ou archiver sur demande.
+
+---
+
+## 8. Limites du test
+
+- Tests pilotés par script dans le navigateur intégré, pas à la main dans Chrome : la saisie au clavier, la caméra et les vrais lecteurs de QR n'ont pas été testés.
+- Un seul compte (administrateur) : les rôles Collaborateur, Magasinier et Responsable, et leurs droits, ne sont pas couverts.
+- Pas de test hors ligne (file d'attente du comptoir), ni de signature à la remise, ni d'impression (badges, bons, PDF).
+- Suppressions faites par l'API pour P9 : le bouton « Supprimer » de l'interface n'a pas pu être validé jusqu'au bout.
+- Code modifié pendant la session (section 2) : P5 et P7 doivent être rejoués sur la version actuelle.
+- Les corps des réponses 400 et 409 n'ont pas pu être lus depuis l'outil de test.
+
+---
+
+## Annexe — Vérifications en base
+
+Lectures avec le jeton de la session (`equipment`, `equipment_instances`, `checkouts`, `user_badges`, `users`, `kits`), pour contrôler chaque résultat affiché. Écritures hors interface, toutes sur des données TEST :
+1. deux suppressions de « TEST Article suppression » ;
+2. un appel direct `restore_missing_rows('equipment', [ligne TEST])` pour isoler P9 (réponse `1`).
