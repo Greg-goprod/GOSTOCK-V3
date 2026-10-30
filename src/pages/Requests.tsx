@@ -7,6 +7,7 @@ import FuelInput from '../components/common/FuelInput';
 import SignaturePad from '../components/common/SignaturePad';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
 import PickListButton from '../components/requests/PickListButton';
+import { useSignatureRule } from '../lib/signature';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { DeclareIncidentModal } from './Incidents';
@@ -589,6 +590,9 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
   const [signature, setSignature] = useState<string | null>(null);
   // Photos du véhicule au départ : comparées à celles du retour
   const [startPhotos, setStartPhotos] = useState<string[]>([]);
+  // Matériel de valeur : la personne qui retire signe la remise
+  const needsSignature = useSignatureRule();
+  const [handoverSignature, setHandoverSignature] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -646,6 +650,14 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
       p_request_id: request.id,
       p_vehicle: vehicleItem ? { km: Number(km), fuel, damages: damages || null, signature } : null,
     }), `Demande ${request.number} sortie`);
+    const handover = handoverSignature ?? signature;
+    if (ok && valuableTools.length && handover) {
+      const { data: issued } = await supabase.from('requests').select('delivery_note_id').eq('id', request.id).maybeSingle();
+      const { error } = issued?.delivery_note_id
+        ? await supabase.rpc('sign_delivery_note', { p_note_id: issued.delivery_note_id, p_signature: handover, p_name: pickupName })
+        : { error: null };
+      if (error) toast.error(`Signature non enregistrée : ${errorMessage(error)}`);
+    }
     if (ok && vehicleItem && startPhotos.length) {
       const { error } = await supabase.from('vehicle_trips').update({ start_photos: startPhotos }).eq('request_id', request.id).is('end_at', null);
       if (error) toast.error(`Photos non enregistrées : ${errorMessage(error)}`);
@@ -669,6 +681,10 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
   };
 
   const articleLines = items.filter(i => i.item_kind !== 'vehicle');
+  const valuableTools = items.filter(i => {
+    const item = i.item_kind === 'tool' ? equipment.find(e => e.id === i.equipment_id) : undefined;
+    return item ? needsSignature(item) : false;
+  });
   const allPrepared = articleLines.every(i => prepared[i.id]);
   // Préparer et sortir : le magasin uniquement (le collaborateur ne scanne jamais)
   const canIssue = can('scan') && ['approved', 'ready'].includes(request.status);
@@ -781,6 +797,14 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
                 <QRCodeScanner onScan={onScan} disableAutoFocus />
               </div>
             )}
+            {valuableTools.length > 0 && !vehicleItem && allPrepared && (
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                  Matériel de valeur ({valuableTools.map(i => equipment.find(e => e.id === i.equipment_id)?.name).join(', ')}) : {pickupName} signe la remise.
+                </p>
+                <SignaturePad label={`Signature de ${pickupName}`} onChange={setHandoverSignature} />
+              </div>
+            )}
             <div className="flex flex-wrap justify-end gap-2">
               <PickListButton requestId={request.id} title={`Préparation ${request.number}`}
                 subtitle={[request.requester_name, request.destination, `pour le ${new Date(request.start_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}`].filter(Boolean).join(' · ')} />
@@ -793,7 +817,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
               <Button
                 onClick={() => (vehicleItem ? setIssuing(true) : issue())}
                 loading={busy}
-                disabled={!allPrepared}
+                disabled={!allPrepared || (valuableTools.length > 0 && !vehicleItem && !handoverSignature)}
               >
                 {vehicleItem ? 'Sortir : état des lieux' : 'Sortir'}
               </Button>

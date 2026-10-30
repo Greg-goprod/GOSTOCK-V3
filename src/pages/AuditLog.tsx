@@ -39,6 +39,8 @@ const TABLES: Record<string, string> = {
   rentals: 'Location',
   storage_bins: 'Emplacement',
   transfers: 'Transfert',
+  ppe_types: 'Type d\'EPI',
+  ppe_issues: 'EPI remis',
 };
 
 const ACTIONS = { insert: 'Création', update: 'Modification', delete: 'Suppression' };

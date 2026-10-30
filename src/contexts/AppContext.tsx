@@ -47,7 +47,8 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   dailyRate: item.daily_rate === null || item.daily_rate === undefined ? undefined : Number(item.daily_rate),
   purchasePrice: item.purchase_price === null || item.purchase_price === undefined ? undefined : Number(item.purchase_price),
   depotId: item.depot_id,
-  requiredTrainingId: item.required_training_id ?? undefined
+  requiredTrainingId: item.required_training_id ?? undefined,
+  requiresSignature: Boolean(item.requires_signature)
 });
 
 // Nombre de jours avant l'échéance à partir duquel un retour est signalé
@@ -108,6 +109,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.rpc('check_due_reminders'),
         supabase.rpc('check_monthly_report'),
         supabase.rpc('check_training_rental_deadlines'),
+        supabase.rpc('check_people_deadlines'),
       ]);
 
       // Charger toutes les données nécessaires en parallèle
@@ -265,6 +267,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         linked: !!u.auth_user_id,
         licenseCategories: u.license_categories || [],
         licenseExpiresOn: u.license_expires_on,
+        personKind: u.person_kind ?? 'employee',
+        company: u.company,
+        accessUntil: u.access_until,
+        leftOn: u.left_on,
         dateCreated: u.created_at
       })));
       setEquipment(transformedEquipment);

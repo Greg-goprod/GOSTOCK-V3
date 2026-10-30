@@ -38,6 +38,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     short_title: '',
     available_quantity: 1,
     requires_approval: false,
+    requires_signature: false,
     purchase_price: '',
     daily_rate: '',
     required_training_id: '',
@@ -75,6 +76,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         short_title: '',
         available_quantity: 1,
         requires_approval: false,
+        requires_signature: false,
         purchase_price: '',
         daily_rate: '',
         required_training_id: '',
@@ -227,6 +229,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         purchase_price: formData.purchase_price === '' ? null : Number(formData.purchase_price),
         daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
         required_training_id: formData.required_training_id || null,
+        requires_signature: formData.requires_signature,
         catalog_product_id: formData.catalog_product_id || null,
         ean: formData.ean || null,
         supplier_reference: formData.supplier_reference || null,
@@ -567,6 +570,19 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                   <span>
                     <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Validation requise</span>
                     <span className="block text-xs text-gray-600 dark:text-gray-400">Toute demande contenant cet article doit être validée par un responsable, même s'il est disponible.</span>
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 md:col-span-2 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.requires_signature}
+                    onChange={e => setFormData(prev => ({ ...prev, requires_signature: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Signature à la remise</span>
+                    <span className="block text-xs text-gray-600 dark:text-gray-400">La personne signe sur l'écran en recevant l'outil. Toujours demandé au-delà du seuil de prix des paramètres.</span>
                   </span>
                 </label>
 

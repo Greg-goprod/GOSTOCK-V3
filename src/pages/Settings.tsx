@@ -87,6 +87,7 @@ const Settings: React.FC = () => {
   const [articleSeries, setArticleSeries] = useState('');
   const [nextArticleNumber, setNextArticleNumber] = useState('');
   const [approvalMaxQuantity, setApprovalMaxQuantity] = useState('10');
+  const [signatureMinValue, setSignatureMinValue] = useState('500');
   const [companyLogo, setCompanyLogo] = useState('');
 
   useEffect(() => {
@@ -212,6 +213,9 @@ const Settings: React.FC = () => {
     const { data: preview } = await supabase!.rpc('preview_article_number');
     setNextArticleNumber(preview || '');
     
+    const signatureSetting = data?.find(s => s.id === 'signature_min_value');
+    if (signatureSetting) setSignatureMinValue(signatureSetting.value);
+
     const approvalSetting = data?.find(s => s.id === 'approval_max_quantity');
     if (approvalSetting) {
       setApprovalMaxQuantity(approvalSetting.value);
@@ -461,6 +465,41 @@ const Settings: React.FC = () => {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Au-delà de cette quantité par article, une demande doit être validée par un responsable. Les véhicules et les articles marqués « validation requise » le sont toujours.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="signature-min" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Signature à la remise à partir de (CHF)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="signature-min"
+                    type="number"
+                    min={0}
+                    step={50}
+                    inputMode="numeric"
+                    value={signatureMinValue}
+                    onChange={(e) => setSignatureMinValue(e.target.value)}
+                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      const value = Number(signatureMinValue);
+                      if (!(value >= 0)) {
+                        toast.error('Montant invalide');
+                        return;
+                      }
+                      updateSystemSetting('signature_min_value', String(value), 'Prix d\'achat (CHF) à partir duquel la signature est demandée à la remise');
+                    }}
+                  >
+                    SAUVER
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Un outil dont le prix d'achat atteint ce montant (ou marqué « signature à la remise ») est signé sur l'écran par la personne qui le reçoit. 0 = seulement les outils marqués.
                 </p>
               </div>
 

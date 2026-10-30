@@ -28,6 +28,8 @@ const KINDS = [
   { id: 'rental_due', label: 'Locations à rendre / en retard' },
   { id: 'training_expiry', label: 'Formations à renouveler' },
   { id: 'transfer', label: 'Transferts entre dépôts' },
+  { id: 'ppe_renewal', label: 'EPI à renouveler' },
+  { id: 'mission_end', label: 'Fins de mission (intérimaires)' },
 ];
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';

@@ -32,7 +32,8 @@ import {
   KeyRound,
   ArrowLeftRight,
   MapPin,
-  CalendarRange
+  CalendarRange,
+  ShieldCheck
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -77,6 +78,7 @@ const NAV_SECTIONS = [
   { title: 'Réglages', links: [
     { to: '/users', label: 'Personnes', icon: Users },
     { to: '/formations', label: 'Formations', icon: GraduationCap },
+    { to: '/epi', label: 'EPI', icon: ShieldCheck },
     { to: '/journal', label: 'Journal', icon: History },
     { to: '/settings', label: 'Paramètres', icon: Settings },
   ] },

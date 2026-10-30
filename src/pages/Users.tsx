@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { Plus, QrCode, Mail, Building2, Phone, LayoutGrid, List, ArrowUpDown, Filter, Pencil, Trash2, Contact } from 'lucide-react';
+import { Plus, QrCode, Mail, Building2, Phone, LayoutGrid, List, ArrowUpDown, Filter, Pencil, Trash2, Contact, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QRCodeGenerator from '../components/QRCode/QRCodeGenerator';
 import Modal from '../components/common/Modal';
 import FilterPanel, { FilterOption } from '../components/common/FilterPanel';
 import UserModal from '../components/users/UserModal';
+import DepartureModal from '../components/users/DepartureModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { User } from '../types';
 import { ROLE_LABELS } from '../lib/roles';
@@ -31,6 +32,18 @@ const Users: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | undefined>();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [leaving, setLeaving] = useState<User | null>(null);
+
+  const KIND_LABELS = { temp: 'Intérimaire', subcontractor: 'Sous-traitant' } as const;
+  const accessLabel = (user: User) => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (user.leftOn && user.active === false) return `Parti le ${new Date(user.leftOn).toLocaleDateString('fr-CH')}`;
+    if (user.active === false) return 'Accès suspendu';
+    const kind = user.personKind && user.personKind !== 'employee' ? `${KIND_LABELS[user.personKind]}${user.company ? ` (${user.company})` : ''} · ` : '';
+    if (user.accessUntil && user.accessUntil < today) return `${kind}accès échu le ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
+    if (user.accessUntil) return `${kind}jusqu'au ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
+    return `${kind}${user.linked ? 'Déjà connecté' : 'Jamais connecté'}`;
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -48,7 +61,17 @@ const Users: React.FC = () => {
         throw error;
       }
 
-      setUsers(data || []);
+      // Mêmes champs que dans AppContext : la fiche ouverte en modification garde permis et statut
+      setUsers((data || []).map(u => ({
+        ...u,
+        linked: !!u.auth_user_id,
+        licenseCategories: u.license_categories || [],
+        licenseExpiresOn: u.license_expires_on,
+        personKind: u.person_kind ?? 'employee',
+        company: u.company,
+        accessUntil: u.access_until,
+        leftOn: u.left_on,
+      })));
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
@@ -290,7 +313,7 @@ const Users: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   <span className="font-bold uppercase">{ROLE_LABELS[user.role] ?? user.role}</span>
                   <span className={`block text-xs ${user.active === false ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
-                    {user.active === false ? 'Accès suspendu' : user.linked ? 'Déjà connecté' : 'Jamais connecté'}
+                    {accessLabel(user)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
@@ -309,6 +332,13 @@ const Users: React.FC = () => {
                     icon={<Pencil size={16} />}
                     onClick={() => handleEditUser(user)}
                     ariaLabel="Modifier"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={<LogOut size={16} />}
+                    onClick={() => setLeaving(user)}
+                    ariaLabel="Départ"
                   />
                   <Button
                     variant="danger"
@@ -341,7 +371,7 @@ const Users: React.FC = () => {
                 <h3 className="text-lg font-black text-gray-800 dark:text-gray-100">{user.first_name} {user.last_name}</h3>
                 <p className="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase">{ROLE_LABELS[user.role] ?? user.role}</p>
                 <p className={`text-xs ${user.active === false ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
-                  {user.active === false ? 'Accès suspendu' : user.linked ? 'Déjà connecté' : 'Jamais connecté'}
+                  {accessLabel(user)}
                 </p>
               </div>
             </div>
@@ -377,6 +407,13 @@ const Users: React.FC = () => {
                 icon={<Pencil size={16} />}
                 onClick={() => handleEditUser(user)}
                 ariaLabel="Modifier"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<LogOut size={16} />}
+                onClick={() => setLeaving(user)}
+                ariaLabel="Départ"
               />
               <Button
                 variant="danger"
@@ -475,6 +512,7 @@ const Users: React.FC = () => {
         onApplyFilters={setActiveFilters}
       />
 
+      <DepartureModal user={leaving} onClose={() => { setLeaving(null); fetchUsers(); }} />
       <UserModal
         isOpen={showUserModal}
         onClose={handleCloseUserModal}

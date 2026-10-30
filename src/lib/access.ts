@@ -21,6 +21,7 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   '/locations': ['manage_stock', 'manage_fleet', 'view_all'],
   '/transferts': ['scan', 'manage_stock'],
   '/emplacements': ['manage_stock', 'scan'],
+  '/epi': ['scan', 'manage_people', 'manage_stock', 'view_all'],
   '/planning': ['view_all', 'scan', 'approve', 'manage_stock', 'manage_fleet'],
   '/incidents': ['view_all', 'scan', 'approve', 'manage_stock'],
   '/checkouts': ['scan', 'view_all'],

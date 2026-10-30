@@ -26,6 +26,7 @@ export interface Equipment {
   requiresApproval?: boolean;
   depotId?: string;
   requiredTrainingId?: string;
+  requiresSignature?: boolean;
 }
 
 export interface Depot {
@@ -155,6 +156,11 @@ export interface User {
   linked?: boolean;
   licenseCategories?: string[];
   licenseExpiresOn?: string | null;
+  // Collaborateur, intérimaire ou sous-traitant ; accès coupé après accessUntil
+  personKind?: 'employee' | 'temp' | 'subcontractor';
+  company?: string | null;
+  accessUntil?: string | null;
+  leftOn?: string | null;
   dateCreated: string;
 }
 

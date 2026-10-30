@@ -49,6 +49,9 @@ export interface CounterOperation {
   depotId: string;
   // Un bon déjà créé pour cette opération (les consommables y sont rattachés)
   noteId?: string | null;
+  // Signature de la personne à la remise du matériel de valeur (posée sur le bon une fois créé)
+  signature?: string | null;
+  signedName?: string | null;
   error?: string;
 }
 
@@ -121,6 +124,12 @@ export async function submitOperation(op: CounterOperation, persist = false, don
     op.tools = [];
     op.toolLabels = [];
     done.push(`bon ${note?.note_number ?? ''}`.trim());
+    save();
+  }
+
+  if (op.signature && op.noteId) {
+    await call(supabase.rpc('sign_delivery_note', { p_note_id: op.noteId, p_signature: op.signature, p_name: op.signedName ?? null }));
+    op.signature = null;
     save();
   }
 

@@ -41,6 +41,9 @@ const emptyForm = {
   active: true,
   license_categories: [] as string[],
   license_expires_on: '',
+  person_kind: 'employee' as 'employee' | 'temp' | 'subcontractor',
+  company: '',
+  access_until: '',
 };
 
 // Catégories de permis suisses courantes pour la flotte
@@ -68,6 +71,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         active: user.active !== false,
         license_categories: user.licenseCategories || [],
         license_expires_on: user.licenseExpiresOn || '',
+        person_kind: user.personKind ?? 'employee',
+        company: user.company || '',
+        access_until: user.accessUntil || '',
       });
       supabase.from('user_depots').select('depot_id').eq('user_id', user.id)
         .then(({ data }) => setDepotIds((data || []).map(d => d.depot_id)));
@@ -105,6 +111,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         active: form.active,
         license_categories: form.license_categories,
         license_expires_on: form.license_expires_on || null,
+        person_kind: form.person_kind,
+        company: form.person_kind === 'employee' ? null : form.company.trim() || null,
+        access_until: form.access_until || null,
       };
 
       let userId = user?.id;
@@ -254,6 +263,31 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             <input id="user-license-exp" type="date" value={form.license_expires_on} onChange={e => setForm({ ...form, license_expires_on: e.target.value })} className={inputClass} />
           </div>
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie.</p>
+        </fieldset>
+
+        <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
+          <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Statut</legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label htmlFor="user-kind" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Type</label>
+              <select id="user-kind" value={form.person_kind} onChange={e => setForm({ ...form, person_kind: e.target.value as typeof form.person_kind })} className={inputClass}>
+                <option value="employee">Collaborateur</option>
+                <option value="temp">Intérimaire</option>
+                <option value="subcontractor">Sous-traitant</option>
+              </select>
+            </div>
+            {form.person_kind !== 'employee' && (
+              <div>
+                <label htmlFor="user-company" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Entreprise</label>
+                <input id="user-company" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} className={inputClass} placeholder="ex. Adecco" />
+              </div>
+            )}
+            <div>
+              <label htmlFor="user-until" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Accès jusqu'au{form.person_kind === 'employee' ? ' (facultatif)' : ''}</label>
+              <input id="user-until" type="date" value={form.access_until} onChange={e => setForm({ ...form, access_until: e.target.value })} className={inputClass} required={form.person_kind !== 'employee'} />
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Après cette date : plus de connexion ni de badge, et rien ne peut être emprunté au-delà.</p>
         </fieldset>
 
         <label className="flex items-start gap-3 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">

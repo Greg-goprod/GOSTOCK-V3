@@ -8,6 +8,9 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useSiteSuggestions } from '../lib/sites';
+import { useSignatureRule } from '../lib/signature';
+import Modal from '../components/common/Modal';
+import SignaturePad from '../components/common/SignaturePad';
 import { findEquipmentByCode } from '../lib/scan';
 import { isBadgeCode } from '../lib/badges';
 import { Kit, isKitCode, kitCodeOf } from '../lib/kits';
@@ -68,6 +71,9 @@ const Counter: React.FC = () => {
   const [badges, setBadges] = useState<Record<string, string>>({});
   const [queue, setQueue] = useState<CounterOperation[]>(loadQueue);
   const [syncing, setSyncing] = useState(false);
+  const needsSignature = useSignatureRule();
+  const [signing, setSigning] = useState(false);
+  const [signatureDraft, setSignatureDraft] = useState<string | null>(null);
 
   // Hors ligne dès l'ouverture : on travaille sur la dernière copie locale (personnes, articles, emprunts)
   const snapshot = useMemo(loadSnapshot, []);
@@ -324,8 +330,16 @@ const Counter: React.FC = () => {
   const toolLines = cart.filter(l => l.equipment.itemType !== 'consumable');
   const consumableLines = cart.filter(l => l.equipment.itemType === 'consumable');
 
-  const validate = async () => {
+  const validate = async (signature?: string) => {
     if (!person || !owner) return;
+    // Matériel de valeur : la personne qui le reçoit signe avant l'enregistrement
+    const valuable = toolLines.filter(l => needsSignature(l.equipment));
+    if (valuable.length && !signature) {
+      setSignatureDraft(null);
+      setSigning(true);
+      return;
+    }
+    setSigning(false);
     for (const id of returns) {
       const check = checkOf(id);
       if (check.condition !== 'ok' && check.condition !== 'dirty' && !check.notes.trim() && !check.photos.length) {
@@ -353,6 +367,8 @@ const Counter: React.FC = () => {
       due,
       destination: destination.trim() || null,
       depotId,
+      signature: signature ?? null,
+      signedName: signature ? `${person.first_name} ${person.last_name}` : null,
     };
 
     const finish = () => {
@@ -671,12 +687,30 @@ const Counter: React.FC = () => {
 
           <div className="flex justify-end gap-2">
             {count > 0 && <Button variant="secondary" onClick={reset} disabled={busy}>Vider</Button>}
-            <Button icon={<CheckCircle2 size={16} />} onClick={validate} loading={busy} disabled={!person || count === 0}>
+            <Button icon={<CheckCircle2 size={16} />} onClick={() => validate()} loading={busy} disabled={!person || count === 0}>
               Valider
             </Button>
           </div>
         </div>
       </div>
+
+      <Modal isOpen={signing} onClose={() => setSigning(false)} title="Signature à la remise">
+        <div className="space-y-3">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            {person ? `${person.first_name} ${person.last_name}` : 'La personne'} reçoit du matériel de valeur et signe pour en accuser réception :
+          </p>
+          <ul className="text-sm text-gray-900 dark:text-gray-100 list-disc pl-5">
+            {toolLines.filter(l => needsSignature(l.equipment)).map(l => (
+              <li key={l.key}>{l.quantity > 1 ? `${l.quantity} × ` : ''}{l.equipment.name}{l.instance ? ` · ${l.instance.qrCode}` : ''}</li>
+            ))}
+          </ul>
+          {signing && <SignaturePad label="Signature" onChange={setSignatureDraft} />}
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setSigning(false)}>Annuler</Button>
+            <Button icon={<CheckCircle2 size={16} />} disabled={!signatureDraft} onClick={() => validate(signatureDraft ?? undefined)}>Valider la remise</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
