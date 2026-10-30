@@ -10,6 +10,8 @@ export interface NavLinkItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  // S'ouvre dans un nouvel onglet (écran TV du dépôt, laissé affiché en continu)
+  newTab?: boolean;
 }
 
 export interface NavSpace {
@@ -39,7 +41,7 @@ export const NAV_SPACES: NavSpace[] = [
     { to: '/transferts', label: 'Transferts', icon: ArrowLeftRight },
     { to: '/emplacements', label: 'Emplacements', icon: MapPin },
     { to: '/inventaire', label: 'Inventaire', icon: ListChecks },
-    { to: '/ecran', label: 'Écran du magasin', icon: MonitorPlay },
+    { to: '/ecran', label: 'Écran TV du dépôt', icon: MonitorPlay, newTab: true },
   ] },
   { id: 'tools', label: 'Matériel', short: 'Matériel', icon: Package, links: [
     { to: '/equipment', label: 'Outils', icon: Package },

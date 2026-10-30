@@ -63,7 +63,8 @@ const CommandPalette: React.FC = () => {
 
   const entries = useMemo<Entry[]>(() => {
     const pages: Entry[] = spaces.flatMap(space => space.links.map(link => ({
-      key: link.to, label: link.label, group: space.label, icon: link.icon, run: () => go(link.to),
+      key: link.to, label: link.label, group: space.label, icon: link.icon,
+      run: link.newTab ? () => { window.open(link.to, '_blank', 'noopener'); close(); } : () => go(link.to),
     })));
     const q = normalize(query.trim());
     const found = q ? pages.filter(p => normalize(`${p.label} ${p.group}`).includes(q)) : pages;

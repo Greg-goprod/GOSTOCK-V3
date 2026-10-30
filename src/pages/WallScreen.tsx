@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Maximize, Minimize } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 
@@ -51,6 +52,14 @@ const WallScreen: React.FC = () => {
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [incoming, setIncoming] = useState<Incoming[]>([]);
   const [now, setNow] = useState(Date.now());
+  const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+
+  // Suit aussi la sortie par la touche Échap ou F11
+  useEffect(() => {
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -77,6 +86,11 @@ const WallScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [depotId]);
 
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else document.documentElement.requestFullscreen().catch(() => {});
+  };
+
   const today = startOfToday();
   const tomorrow = today + 86400000;
   const name = (id: string) => {
@@ -102,7 +116,16 @@ const WallScreen: React.FC = () => {
             {depots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </div>
-        <p className="font-mono text-5xl font-bold">{new Date(now).toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' })}</p>
+        <div className="flex items-center gap-4">
+          <p className="font-mono text-5xl font-bold">{new Date(now).toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' })}</p>
+          {/* Le navigateur exige un clic pour passer en plein écran (pas d'activation automatique) */}
+          <button type="button" onClick={toggleFullscreen}
+            className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-base text-gray-200 hover:bg-gray-800"
+            aria-label={fullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
+            {fullscreen ? <Minimize size={20} aria-hidden="true" /> : <Maximize size={20} aria-hidden="true" />}
+            <span>{fullscreen ? 'Quitter le plein écran' : 'Plein écran'}</span>
+          </button>
+        </div>
       </header>
 
       <div className="grid flex-1 min-h-0 gap-5 lg:grid-cols-2 xl:grid-cols-4">
@@ -125,7 +148,7 @@ const WallScreen: React.FC = () => {
           {incoming.slice(0, 8).map(i => <Row key={i.key} main={i.label} sub={i.when} alert={i.when.includes('RETARD')} />)}
         </Column>
       </div>
-      <p className="text-sm text-gray-500">Mis à jour chaque minute. Plein écran : touche F11.</p>
+      <p className="text-sm text-gray-500">Mis à jour chaque minute.</p>
     </div>
   );
 };

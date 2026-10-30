@@ -44,6 +44,7 @@ const MobileNav: React.FC = () => {
                 {space.links.map(link => (
                   <li key={link.to}>
                     <NavLink to={link.to} end={link.to === '/'} onClick={() => setOpen(false)}
+                      target={link.newTab ? '_blank' : undefined} rel={link.newTab ? 'noopener' : undefined}
                       className={({ isActive }) => `flex items-center gap-2 rounded-md border-[1.5px] px-2.5 py-2.5 text-[13px] font-medium ${
                         isActive ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
                       }`}>

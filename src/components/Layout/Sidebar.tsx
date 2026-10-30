@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen, QrCode } from 'lucide-react';
+import { ExternalLink, PanelLeftClose, PanelLeftOpen, QrCode } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { BOTTOM_SPACES, NavSpace, locate } from '../../lib/navigation';
 import { useNavSpaces } from '../../lib/useNavSpaces';
@@ -111,6 +111,8 @@ const Sidebar: React.FC = () => {
                 <NavLink
                   to={link.to}
                   end={link.to === '/'}
+                  target={link.newTab ? '_blank' : undefined}
+                  rel={link.newTab ? 'noopener' : undefined}
                   className={({ isActive }) => `group relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[13.5px] transition-[background-color,color,transform] duration-150 ${
                     isActive
                       ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-primary-600'
@@ -119,6 +121,7 @@ const Sidebar: React.FC = () => {
                 >
                   <link.icon size={16} aria-hidden="true" />
                   <span className="flex-1 truncate">{link.label}</span>
+                  {link.newTab && <ExternalLink size={13} aria-label="nouvel onglet" className="opacity-60" />}
                   {link.to === '/notifications' && alertCount > 0 && (
                     <span className="rounded-full bg-danger-600 px-1.5 text-[10.5px] font-bold text-white">{alertCount}</span>
                   )}
