@@ -11,13 +11,13 @@
 
 ## 0. Contre-test des corrections — version `4a4fa16`
 
-- **Date** : 30 octobre 2026, de 14:55 à 15:25 (heure de Zurich)
+- **Date** : 30 octobre 2026, de 14:55 à 16:05 (heure de Zurich)
 - **Version** : `4a4fa16` « Corrections du rapport de tests du lot 16 » (`GOMAT-essai` mis à jour par `git fetch` puis `checkout` de `FETCH_HEAD`, Vite redémarré sur le port 5190). Nouvelle migration `00027_message_permis` : **appliquée sur GO-MAT** (le nouveau message de L8 sort de la base).
 - **Session** : expirée au redémarrage ; reconnexion par l'utilisateur.
 
 ### Verdict
 
-**P5, le dernier blocage, est corrigé.** R1 à R3 et L1 à L12 sont corrigés. Il reste deux points en attente, qui dépendent de l'utilisateur (P15 panneau affiché, rôles), et trois défauts mineurs nouveaux (N1 à N3).
+**P5, le dernier blocage, est corrigé.** R1 à R3 et L1 à L12 sont corrigés. Les rôles se comportent comme prévu (menus, pages et refus côté base). Un défaut **majeur de confidentialité** est apparu avec les rôles (N4 : un Collaborateur lit les données personnelles de tout le monde), plus trois défauts mineurs (N1 à N3). Seul P15 reste en attente : il faut le panneau du navigateur affiché.
 
 ### Résultats
 
@@ -51,21 +51,51 @@
 | **Hors ligne** (simulé : `navigator.onLine` à faux et événement `offline`) | ✅ | Bandeau « Hors ligne. Les scans continuent avec la copie locale du 30.10.26 15:13 ; chaque validation est gardée sur cet appareil et part toute seule au retour du réseau. » Scan du badge et de l'outil sur la copie locale, validation mise en file (« En attente d'envoi (1) »). Au retour du réseau : « 1 opération faite hors ligne envoyée », file vide, sortie créée en base avec son exemplaire. |
 | **Caméra** | ✅ (partiel) | Le navigateur de test refuse l'accès : « Accès à la caméra refusé. Autorisez la caméra pour ce site dans les réglages du navigateur. » Le décodage d'un vrai QR n'est pas testable ici. Petit défaut : le bouton affiche « Arrêter la caméra » alors que l'accès est refusé (revient à « Scanner avec la caméra » après clic). |
 | **Impressions** | ✅ | Badges : « Imprimer (9) », une carte et un QR par personne, impression lancée. Étiquettes : « Imprimer 1 étiquette ». Étiquette du kit : impression lancée. Rapport PDF du chantier : « Rapport matériel · TEST Chantier carte … TEST Nacelle 3b (TEST Loueur) 1 × 300,00 … Total matériel : CHF 300,00 » (« Période : du … au … » faute de dates sur le chantier). Liste de préparation : « Préparation DEM2610-0008 … ☐ TEST Article suppression GOMAT1-000002 1 × · Préparé par ». Solde de départ : « Solde de départ : TEST Badge Lot16 … Rien à rendre … Signature ». PV de location : voir L6. Impressions interceptées, sans imprimante réelle. |
-| **Rôles Magasinier, Responsable, Collaborateur** | ⏳ En attente | Il faut des comptes auxquels se connecter : les adresses TEST (`@example.com`) ne reçoivent pas de code, et l'administrateur ne peut pas définir de mot de passe. Solutions proposées à l'utilisateur : alias de messagerie qu'il reçoit, ou comptes avec mot de passe créés dans Supabase. |
+| **Rôles Magasinier, Responsable, Collaborateur** | ✅ (voir ci-dessous) | Comptes créés par l'utilisateur dans Supabase (mot de passe, confirmés d'office) sur trois fiches TEST créées dans GO-Mat avec le rôle voulu ; liaison automatique à la première connexion. Tests sur un second serveur (port 5191) pour garder la session administrateur du port 5190. Voir N4 (confidentialité). |
 
-### Nouveaux défauts (mineurs)
+### Rôles
 
-**N1 — Comptoir : « Pour le compte de » propose une personne à l'accès échu**
+Comptes : `test.magasinier@example.com`, `test.responsable@example.com`, `test.collaborateur@example.com` (mot de passe non reproduit ici). Connexion par « J'ai un mot de passe », déconnexion par le menu du compte : ✅ pour les trois.
+
+| Contrôle | Magasinier | Responsable | Collaborateur |
+|---|---|---|---|
+| Droits du profil | `manage_stock`, `scan`, `view_all` | `all_depots`, `approve`, `manage_fleet`, `manage_people`, `manage_stock`, `scan`, `view_all` | aucun |
+| Menus | Accueil, Scanner, Comptoir, Demandes ; Matériel (outils, kits, entretien, atelier, pertes, étiquettes) ; Chantiers (chantiers, carte, planning, locations) ; Personnes (permis et formations, EPI ; **pas** Personnes) ; Pilotage (statistiques, coûts) ; Véhicules ; Réglages (Santé des données) | idem + Personnes, Pilotage complet (pilotage, statistiques, coûts, comptabilité, journal) | Accueil (« Mes demandes »), Demandes, Libre-service, Mon badge, Recherche ; Matériel, Véhicules |
+| Accès direct aux pages interdites | `/users`, `/settings`, `/journal`, `/comptabilite` → renvoi à l'accueil ✅ | `/settings` → renvoi ✅ ; `/users` ouvert (droit `manage_people`) ✅ | `/comptoir`, `/scan`, `/users`, `/settings`, `/checkouts`, `/locations`, `/formations`, `/kits` → renvoi ✅ |
+| Scanner un badge (base) | autorisé ✅ | autorisé ✅ | refusé : « Seul le magasin peut scanner un badge » ✅ |
+| Restauration de sauvegarde (base) | « Accès refusé » ✅ | « Accès refusé » ✅ | « Accès refusé » ✅ |
+| Modifier une personne (base) | sans effet (0 ligne) ✅ | autorisé ✅ | sans effet (0 ligne) ✅ |
+| Créer un véhicule (base) | refusé (RLS `vehicles_insert_rule`) ✅ | autorisé ✅ (bouton « Ajouter un véhicule » présent) | refusé (RLS) ✅ |
+| Modifier le stock (base) | autorisé ✅ | autorisé ✅ | sans effet (0 ligne) ✅ |
+| Valider une demande | pas de bouton ; base : « Seul un responsable peut valider ou refuser une demande » ✅ | « Demande DEM2610-0004 validée », décision au nom de « TEST Rôle Responsable » ✅ | — |
+| Annuler une demande d'autrui | « Annuler la demande » proposé (voulu : annulation par le magasin) | proposé | — |
+| Comptoir | sortie (bon DN2610-0011) et retour ✅ | — | interdit ✅ |
+| Voir les sorties et demandes | toutes (`view_all`) ✅ | toutes ✅ | seulement les siennes (0 sortie, 1 demande) ✅ |
+| Outils | — | — | lecture seule (« Exporter », « Code QR », « Historique ») ✅ |
+| Faire une demande | — | — | à son nom, sans choix « Pour qui » ; DEM2610-0009 créée ✅ |
+
+*Remarque* : les rubriques « Véhicules » et « Réglages » du Magasinier ont d'abord paru vides. Ce sont des rubriques à lien unique (`/vehicules`, en lecture seule, et « Santé des données ») qui naviguent directement au clic : pas de défaut.
+
+### Nouveaux défauts
+
+**N4 — MAJEUR (confidentialité) — Un Collaborateur peut lire les données personnelles de toutes les personnes**
+- **Où** : API de la base (`/rest/v1/users`), avec le jeton d'un compte Collaborateur (aucun droit).
+- **Ce que j'ai fait** : `GET users?select=*` connecté en `test.collaborateur@example.com`.
+- **Attendu** : un Collaborateur ne voit que le nom des autres personnes (ou les champs nécessaires à l'affichage), pas leurs données personnelles.
+- **Constaté** : 16 fiches lisibles, avec `email`, `phone`, `deposit_amount`, `deposit_paid_on`, `deposit_returned_on`, `license_categories`, `license_expires_on`, `access_until`, `left_on`, `role`, `permissions`, `person_kind`, `company`. Exemple : « TEST Intérimaire P12 » → caution de 80 CHF, départ le 30.10.2026 ; l'e-mail de l'administrateur est lisible. Les codes de badge (`user_badges`) sont en revanche bien limités au sien.
+- **Proposition** : restreindre la lecture de `users` pour les personnes sans `view_all` ni `manage_people` (politique RLS plus une vue publique limitée à `id`, prénom, nom, service), ou des droits par colonne.
+
+**N1 — MINEUR — Comptoir : « Pour le compte de » propose une personne à l'accès échu**
 - **Page** : Comptoir, après le scan d'un badge.
 - **Constaté** : la liste « Pour le compte de » contient « TEST Accès Expiré » (accès échu le 29.10.2026), alors que les personnes parties en sont exclues et que « Pour qui » (demandes) l'exclut aussi.
 - **Attendu** : mêmes règles que « Pour qui ».
 
-**N2 — Accès échu : motif générique et création sans avertissement**
+**N2 — MINEUR — Accès échu : motif générique et création sans avertissement**
 - Au comptoir, le refus dit « Badge inconnu, accès suspendu ou personne partie », sans préciser « accès échu le 29.10.2026 ».
 - La personne a pu être créée avec une date d'accès déjà passée, sans avertissement ; le message de création dit « connexion possible avec … ».
 - La planche de badges propose aussi cette personne.
 
-**N3 — Accessoires par défaut enregistrés en français**
+**N3 — MINEUR — Accessoires par défaut enregistrés en français**
 - Les accessoires cochés à la réception (« Clés ou badge », « Chargeur ou câbles », « Notice d'utilisation ») sont stockés en texte et restent en français dans le PV allemand ou anglais. Les enregistrer par code (traduit à l'affichage) éviterait ce mélange.
 
 ### Données TEST ajoutées
@@ -78,6 +108,11 @@
 | Location véhicule | TEST Utilitaire 2 (TEST 456), réceptionnée, prolongée au 13.11 | en cours |
 | Demandes | DEM2610-0003 annulée ; DEM2610-0007 (TEST Utilitaire 2, à valider) ; DEM2610-0008 (TEST Article suppression, à préparer) | — |
 | Sortie | TEST Perceuse comptoir pour TEST Badge Comptoir (faite hors ligne, envoyée au retour du réseau) | active |
+| Personnes et comptes | TEST Rôle Magasinier, TEST Rôle Responsable, TEST Rôle Collaborateur (comptes Supabase créés par l'utilisateur) | actifs |
+| Véhicule | TEST Sonde véhicule (`TEST SONDE`, créé par la sonde du Responsable) | disponible |
+| Modifications de sonde | TEST L1 Alpha : service « TEST sonde » (Responsable) ; TEST Article suppression : emplacement « TEST sonde » (Magasinier) | — |
+| Demandes | DEM2610-0004 validée par le Responsable ; DEM2610-0009 (Collaborateur, 05.11 → 06.11) validée | — |
+| Bon | DN2610-0011 (Magasinier, TEST Article suppression) | rendu |
 
 ---
 
