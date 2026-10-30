@@ -14,6 +14,7 @@ import { ROLE_LABELS } from '../lib/roles';
 import { badgeValue } from '../lib/badges';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 type ViewMode = 'grid' | 'list';
 type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'department' | 'role';
@@ -333,7 +334,7 @@ const Users: React.FC = () => {
                     size="sm"
                     icon={<QrCode size={16} />}
                     onClick={() => handleShowQR(user.id)}
-                    className="font-medium"
+                    className="whitespace-nowrap"
                   >
                     QR code
                   </Button>
@@ -446,26 +447,8 @@ const Users: React.FC = () => {
         <h1 className="mx-page-title">Personnes</h1>
         
         <div className="flex flex-wrap gap-3">
-          <div className="flex rounded-lg border border-gray-200 dark:border-gray-700">
-            <Button
-              variant={viewMode === 'grid' ? 'primary' : 'outline'}
-              size="sm"
-              icon={<LayoutGrid size={18} />}
-              onClick={() => setViewMode('grid')}
-              className="rounded-r-none font-bold"
-            >
-              Grille
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'primary' : 'outline'}
-              size="sm"
-              icon={<List size={18} />}
-              onClick={() => setViewMode('list')}
-              className="rounded-l-none font-bold"
-            >
-              Liste
-            </Button>
-          </div>
+          <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as ViewMode)}
+            options={[{ value: 'grid', label: 'Grille', icon: LayoutGrid }, { value: 'list', label: 'Liste', icon: List }]} />
           <Button 
             variant="outline" 
             icon={<Filter size={18} />}
@@ -481,7 +464,7 @@ const Users: React.FC = () => {
           </Button>
           <Link
             to="/badges"
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 min-h-[44px] lg:min-h-0 text-sm lg:text-xs font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3.5 py-[7px] min-h-[44px] lg:min-h-[32px] text-[12.5px]"
           >
             <Contact size={16} aria-hidden="true" /> Imprimer les badges
           </Link>

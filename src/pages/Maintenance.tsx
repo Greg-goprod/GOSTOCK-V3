@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardCheck, Plus, Zap } from 'lucide-react';
+import { CheckCircle2, ClipboardCheck, Plus, Wrench, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { fileUrl } from '../lib/files';
 import { errorMessage, toLocalInput } from '../lib/requests';
 import { DateTimeInput } from '../components/common/DateInput';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 interface PlanStatus {
   id: string;
@@ -40,9 +41,9 @@ interface PlanRun {
 }
 
 const STATE: Record<PlanStatus['state'], { label: string; className: string }> = {
-  overdue: { label: 'Échu', className: 'bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200' },
-  soon: { label: 'Bientôt', className: 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200' },
-  ok: { label: 'À jour', className: 'bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200' },
+  overdue: { label: 'Échu', className: 'mx-tint-badge-danger' },
+  soon: { label: 'Bientôt', className: 'mx-tint-badge-warning' },
+  ok: { label: 'À jour', className: 'mx-tint-badge-success' },
   inactive: { label: 'Suspendu', className: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
 };
 
@@ -109,9 +110,8 @@ const Maintenance: React.FC = () => {
       {loading ? (
         <p className="text-gray-600 dark:text-gray-400">Chargement…</p>
       ) : shown.length === 0 ? (
-        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-gray-700 dark:text-gray-300">
-          {tab === 'todo' ? 'Rien à faire : tous les entretiens sont à jour.' : 'Aucun plan. Crées-en un pour chaque outil à réviser ou à contrôler (OIBT).'}
-        </div>
+        <MxEmpty icon={tab === 'todo' ? CheckCircle2 : Wrench} title={tab === 'todo' ? 'Rien à faire' : 'Aucun plan'}
+          description={tab === 'todo' ? 'Tous les entretiens sont à jour.' : 'Crées-en un pour chaque outil à réviser ou à contrôler (OIBT).'} />
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {shown.map(plan => (

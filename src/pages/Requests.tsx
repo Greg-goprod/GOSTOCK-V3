@@ -19,9 +19,10 @@ import { findEquipmentByCode } from '../lib/scan';
 import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib/requests';
 import { RequestItemRow, RequestOverview, RequestStatus } from '../types';
 import { DateTimeInput } from '../components/common/DateInput';
-import { promptAction } from '../lib/confirm';
+import { confirmAction, promptAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 // Objet loué : disponible seulement jusqu'à la fin du contrat
 const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
@@ -108,7 +109,7 @@ const MyEquipment: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {late && (
-                  <span className="rounded bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-[11px] font-bold">
+                  <span className="rounded mx-tint-badge-danger px-2 py-0.5 text-[11px] font-bold">
                     {daysLate} j de retard
                   </span>
                 )}
@@ -524,13 +525,8 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
 
         {/* Choix des articles */}
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Type d'article">
-            {TABS.map(t => (
-              <Button key={t.id} size="sm" variant={tab === t.id ? 'primary' : 'outline'} onClick={() => { setTab(t.id); setSearch(''); }}>
-                {t.label}
-              </Button>
-            ))}
-          </div>
+          <MxSegmented aria-label="Type d'article" value={tab} onChange={v => { setTab(v as DraftItem['kind']); setSearch(''); }}
+            options={TABS.map(t => ({ value: t.id, label: t.label }))} />
           <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…" aria-label="Rechercher un article" className={inputClass} />
           <ul className="max-h-56 overflow-y-auto space-y-1.5">
             {candidates.length === 0 ? (
@@ -673,6 +669,13 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
 
   const setStatus = (status: 'ready' | 'approved' | 'cancelled', message: string) =>
     run(() => supabase!.rpc('set_request_status', { p_request_id: request.id, p_status: status }), message);
+
+  // Annuler abandonne la demande : on demande toujours confirmation
+  const cancelRequest = async () => {
+    if (await confirmAction(`Annuler la demande ${request.number} ? Le matériel réservé redevient disponible.`)) {
+      setStatus('cancelled', `Demande ${request.number} annulée`);
+    }
+  };
 
   const issue = async () => {
     if (pickupBy !== request.requester_id) {
@@ -840,7 +843,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
             {/* Annuler (sans motif de refus) : par le demandeur, ou par le magasin et les responsables */}
             {(isOwner || can('approve') || can('scan')) && (
               <div className="flex justify-end">
-                <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>
+                <Button variant="outline" onClick={cancelRequest} loading={busy}>
                   {isOwner ? 'Annuler ma demande' : 'Annuler la demande'}
                 </Button>
               </div>
@@ -876,9 +879,13 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
             {/* Pied de fiche (pied entité) : actions de la demande */}
             <div className="mx-drawer-footer flex flex-wrap justify-end gap-2">
               {!allPrepared && <p className="w-full text-right text-xs text-gray-600 dark:text-gray-400">Tous les articles doivent être préparés avant la sortie.</p>}
+              {/* Action qui abandonne la demande : à gauche, en rouge, avec confirmation */}
+              <button type="button" onClick={cancelRequest} disabled={busy}
+                className="mx-btn mx-btn-ghost mr-auto px-3 py-2 text-[12.5px] text-tone-danger hover:!bg-[color-mix(in_srgb,var(--mx-danger)_10%,transparent)]">
+                Annuler la demande
+              </button>
               <PickListButton requestId={request.id} title={`Préparation ${request.number}`}
                 subtitle={[request.requester_name, request.destination, `pour le ${new Date(request.start_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}`].filter(Boolean).join(' · ')} />
-              <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>Annuler la demande</Button>
               {request.status === 'approved' ? (
                 <Button variant="outline" icon={<PackageCheck size={16} />} onClick={() => setStatus('ready', `Demande ${request.number} prête`)} loading={busy}>Marquer prête</Button>
               ) : (
@@ -897,7 +904,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
 
         {canCancelOwn && (
           <div className="flex justify-end">
-            <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>Annuler ma demande</Button>
+            <Button variant="outline" onClick={cancelRequest} loading={busy}>Annuler ma demande</Button>
           </div>
         )}
 

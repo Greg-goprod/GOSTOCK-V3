@@ -21,6 +21,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import RentalBadge from '../components/common/RentalBadge';
+import { MxSegmented } from '../components/mx/MxSegmented';
 
 export default function Equipment() {
   const {
@@ -560,24 +561,8 @@ export default function Equipment() {
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
-        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-          <Button
-            variant={viewMode === 'grid' ? 'primary' : 'outline'}
-            onClick={() => setViewMode('grid')}
-            className="flex items-center gap-2 rounded-none border-0"
-          >
-            <Grid3X3 className="w-4 h-4" />
-            Grille
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'primary' : 'outline'}
-            onClick={() => setViewMode('list')}
-            className="flex items-center gap-2 rounded-none border-0"
-          >
-            <List className="w-4 h-4" />
-            Liste
-          </Button>
-        </div>
+        <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as typeof viewMode)}
+          options={[{ value: 'grid', label: 'Grille', icon: Grid3X3 }, { value: 'list', label: 'Liste', icon: List }]} />
         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
           <select 
             value={sortField}

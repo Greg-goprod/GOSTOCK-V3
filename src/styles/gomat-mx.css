@@ -42,7 +42,7 @@
   /* Neutres — thème sombre */
   --g-50: 245 246 248;   /* texte */
   --g-100: 245 246 248;
-  --g-200: 226 227 233;
+  --g-200: 245 246 248;  /* texte (--text) : dark:text-gray-200 */
   --g-300: 180 183 192;  /* texte secondaire */
   --g-400: 180 183 192;  /* texte secondaire (--text2) */
   --g-500: 125 129 140;  /* texte tertiaire */
@@ -436,6 +436,7 @@ label:has(> input[type='radio']:checked).border {
 }
 .mx-acc-title {
   flex: 1;
+  line-height: 18px;
   min-width: 0;
   font-size: 14px;
   font-weight: 700;
@@ -489,3 +490,56 @@ label:has(> input[type='radio']:checked).border {
   border: 1.5px solid var(--mx-border);
   border-radius: 6px;
 }
+
+/* Contre-test DA15 : texte saisi 500 (sélecteur spécifique : la base Tailwind remet font-weight: inherit) */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+select,
+textarea {
+  font-weight: 500;
+}
+
+/* Contre-test DA16, DA18 : champs d'une ligne à 34px et 12,5px sur grand écran (hors .mx-tall, ex. écran TV) */
+@media (min-width: 1024px) {
+  :is(input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='number'],
+      input[type='tel'], input[type='url'], input:not([type]), select:not([multiple]):not([size])):not(.mx-tall) {
+    height: 34px;
+    min-height: 34px;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 12.5px;
+  }
+}
+
+/* Contre-test NDA5 : liens et états en violet foncé → accent de la charte (thème clair) */
+html:not(.dark) :is(.text-primary-700, .text-primary-800) {
+  color: var(--mx-accent);
+}
+
+/* Contre-test DA2 : boutons des pieds passés par la prop footer de MxDrawer (confirmations) */
+.mx-dr-foot .mx-btn {
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-height: 0;
+}
+.mx-dr-foot :is(.mx-btn-primary, .mx-btn-danger) {
+  flex-grow: 1;
+}
+
+/* Contre-test DA11 : tuile principale de l'accueil (aplat accent) — texte au contraste de la charte */
+.mx-tile-primary,
+.mx-tile-primary .text-white {
+  color: var(--mx-tone-on-accent) !important;
+}
+.mx-tile-primary .text-white\/80 {
+  color: color-mix(in srgb, var(--mx-tone-on-accent) 80%, transparent) !important;
+}
+.mx-tile-primary .bg-white\/20 {
+  background: color-mix(in srgb, var(--mx-tone-on-accent) 18%, transparent) !important;
+  color: var(--mx-tone-on-accent) !important;
+}
+
+/* Contre-test DA10, DA13 : pastilles de statut teintées (.vt-badge du catalogue) — fond ton à 15 %, texte au ton */
+.mx-tint-badge-success { background: color-mix(in srgb, var(--mx-green) 15%, var(--mx-surface)); color: var(--mx-tone-text-success); }
+.mx-tint-badge-warning { background: color-mix(in srgb, var(--mx-tone-fill-warning) 13%, var(--mx-surface)); color: var(--mx-tone-text-warning); }
+.mx-tint-badge-danger { background: color-mix(in srgb, var(--mx-danger) 13%, var(--mx-surface)); color: var(--mx-tone-text-danger); }
+.mx-tint-badge-info { background: color-mix(in srgb, var(--mx-cyan) 18%, var(--mx-surface)); color: color-mix(in srgb, var(--mx-cyan) 55%, var(--mx-text)); }

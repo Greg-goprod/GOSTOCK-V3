@@ -114,7 +114,7 @@ const WallScreen: React.FC = () => {
             <h1 className="text-[44px] font-bold leading-[0.95] tracking-[-0.05em] text-[#f5f6f8]">Écran du dépôt</h1>
           </div>
           <select value={depotId} onChange={e => setParams(e.target.value ? { depot: e.target.value } : {})} aria-label="Dépôt"
-            className="rounded-md bg-[#191c24] border-[1.5px] border-[#2e323f] px-3 py-2 text-lg font-medium text-[#f5f6f8]">
+            className="mx-tall rounded-md bg-[#191c24] border-[1.5px] border-[#2e323f] px-3 py-2 text-lg font-medium text-[#f5f6f8]">
             <option value="">Tous les dépôts</option>
             {depots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>

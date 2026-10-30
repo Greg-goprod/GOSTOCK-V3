@@ -112,6 +112,11 @@ const BUTTON_BASE: CSSProperties = {
   background: 'transparent',
   borderRadius: 'var(--mx-radius-4)',
   ...MX_TEXT.segmentedLabel,
+  // GO-Mat, contre-test DA5 : casse normale et 28px de haut (6 + 16 + 6) comme `#s-viewtoggle`,
+  // au lieu des majuscules reprises de MxTabs
+  textTransform: 'none',
+  letterSpacing: 'normal',
+  lineHeight: '16px',
   whiteSpace: 'nowrap',
   cursor: 'pointer',
 };

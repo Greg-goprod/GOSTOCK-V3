@@ -37,16 +37,16 @@ const errorMessage = (error: unknown) =>
 
 const StatePill: React.FC<{ quantity: number; isLow: boolean; lowDepots: string[]; showDepots: boolean }> = ({ quantity, isLow, lowDepots, showDepots }) => {
   if (quantity === 0) {
-    return <span className="inline-flex rounded bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-[11px] font-bold">Épuisé</span>;
+    return <span className="inline-flex rounded mx-tint-badge-danger px-2 py-0.5 text-[11px] font-bold">Épuisé</span>;
   }
   if (isLow) {
     return (
-      <span className="inline-flex rounded bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200 px-2 py-0.5 text-[11px] font-bold">
+      <span className="inline-flex rounded mx-tint-badge-warning px-2 py-0.5 text-[11px] font-bold">
         Stock bas{showDepots && lowDepots.length > 0 ? ` · ${lowDepots.join(', ')}` : ''}
       </span>
     );
   }
-  return <span className="inline-flex rounded bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200 px-2 py-0.5 text-[11px] font-bold">OK</span>;
+  return <span className="inline-flex rounded mx-tint-badge-success px-2 py-0.5 text-[11px] font-bold">OK</span>;
 };
 
 const Consumables: React.FC = () => {

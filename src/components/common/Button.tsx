@@ -46,7 +46,7 @@ const Button: React.FC<ButtonProps> = ({
   const sizeClasses = {
     sm: 'text-[12.5px] px-2.5 py-1 min-h-[44px] min-w-[44px] lg:min-h-[28px] lg:min-w-0',
     md: 'text-[12.5px] px-3.5 py-[7px] min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0',
-    lg: 'text-[13px] px-4 py-2 min-h-[44px] min-w-[44px]',
+    lg: 'text-[12.5px] px-4 py-2 min-h-[44px] min-w-[44px]',
   };
 
   return (
@@ -58,7 +58,7 @@ const Button: React.FC<ButtonProps> = ({
         ${fullWidth ? 'w-full' : ''}
         ${className}
         mx-btn
-        flex items-center justify-center gap-1.5
+        flex items-center justify-center gap-1.5 whitespace-nowrap
       `}
       disabled={disabled || loading}
       onClick={onClick}

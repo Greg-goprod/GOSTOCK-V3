@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Mail, PackageCheck, Printer, Trash2, X } from 'lucide-react';
+import { Mail, PackageCheck, Printer, ShoppingCart, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -7,6 +7,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 type OrderStatus = 'draft' | 'sent' | 'partial' | 'received' | 'cancelled';
 
@@ -33,9 +34,9 @@ interface PurchaseOrder {
 
 const STATUS: Record<OrderStatus, { label: string; className: string }> = {
   draft: { label: 'Brouillon', className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200' },
-  sent: { label: 'Envoyée', className: 'bg-info-100 text-info-600 dark:bg-info-900 dark:text-info-100' },
-  partial: { label: 'Reçue en partie', className: 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200' },
-  received: { label: 'Reçue', className: 'bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200' },
+  sent: { label: 'Envoyée', className: 'mx-tint-badge-info' },
+  partial: { label: 'Reçue en partie', className: 'mx-tint-badge-warning' },
+  received: { label: 'Reçue', className: 'mx-tint-badge-success' },
   cancelled: { label: 'Annulée', className: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
 };
 
@@ -86,8 +87,8 @@ const PurchaseOrders: React.FC = () => {
       </div>
 
       {shown.length === 0 ? (
-        <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-gray-700 dark:text-gray-300 print:hidden">
-          Aucune commande. Crée-les depuis la feuille de commande (« Créer les bons de commande »).
+        <div className="print:hidden">
+          <MxEmpty icon={ShoppingCart} title="Aucune commande" description="Crée-les depuis la feuille de commande (« Créer les bons de commande »)." />
         </div>
       ) : (
         <ul className="space-y-2 print:hidden">

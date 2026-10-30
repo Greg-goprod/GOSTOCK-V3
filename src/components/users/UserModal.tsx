@@ -213,12 +213,12 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             {roles.map(role => (
               <label
                 key={role}
-                className={`flex gap-3 rounded-md border p-3 cursor-pointer ${form.role === role ? 'border-primary-500 bg-primary-50 dark:bg-primary-950' : 'border-gray-200 dark:border-gray-700'}`}
+                className={`flex gap-3 rounded-md border-[1.5px] p-[14px] cursor-pointer ${form.role === role ? 'border-[color:var(--mx-accent)] bg-[color:var(--mx-accent-lt)]' : 'border-gray-200 dark:border-gray-700'}`}
               >
                 <input type="radio" name="role" value={role} checked={form.role === role} onChange={() => setForm({ ...form, role })} className="mt-1 text-primary-600 focus:ring-primary-500" />
                 <span>
-                  <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{ROLE_LABELS[role]}</span>
-                  <span className="block text-xs text-gray-600 dark:text-gray-400">{ROLE_HINTS[role]}</span>
+                  <span className="block text-[13.5px] font-bold text-gray-900 dark:text-gray-100">{ROLE_LABELS[role]}</span>
+                  <span className="mt-0.5 block text-[12px] text-gray-600 dark:text-gray-400">{ROLE_HINTS[role]}</span>
                 </span>
               </label>
             ))}

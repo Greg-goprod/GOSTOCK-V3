@@ -127,7 +127,7 @@ const Help: React.FC = () => {
               <Link to="/aide" className="hover:underline">Aide</Link>
               {category && <><ChevronRight size={13} aria-hidden="true" /><span>{category.label}</span></>}
             </nav>
-            <a href={`/aide/${id}`} target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-1.5 text-sm">
+            <a href={`/aide/${id}`} target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
               <ExternalLink size={15} aria-hidden="true" /> Ouvrir dans un nouvel onglet
             </a>
           </div>
@@ -158,13 +158,13 @@ const Help: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             {/* L'aide à côté de l'application : on lit d'un côté, on travaille de l'autre */}
-            <a href="/aide" target="_blank" rel="noopener" className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm">
+            <a href="/aide" target="_blank" rel="noopener" className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-[12.5px]">
               <ExternalLink size={16} aria-hidden="true" /> Nouvel onglet
             </a>
-            <a href="/aide/GO-Mat-mode-emploi.pdf" download className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm">
+            <a href="/aide/GO-Mat-mode-emploi.pdf" download className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-[12.5px]">
               <FileDown size={16} aria-hidden="true" /> PDF
             </a>
-            <a href="/aide/imprimer" target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-2 text-sm">
+            <a href="/aide/imprimer" target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-2 text-[12.5px]">
               <Printer size={16} aria-hidden="true" /> Imprimer
             </a>
           </div>

@@ -142,7 +142,7 @@ const HelpArticleView: React.FC<{ article: HelpArticle; onNavigate?: () => void;
           </span>
         )}
         {article.route && !article.route.startsWith('/ecran') && (
-          <Link to={article.route} onClick={onNavigate} className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-sm">
+          <Link to={article.route} onClick={onNavigate} className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
             Ouvrir la page <ArrowRight size={14} aria-hidden="true" />
           </Link>
         )}

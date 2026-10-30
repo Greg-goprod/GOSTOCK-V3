@@ -37,9 +37,9 @@ const Deadline: React.FC<{ label: string; date?: string }> = ({ label, date }) =
   const state = deadlineState(date);
   if (!state) return null;
   const cls = state === 'overdue'
-    ? 'bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200'
+    ? 'mx-tint-badge-danger'
     : state === 'soon'
-      ? 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200'
+      ? 'mx-tint-badge-warning'
       : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
   return (
     <span className={`inline-flex rounded px-2 py-0.5 text-[11px] font-bold ${cls}`}>

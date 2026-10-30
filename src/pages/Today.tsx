@@ -108,7 +108,7 @@ const Today: React.FC = () => {
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{itemName(c.equipmentId)}</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">{userName(c.userId)} · prévu le {new Date(c.dueDate).toLocaleDateString('fr-CH')}</div>
                 </div>
-                <span className="shrink-0 rounded bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-[11px] font-bold">{daysLate(c.dueDate)} j</span>
+                <span className="shrink-0 rounded mx-tint-badge-danger px-2 py-0.5 text-[11px] font-bold">{daysLate(c.dueDate)} j</span>
               </li>
             ))}
           </Block>
@@ -144,7 +144,7 @@ const Today: React.FC = () => {
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{v.name}</div>
                   <div className="font-mono text-xs text-gray-600 dark:text-gray-400">{v.plate}</div>
                 </div>
-                <span className="shrink-0 rounded bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200 px-2 py-0.5 text-[11px] font-bold">Échéance proche</span>
+                <span className="shrink-0 rounded mx-tint-badge-warning px-2 py-0.5 text-[11px] font-bold">Échéance proche</span>
               </li>
             ))}
           </Block>

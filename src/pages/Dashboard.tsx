@@ -25,6 +25,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
 import { Equipment } from '../types';
 import Button from '../components/common/Button';
+import { MxBadge } from '../components/mx/MxBadge';
 
 const Dashboard: React.FC = () => {
   const { t } = useLanguage();
@@ -720,12 +721,11 @@ const Dashboard: React.FC = () => {
                           <h4 className="text-xs font-bold text-gray-900 dark:text-white">
                             {equipment.name}
                           </h4>
-                          <span 
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium text-white"
-                            style={{ backgroundColor: maintenance.maintenance_types?.color || '#3b82f6' }}
-                          >
+                          {/* Couleur du type (choisie dans les paramètres) en pastille ; texte au ton neutre de la charte */}
+                          <MxBadge tone="neutral">
+                            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: maintenance.maintenance_types?.color || 'var(--mx-cyan)' }} aria-hidden="true" />
                             {maintenance.maintenance_types?.name || 'Maintenance'}
-                          </span>
+                          </MxBadge>
                         </div>
                         
                         <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">

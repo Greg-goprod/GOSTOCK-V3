@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, PackageCheck, Plus, Send, Trash2, X } from 'lucide-react';
+import { ArrowLeftRight, ArrowRight, PackageCheck, Plus, Send, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -11,6 +11,7 @@ import { errorMessage } from '../lib/requests';
 import { findEquipmentByCode } from '../lib/scan';
 import { confirmAction, promptAction } from '../lib/confirm';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxEmpty } from '../components/mx/MxEmpty';
 
 interface TransferLine {
   id: string;
@@ -173,7 +174,12 @@ const Transfers: React.FC = () => {
         options={[{ value: 'open', label: 'En route' }, { value: 'all', label: 'Historique' }]} />
 
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
-        {shown.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">{depots.length > 1 ? 'Aucun transfert.' : 'Un seul dépôt : crées-en un autre dans Paramètres pour transférer du matériel.'}</li>}
+        {shown.length === 0 && (
+          <li className="p-2">
+            <MxEmpty icon={ArrowLeftRight} title={depots.length > 1 ? 'Aucun transfert' : 'Un seul dépôt'}
+              description={depots.length > 1 ? undefined : 'Crées-en un autre dans Paramètres pour transférer du matériel.'} />
+          </li>
+        )}
         {shown.map(t => {
           const done = t.transfer_lines.filter(l => l.received >= l.quantity).length;
           const canReceive = t.status === 'in_transit' && myDepotIds.includes(t.to_depot_id);
@@ -183,7 +189,7 @@ const Transfers: React.FC = () => {
                 <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
                   <span className="font-mono">{t.number}</span>
                   <span className="inline-flex items-center gap-1">{depotName(t.from_depot_id)} <ArrowRight size={14} aria-hidden="true" /> {depotName(t.to_depot_id)}</span>
-                  <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${t.status === 'in_transit' ? 'bg-info-100 text-info-800 dark:bg-info-900 dark:text-info-100' : t.status === 'received' ? 'bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>{STATUS[t.status]}</span>
+                  <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${t.status === 'in_transit' ? 'mx-tint-badge-info' : t.status === 'received' ? 'mx-tint-badge-success' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>{STATUS[t.status]}</span>
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   Envoyé le {new Date(t.sent_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}{t.sent_by ? ` par ${userName(t.sent_by)}` : ''}

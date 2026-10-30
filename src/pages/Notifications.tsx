@@ -479,8 +479,8 @@ const Notifications: React.FC = () => {
                           notification.priority === 'medium' ? 'warning' : 'info'
                         }
                       >
-                        {notification.priority === 'high' ? 'URGENT' :
-                         notification.priority === 'medium' ? 'IMPORTANT' : 'INFO'}
+                        {notification.priority === 'high' ? 'Urgent' :
+                         notification.priority === 'medium' ? 'Important' : 'Info'}
                       </Badge>
                       
                       {notification.read ? (
@@ -557,7 +557,7 @@ const Notifications: React.FC = () => {
                       size="sm"
                       icon={<MarkAsRead size={14} />}
                       onClick={() => markAsUnread(notification.id)}
-                      className="text-xs font-bold"
+                      className=""
                     >
                       Marquer non lue
                     </Button>
@@ -567,7 +567,7 @@ const Notifications: React.FC = () => {
                       size="sm"
                       icon={<CheckCircle size={14} />}
                       onClick={() => markAsRead(notification.id)}
-                      className="text-xs font-bold"
+                      className=""
                     >
                       Marquer comme lue
                     </Button>
@@ -578,7 +578,6 @@ const Notifications: React.FC = () => {
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => deleteNotification(notification.id)}
-                    className="text-xs"
                     ariaLabel="Supprimer"
                   />
                 </div>

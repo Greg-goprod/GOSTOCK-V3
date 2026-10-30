@@ -33,7 +33,7 @@ const ActionTile: React.FC<{ action: Action }> = ({ action }) => {
     <button
       type="button"
       onClick={() => navigate(action.to, action.state ? { state: action.state } : undefined)}
-      className={`group mx-card mx-card-hover text-left p-4 flex items-start gap-3 min-h-[92px] ${action.primary ? 'sm:col-span-2 !bg-primary-600 !border-primary-600 text-white' : ''}`}
+      className={`group mx-card mx-card-hover text-left p-4 flex items-start gap-3 min-h-[92px] ${action.primary ? 'mx-tile-primary sm:col-span-2 !bg-primary-600 !border-primary-600 text-white' : ''}`}
     >
       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${action.primary ? 'bg-white/20 text-white' : 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300'}`}>
         <Icon size={20} aria-hidden="true" />

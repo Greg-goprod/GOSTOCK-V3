@@ -36,12 +36,12 @@ const DAY = 24 * 60 * 60 * 1000;
 const today = () => new Date().toISOString().slice(0, 10);
 
 const stateOf = (ut: UserTraining) => {
-  if (!ut.expires_on) return { label: 'Sans échéance', className: 'bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200' };
+  if (!ut.expires_on) return { label: 'Sans échéance', className: 'mx-tint-badge-success' };
   const days = Math.floor((new Date(ut.expires_on).getTime() - Date.now()) / DAY);
   const until = new Date(ut.expires_on).toLocaleDateString('fr-CH');
-  if (days < 0) return { label: `Expirée le ${until}`, className: 'bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200' };
-  if (days <= 30) return { label: `Expire le ${until}`, className: 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200' };
-  return { label: `Valable jusqu'au ${until}`, className: 'bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200' };
+  if (days < 0) return { label: `Expirée le ${until}`, className: 'mx-tint-badge-danger' };
+  if (days <= 30) return { label: `Expire le ${until}`, className: 'mx-tint-badge-warning' };
+  return { label: `Valable jusqu'au ${until}`, className: 'mx-tint-badge-success' };
 };
 
 // Formations obligatoires : qui peut utiliser la nacelle, le chariot, la tronçonneuse…

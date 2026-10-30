@@ -39,7 +39,7 @@ const DialogHost: React.FC = () => {
       titleIcon={view?.danger ? AlertTriangle : undefined}
       size="sm"
       footer={
-        <div className="flex w-full justify-end gap-2">
+        <div className="mx-dr-foot flex w-full justify-end gap-2">
           <Button variant="outline" onClick={cancel}>Annuler</Button>
           <Button variant={view?.danger ? 'danger' : 'primary'} onClick={accept}>{view?.kind === 'prompt' ? 'Valider' : 'Confirmer'}</Button>
         </div>

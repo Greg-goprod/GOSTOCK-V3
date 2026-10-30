@@ -2,7 +2,7 @@ import { RequestStatus, Vehicle } from '../types';
 
 export const REQUEST_STATUS: Record<RequestStatus, { label: string; className: string }> = {
   requested: { label: 'À valider', className: 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200' },
-  approved: { label: 'Validée', className: 'bg-info-100 text-info-600 dark:bg-info-900 dark:text-info-100' },
+  approved: { label: 'Validée', className: 'mx-tint-badge-info' },
   ready: { label: 'Prête', className: 'bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-200' },
   out: { label: 'Sortie', className: 'bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200' },
   closed: { label: 'Clôturée', className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200' },
@@ -12,7 +12,7 @@ export const REQUEST_STATUS: Record<RequestStatus, { label: string; className: s
 
 export const VEHICLE_STATUS: Record<Vehicle['status'], { label: string; className: string }> = {
   available: { label: 'Disponible', className: 'bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200' },
-  in_use: { label: 'Sorti', className: 'bg-info-100 text-info-600 dark:bg-info-900 dark:text-info-100' },
+  in_use: { label: 'Sorti', className: 'mx-tint-badge-info' },
   maintenance: { label: 'En maintenance', className: 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200' },
   retired: { label: 'Retiré', className: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
 };
