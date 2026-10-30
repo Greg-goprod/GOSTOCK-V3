@@ -90,8 +90,18 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
   message (Paramètres → Outil trouvé). Les étiquettes « outil trouvé » contiennent un lien ; le scanner
   du magasin les lit normalement.
 - **Sauvegarde** : fichier JSON de toutes les tables, sans les photos (restent dans le stockage) ni les codes
-  de badge. Pas encore de restauration automatique depuis ce fichier.
+  de badge. Automatique chaque mois (fonction d'envoi) dans le stockage privé « backups », 12 gardées.
+  Restauration (Paramètres → Sauvegarde) : remet seulement les lignes absentes, n'écrase ni ne supprime
+  rien. Une ligne refusée par une règle (ex. sortie vers un chantier clôturé) est signalée, pas forcée.
 - **Export comptable** : comptes du plan PME suisse par défaut, à faire confirmer par la fiduciaire.
+  Excel, fichier Abacus (`Datum;Beleg;Soll;Haben;Betrag;Text;KST`, UTF-8 ; le modèle d'import est à
+  régler une fois dans Abacus) et envoi direct dans bexio (fonction `bexio-export`, secret
+  `BEXIO_API_TOKEN`). L'API bexio n'a pas encore été essayée avec un vrai compte.
+- **Caution** : montant, versée le, rendue le sur la fiche personne ; rappelée au départ.
+- **SMS** : rappels personnels (retour demain, retard, demande prête) via Twilio (secrets
+  `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`) + réglage « SMS » dans Paramètres.
+- **Carte** (`/carte`) : chantiers placés depuis l'adresse (OpenStreetMap/Nominatim) ou la position du
+  téléphone ; pastille = matériel encore sur place. Les outils eux-mêmes n'ont pas de GPS.
 - **Mise à jour du catalogue** : un nouveau fichier Makita (JSON) ou une liste de prix Excel est comparé
   avant import ; les produits absents du fichier ne sont pas supprimés.
 - **Langues (FR/DE/IT/EN)** : traduction de l'écran à la volée (`src/i18n/translator.ts`) d'après les

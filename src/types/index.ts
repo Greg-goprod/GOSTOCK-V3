@@ -167,6 +167,10 @@ export interface User {
   company?: string | null;
   accessUntil?: string | null;
   leftOn?: string | null;
+  // Caution versée (intérimaires, sous-traitants), rendue au départ
+  depositAmount?: number | null;
+  depositPaidOn?: string | null;
+  depositReturnedOn?: string | null;
   dateCreated: string;
 }
 

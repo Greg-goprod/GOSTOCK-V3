@@ -27,6 +27,7 @@ import {
   Gauge,
   History,
   HardHat,
+  Map as MapIcon,
   Briefcase,
   GraduationCap,
   KeyRound,
@@ -60,6 +61,7 @@ const NAV_SECTIONS = [
     { to: '/recherche', label: 'Recherche', icon: SearchIcon },
     { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
     { to: '/chantiers', label: 'Chantiers', icon: HardHat },
+    { to: '/carte', label: 'Carte', icon: MapIcon },
     { to: '/planning', label: 'Planning', icon: CalendarRange },
   ] },
   { title: 'Stock', links: [

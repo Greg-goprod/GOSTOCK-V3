@@ -13,6 +13,7 @@ import CatalogImport from '../components/import/CatalogImport';
 import NotificationRecipients from '../components/settings/NotificationRecipients';
 import FoundToolSettings from '../components/settings/FoundToolSettings';
 import BackupPanel from '../components/settings/BackupPanel';
+import SmsSetting from '../components/settings/SmsSetting';
 import { SystemResetModal } from '../components/admin/SystemResetModal';
 import { useApp } from '../contexts/AppContext';
 import { 
@@ -533,13 +534,14 @@ const Settings: React.FC = () => {
 
       {/* Notifications par e-mail */}
       <Accordion
-        title="NOTIFICATIONS PAR E-MAIL"
+        title="NOTIFICATIONS PAR E-MAIL ET SMS"
         icon={<Mail size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
         <Card>
           <div className="p-4">
             <NotificationRecipients />
+            <SmsSetting />
           </div>
         </Card>
       </Accordion>

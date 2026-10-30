@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import { useAuth } from '../contexts/AuthContext';
@@ -114,8 +114,11 @@ const Accounting: React.FC = () => {
     toast.success('Comptes enregistrés');
   };
 
-  const exportExcel = () => {
-    const entries: Record<string, string | number>[] = [];
+  const [sending, setSending] = useState(false);
+
+  // Écritures de l'année : amortissements, consommables et locations par chantier et par mois, pertes
+  const buildEntries = () => {
+    const entries: { Date: string; Pièce: string; Libellé: string; Débit: string; Crédit: string; 'Montant CHF': number; Chantier: string }[] = [];
     const yearEnd = `31.12.${year}`;
     let n = 1;
     const piece = () => `GOMAT-${year}-${String(n++).padStart(4, '0')}`;
@@ -137,7 +140,7 @@ const Accounting: React.FC = () => {
       const [mm, yyyy] = g.month.split('.');
       const last = new Date(Number(yyyy), Number(mm), 0).getDate();
       entries.push({
-        Date: `${last}.${mm}.${yyyy}`, Pièce: piece(),
+        Date: `${String(last).padStart(2, '0')}.${mm}.${yyyy}`, Pièce: piece(),
         Libellé: `${g.source === 'rental' ? 'Locations' : 'Consommables'} ${g.month} · ${g.site}`,
         Débit: g.source === 'rental' ? accounts.rental_debit : accounts.consumption_debit,
         Crédit: g.source === 'rental' ? accounts.rental_credit : accounts.consumption_credit,
@@ -145,8 +148,15 @@ const Accounting: React.FC = () => {
       });
     }
     for (const l of losses) {
-      entries.push({ Date: new Date(l.occurred_at).toLocaleDateString('fr-CH'), Pièce: piece(), Libellé: `Perte / casse ${l.equipment?.name ?? ''}`, Débit: accounts.loss_debit, Crédit: accounts.loss_credit, 'Montant CHF': round(lossValue(l)), Chantier: '' });
+      const d = new Date(l.occurred_at);
+      const date = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+      entries.push({ Date: date, Pièce: piece(), Libellé: `Perte / casse ${l.equipment?.name ?? ''}`, Débit: accounts.loss_debit, Crédit: accounts.loss_credit, 'Montant CHF': round(lossValue(l)), Chantier: '' });
     }
+    return entries.filter(e => e['Montant CHF'] > 0);
+  };
+
+  const exportExcel = () => {
+    const entries = buildEntries();
     downloadWorkbook([
       { name: 'Écritures', rows: entries, widths: [12, 18, 50, 8, 8, 14, 25] },
       {
@@ -160,6 +170,48 @@ const Accounting: React.FC = () => {
     ], `GO-Mat_comptabilite_${year}.xlsx`);
   };
 
+  // Fichier texte pour l'import des écritures d'Abacus (séparateur « ; », une écriture par ligne)
+  const exportAbacus = () => {
+    const entries = buildEntries();
+    if (!entries.length) return toast.error('Aucune écriture pour cette année');
+    const clean = (v: string) => v.replace(/[;\r\n]+/g, ' ').trim();
+    const lines = [
+      'Datum;Beleg;Soll;Haben;Betrag;Text;KST',
+      ...entries.map(e => [e.Date, e.Pièce, e.Débit, e.Crédit, e['Montant CHF'].toFixed(2), clean(e.Libellé), clean(e.Chantier)].join(';')),
+    ];
+    const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GO-Mat_Abacus_${year}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Écritures envoyées directement dans bexio (jeton bexio saisi dans Supabase)
+  const sendBexio = async () => {
+    const entries = buildEntries();
+    if (!entries.length) return toast.error('Aucune écriture pour cette année');
+    if (!window.confirm(`Envoyer ${entries.length} écriture(s) de ${year} dans bexio ? Ne le faites qu'une fois par année, sinon elles seront en double.`)) return;
+    setSending(true);
+    const { data, error } = await supabase.functions.invoke('bexio-export', {
+      body: {
+        entries: entries.map(e => {
+          const [dd, mm, yyyy] = e.Date.split('.');
+          return { date: `${yyyy}-${mm}-${dd}`, reference: e.Pièce, debit: e.Débit, credit: e.Crédit, amount: e['Montant CHF'], description: e.Libellé };
+        }),
+      },
+    });
+    setSending(false);
+    if (error) {
+      // Message d'erreur de la fonction (comptes absents, jeton manquant…) plutôt que le statut HTTP
+      const detail = await (error as { context?: Response }).context?.json?.().catch(() => null);
+      return toast.error(detail?.error ?? errorMessage(error), { duration: 8000 });
+    }
+    if (data?.failed) toast.error(`${data.sent} écriture(s) envoyée(s), ${data.failed} refusée(s) par bexio : ${data.errors?.[0] ?? ''}`, { duration: 10000 });
+    else toast.success(`${data?.sent ?? 0} écriture(s) envoyée(s) dans bexio`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
@@ -167,11 +219,13 @@ const Accounting: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Comptabilité</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Amortissement linéaire des outils et écritures de l'année, en Excel pour la fiduciaire.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <select value={year} onChange={e => setYear(Number(e.target.value))} aria-label="Année" className={`${inputClass} w-auto`}>
             {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <Button icon={<Download size={16} />} onClick={exportExcel}>Export Excel</Button>
+          <Button variant="outline" icon={<Download size={16} />} onClick={exportAbacus}>Fichier Abacus</Button>
+          {can('settings') && <Button variant="outline" icon={<Send size={16} />} onClick={sendBexio} loading={sending}>Envoyer dans bexio</Button>}
         </div>
       </div>
 

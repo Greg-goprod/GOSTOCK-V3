@@ -37,6 +37,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
   const [rentals, setRentals] = useState<RentalRow[]>([]);
   const [leftOn, setLeftOn] = useState(today());
   const [busy, setBusy] = useState(false);
+  const [depositReturned, setDepositReturned] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -50,6 +51,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
 
   useEffect(() => {
     setLeftOn(user?.leftOn || today());
+    setDepositReturned(user?.depositReturnedOn ?? null);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -64,6 +66,17 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
   };
   const remaining = held.length + ppe.length + rentals.length;
   const fullName = `${user.first_name} ${user.last_name}`;
+  const chf = (n: number) => n.toLocaleString('fr-CH', { style: 'currency', currency: 'CHF' });
+  // Caution versée et pas encore rendue : à rembourser à la personne au départ
+  const depositDue = user.depositAmount && user.depositAmount > 0 && !depositReturned ? user.depositAmount : 0;
+
+  const returnDeposit = async () => {
+    const { error } = await supabase.from('users').update({ deposit_returned_on: today() }).eq('id', user.id);
+    if (error) return toast.error(errorMessage(error));
+    setDepositReturned(today());
+    toast.success(`Caution de ${chf(depositDue)} rendue à ${fullName}`);
+    await refreshData();
+  };
 
   const returnPpe = async (row: PpeRow) => {
     const { error } = await supabase.from('ppe_issues').update({ returned_on: today() }).eq('id', row.id);
@@ -83,6 +96,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
       <style>body{font-family:Arial,Helvetica,sans-serif;margin:16mm;color:#000}h1{font-size:20px;margin:0}li{padding:6px 0;border-bottom:1px solid #999;list-style:none;font-size:14px}ul{padding:0}</style>
       </head><body><h1>Solde de départ : ${escape(fullName)}</h1><p>Départ le ${escape(new Date(leftOn).toLocaleDateString('fr-CH'))}</p>
       ${items.length ? `<ul>${items.map(i => `<li>☐ ${escape(i)}</li>`).join('')}</ul>` : '<p>Rien à rendre.</p>'}
+      ${depositDue ? `<p>☐ Caution de ${escape(chf(depositDue))} à rembourser à la personne${user.depositPaidOn ? ` (versée le ${escape(new Date(user.depositPaidOn).toLocaleDateString('fr-CH'))})` : ''}</p>` : ''}
       <p style="margin-top:24px">Signature de la personne : ______________________ &nbsp; Magasin : ______________________</p></body></html>`);
     win.document.close();
     win.focus();
@@ -149,6 +163,17 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">À rendre au loueur ou à confier à un autre responsable (page Locations).</p>
           </section>
         )}
+
+        {user.depositAmount ? (
+          <section className="rounded-md border border-gray-200 dark:border-gray-700 p-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-gray-800 dark:text-gray-200">
+              Caution de <strong>{chf(user.depositAmount)}</strong>
+              {user.depositPaidOn ? ` versée le ${new Date(user.depositPaidOn).toLocaleDateString('fr-CH')}` : ''}
+              {depositReturned ? ` · rendue le ${new Date(depositReturned).toLocaleDateString('fr-CH')}` : ' · à rembourser au départ'}
+            </span>
+            {!depositReturned && <Button size="sm" variant="outline" onClick={returnDeposit}>Caution rendue</Button>}
+          </section>
+        ) : null}
 
         <div className="grid gap-3 sm:grid-cols-[12rem_1fr] items-end">
           <div>

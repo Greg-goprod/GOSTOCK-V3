@@ -16,6 +16,7 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   '/pilotage': ['approve', 'settings'],
   '/journal': ['approve', 'settings'],
   '/chantiers': ['view_all', 'scan', 'approve', 'manage_stock'],
+  '/carte': ['view_all', 'scan', 'approve', 'manage_stock'],
   '/kits': ['scan', 'manage_stock'],
   '/formations': ['manage_people', 'view_all', 'scan'],
   '/locations': ['manage_stock', 'manage_fleet', 'view_all'],

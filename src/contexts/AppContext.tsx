@@ -279,6 +279,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         company: u.company,
         accessUntil: u.access_until,
         leftOn: u.left_on,
+        depositAmount: u.deposit_amount,
+        depositPaidOn: u.deposit_paid_on,
+        depositReturnedOn: u.deposit_returned_on,
         dateCreated: u.created_at
       })));
       setEquipment(transformedEquipment);

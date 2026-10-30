@@ -40,9 +40,10 @@ const Users: React.FC = () => {
     if (user.leftOn && user.active === false) return `Parti le ${new Date(user.leftOn).toLocaleDateString('fr-CH')}`;
     if (user.active === false) return 'Accès suspendu';
     const kind = user.personKind && user.personKind !== 'employee' ? `${KIND_LABELS[user.personKind]}${user.company ? ` (${user.company})` : ''} · ` : '';
-    if (user.accessUntil && user.accessUntil < today) return `${kind}accès échu le ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
-    if (user.accessUntil) return `${kind}jusqu'au ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
-    return `${kind}${user.linked ? 'Déjà connecté' : 'Jamais connecté'}`;
+    const deposit = user.depositAmount && !user.depositReturnedOn ? `caution ${user.depositAmount} CHF · ` : '';
+    if (user.accessUntil && user.accessUntil < today) return `${kind}${deposit}accès échu le ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
+    if (user.accessUntil) return `${kind}${deposit}jusqu'au ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
+    return `${kind}${deposit}${user.linked ? 'Déjà connecté' : 'Jamais connecté'}`;
   };
 
   useEffect(() => {
@@ -71,6 +72,9 @@ const Users: React.FC = () => {
         company: u.company,
         accessUntil: u.access_until,
         leftOn: u.left_on,
+        depositAmount: u.deposit_amount,
+        depositPaidOn: u.deposit_paid_on,
+        depositReturnedOn: u.deposit_returned_on,
       })));
     } catch (error: any) {
       console.error('Error fetching users:', error);

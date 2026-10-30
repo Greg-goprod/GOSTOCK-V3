@@ -60,10 +60,10 @@ export const translateText = (text: string): string => {
     for (const p of patterns) {
       const m = trimmed.match(p.regex);
       if (m) {
-        // Une variable peut elle-même être un texte connu (« État : En retard »)
+        // Une variable peut elle-même être un texte connu (« État : En retard »), y compris avec ses propres variables
         result = p.target.replace(/\{(\d)\}/g, (_, i) => {
           const value = m[Number(i) + 1] ?? '';
-          return exact.get(value.trim()) ?? value;
+          return value.trim().length < trimmed.length ? translateText(value) : value;
         });
         break;
       }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Copy, FileText, HardHat, Lock, Pencil, Plus, Unlock } from 'lucide-react';
+import { Copy, FileText, HardHat, LocateFixed, Lock, MapPin, Pencil, Plus, Unlock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { printSiteReport, similarSiteItems } from '../lib/siteReport';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
+import { currentPosition, formatCoordinates, geocodeAddress } from '../lib/geo';
 
 interface Site {
   id: string;
@@ -22,6 +23,8 @@ interface Site {
   status: 'open' | 'closed';
   closed_at: string | null;
   notes: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   consumables_cost: number;
   tools_cost: number;
   rentals_cost: number;
@@ -40,7 +43,7 @@ interface OpenItem {
   late: boolean;
 }
 
-const EMPTY = { name: '', client: '', address: '', manager_id: '', start_on: '', end_on: '', budget: '', notes: '' };
+const EMPTY = { name: '', client: '', address: '', manager_id: '', start_on: '', end_on: '', budget: '', notes: '', latitude: null as number | null, longitude: null as number | null };
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -63,13 +66,17 @@ const Sites: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    const [s, o] = await Promise.all([
+    const [s, o, c] = await Promise.all([
       supabase.from('site_summary').select('*').order('name'),
       supabase.from('site_open_items').select('*').order('due_at'),
+      supabase.from('sites').select('id, latitude, longitude'),
     ]);
     if (s.error) toast.error(errorMessage(s.error));
+    const coordinates = new Map(((c.data || []) as { id: string; latitude: number | null; longitude: number | null }[]).map(x => [x.id, x]));
     setSites(((s.data || []) as Site[]).map(x => ({
       ...x,
+      latitude: coordinates.get(x.id)?.latitude ?? null,
+      longitude: coordinates.get(x.id)?.longitude ?? null,
       budget: x.budget === null ? null : Number(x.budget),
       consumables_cost: Number(x.consumables_cost), tools_cost: Number(x.tools_cost), rentals_cost: Number(x.rentals_cost),
       spent: Number(x.spent), open_tools: Number(x.open_tools), open_rentals: Number(x.open_rentals),
@@ -90,13 +97,39 @@ const Sites: React.FC = () => {
     setForm(site === 'new' ? EMPTY : {
       name: site.name, client: site.client ?? '', address: site.address ?? '', manager_id: site.manager_id ?? '',
       start_on: site.start_on ?? '', end_on: site.end_on ?? '', budget: site.budget === null ? '' : String(site.budget), notes: site.notes ?? '',
+      latitude: site.latitude ?? null, longitude: site.longitude ?? null,
     });
+  };
+
+  const [locating, setLocating] = useState(false);
+  const locate = async (source: 'address' | 'device') => {
+    setLocating(true);
+    try {
+      const found = source === 'address' ? await geocodeAddress(form.address) : await currentPosition();
+      if (!found) return toast.error('Adresse introuvable sur la carte : précisez la localité');
+      setForm(f => ({ ...f, ...found }));
+      toast.success(`Position enregistrée : ${formatCoordinates(found)}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setLocating(false);
+    }
   };
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
+    // Adresse sans position (ou adresse changée) : on la cherche sur la carte, sans bloquer si elle est introuvable
+    let position = { latitude: form.latitude, longitude: form.longitude };
+    const original = editing === 'new' ? null : editing;
+    const addressChanged = form.address.trim() !== (original?.address ?? '').trim();
+    const placedByHand = form.latitude !== (original?.latitude ?? null) || form.longitude !== (original?.longitude ?? null);
+    if (form.address.trim() && !placedByHand && (position.latitude === null || addressChanged)) {
+      position = await geocodeAddress(form.address).catch(() => null) ?? position;
+    }
     const row = {
+      latitude: position.latitude,
+      longitude: position.longitude,
       name: form.name.trim().replace(/\s+/g, ' '),
       client: form.client.trim() || null,
       address: form.address.trim() || null,
@@ -272,6 +305,11 @@ const Sites: React.FC = () => {
           <div className="sm:col-span-2">
             <label htmlFor="site-address" className={labelClass}>Adresse</label>
             <input id="site-address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className={inputClass} />
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+              <span>{form.latitude !== null && form.longitude !== null ? `Sur la carte : ${formatCoordinates({ latitude: form.latitude, longitude: form.longitude })}` : 'Pas encore sur la carte'}</span>
+              <Button type="button" size="sm" variant="outline" icon={<MapPin size={14} />} onClick={() => locate('address')} disabled={!form.address.trim() || locating}>Depuis l'adresse</Button>
+              <Button type="button" size="sm" variant="outline" icon={<LocateFixed size={14} />} onClick={() => locate('device')} disabled={locating}>Ma position (sur place)</Button>
+            </div>
           </div>
           <div>
             <label htmlFor="site-start" className={labelClass}>Début</label>

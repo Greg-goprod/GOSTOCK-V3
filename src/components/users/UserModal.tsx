@@ -44,6 +44,9 @@ const emptyForm = {
   person_kind: 'employee' as 'employee' | 'temp' | 'subcontractor',
   company: '',
   access_until: '',
+  deposit_amount: '',
+  deposit_paid_on: '',
+  deposit_returned_on: '',
 };
 
 // Catégories de permis suisses courantes pour la flotte
@@ -74,6 +77,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         person_kind: user.personKind ?? 'employee',
         company: user.company || '',
         access_until: user.accessUntil || '',
+        deposit_amount: user.depositAmount != null ? String(user.depositAmount) : '',
+        deposit_paid_on: user.depositPaidOn || '',
+        deposit_returned_on: user.depositReturnedOn || '',
       });
       supabase.from('user_depots').select('depot_id').eq('user_id', user.id)
         .then(({ data }) => setDepotIds((data || []).map(d => d.depot_id)));
@@ -97,6 +103,11 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    const deposit = Number(form.deposit_amount.replace(',', '.'));
+    if (form.deposit_amount.trim() && (Number.isNaN(deposit) || deposit < 0)) {
+      toast.error('Montant de caution invalide');
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -114,6 +125,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         person_kind: form.person_kind,
         company: form.person_kind === 'employee' ? null : form.company.trim() || null,
         access_until: form.access_until || null,
+        deposit_amount: form.deposit_amount.trim() ? deposit : null,
+        deposit_paid_on: form.deposit_amount.trim() ? form.deposit_paid_on || null : null,
+        deposit_returned_on: form.deposit_amount.trim() ? form.deposit_returned_on || null : null,
       };
 
       let userId = user?.id;
@@ -288,6 +302,24 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             </div>
           </div>
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Après cette date : plus de connexion ni de badge, et rien ne peut être emprunté au-delà.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div>
+              <label htmlFor="user-deposit" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Caution (CHF, facultatif)</label>
+              <input id="user-deposit" inputMode="decimal" value={form.deposit_amount} onChange={e => setForm({ ...form, deposit_amount: e.target.value })} className={inputClass} placeholder="ex. 200" />
+            </div>
+            {form.deposit_amount.trim() !== '' && (
+              <>
+                <div>
+                  <label htmlFor="user-deposit-paid" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Versée le</label>
+                  <input id="user-deposit-paid" type="date" value={form.deposit_paid_on} onChange={e => setForm({ ...form, deposit_paid_on: e.target.value })} className={inputClass} />
+                </div>
+                <div>
+                  <label htmlFor="user-deposit-returned" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Rendue le</label>
+                  <input id="user-deposit-returned" type="date" value={form.deposit_returned_on} onChange={e => setForm({ ...form, deposit_returned_on: e.target.value })} className={inputClass} />
+                </div>
+              </>
+            )}
+          </div>
         </fieldset>
 
         <label className="flex items-start gap-3 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">

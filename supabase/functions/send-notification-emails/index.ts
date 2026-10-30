@@ -8,6 +8,9 @@
 // Secrets e-mail : SMTP_RELAY_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
 // SMTP_FROM_EMAIL ; facultatifs : SMTP_RELAY_URL, SMTP_FROM_NAME, APP_URL.
 // Secrets téléphone : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (ex. mailto:magasin@exemple.ch).
+// Secrets SMS (Twilio) : TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM (numéro ou nom d'expéditeur) ;
+// les SMS ne partent que si le réglage « SMS » est aussi activé dans Paramètres.
+// Sauvegarde automatique : chaque mois, fichier complet dans le stockage privé « backups » (12 gardés).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 
@@ -27,8 +30,17 @@ const VAPID = {
   privateKey: Deno.env.get('VAPID_PRIVATE_KEY'),
   subject: Deno.env.get('VAPID_SUBJECT') ?? 'mailto:noreply@go-mat.ch',
 };
+const TWILIO = {
+  sid: Deno.env.get('TWILIO_ACCOUNT_SID'),
+  token: Deno.env.get('TWILIO_AUTH_TOKEN'),
+  from: Deno.env.get('TWILIO_FROM'),
+};
 const pushReady = Boolean(VAPID.publicKey && VAPID.privateKey);
 if (pushReady) webpush.setVapidDetails(VAPID.subject, VAPID.publicKey!, VAPID.privateKey!);
+
+// Client sans schéma typé (la base n'est pas décrite côté fonction)
+// deno-lint-ignore no-explicit-any
+type Client = ReturnType<typeof createClient<any>>;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -172,12 +184,14 @@ Deno.serve(async (req) => {
   ]);
 
   const pushed = await sendPush(supabase);
+  const sms = await sendSms(supabase);
+  const backup = await autoBackup(supabase).catch((e) => `erreur : ${(e as Error).message}`);
 
   // Sans secrets SMTP, les e-mails restent en attente (visibles dans l'app) ; le reste a tourné
-  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed });
+  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed, sms, backup });
 
   const { data: pending, error } = await supabase.rpc('claim_notification_emails', { p_limit: 50 });
-  if (error) return json({ error: error.message, push: pushed }, 500);
+  if (error) return json({ error: error.message, push: pushed, sms, backup }, 500);
 
   let sent = 0;
   let failed = 0;
@@ -205,7 +219,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed });
+  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup });
 });
 
 interface PendingPush {
@@ -217,7 +231,7 @@ interface PendingPush {
 }
 
 // Notifications sur les téléphones abonnés ; un abonnement expiré (404/410) est supprimé
-async function sendPush(supabase: ReturnType<typeof createClient>) {
+async function sendPush(supabase: Client) {
   if (!pushReady) return 'non configuré';
   const { data, error } = await supabase.rpc('claim_push_notifications', { p_limit: 100 });
   if (error) return `erreur : ${error.message}`;
@@ -238,4 +252,81 @@ async function sendPush(supabase: ReturnType<typeof createClient>) {
   }
   if (expired.length) await supabase.from('push_subscriptions').delete().in('id', expired);
   return { notifications: data?.length ?? 0, delivered, expired: expired.length };
+}
+
+// Numéro suisse saisi librement (« 079 123 45 67 », « 0041… ») → format international (+41…)
+const internationalPhone = (raw: string) => {
+  const digits = raw.replace(/[^\d+]/g, '');
+  if (digits.startsWith('+')) return digits;
+  if (digits.startsWith('00')) return `+${digits.slice(2)}`;
+  if (digits.startsWith('0')) return `+41${digits.slice(1)}`;
+  return `+${digits}`;
+};
+
+// Rappels personnels par SMS (retour demain, retard, demande prête), via Twilio
+async function sendSms(supabase: Client) {
+  if (!TWILIO.sid || !TWILIO.token || !TWILIO.from) return 'non configuré';
+  const { data, error } = await supabase.rpc('claim_sms_notifications', { p_limit: 50 });
+  if (error) return `erreur : ${error.message}`;
+  let delivered = 0;
+  const errors: string[] = [];
+  for (const n of (data ?? []) as { id: string; phone: string; title: string; message: string }[]) {
+    const body = new URLSearchParams({ To: internationalPhone(n.phone), From: TWILIO.from, Body: `GO-Mat · ${n.title}\n${n.message}`.slice(0, 600) });
+    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO.sid}/Messages.json`, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${btoa(`${TWILIO.sid}:${TWILIO.token}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (response.ok) delivered++;
+    else errors.push(`${n.id} : HTTP ${response.status}`);
+  }
+  return { notifications: data?.length ?? 0, delivered, errors };
+}
+
+// Mêmes tables que la sauvegarde téléchargée (Paramètres), sans codes de badge ni abonnements
+const BACKUP_TABLES = [
+  'organizations', 'system_settings', 'depots', 'storage_bins', 'departments', 'role_configs', 'status_configs',
+  'users', 'user_depots', 'trainings', 'user_trainings', 'ppe_types', 'ppe_issues', 'user_ppe_sizes',
+  'categories', 'equipment_groups', 'equipment_subgroups', 'suppliers', 'catalog_products',
+  'equipment', 'equipment_instances', 'equipment_accessories', 'consumable_stock', 'stock_movements',
+  'kits', 'kit_items', 'sites', 'requests', 'request_items', 'request_templates', 'delivery_notes', 'checkouts', 'return_checks',
+  'vehicles', 'vehicle_trips', 'fuel_entries', 'maintenance_types', 'equipment_maintenance', 'maintenance_plans', 'maintenance_plan_runs',
+  'repair_orders', 'incidents', 'inventory_counts', 'inventory_count_lines', 'purchase_orders', 'purchase_order_lines',
+  'transfers', 'transfer_lines', 'rentals', 'notification_recipients', 'notifications', 'audit_log',
+];
+const KEEP_BACKUPS = 12;
+
+// Une sauvegarde complète tous les 30 jours dans le stockage privé ; les plus anciennes sont effacées
+async function autoBackup(supabase: Client) {
+  const { data: settings } = await supabase.from('system_settings').select('id, value').in('id', ['auto_backup', 'last_auto_backup_at']);
+  const value = (id: string) => settings?.find((s) => s.id === id)?.value ?? '';
+  if (value('auto_backup') !== 'true') return 'désactivée';
+  const last = value('last_auto_backup_at');
+  if (last && Date.now() - new Date(last).getTime() < 30 * 24 * 3600 * 1000) return 'à jour';
+
+  const tables: Record<string, unknown[]> = {};
+  for (const table of BACKUP_TABLES) {
+    const rows: unknown[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase.from(table).select('*').range(from, from + 999);
+      if (error) {
+        tables[`_erreur_${table}`] = [error.message];
+        break;
+      }
+      rows.push(...(data ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    tables[table] = rows;
+  }
+  const stamp = new Date().toISOString();
+  const name = `GO-Mat_sauvegarde_${stamp.slice(0, 10)}.json`;
+  const file = new Blob([JSON.stringify({ application: 'GO-Mat', exported_at: stamp, automatic: true, tables })], { type: 'application/json' });
+  const { error } = await supabase.storage.from('backups').upload(name, file, { upsert: true, contentType: 'application/json' });
+  if (error) throw new Error(error.message);
+  await supabase.from('system_settings').update({ value: stamp }).eq('id', 'last_auto_backup_at');
+
+  const { data: files } = await supabase.storage.from('backups').list('', { sortBy: { column: 'name', order: 'desc' } });
+  const old = (files ?? []).filter((f) => f.name.endsWith('.json')).slice(KEEP_BACKUPS).map((f) => f.name);
+  if (old.length) await supabase.storage.from('backups').remove(old);
+  return { file: name, removed: old.length };
 }
