@@ -150,6 +150,11 @@ Migration `20261030000024_corrections_tests_chrome.sql` appliquée sur GO-MAT.
   ensuite retiré du stock (historique gardé) et la location clôturée. PV imprimable (réception seule, ou
   réception et restitution côte à côte).
 - Photos dans le stockage privé « fichiers », dossier `etats-des-lieux`.
+- Migration `20261030000026_permis_machines_suisse.sql` (**à appliquer aussi**) : permis machines suisses
+  (cariste CFST 6518, nacelles IPAF 1a/1b/3a/3b, grutier A/B selon OGrues, grue de chargement, machinistes…)
+  rangés dans « Permis et formations » avec le même blocage à la sortie et à la réservation ; un engin loué peut
+  exiger un permis machine. Permis de conduire : toutes les catégories suisses, avec les équivalences
+  (B → B1/F/G/M, CE → C1E/BE, DE → D1E/BE, F → G/M…). Dénominations à faire valider par la sécurité / Suva.
 
 ## Dettes techniques
 

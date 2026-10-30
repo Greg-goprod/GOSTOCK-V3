@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Permission, PERMISSION_LABELS, ROLE_LABELS, ROLE_PERMISSIONS } from '../../lib/roles';
 import { errorMessage } from '../../lib/requests';
 import DateInput from '../common/DateInput';
+import { LICENSE_CATEGORIES } from '../../lib/licenses';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -51,7 +52,6 @@ const emptyForm = {
 };
 
 // Catégories de permis suisses courantes pour la flotte
-const LICENSE_CATEGORIES = ['B', 'BE', 'C1', 'C1E', 'C', 'CE', 'D1', 'D'];
 
 const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
   const { depots } = useApp();
@@ -261,8 +261,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         <fieldset>
           <legend className={labelClass}>Permis de conduire</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {LICENSE_CATEGORIES.map(cat => (
-              <label key={cat} className="inline-flex items-center gap-1.5 text-sm text-gray-800 dark:text-gray-200">
+            {LICENSE_CATEGORIES.map(({ code: cat, label }) => (
+              <label key={cat} title={label} className="inline-flex items-center gap-1.5 text-sm text-gray-800 dark:text-gray-200">
                 <input
                   type="checkbox"
                   checked={form.license_categories.includes(cat)}
@@ -270,6 +270,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
                   className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span className="font-mono">{cat}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
               </label>
             ))}
           </div>
@@ -277,7 +278,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             <label htmlFor="user-license-exp" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Valable jusqu'au (facultatif)</label>
             <DateInput id="user-license-exp" value={form.license_expires_on} onChange={e => setForm({ ...form, license_expires_on: e.target.value })} className={inputClass} />
           </div>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie.</p>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie. Cochez la catégorie la plus haute : B inclut F, G et M ; CE inclut BE et C1E. Les permis machines (cariste, nacelle, grutier…) se saisissent dans « Formations ».</p>
         </fieldset>
 
         <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 p-3">

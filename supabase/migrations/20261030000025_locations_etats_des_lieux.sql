@@ -12,7 +12,9 @@
 ALTER TABLE public.rentals
   ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'other',
   ADD COLUMN IF NOT EXISTS plate text,
-  ADD COLUMN IF NOT EXISTS license_category text;
+  ADD COLUMN IF NOT EXISTS license_category text,
+  -- Permis machine ou formation exigé pour l'engin loué (repris sur l'outil créé à la réception)
+  ADD COLUMN IF NOT EXISTS required_training_id uuid REFERENCES public.trainings(id) ON DELETE SET NULL;
 
 DO $$
 BEGIN
@@ -315,10 +317,11 @@ BEGIN
     ELSE
       -- Pas de prix par jour : le coût est déjà compté par la location
       INSERT INTO public.equipment (name, description, status, qr_type, total_quantity, available_quantity,
-                                    article_number, rental_id, rental_until, depot_id)
+                                    article_number, rental_id, rental_until, depot_id, required_training_id)
       VALUES (v_rental.description, 'Loué chez ' || v_rental.rental_company || COALESCE(' · contrat ' || v_rental.contract_ref, ''),
               'available', 'batch', v_rental.quantity, v_rental.quantity,
-              'LOC-' || upper(left(p_rental_id::text, 8)), p_rental_id, v_rental.end_on, v_rental.depot_id);
+              'LOC-' || upper(left(p_rental_id::text, 8)), p_rental_id, v_rental.end_on, v_rental.depot_id,
+              v_rental.required_training_id);
     END IF;
   ELSE
     -- L'objet quitte le stock ; l'historique reste

@@ -66,7 +66,7 @@ export const NAV_SPACES: NavSpace[] = [
   ] },
   { id: 'people', label: 'Personnes', short: 'Personnes', icon: Users, links: [
     { to: '/users', label: 'Personnes', icon: Users },
-    { to: '/formations', label: 'Formations', icon: GraduationCap },
+    { to: '/formations', label: 'Permis et formations', icon: GraduationCap },
     { to: '/epi', label: 'EPI', icon: ShieldCheck },
   ] },
   { id: 'steering', label: 'Pilotage', short: 'Pilotage', icon: Gauge, links: [

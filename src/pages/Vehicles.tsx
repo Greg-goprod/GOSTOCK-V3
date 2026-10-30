@@ -15,6 +15,7 @@ import { REQUEST_STATUS, VEHICLE_STATUS, deadlineState, errorMessage } from '../
 import { RequestOverview, Vehicle } from '../types';
 import DateInput from '../components/common/DateInput';
 import RentalBadge from '../components/common/RentalBadge';
+import { LICENSE_CATEGORIES } from '../lib/licenses';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -298,7 +299,11 @@ const VehicleFormModal: React.FC<{ vehicle: Vehicle | null; onClose: () => void;
           </select>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label htmlFor="v-license" className={labelClass}>Permis</label><input id="v-license" value={form.licenseCategory} onChange={set('licenseCategory')} className={inputClass} /></div>
+          <div><label htmlFor="v-license" className={labelClass}>Permis</label>
+            <select id="v-license" value={form.licenseCategory} onChange={set('licenseCategory')} className={inputClass}>
+              {LICENSE_CATEGORIES.map(l => <option key={l.code} value={l.code}>{l.code} · {l.label}</option>)}
+            </select>
+          </div>
           <div><label htmlFor="v-seats" className={labelClass}>Places</label><input id="v-seats" type="number" min="1" value={form.seats} onChange={set('seats')} className={inputClass} /></div>
         </div>
         {!vehicle && <div><label htmlFor="v-km" className={labelClass}>Kilométrage actuel</label><input id="v-km" type="number" min="0" inputMode="numeric" value={form.currentKm} onChange={set('currentKm')} className={`${inputClass} font-mono`} /></div>}

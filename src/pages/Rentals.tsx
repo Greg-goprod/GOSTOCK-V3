@@ -13,6 +13,8 @@ import DateInput from '../components/common/DateInput';
 import { confirmAction, promptAction } from '../lib/confirm';
 import RentalInspectionModal from '../components/rentals/RentalInspectionModal';
 import { InspectionKind, RentalInspection, RentalKind, loadInspections, printInspection } from '../lib/rentalInspection';
+import { LICENSE_CATEGORIES } from '../lib/licenses';
+import TrainingSelect from '../components/trainings/TrainingSelect';
 
 interface Rental {
   id: string;
@@ -39,6 +41,7 @@ interface Rental {
   kind: RentalKind;
   plate: string | null;
   license_category: string | null;
+  required_training_id: string | null;
 }
 
 const KINDS: { id: RentalKind; label: string }[] = [
@@ -46,7 +49,6 @@ const KINDS: { id: RentalKind; label: string }[] = [
   { id: 'equipment', label: 'Outil ou engin' },
   { id: 'other', label: 'Autre (coût seulement)' },
 ];
-const LICENSES = ['B', 'BE', 'C1', 'C1E', 'C', 'CE', 'D1', 'G'];
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -61,7 +63,7 @@ const plusDays = (day: string, n: number) => {
 const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-CH');
 
 const EMPTY = {
-  kind: 'equipment' as RentalKind, plate: '', license_category: 'B',
+  kind: 'equipment' as RentalKind, plate: '', license_category: 'B', required_training_id: '',
   rental_company: '', description: '', contract_ref: '', quantity: '1', daily_rate: '', fixed_cost: '',
   start_on: today(), end_on: plusDays(today(), 7), site_id: '', depot_id: '', responsible_id: '', contract: [] as string[], notes: '',
 };
@@ -84,7 +86,7 @@ const Rentals: React.FC = () => {
     const [r, s, k] = await Promise.all([
       supabase.from('rental_status').select('*').order('end_on'),
       supabase.from('sites').select('id, name, status').order('name'),
-      supabase.from('rentals').select('id, kind, plate, license_category'),
+      supabase.from('rentals').select('id, kind, plate, license_category, required_training_id'),
     ]);
     if (r.error) toast.error(errorMessage(r.error));
     const extra = new Map((k.data || []).map(x => [x.id as string, x]));
@@ -93,6 +95,7 @@ const Rentals: React.FC = () => {
       overdue_cost: Number(x.overdue_cost), days_billed: Number(x.days_billed),
       kind: (extra.get(x.id)?.kind ?? 'other') as RentalKind, plate: extra.get(x.id)?.plate ?? null,
       license_category: extra.get(x.id)?.license_category ?? null,
+      required_training_id: extra.get(x.id)?.required_training_id ?? null,
     }));
     setRentals(list);
     setSites(s.data || []);
@@ -120,6 +123,7 @@ const Rentals: React.FC = () => {
     setEditing(rental);
     setForm(rental === 'new' ? { ...EMPTY, start_on: today(), end_on: plusDays(today(), 7), depot_id: depots.find(d => d.isDefault)?.id ?? '' } : {
       kind: rental.kind, plate: rental.plate ?? '', license_category: rental.license_category ?? 'B',
+      required_training_id: rental.required_training_id ?? '',
       rental_company: rental.rental_company, description: rental.description, contract_ref: rental.contract_ref ?? '',
       quantity: String(rental.quantity), daily_rate: String(rental.daily_rate), fixed_cost: rental.fixed_cost ? String(rental.fixed_cost) : '',
       start_on: rental.start_on, end_on: rental.end_on, site_id: rental.site_id ?? '', depot_id: rental.depot_id ?? '',
@@ -134,6 +138,7 @@ const Rentals: React.FC = () => {
       kind: form.kind,
       plate: form.kind === 'vehicle' ? form.plate.trim().toUpperCase() || null : null,
       license_category: form.kind === 'vehicle' ? form.license_category : null,
+      required_training_id: form.kind === 'equipment' ? form.required_training_id || null : null,
       rental_company: form.rental_company.trim(),
       description: form.description.trim(),
       contract_ref: form.contract_ref.trim() || null,
@@ -340,15 +345,21 @@ const Rentals: React.FC = () => {
               <div>
                 <label htmlFor="rental-license" className={labelClass}>Permis nécessaire</label>
                 <select id="rental-license" value={form.license_category} onChange={e => setForm({ ...form, license_category: e.target.value })} className={inputClass}>
-                  {LICENSES.map(l => <option key={l} value={l}>{l}</option>)}
+                  {LICENSE_CATEGORIES.map(l => <option key={l.code} value={l.code}>{l.code} · {l.label}</option>)}
                 </select>
               </div>
             </>
           ) : (
-            <div>
-              <label htmlFor="rental-qty" className={labelClass}>Quantité</label>
-              <input id="rental-qty" type="number" min={1} value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} className={`${inputClass} font-mono`} />
-            </div>
+            <>
+              <div>
+                <label htmlFor="rental-qty" className={labelClass}>Quantité</label>
+                <input id="rental-qty" type="number" min={1} value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} className={`${inputClass} font-mono`} />
+              </div>
+              {form.kind === 'equipment' && (
+                <TrainingSelect id="rental-training" value={form.required_training_id} label="Permis machine exigé"
+                  onChange={required_training_id => setForm({ ...form, required_training_id })} />
+              )}
+            </>
           )}
           <div>
             <label htmlFor="rental-rate" className={labelClass}>Prix par jour (CHF, par unité)</label>

@@ -17,6 +17,7 @@ interface Training {
   name: string;
   validity_months: number | null;
   description: string | null;
+  kind: 'training' | 'machine_permit';
 }
 
 interface UserTraining {
@@ -52,7 +53,7 @@ const Trainings: React.FC = () => {
   const [holders, setHolders] = useState<UserTraining[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | 'new' | null>(null);
-  const [trainingForm, setTrainingForm] = useState({ name: '', validity_months: '', description: '' });
+  const [trainingForm, setTrainingForm] = useState({ name: '', validity_months: '', description: '', kind: 'machine_permit' as Training['kind'] });
   const [editingHolder, setEditingHolder] = useState<UserTraining | 'new' | null>(null);
   const [holderForm, setHolderForm] = useState({ user_id: '', obtained_on: today(), expires_on: '', certificate: [] as string[], notes: '' });
   const [saving, setSaving] = useState(false);
@@ -88,8 +89,9 @@ const Trainings: React.FC = () => {
 
   const openTraining = (t: Training | 'new') => {
     setEditingTraining(t);
-    setTrainingForm(t === 'new' ? { name: '', validity_months: '', description: '' } : {
+    setTrainingForm(t === 'new' ? { name: '', validity_months: '', description: '', kind: 'machine_permit' } : {
       name: t.name, validity_months: t.validity_months === null ? '' : String(t.validity_months), description: t.description ?? '',
+      kind: t.kind ?? 'training',
     });
   };
 
@@ -100,6 +102,7 @@ const Trainings: React.FC = () => {
       name: trainingForm.name.trim(),
       validity_months: trainingForm.validity_months === '' ? null : Number(trainingForm.validity_months),
       description: trainingForm.description.trim() || null,
+      kind: trainingForm.kind,
     };
     const result = editingTraining === 'new'
       ? await supabase.from('trainings').insert(row).select('id').single()
@@ -172,23 +175,25 @@ const Trainings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Formations</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Un outil qui exige une formation ne sort pas pour quelqu'un qui ne l'a pas, ou dont elle est expirée.</p>
+          <h1 className="mx-page-title">Formations et permis machines</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Un outil qui exige un permis machine ou une formation ne sort pas pour quelqu'un qui ne l'a pas, ou dont l'attestation est expirée.</p>
         </div>
-        {canEdit && <Button icon={<Plus size={16} />} onClick={() => openTraining('new')}>Nouvelle formation</Button>}
+        {canEdit && <Button icon={<Plus size={16} />} onClick={() => openTraining('new')}>Nouveau permis ou formation</Button>}
       </div>
 
       {trainings.length === 0 ? (
         <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-sm text-gray-600 dark:text-gray-400">
-          Aucune formation. Exemples : nacelle PEMP (5 ans), chariot élévateur, tronçonneuse, travail en hauteur.
+          Aucun permis ni formation. Exemples : nacelle PEMP IPAF 3b (5 ans), chariot élévateur, grutier, travail en hauteur.
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
           <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700 self-start">
-            {trainings.map(t => {
+            {[...trainings].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'machine_permit' ? -1 : 1)).map((t, index, list) => {
               const soon = soonCount(t.id);
+              const header = index === 0 || list[index - 1].kind !== t.kind;
               return (
                 <li key={t.id}>
+                  {header && <p className="mx-section-label px-4 pt-3 pb-1">{t.kind === 'machine_permit' ? 'Permis machines' : 'Formations'}</p>}
                   <button type="button" aria-current={selected === t.id} onClick={() => setSelected(t.id)}
                     className={`w-full text-left px-4 py-3 min-h-[44px] text-sm ${selected === t.id ? 'bg-primary-50 dark:bg-primary-900/40 font-bold text-primary-800 dark:text-primary-200' : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                     <span className="flex items-center gap-2">
@@ -255,8 +260,15 @@ const Trainings: React.FC = () => {
         </div>
       )}
 
-      <Modal isOpen={editingTraining !== null} onClose={() => setEditingTraining(null)} title={editingTraining === 'new' ? 'Nouvelle formation' : 'Modifier la formation'}>
+      <Modal isOpen={editingTraining !== null} onClose={() => setEditingTraining(null)} title={editingTraining === 'new' ? 'Nouveau permis ou formation' : 'Modifier'}>
         <form onSubmit={saveTraining} className="space-y-3">
+          <div>
+            <label htmlFor="training-kind" className={labelClass}>Type</label>
+            <select id="training-kind" value={trainingForm.kind} onChange={e => setTrainingForm({ ...trainingForm, kind: e.target.value as Training['kind'] })} className={inputClass}>
+              <option value="machine_permit">Permis machine (cariste, nacelle, grutier, machiniste…)</option>
+              <option value="training">Formation (travail en hauteur, premiers secours…)</option>
+            </select>
+          </div>
           <div>
             <label htmlFor="training-name" className={labelClass}>Nom</label>
             <input id="training-name" value={trainingForm.name} onChange={e => setTrainingForm({ ...trainingForm, name: e.target.value })} className={inputClass} required placeholder="ex. Nacelle PEMP 3B" />
