@@ -129,7 +129,7 @@ export async function printInspection(rental: InspectedRental, inspections: Rent
     : '<p>Aucun dégât constaté.</p>');
 
   const accessories = (i: RentalInspection) => (i.accessories.length
-    ? `<ul class="acc">${i.accessories.map(a => `<li>${a.present ? '☑' : '☐'} ${escape(a.label)}</li>`).join('')}</ul>`
+    ? `<ul class="acc">${i.accessories.map(a => `<li>${a.present ? '☑' : '☐'} <span>${escape(a.label)}</span></li>`).join('')}</ul>`
     : '<p>—</p>');
 
   const signatures = (i: RentalInspection) => `<div class="sig">

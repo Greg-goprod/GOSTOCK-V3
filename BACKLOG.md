@@ -177,6 +177,14 @@ Migration `20261030000024_corrections_tests_chrome.sql` appliquée sur GO-MAT.
   location dans la disponibilité ; L11 kilométrage ; L12 annulation par le magasin ; R1 panneaux fermés masqués
   (`inert`) ; R3 suggestions « Chantier » / « Sans fiche chantier ».
 
+## Contre-test du lot 16 (30.10) — N1 à N4
+
+- **N4** (confidentialité) : migration `20261030000028_confidentialite_personnes.sql` — un collaborateur ne lit plus
+  que sa propre fiche ; annuaire minimal `people_directory()` (nom, service) pour tous. **À appliquer sur GO-MAT.**
+- N1 « Pour le compte de » sans les accès échus ; N2 motif précis du badge refusé (`badge_problem`) et avertissement
+  si la date d'accès est passée ; N3 accessoires du PV traduits.
+- Comptes de test des rôles (mot de passe 12345678) à supprimer dans Supabase après les tests.
+
 ## Rubrique Aide (lot 17, 30.10)
 
 - Page « Aide » (`/aide`, en bas du rail), « ? » dans l'en-tête de chaque page (aide de la page dans un drawer),

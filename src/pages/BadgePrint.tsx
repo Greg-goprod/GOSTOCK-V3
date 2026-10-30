@@ -7,6 +7,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { ROLE_LABELS } from '../lib/roles';
 import { errorMessage } from '../lib/requests';
+import { canBorrowNow } from '../lib/people';
 
 // Planche de badges : 10 cartes par feuille A4, à découper ou à glisser dans un porte-badge
 const BadgePrint: React.FC = () => {
@@ -26,7 +27,7 @@ const BadgePrint: React.FC = () => {
   }, []);
 
   const active = useMemo(
-    () => users.filter(u => u.active !== false)
+    () => users.filter(canBorrowNow)
       .filter(u => `${u.first_name} ${u.last_name} ${u.department ?? ''}`.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => a.last_name.localeCompare(b.last_name)),
     [users, search]

@@ -82,6 +82,17 @@ const mapUserRow = (u: Record<string, any>) => ({
   dateCreated: u.created_at
 });
 
+// Un collaborateur ne lit que sa propre fiche ; les autres personnes viennent de l'annuaire
+// (nom, service), assez pour afficher qui a quoi sans exposer e-mail, téléphone, caution ou permis
+async function withDirectory(list: ReturnType<typeof mapUserRow>[]) {
+  const { data } = await supabase.rpc('people_directory');
+  const known = new Set(list.map(u => u.id));
+  const others = ((data || []) as Record<string, any>[])
+    .filter(u => !known.has(u.id))
+    .map(u => mapUserRow({ ...u, role: 'user' }));
+  return [...list, ...others];
+}
+
 // Nombre de jours avant l'échéance à partir duquel un retour est signalé
 const DUE_SOON_DAYS = 3;
 
@@ -289,7 +300,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setDeliveryNotes(transformedDeliveryNotes);
       }
       
-      setUsers((usersResult.data || []).map(mapUserRow));
+      setUsers(await withDirectory((usersResult.data || []).map(mapUserRow)));
       setEquipment(transformedEquipment);
       // Mapping strict pour Category
       setCategories(categoriesResult.data?.map((item: Record<string, any>) => ({
@@ -372,7 +383,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Liste des personnes seule (après une création ou une modification) : sans recharger tout le reste
   const refreshUsers = async () => {
     const { data, error } = await supabase.from('users').select('*').order('last_name');
-    if (!error) setUsers((data || []).map(mapUserRow));
+    if (!error) setUsers(await withDirectory((data || []).map(mapUserRow)));
   };
 
   const addEquipment = async (equipmentData: Omit<Equipment, 'id' | 'createdAt'>) => {

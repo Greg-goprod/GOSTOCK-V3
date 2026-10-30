@@ -10,6 +10,8 @@ import { Permission, PERMISSION_LABELS, ROLE_LABELS, ROLE_PERMISSIONS } from '..
 import { errorMessage } from '../../lib/requests';
 import DateInput from '../common/DateInput';
 import { LICENSE_CATEGORIES } from '../../lib/licenses';
+import { accessExpired } from '../../lib/people';
+import { confirmAction } from '../../lib/confirm';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -109,6 +111,11 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
       toast.error('Montant de caution invalide');
       return;
     }
+    // Date d'accès déjà passée : la personne ne pourra ni se connecter ni emprunter
+    if (accessExpired(form.access_until) && (!user || form.access_until !== (user.accessUntil || ''))
+        && !await confirmAction(`La date « accès jusqu'au » (${new Date(`${form.access_until}T12:00:00`).toLocaleDateString('fr-CH')}) est déjà passée : cette personne ne pourra ni se connecter, ni utiliser son badge, ni emprunter. Enregistrer quand même ?`)) {
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -157,7 +164,9 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
         if (error) throw error;
       }
 
-      toast.success(user ? 'Personne mise à jour' : `${payload.first_name} ajouté(e) : connexion possible avec ${payload.email}`);
+      toast.success(user ? 'Personne mise à jour'
+        : accessExpired(payload.access_until) ? `${payload.first_name} ajouté(e), accès déjà échu`
+        : `${payload.first_name} ajouté(e) : connexion possible avec ${payload.email}`);
       if (user && user.id === profile?.id) await refreshProfile();
       // Les listes de personnes des autres écrans (permis, « Pour qui », comptoir) la proposent tout de suite
       await refreshUsers();

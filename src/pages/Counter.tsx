@@ -22,6 +22,7 @@ import { CheckoutRecord, Equipment, EquipmentInstance, User } from '../types';
 import { DateTimeInput } from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
+import { canBorrowNow } from '../lib/people';
 
 type Mode = 'auto' | 'out' | 'in';
 
@@ -298,6 +299,11 @@ const Counter: React.FC = () => {
         if (row) user = { ...row, dateCreated: row.created_at } as User;
         void app.refreshData();
       }
+      if (!user && !userId && navigator.onLine) {
+        // Motif exact : accès échu (avec la date), personne partie, badge inconnu
+        const { data: reason } = await supabase.rpc('badge_problem', { p_code: text });
+        if (reason) throw new Error(reason as string);
+      }
       if (!user) throw new Error(userId ? 'Personne introuvable' : 'Badge inconnu, accès suspendu ou personne partie');
       selectPerson(user);
       toast.success(`${user.first_name} ${user.last_name}`);
@@ -446,7 +452,7 @@ const Counter: React.FC = () => {
   };
 
   const filteredUsers = users
-    .filter(u => u.active !== false)
+    .filter(canBorrowNow)
     .filter(u => `${u.first_name} ${u.last_name} ${u.department ?? ''}`.toLowerCase().includes(pickerSearch.toLowerCase()))
     .slice(0, 30);
 
@@ -600,7 +606,7 @@ const Counter: React.FC = () => {
                   }}
                   className={inputClass}
                 >
-                  {users.filter(u => u.active !== false).map(u => (
+                  {users.filter(u => canBorrowNow(u) || u.id === person.id).map(u => (
                     <option key={u.id} value={u.id}>{u.first_name} {u.last_name}{u.id === person.id ? ' (lui-même)' : ''}</option>
                   ))}
                 </select>
