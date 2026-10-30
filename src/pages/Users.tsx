@@ -436,7 +436,7 @@ const Users: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">PERSONNES</h1>
+        <h1 className="mx-page-title">PERSONNES</h1>
         
         <div className="flex flex-wrap gap-3">
           <div className="flex rounded-lg border border-gray-200 dark:border-gray-700">

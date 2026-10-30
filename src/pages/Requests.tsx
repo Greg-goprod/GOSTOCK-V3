@@ -18,6 +18,8 @@ import { useSiteSuggestions } from '../lib/sites';
 import { findEquipmentByCode } from '../lib/scan';
 import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib/requests';
 import { RequestItemRow, RequestOverview, RequestStatus } from '../types';
+import { DateTimeInput } from '../components/common/DateInput';
+import { promptAction } from '../lib/confirm';
 
 type Filter = 'todo' | 'approve' | 'out' | 'all';
 
@@ -184,7 +186,7 @@ const Requests: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">{staff ? 'Demandes' : 'Mes demandes'}</h1>
+          <h1 className="mx-page-title">{staff ? 'Demandes' : 'Mes demandes'}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Réservations d'outils, de consommables et de véhicules</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>
@@ -346,7 +348,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
 
   const saveTemplate = async () => {
     if (!profile || items.length === 0) return;
-    const name = window.prompt('Nom du panier (ex. Kit carottage, Mon lundi) :')?.trim();
+    const name = (await promptAction('Nom du panier (ex. Kit carottage, Mon lundi) :'))?.trim();
     if (!name) return;
     const { error } = await supabase.from('request_templates').upsert({
       user_id: profile.id,
@@ -467,11 +469,11 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
           </div>
           <div>
             <label htmlFor="req-start" className={labelClass}>Du</label>
-            <input id="req-start" type="datetime-local" value={start} onChange={e => setStart(e.target.value)} className={inputClass} required />
+            <DateTimeInput id="req-start" value={start} onChange={e => setStart(e.target.value)} className={inputClass} required />
           </div>
           <div>
             <label htmlFor="req-end" className={labelClass}>Au</label>
-            <input id="req-end" type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} className={inputClass} required />
+            <DateTimeInput id="req-end" value={end} onChange={e => setEnd(e.target.value)} className={inputClass} required />
           </div>
           <div>
             <label htmlFor="req-depot" className={labelClass}>Dépôt</label>

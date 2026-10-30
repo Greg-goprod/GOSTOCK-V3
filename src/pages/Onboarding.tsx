@@ -150,7 +150,7 @@ const Onboarding: React.FC = () => {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Démarrage</h1>
+        <h1 className="mx-page-title">Démarrage</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Mettre GO-Mat en service, étape par étape · {completed} / {steps.length} faites.</p>
       </div>
       <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={completed}>

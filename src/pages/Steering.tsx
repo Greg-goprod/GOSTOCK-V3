@@ -103,7 +103,7 @@ const Steering: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Pilotage</h1>
+        <h1 className="mx-page-title">Pilotage</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Utilisation du matériel, retards et coûts : de quoi décider achats, reventes et rappels.</p>
       </div>
 

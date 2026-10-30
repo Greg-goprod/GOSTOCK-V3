@@ -1,23 +1,29 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import MobileNav from './MobileNav';
+import CommandPalette from './CommandPalette';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
+// Rail des espaces + liste de l'espace (grand écran), barre du bas (téléphone), recherche rapide Ctrl+K
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="flex h-screen print:h-auto bg-gray-50 dark:bg-gray-900 print:bg-white">
+    <div className="flex h-screen print:h-auto print:bg-white">
       <Sidebar />
-      
-      <div className="flex-1 min-w-0 flex flex-col lg:ml-64 print:ml-0">
+
+      <div className="flex-1 min-w-0 flex flex-col">
         <Header />
-        
-        <main className="flex-1 p-4 overflow-auto print:overflow-visible print:p-0">
+
+        <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6 overflow-auto print:overflow-visible print:p-0">
           {children}
         </main>
       </div>
+
+      <MobileNav />
+      <CommandPalette />
     </div>
   );
 };

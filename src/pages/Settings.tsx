@@ -327,7 +327,7 @@ const Settings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">PARAMÈTRES</h1>
+          <h1 className="mx-page-title">PARAMÈTRES</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Configuration du système et gestion des données de référence
           </p>

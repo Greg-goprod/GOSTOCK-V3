@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Button from './Button';
-import { X } from 'lucide-react';
+import { MxDrawer } from '../mx/MxDrawer';
+import DateInput from './DateInput';
 
 export interface FilterOption {
   id: string;
@@ -42,68 +43,65 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
-
+  // Panneau de filtres de la charte Mannyx : drawer ancré à gauche, pied fixe
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="absolute right-0 top-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Filtres</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fermer les filtres"
-            className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          >
-            <X size={20} />
-          </button>
+    <MxDrawer
+      open={isOpen}
+      onClose={onClose}
+      title="Filtres"
+      side="left"
+      size="sm"
+      footer={
+        <div className="flex gap-3 w-full">
+          <Button variant="outline" onClick={handleReset} fullWidth>
+            Réinitialiser
+          </Button>
+          <Button variant="primary" onClick={handleApply} fullWidth>
+            Appliquer
+          </Button>
         </div>
-
-        <div className="p-4 space-y-4">
-          {options.map((option) => (
-            <div key={option.id}>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                {option.label}
-              </label>
-              {option.type === 'select' ? (
-                <select
-                  value={filters[option.id] || ''}
-                  onChange={(e) => handleFilterChange(option.id, e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">Tous</option>
-                  {option.options?.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={option.type}
-                  value={filters[option.id] || ''}
-                  onChange={(e) => handleFilterChange(option.id, e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder={`Filtrer par ${option.label.toLowerCase()}`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={handleReset} fullWidth>
-              Réinitialiser
-            </Button>
-            <Button variant="primary" onClick={handleApply} fullWidth>
-              Appliquer
-            </Button>
+      }
+    >
+      <div className="space-y-4">
+        {options.map((option) => (
+          <div key={option.id}>
+            <label htmlFor={`filter-${option.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+              {option.label}
+            </label>
+            {option.type === 'select' ? (
+              <select
+                id={`filter-${option.id}`}
+                value={filters[option.id] || ''}
+                onChange={(e) => handleFilterChange(option.id, e.target.value)}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              >
+                <option value="">Tous</option>
+                {option.options?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            ) : option.type === 'date' ? (
+              <DateInput
+                id={`filter-${option.id}`}
+                value={filters[option.id] || ''}
+                onChange={(e) => handleFilterChange(option.id, e.target.value)}
+              />
+            ) : (
+              <input
+                id={`filter-${option.id}`}
+                type="text"
+                value={filters[option.id] || ''}
+                onChange={(e) => handleFilterChange(option.id, e.target.value)}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                placeholder={`Filtrer par ${option.label.toLowerCase()}`}
+              />
+            )}
           </div>
-        </div>
+        ))}
       </div>
-    </div>
+    </MxDrawer>
   );
 };
 

@@ -36,6 +36,10 @@ const Search: React.FC = () => {
   const [params, setParams] = useSearchParams();
   const [text, setText] = useState(params.get('q') ?? '');
   const query = params.get('q') ?? '';
+  // Recherche lancée depuis la recherche rapide (Ctrl+K) alors que la page est déjà ouverte
+  useEffect(() => {
+    setText(query);
+  }, [query]);
   const [sites, setSites] = useState<{ id: string; name: string; status: string }[]>([]);
   const [siteItems, setSiteItems] = useState<SiteItem[]>([]);
 
@@ -145,7 +149,7 @@ const Search: React.FC = () => {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Recherche</h1>
+        <h1 className="mx-page-title">Recherche</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Posez la question comme vous la diriez au magasin.</p>
       </div>
       <form onSubmit={submit} className="flex gap-2">

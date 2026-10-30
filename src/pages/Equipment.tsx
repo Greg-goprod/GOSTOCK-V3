@@ -259,7 +259,7 @@ export default function Equipment() {
     }
 
     return (
-      <Card key={eq.id} className="p-6 hover:shadow-lg transition-shadow min-h-[200px]">
+      <Card key={eq.id} className="p-5 mx-card-hover border-[1.5px] border-transparent min-h-[180px]">
         <div className="flex items-start space-x-4 h-full">
           {/* Image à gauche */}
           <div className="relative flex-shrink-0 flex items-center justify-center overflow-visible">
@@ -268,7 +268,7 @@ export default function Equipment() {
                 src={eq.imageUrl} 
                 alt={eq.name}
                 onClick={() => setZoomedImage({ url: eq.imageUrl!, name: eq.name })}
-                className="w-24 h-24 object-cover rounded-full border-4 border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-700 p-2 cursor-zoom-in"
+                className="w-16 h-16 object-cover rounded-md border-[1.5px] border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-700 p-2 cursor-zoom-in"
                 onError={(e) => {
                   console.log("Erreur de chargement d'image:", eq.imageUrl);
                   
@@ -287,7 +287,7 @@ export default function Equipment() {
                   if (parent) {
                     // Create a fallback div with the Tool icon
                     const fallbackDiv = document.createElement('div');
-                    fallbackDiv.className = 'w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2';
+                    fallbackDiv.className = 'w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center p-2';
                     
                     // We can't directly insert a React component, so we'll use a simple SVG
                     fallbackDiv.innerHTML = `
@@ -301,39 +301,39 @@ export default function Equipment() {
                 }}
               />
             ) : (
-              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2">
-                <PenTool className="w-12 h-12 text-gray-500 dark:text-gray-400" />
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center p-2">
+                <PenTool className="w-8 h-8 text-gray-500 dark:text-gray-400" />
               </div>
             )}
           </div>
 
           {/* Informations à droite */}
-          <div className="flex-1 flex flex-col justify-between h-full">
+          <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
             <div className="space-y-3">
               {/* Nom du matériel */}
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{eq.name.toUpperCase()}</h3>
+                <h3 className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white break-words">{eq.name}</h3>
                 {eq.shortTitle && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{eq.shortTitle}</p>
                 )}
               </div>
 
               {/* Badges simplifiés */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {/* Badge Stock */}
-                <span className="px-3 py-1 bg-primary-50 bg-opacity-80 dark:bg-primary-900 dark:bg-opacity-80 text-primary-800 dark:text-primary-100 border border-primary-200 dark:border-primary-700 rounded-full text-sm font-medium backdrop-blur-sm">
+                <span className="px-2 py-0.5 bg-primary-50 bg-opacity-80 dark:bg-primary-900 dark:bg-opacity-80 text-primary-800 dark:text-primary-100 border border-primary-200 dark:border-primary-700 rounded-sm text-[10.5px] font-bold uppercase tracking-[0.04em]">
                   Stock: {totalQuantity}
                 </span>
                 
                 {/* Badge Disponible */}
-                <span className={`px-3 py-1 ${availableQuantity > 0 ? 'bg-success-50 bg-opacity-80 dark:bg-success-900 dark:bg-opacity-80 text-success-800 dark:text-success-100 border border-success-200 dark:border-success-700' : 'bg-danger-50 bg-opacity-80 dark:bg-danger-900 dark:bg-opacity-80 text-danger-800 dark:text-danger-100 border border-danger-200 dark:border-danger-700'} rounded-full text-sm font-medium backdrop-blur-sm`}>
+                <span className={`px-2 py-0.5 ${availableQuantity > 0 ? 'bg-success-50 bg-opacity-80 dark:bg-success-900 dark:bg-opacity-80 text-success-800 dark:text-success-100 border border-success-200 dark:border-success-700' : 'bg-danger-50 bg-opacity-80 dark:bg-danger-900 dark:bg-opacity-80 text-danger-800 dark:text-danger-100 border border-danger-200 dark:border-danger-700'} rounded-sm text-[10.5px] font-bold uppercase tracking-[0.04em]`}>
                   Disponible: {availableQuantity}
                 </span>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-wrap gap-1.5 pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button
                 variant="outline"
                 size="sm"

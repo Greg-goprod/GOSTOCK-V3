@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { LifecycleValue } from '../../lib/lifecycle';
+import DateInput from '../common/DateInput';
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -13,11 +14,11 @@ const LifecycleFields: React.FC<{ value: LifecycleValue; onChange: (value: Lifec
       <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Achat, garantie, amortissement</legend>
       <div>
         <label htmlFor="eq-bought" className={labelClass}>Date d'achat</label>
-        <input id="eq-bought" type="date" value={value.purchase_date} onChange={e => set({ purchase_date: e.target.value })} className={inputClass} />
+        <DateInput id="eq-bought" value={value.purchase_date} onChange={e => set({ purchase_date: e.target.value })} className={inputClass} />
       </div>
       <div>
         <label htmlFor="eq-warranty" className={labelClass}>Garantie jusqu'au</label>
-        <input id="eq-warranty" type="date" value={value.warranty_until} min={value.purchase_date || undefined} onChange={e => set({ warranty_until: e.target.value })} className={inputClass} />
+        <DateInput id="eq-warranty" value={value.warranty_until} min={value.purchase_date || undefined} onChange={e => set({ warranty_until: e.target.value })} className={inputClass} />
       </div>
       <div>
         <label htmlFor="eq-years" className={labelClass}>Amorti sur (années)</label>

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Sun, Moon, ScanLine, LogOut, Contact, Download, Search } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut, Contact, Download, Search, ChevronRight, QrCode } from 'lucide-react';
+import { locate } from '../../lib/navigation';
+import { OPEN_PALETTE } from './CommandPalette';
 import { useInstallPrompt } from '../../lib/install';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -12,7 +14,7 @@ const Header: React.FC = () => {
   const location = useLocation();
   const { alertCount: unreadNotifications } = useApp();
   const { theme, toggleTheme } = useTheme();
-  const { profile, can, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const { canInstall, install } = useInstallPrompt();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -33,82 +35,36 @@ const Header: React.FC = () => {
     };
   }, [menuOpen]);
   
-  const getPageTitle = () => {
-    const path = location.pathname;
-    
-    if (path === '/') return "AUJOURD'HUI";
-    if (path.startsWith('/tableau-de-bord')) return 'STATISTIQUES';
-    if (path.startsWith('/equipment')) return 'OUTILS';
-    if (path.startsWith('/users')) return 'PERSONNES';
-    if (path.startsWith('/checkouts')) return 'SORTIES';
-    if (path.startsWith('/notifications')) return 'NOTIFICATIONS';
-    if (path.startsWith('/settings')) return 'PARAMÈTRES';
-    if (path.startsWith('/scan')) return 'SCANNER';
-    if (path.startsWith('/consommables')) return 'CONSOMMABLES';
-    if (path === '/commande') return 'À COMMANDER';
-    if (path.startsWith('/demandes')) return 'DEMANDES';
-    if (path.startsWith('/vehicules')) return 'VÉHICULES';
-    if (path.startsWith('/comptoir')) return 'COMPTOIR';
-    if (path.startsWith('/badges')) return 'BADGES';
-    if (path.startsWith('/badge')) return 'MON BADGE';
-    if (path.startsWith('/etiquettes')) return 'ÉTIQUETTES';
-    if (path.startsWith('/entretien')) return 'ENTRETIEN';
-    if (path.startsWith('/inventaire')) return 'INVENTAIRE';
-    if (path.startsWith('/commandes')) return 'COMMANDES';
-    if (path.startsWith('/couts')) return 'COÛTS';
-    if (path.startsWith('/pilotage')) return 'PILOTAGE';
-    if (path.startsWith('/journal')) return 'JOURNAL';
-    if (path.startsWith('/incidents')) return 'PERTES ET CASSE';
-    if (path.startsWith('/chantiers')) return 'CHANTIERS';
-    if (path.startsWith('/carte')) return 'CARTE';
-    if (path.startsWith('/kits')) return 'KITS';
-    if (path.startsWith('/formations')) return 'FORMATIONS';
-    if (path.startsWith('/locations')) return 'LOCATIONS';
-    if (path.startsWith('/transferts')) return 'TRANSFERTS';
-    if (path.startsWith('/emplacements')) return 'EMPLACEMENTS';
-    if (path.startsWith('/planning')) return 'PLANNING';
-    if (path.startsWith('/epi')) return 'EPI';
-    if (path.startsWith('/atelier')) return 'ATELIER';
-    if (path.startsWith('/comptabilite')) return 'COMPTABILITÉ';
-    if (path.startsWith('/libre-service')) return 'LIBRE-SERVICE';
-    if (path.startsWith('/recherche')) return 'RECHERCHE';
-    if (path.startsWith('/prevision')) return 'PRÉVISION D\'ACHAT';
-    if (path.startsWith('/donnees')) return 'SANTÉ DES DONNÉES';
-    if (path.startsWith('/demarrage')) return 'DÉMARRAGE';
-    
-    return 'GO-MAT';
-  };
+  const place = locate(location.pathname);
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm px-3 py-2 flex items-center justify-between print:hidden">
-      <div className="lg:hidden w-11 shrink-0"></div>
-      <h1 className="text-lg font-black text-gray-800 dark:text-white tracking-tight uppercase truncate">
-        {getPageTitle()}
-      </h1>
-      
-      <div className="flex items-center gap-1 lg:gap-3 shrink-0">
-        {/* Raccourci vers le scan, l'écran principal sur le terrain */}
-        {can('scan') && <Link
-          to="/scan"
-          aria-label="Scanner un QR code"
-          className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-primary-600 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <ScanLine size={22} />
-        </Link>}
+    <header className="bg-white dark:bg-gray-800 border-b-[1.5px] border-gray-200 dark:border-gray-700 px-3 lg:px-5 py-2 flex items-center justify-between gap-3 print:hidden">
+      {/* Fil d'Ariane : espace › page (sur téléphone, le nom de l'application puis la page) */}
+      <nav aria-label="Fil d'Ariane" className="min-w-0 flex items-center gap-1.5 text-[13px]">
+        <span className="lg:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-600 text-white"><QrCode size={18} aria-hidden="true" /></span>
+        {place.space && <span className="hidden sm:inline text-gray-500 dark:text-gray-400 truncate">{place.space.label}</span>}
+        {place.space && <ChevronRight size={14} aria-hidden="true" className="hidden sm:inline text-gray-400 shrink-0" />}
+        <span className="font-semibold text-gray-900 dark:text-white truncate" aria-current="page">{place.title}</span>
+      </nav>
 
-        <Link
-          to="/recherche"
-          aria-label="Rechercher : qui a quoi, où, quel chantier"
-          className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 p-1.5 flex items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+      <div className="flex items-center gap-1 lg:gap-2 shrink-0">
+        {/* Recherche rapide (Ctrl+K) : pages, outils, personnes, chantiers */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE))}
+          aria-label="Recherche rapide (Ctrl+K)"
+          className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-[240px] flex items-center gap-2 rounded-md lg:border-[1.5px] border-gray-200 dark:border-gray-700 lg:bg-gray-50 dark:lg:bg-gray-900 px-2.5 lg:py-1.5 text-[13px] text-gray-500 dark:text-gray-400 hover:border-primary-600 justify-center lg:justify-start"
         >
-          <Search size={20} />
-        </Link>
+          <Search size={18} aria-hidden="true" />
+          <span className="hidden lg:inline flex-1 text-left">Rechercher…</span>
+          <kbd className="hidden lg:inline rounded-sm border border-gray-200 dark:border-gray-700 px-1 text-[11px]">Ctrl K</kbd>
+        </button>
 
         <button
           type="button"
           onClick={toggleTheme}
           aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
-          className="p-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="p-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
           {theme === 'dark' ? (
             <Sun size={18} className="text-gray-600 dark:text-gray-300" />
@@ -117,15 +73,16 @@ const Header: React.FC = () => {
           )}
         </button>
 
-        <div className="relative hidden lg:block">
-          <Bell size={18} className="text-gray-600 dark:text-gray-300 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors" />
+        <Link to="/notifications" aria-label={unreadNotifications > 0 ? `Notifications : ${unreadNotifications} alerte(s)` : 'Notifications'}
+          className="relative p-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+          <Bell size={18} className="text-gray-600 dark:text-gray-300" aria-hidden="true" />
           {unreadNotifications > 0 && (
-            <span className="absolute -top-1 -right-1 bg-danger-500 text-white text-xs rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
-              {unreadNotifications}
+            <span className="absolute top-1 right-1 lg:-top-1 lg:-right-1 bg-danger-600 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center font-bold">
+              {unreadNotifications > 99 ? '99+' : unreadNotifications}
             </span>
           )}
-        </div>
-        
+        </Link>
+
         <div className="relative" ref={menuRef}>
           <button
             type="button"

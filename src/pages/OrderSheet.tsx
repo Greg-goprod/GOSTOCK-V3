@@ -99,7 +99,7 @@ const OrderSheet: React.FC = () => {
     <div className="order-sheet space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Feuille de commande</h1>
+          <h1 className="mx-page-title">Feuille de commande</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Consommables sous leur seuil minimum, par fournisseur</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">

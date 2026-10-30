@@ -12,6 +12,7 @@ import { ROLE_LABELS } from '../lib/roles';
 import { useInstallPrompt } from '../lib/install';
 import PushToggle from '../components/common/PushToggle';
 import PasswordSetting from '../components/common/PasswordSetting';
+import { confirmAction } from '../lib/confirm';
 
 // Badge personnel à présenter au magasin, depuis le téléphone ou imprimé
 const MyBadge: React.FC = () => {
@@ -39,7 +40,7 @@ const MyBadge: React.FC = () => {
 
   const regenerate = async () => {
     if (!profile) return;
-    if (!window.confirm('Créer un nouveau badge ? L\'ancien (carte imprimée ou capture d\'écran) ne fonctionnera plus.')) return;
+    if (!await confirmAction('Créer un nouveau badge ? L\'ancien (carte imprimée ou capture d\'écran) ne fonctionnera plus.')) return;
     setBusy(true);
     const { data, error } = await supabase.rpc('regenerate_badge', { p_user_id: profile.id });
     setBusy(false);
@@ -57,7 +58,7 @@ const MyBadge: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="print:hidden">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Mon badge</h1>
+        <h1 className="mx-page-title">Mon badge</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Présentez ce code au magasin pour sortir ou rendre du matériel.</p>
       </div>
 

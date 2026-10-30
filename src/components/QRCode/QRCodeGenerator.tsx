@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import Button from '../common/Button';
@@ -368,7 +369,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       // Ouvrir dans une nouvelle fenêtre
       const printWindow = window.open('', '_blank', 'width=800,height=600');
       if (!printWindow) {
-        alert('Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloquées.');
+        toast.error('Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloquées.');
         return;
       }
       

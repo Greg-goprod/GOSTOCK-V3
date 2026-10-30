@@ -19,15 +19,17 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Thème sombre par défaut (entrepôt, coulisses) ; le choix de l'utilisateur est mémorisé
     const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'dark';
+    // Thème clair par défaut (charte Mannyx), sinon le choix enregistré
+    return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'light';
   });
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
+    // Les tokens --mx-* de la charte lisent data-theme
+    document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
   }, [theme]);
 

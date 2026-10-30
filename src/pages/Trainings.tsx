@@ -9,6 +9,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
+import DateInput from '../components/common/DateInput';
+import { confirmAction } from '../lib/confirm';
 
 interface Training {
   id: string;
@@ -113,7 +115,7 @@ const Trainings: React.FC = () => {
   };
 
   const removeTraining = async (t: Training) => {
-    if (!window.confirm(`Supprimer la formation « ${t.name} » ? Les attestations saisies et l'exigence sur les outils seront retirées.`)) return;
+    if (!await confirmAction(`Supprimer la formation « ${t.name} » ? Les attestations saisies et l'exigence sur les outils seront retirées.`)) return;
     const { error } = await supabase.from('trainings').delete().eq('id', t.id);
     if (error) return toast.error(errorMessage(error));
     setSelected(null);
@@ -153,7 +155,7 @@ const Trainings: React.FC = () => {
   };
 
   const removeHolder = async (h: UserTraining) => {
-    if (!window.confirm(`Retirer la formation à ${name(h.user_id)} ?`)) return;
+    if (!await confirmAction(`Retirer la formation à ${name(h.user_id)} ?`)) return;
     const { error } = await supabase.from('user_trainings').delete().eq('id', h.id);
     if (error) return toast.error(errorMessage(error));
     await load();
@@ -170,7 +172,7 @@ const Trainings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Formations</h1>
+          <h1 className="mx-page-title">Formations</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Un outil qui exige une formation ne sort pas pour quelqu'un qui ne l'a pas, ou dont elle est expirée.</p>
         </div>
         {canEdit && <Button icon={<Plus size={16} />} onClick={() => openTraining('new')}>Nouvelle formation</Button>}
@@ -288,11 +290,11 @@ const Trainings: React.FC = () => {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="holder-obtained" className={labelClass}>Obtenue le</label>
-              <input id="holder-obtained" type="date" value={holderForm.obtained_on} max={today()} onChange={e => setHolderForm({ ...holderForm, obtained_on: e.target.value })} className={inputClass} required />
+              <DateInput id="holder-obtained" value={holderForm.obtained_on} max={today()} onChange={e => setHolderForm({ ...holderForm, obtained_on: e.target.value })} className={inputClass} required />
             </div>
             <div>
               <label htmlFor="holder-expires" className={labelClass}>Valable jusqu'au</label>
-              <input id="holder-expires" type="date" value={holderForm.expires_on} min={holderForm.obtained_on} onChange={e => setHolderForm({ ...holderForm, expires_on: e.target.value })} className={inputClass} />
+              <DateInput id="holder-expires" value={holderForm.expires_on} min={holderForm.obtained_on} onChange={e => setHolderForm({ ...holderForm, expires_on: e.target.value })} className={inputClass} />
               <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                 {training?.validity_months ? `Vide : ${training.validity_months} mois après l'obtention` : 'Vide : sans échéance'}
               </p>

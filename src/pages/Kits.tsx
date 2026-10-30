@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { Kit, KitItem, kitValue } from '../lib/kits';
+import { confirmAction } from '../lib/confirm';
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -126,7 +127,7 @@ const Kits: React.FC = () => {
   };
 
   const remove = async (kit: Kit) => {
-    if (!window.confirm(`Supprimer le kit « ${kit.name} » ? Les outils restent dans le stock ; son étiquette ne marchera plus.`)) return;
+    if (!await confirmAction(`Supprimer le kit « ${kit.name} » ? Les outils restent dans le stock ; son étiquette ne marchera plus.`)) return;
     const { error } = await supabase.from('kits').delete().eq('id', kit.id);
     if (error) return toast.error(errorMessage(error));
     await load();
@@ -136,7 +137,7 @@ const Kits: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Kits</h1>
+          <h1 className="mx-page-title">Kits</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Au comptoir, le QR du kit fait sortir tout son contenu ; au retour, il signale ce qui manque.</p>
         </div>
         {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau kit</Button>}

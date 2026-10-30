@@ -111,6 +111,20 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
   exportés, et toute phrase ajoutée au code sans entrée dans les dictionnaires (à compléter à chaque ajout).
   Les données (noms d'articles, chantiers, personnes) ne sont jamais traduites.
 
+## Charte Mannyx (MX) — 30.10
+
+- Tokens `--mx-*` (src/styles/tokens-mx.css, repris de Mannyx) et police Geist (public/fonts).
+  Les classes Tailwind gray/primary lisent des variables qui changent avec le thème
+  (src/styles/gomat-mx.css) ; thème clair par défaut.
+- Composants MX repris dans src/components/mx (drawer, sélecteurs date/heure, menus…).
+  Toutes les fenêtres (`Modal`) s'ouvrent en drawer ; confirmations et saisies du navigateur
+  remplacées par `confirmAction` / `promptAction` (src/lib/confirm.ts).
+- Dates et heures : `DateInput`, `DateTimeInput`, `TimeInput` (même interface qu'un champ natif).
+- Navigation : rail de 5 espaces + liste de l'espace (src/lib/navigation.ts), barre du bas sur
+  téléphone, recherche rapide Ctrl+K.
+- Reste à faire : pieds de formulaire collants dans les drawers (boutons encore dans le corps),
+  tableaux et cartes au format exact du catalogue MX page par page.
+
 ## Dettes techniques
 
 - **Vite 5 → 8** : failles limitées au serveur de développement ; saut majeur (Node ≥ 20.19).

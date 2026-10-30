@@ -9,6 +9,7 @@ import { fileUrl } from '../../lib/files';
 import { errorMessage, toLocalInput } from '../../lib/requests';
 import { useAuth } from '../../contexts/AuthContext';
 import { Vehicle } from '../../types';
+import { DateTimeInput } from '../common/DateInput';
 
 interface Trip {
   id: string;
@@ -220,7 +221,7 @@ const FuelModal: React.FC<{ vehicle: Vehicle; userId: string; onClose: () => voi
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="fuel-date" className={labelClass}>Date</label>
-            <input id="fuel-date" type="datetime-local" value={filledAt} onChange={e => setFilledAt(e.target.value)} className={inputClass} required />
+            <DateTimeInput id="fuel-date" value={filledAt} onChange={e => setFilledAt(e.target.value)} className={inputClass} required />
           </div>
           <div>
             <label htmlFor="fuel-km" className={labelClass}>Kilométrage</label>

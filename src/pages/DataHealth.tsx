@@ -82,7 +82,7 @@ const DataHealth: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Santé des données</h1>
+        <h1 className="mx-page-title">Santé des données</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Ce qui manque ou se répète. Une base propre, ce sont des coûts justes et des alertes utiles.</p>
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-center gap-4">

@@ -1,0 +1,50 @@
+/* ==========================================================================
+   GEIST — POLICE AUTO-HEBERGEE
+   --------------------------------------------------------------------------
+   Fichiers dans public/fonts/ : servis depuis l'origine ('self'), donc
+   compatibles avec la directive font-src de la CSP sans modification d'en-tete.
+   5 poids uniquement (400/500/600/700/800) : l'echelle --mx-fs-* n'en consomme
+   pas d'autres. Poids 300 et 900 volontairement exclus.
+   Ce fichier ne contient QUE des @font-face : aucune regle de mise en forme.
+   Licence : SIL Open Font License 1.1 (voir public/fonts/OFL.txt).
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Geist-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Geist-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Geist-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Geist-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/Geist-ExtraBold.woff2') format('woff2');
+}

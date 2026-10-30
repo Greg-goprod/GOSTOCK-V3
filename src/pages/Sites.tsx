@@ -10,6 +10,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { currentPosition, formatCoordinates, geocodeAddress } from '../lib/geo';
+import DateInput from '../components/common/DateInput';
+import { confirmAction } from '../lib/confirm';
 
 interface Site {
   id: string;
@@ -156,7 +158,7 @@ const Sites: React.FC = () => {
     const closing = site.status === 'open';
     const remaining = site.open_tools + site.open_rentals;
     if (closing && remaining > 0
-      && !window.confirm(`${remaining} élément${remaining > 1 ? 's sont' : ' est'} encore sur ce chantier. Clôturer quand même ? La liste reste visible ici.`)) return;
+      && !await confirmAction(`${remaining} élément${remaining > 1 ? 's sont' : ' est'} encore sur ce chantier. Clôturer quand même ? La liste reste visible ici.`)) return;
     const { error } = await supabase.from('sites')
       .update({ status: closing ? 'closed' : 'open', closed_at: closing ? new Date().toISOString() : null })
       .eq('id', site.id);
@@ -187,7 +189,7 @@ const Sites: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Chantiers</h1>
+          <h1 className="mx-page-title">Chantiers</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Budget matériel, dépenses et matériel encore sur place. Les sorties sont rattachées par le nom du chantier.</p>
         </div>
         {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau chantier</Button>}
@@ -313,11 +315,11 @@ const Sites: React.FC = () => {
           </div>
           <div>
             <label htmlFor="site-start" className={labelClass}>Début</label>
-            <input id="site-start" type="date" value={form.start_on} onChange={e => setForm({ ...form, start_on: e.target.value })} className={inputClass} />
+            <DateInput id="site-start" value={form.start_on} onChange={e => setForm({ ...form, start_on: e.target.value })} className={inputClass} />
           </div>
           <div>
             <label htmlFor="site-end" className={labelClass}>Fin prévue</label>
-            <input id="site-end" type="date" value={form.end_on} min={form.start_on || undefined} onChange={e => setForm({ ...form, end_on: e.target.value })} className={inputClass} />
+            <DateInput id="site-end" value={form.end_on} min={form.start_on || undefined} onChange={e => setForm({ ...form, end_on: e.target.value })} className={inputClass} />
           </div>
           <div>
             <label htmlFor="site-budget" className={labelClass}>Budget matériel (CHF)</label>

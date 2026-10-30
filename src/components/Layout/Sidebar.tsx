@@ -1,217 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  CalendarClock, 
-  Bell, 
-  Settings, 
-  Menu, 
-  X,
-  QrCode,
-  ScanLine,
-  Droplets,
-  ClipboardList,
-  Inbox,
-  Truck,
-  BarChart3,
-  ScanBarcode,
-  Contact,
-  Tags,
-  Wrench,
-  AlertTriangle,
-  ListChecks,
-  ShoppingCart,
-  Coins,
-  Gauge,
-  History,
-  HardHat,
-  Map as MapIcon,
-  Briefcase,
-  GraduationCap,
-  KeyRound,
-  ArrowLeftRight,
-  MapPin,
-  CalendarRange,
-  ShieldCheck,
-  Hammer,
-  Calculator,
-  Hand,
-  MonitorPlay,
-  Search as SearchIcon,
-  TrendingUp,
-  Stethoscope,
-  Rocket
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen, QrCode } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { canAccess } from '../../lib/access';
+import { locate } from '../../lib/navigation';
+import { useNavSpaces } from '../../lib/useNavSpaces';
 import { supabase } from '../../lib/supabase';
 
-// Menu groupé par usage : le quotidien du magasin d'abord
-const NAV_SECTIONS = [
-  { title: 'Au quotidien', links: [
-    { to: '/', label: "Aujourd'hui", icon: LayoutDashboard },
-    { to: '/comptoir', label: 'Comptoir', icon: ScanBarcode },
-    { to: '/demandes', label: 'Demandes', icon: Inbox },
-    { to: '/scan', label: 'Scanner', icon: ScanLine },
-    { to: '/badge', label: 'Mon badge', icon: Contact },
-    { to: '/libre-service', label: 'Libre-service', icon: Hand },
-    { to: '/recherche', label: 'Recherche', icon: SearchIcon },
-    { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
-    { to: '/chantiers', label: 'Chantiers', icon: HardHat },
-    { to: '/carte', label: 'Carte', icon: MapIcon },
-    { to: '/planning', label: 'Planning', icon: CalendarRange },
-  ] },
-  { title: 'Stock', links: [
-    { to: '/equipment', label: 'Outils', icon: Package },
-    { to: '/consommables', label: 'Consommables', icon: Droplets },
-    { to: '/kits', label: 'Kits', icon: Briefcase },
-    { to: '/locations', label: 'Locations', icon: KeyRound },
-    { to: '/inventaire', label: 'Inventaire', icon: ListChecks },
-    { to: '/transferts', label: 'Transferts', icon: ArrowLeftRight },
-    { to: '/emplacements', label: 'Emplacements', icon: MapPin },
-    { to: '/commande', label: 'À commander', icon: ClipboardList },
-    { to: '/commandes', label: 'Commandes', icon: ShoppingCart },
-    { to: '/prevision', label: 'Prévision d\'achat', icon: TrendingUp },
-    { to: '/etiquettes', label: 'Étiquettes', icon: Tags },
-  ] },
-  { title: 'Flotte', links: [
-    { to: '/vehicules', label: 'Véhicules', icon: Truck },
-  ] },
-  { title: 'Suivi', links: [
-    { to: '/notifications', label: 'Notifications', icon: Bell },
-    { to: '/entretien', label: 'Entretien', icon: Wrench },
-    { to: '/atelier', label: 'Atelier', icon: Hammer },
-    { to: '/incidents', label: 'Pertes et casse', icon: AlertTriangle },
-    { to: '/pilotage', label: 'Pilotage', icon: Gauge },
-    { to: '/ecran', label: 'Écran du magasin', icon: MonitorPlay },
-    { to: '/couts', label: 'Coûts', icon: Coins },
-    { to: '/comptabilite', label: 'Comptabilité', icon: Calculator },
-    { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },
-  ] },
-  { title: 'Réglages', links: [
-    { to: '/users', label: 'Personnes', icon: Users },
-    { to: '/formations', label: 'Formations', icon: GraduationCap },
-    { to: '/epi', label: 'EPI', icon: ShieldCheck },
-    { to: '/journal', label: 'Journal', icon: History },
-    { to: '/donnees', label: 'Santé des données', icon: Stethoscope },
-    { to: '/demarrage', label: 'Démarrage', icon: Rocket },
-    { to: '/settings', label: 'Paramètres', icon: Settings },
-  ] },
-];
+const PANEL_KEY = 'gomat-nav-panel';
 
+// Navigation sur grand écran : rail des espaces + liste de l'espace choisi (repliable)
 const Sidebar: React.FC = () => {
-  const { alertCount: unreadNotifications } = useApp();
-  const { can } = useAuth();
-  const sections = NAV_SECTIONS
-    .map(section => ({ ...section, links: section.links.filter(link => canAccess(link.to, can)) }))
-    .filter(section => section.links.length > 0);
-  const [isOpen, setIsOpen] = useState(false);
+  const { alertCount } = useApp();
+  const location = useLocation();
+  const spaces = useNavSpaces();
+  const current = locate(location.pathname).space?.id;
+  const [spaceId, setSpaceId] = useState(current ?? spaces[0]?.id);
+  const [panelOpen, setPanelOpen] = useState(() => {
+    try { return localStorage.getItem(PANEL_KEY) !== 'closed'; } catch { return true; }
+  });
   const [companyLogo, setCompanyLogo] = useState('');
 
+  // La liste suit la page ouverte (lien direct, retour arrière, recherche Ctrl+K)
   useEffect(() => {
-    fetchCompanyLogo();
+    if (current) setSpaceId(current);
+  }, [current]);
+
+  useEffect(() => {
+    supabase.from('system_settings').select('value').eq('id', 'company_logo').maybeSingle()
+      .then(({ data }) => { if (data?.value) setCompanyLogo(data.value); });
   }, []);
 
-  const fetchCompanyLogo = async () => {
-    try {
-      const { data } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('id', 'company_logo')
-        .maybeSingle();
-
-      if (data?.value) {
-        setCompanyLogo(data.value);
-      }
-    } catch {
-      // Logo not found, use default
-      console.log('No company logo found');
-    }
-  };
-  
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
+  const togglePanel = (open: boolean) => {
+    setPanelOpen(open);
+    try { localStorage.setItem(PANEL_KEY, open ? 'open' : 'closed'); } catch { /* stockage indisponible */ }
   };
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 px-3 py-3 lg:py-2 rounded-lg transition-colors text-sm lg:text-xs tracking-wide ${
-      isActive 
-        ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200 font-bold' 
-        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium'
-    }`;
+  const chooseSpace = (id: string) => {
+    if (id === spaceId && panelOpen) return togglePanel(false);
+    setSpaceId(id);
+    togglePanel(true);
+  };
+
+  const space = spaces.find(s => s.id === spaceId) ?? spaces[0];
+  const followHasAlerts = alertCount > 0;
 
   return (
-    <>
-      <button
-        type="button"
-        className="lg:hidden print:hidden fixed top-2 left-2 z-50 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md bg-white dark:bg-gray-800 shadow-md"
-        onClick={toggleSidebar}
-        aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-        aria-expanded={isOpen}
-      >
-        {isOpen ? <X size={18} className="dark:text-white" /> : <Menu size={18} className="dark:text-white" />}
-      </button>
-      
-      {isOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-      
-      <aside 
-        className={`print:hidden fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-md z-40 transition-transform transform lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col items-center gap-2">
-            {companyLogo && (
-              <img
-                src={companyLogo}
-                alt="Logo de l'entreprise"
-                className="max-h-10 max-w-40 object-contain"
-              />
-            )}
-            <div className="flex items-center gap-1.5 font-black text-primary-700 dark:text-primary-300 text-xl tracking-tight">
-              <QrCode size={22} />
-              <span>GO-Mat</span>
-            </div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center font-light tracking-wide uppercase">
-              Gestion de Matériel
-            </p>
+    <div className="hidden lg:flex h-full shrink-0 print:hidden">
+      {/* Rail des espaces */}
+      <nav aria-label="Espaces" className="w-[72px] flex flex-col items-center gap-1 py-3 border-r-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <NavLink to="/" aria-label="GO-Mat, accueil" className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-primary-600 text-white">
+          <QrCode size={22} aria-hidden="true" />
+        </NavLink>
+        {spaces.map(s => {
+          const active = s.id === space?.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => chooseSpace(s.id)}
+              aria-pressed={active && panelOpen}
+              aria-label={s.label}
+              title={s.label}
+              className={`relative w-[60px] flex flex-col items-center gap-1 rounded-md px-1 py-2 text-[10.5px] font-semibold leading-tight transition-colors ${
+                active ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <s.icon size={20} aria-hidden="true" />
+              <span className="text-center">{s.short}</span>
+              {s.id === 'follow' && followHasAlerts && (
+                <span className="absolute top-1 right-2 min-w-[16px] h-4 px-1 rounded-full bg-danger-600 text-white text-[10px] font-bold flex items-center justify-center" aria-label={`${alertCount} alerte(s)`}>
+                  {alertCount > 99 ? '99+' : alertCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={() => togglePanel(!panelOpen)}
+          aria-label={panelOpen ? 'Replier la liste' : 'Déplier la liste'}
+          title={panelOpen ? 'Replier la liste' : 'Déplier la liste'}
+          className="flex h-10 w-10 items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          {panelOpen ? <PanelLeftClose size={18} aria-hidden="true" /> : <PanelLeftOpen size={18} aria-hidden="true" />}
+        </button>
+      </nav>
+
+      {/* Pages de l'espace */}
+      {panelOpen && space && (
+        <nav aria-label={space.label} className="w-[232px] flex flex-col border-r-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="px-4 pt-5 pb-3">
+            {companyLogo && <img src={companyLogo} alt="Logo de l'entreprise" className="max-h-8 max-w-[180px] object-contain mb-3" />}
+            <p className="mx-section-label">GO-Mat</p>
+            <h2 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{space.label}</h2>
           </div>
-        </div>
-        
-        <nav className="py-3 px-2 flex flex-col gap-3 overflow-y-auto max-h-[calc(100%-6rem)]" aria-label="Menu principal">
-          {sections.map(section => (
-            <div key={section.title} className="flex flex-col gap-1">
-              <p className="px-3 text-[0.7rem] lg:text-[0.65rem] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">{section.title}</p>
-              {section.links.map(link => (
-                <NavLink key={link.to} to={link.to} end={link.to === '/'} className={navLinkClass} onClick={() => setIsOpen(false)}>
-                  {link.to === '/notifications' ? (
-                    <div className="relative">
-                      <link.icon size={16} />
-                      {unreadNotifications > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-danger-500 text-white text-[8px] rounded-full w-3 h-3 flex items-center justify-center font-bold" aria-label={`${unreadNotifications} alerte(s)`}>
-                          {unreadNotifications}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <link.icon size={16} />
+          <ul className="flex-1 overflow-y-auto px-2 pb-4 flex flex-col gap-0.5">
+            {space.links.map(link => (
+              <li key={link.to}>
+                <NavLink
+                  to={link.to}
+                  end={link.to === '/'}
+                  className={({ isActive }) => `group relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[13.5px] transition-[background-color,color,transform] duration-150 ${
+                    isActive
+                      ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-primary-600'
+                      : 'text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white hover:translate-x-0.5'
+                  }`}
+                >
+                  <link.icon size={16} aria-hidden="true" />
+                  <span className="flex-1 truncate">{link.label}</span>
+                  {link.to === '/notifications' && alertCount > 0 && (
+                    <span className="rounded-full bg-danger-600 px-1.5 text-[10.5px] font-bold text-white">{alertCount}</span>
                   )}
-                  <span className="uppercase tracking-wider font-bold">{link.label}</span>
                 </NavLink>
-              ))}
-            </div>
-          ))}
+              </li>
+            ))}
+          </ul>
         </nav>
-      </aside>
-    </>
+      )}
+    </div>
   );
 };
 

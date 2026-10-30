@@ -97,7 +97,7 @@ const Incidents: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Pertes et casse</h1>
+          <h1 className="mx-page-title">Pertes et casse</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Déclarations, valeur et suite donnée par le responsable.</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={() => setDeclaring(true)}>Déclarer</Button>

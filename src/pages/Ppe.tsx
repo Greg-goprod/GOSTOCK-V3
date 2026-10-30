@@ -8,6 +8,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
+import { confirmAction } from '../lib/confirm';
 
 interface PpeType {
   id: string;
@@ -127,7 +128,7 @@ const Ppe: React.FC = () => {
   };
 
   const removeType = async (t: PpeType) => {
-    if (!window.confirm(`Supprimer « ${t.name} » et tout son historique de remises ?`)) return;
+    if (!await confirmAction(`Supprimer « ${t.name} » et tout son historique de remises ?`)) return;
     const { error } = await supabase.from('ppe_types').delete().eq('id', t.id);
     if (error) return toast.error(errorMessage(error));
     await load();
@@ -166,7 +167,7 @@ const Ppe: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">EPI</h1>
+        <h1 className="mx-page-title">EPI</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Équipements de protection remis à chacun : taille, signature, et rappel avant le renouvellement.</p>
       </div>
 

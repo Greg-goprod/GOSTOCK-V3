@@ -92,7 +92,7 @@ const SiteMap: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-end gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Carte</h1>
+          <h1 className="mx-page-title">Carte</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Où est mon matériel : chaque chantier avec ce qui s'y trouve encore. Touchez une pastille pour le détail.</p>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">

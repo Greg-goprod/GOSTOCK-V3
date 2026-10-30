@@ -96,7 +96,7 @@ const Labels: React.FC = () => {
       <div className="print:hidden space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Étiquettes</h1>
+            <h1 className="mx-page-title">Étiquettes</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Choisissez les articles et le nombre d'étiquettes, puis imprimez à 100 % (sans « ajuster à la page »).</p>
           </div>
           <Button icon={<Printer size={16} />} onClick={() => window.print()} disabled={total === 0}>

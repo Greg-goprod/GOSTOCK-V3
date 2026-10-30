@@ -8,6 +8,7 @@ import { findEquipmentByCode } from '../../lib/scan';
 import { Search, Printer, User as UserIcon, Plus, Minus, X, CalendarDays as CalendarDaysIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserModal from '../users/UserModal';
+import DateInput from '../common/DateInput';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -643,7 +644,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 <p>${notes}</p>
               </div>
             ` : ''}
-            <div class="important-notice"><span class="icon">⚠️</span>
+            <div class="important-notice"><span class="icon">!</span>
               <span>Ce bon de sortie doit être conservé et présenté lors du retour du matériel.<br />En cas de perte ou de dommage du matériel, veuillez contacter immédiatement le service de gestion.</span>
             </div>
             <div class="signatures">
@@ -1054,8 +1055,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                     <CalendarDaysIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Par défaut : retour le jour même ({new Date().toLocaleDateString('fr-FR')})
                   </p>
                 </div>
-                <input
-                  type="date"
+                <DateInput
+                 
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
