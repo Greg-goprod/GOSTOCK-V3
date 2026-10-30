@@ -327,7 +327,7 @@ const Settings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">PARAMÈTRES</h1>
+          <h1 className="mx-page-title">Paramètres</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Configuration du système et gestion des données de référence
           </p>
@@ -340,7 +340,7 @@ const Settings: React.FC = () => {
             onClick={() => setShowImportModal(true)}
             className="font-bold"
           >
-            IMPORTER EXCEL
+            Importer Excel
           </Button>
           <Button
             variant="outline"
@@ -348,7 +348,7 @@ const Settings: React.FC = () => {
             onClick={exportData}
             className="font-bold"
           >
-            EXPORTER CONFIG
+            Exporter configuration
           </Button>
         </div>
       </div>
@@ -365,7 +365,7 @@ const Settings: React.FC = () => {
             <div className="p-4 space-y-4">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Globe size={18} />
-                INTERFACE
+                Interface
               </h3>
               
               <div>
@@ -396,7 +396,7 @@ const Settings: React.FC = () => {
             <div className="p-4 space-y-4">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Building2 size={18} />
-                ENTREPRISE
+                Entreprise
               </h3>
               
               <div>
@@ -416,7 +416,7 @@ const Settings: React.FC = () => {
                     placeholder="Ex: GCENT1"
                   />
                   <Button variant="primary" size="sm" onClick={saveArticleSeries} disabled={articleSeries.length !== 6}>
-                    SAUVER
+                    Sauver
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
@@ -453,7 +453,7 @@ const Settings: React.FC = () => {
                       updateSystemSetting('approval_max_quantity', String(value), 'Au-delà de cette quantité par article, une demande doit être validée par un responsable');
                     }}
                   >
-                    SAUVER
+                    Sauver
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
@@ -488,7 +488,7 @@ const Settings: React.FC = () => {
                       updateSystemSetting('signature_min_value', String(value), 'Prix d\'achat (CHF) à partir duquel la signature est demandée à la remise');
                     }}
                   >
-                    SAUVER
+                    Sauver
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
@@ -513,7 +513,7 @@ const Settings: React.FC = () => {
                     size="sm"
                     onClick={() => updateSystemSetting('company_logo', companyLogo, 'URL du logo de l\'entreprise')}
                   >
-                    SAUVER
+                    Sauver
                   </Button>
                 </div>
                 {companyLogo && (
@@ -604,7 +604,7 @@ const Settings: React.FC = () => {
               setShowCategoryModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -668,7 +668,7 @@ const Settings: React.FC = () => {
               setShowSupplierModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -729,7 +729,7 @@ const Settings: React.FC = () => {
                   setShowGroupModal(true);
                 }}
               >
-                AJOUTER GROUPE
+                Ajouter groupe
               </Button>
             </div>
             
@@ -791,7 +791,7 @@ const Settings: React.FC = () => {
                 }}
                 disabled={groups.length === 0}
               >
-                AJOUTER SOUS-GROUPE
+                Ajouter sous-groupe
               </Button>
             </div>
             
@@ -875,7 +875,7 @@ const Settings: React.FC = () => {
               setShowDepartmentModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -941,7 +941,7 @@ const Settings: React.FC = () => {
               setShowMaintenanceTypeModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -1010,7 +1010,7 @@ const Settings: React.FC = () => {
                   icon={<Trash2 size={16} />}
                   onClick={() => setShowSystemResetModal(true)}
                 >
-                  REMETTRE À ZÉRO LE SYSTÈME
+                  Remettre à zéro le système
                 </Button>
               </div>
             </div>

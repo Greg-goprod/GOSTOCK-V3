@@ -35,7 +35,7 @@ const inputClass =
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 const StatusPill: React.FC<{ status: RequestStatus }> = ({ status }) => (
-  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${REQUEST_STATUS[status].className}`}>
+  <span className={`inline-flex rounded px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${REQUEST_STATUS[status].className}`}>
     {REQUEST_STATUS[status].label}
   </span>
 );
@@ -103,7 +103,7 @@ const MyEquipment: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {late && (
-                  <span className="rounded-full bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-xs font-semibold">
+                  <span className="rounded bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-[11px] font-bold">
                     {daysLate} j de retard
                   </span>
                 )}
@@ -139,11 +139,12 @@ const Requests: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Demande préparée depuis une fiche chantier (« Préparer un chantier semblable »)
+  // Demande préparée depuis une fiche chantier (« Préparer un chantier semblable ») ou ouverte depuis l'accueil
   useEffect(() => {
-    const incoming = (location.state as { prefill?: RequestPrefill } | null)?.prefill;
-    if (incoming) {
-      setPrefill(incoming);
+    const state = location.state as { prefill?: RequestPrefill; newRequest?: boolean } | null;
+    const incoming = state?.prefill;
+    if (incoming || state?.newRequest) {
+      if (incoming) setPrefill(incoming);
       setShowNew(true);
       navigate(location.pathname, { replace: true, state: null });
     }

@@ -415,7 +415,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight uppercase">TABLEAU DE BORD</h2>
+          <h1 className="mx-page-title">Statistiques</h1>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               {connectionStatus === 'connected' ? (
@@ -530,7 +530,7 @@ const Dashboard: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-3">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight uppercase">TABLEAU DE BORD</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight uppercase">Tableau de bord</h2>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               {connectionStatus === 'connected' ? (
@@ -562,7 +562,7 @@ const Dashboard: React.FC = () => {
               disabled={connectionStatus !== 'connected'}
             >
               <LogOut size={36} />
-              <span className="font-bold text-base tracking-wide">SORTIE</span>
+              <span className="font-bold text-base tracking-wide">Sortie</span>
             </button>
           </div>
           <div className="flex-1 flex justify-center">
@@ -572,7 +572,7 @@ const Dashboard: React.FC = () => {
               disabled={connectionStatus !== 'connected'}
             >
               <LogIn size={36} />
-              <span className="font-bold text-base tracking-wide">RETOUR</span>
+              <span className="font-bold text-base tracking-wide">Retour</span>
             </button>
           </div>
         </div>
@@ -654,19 +654,19 @@ const Dashboard: React.FC = () => {
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      MATÉRIEL
+                      Matériel
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      UTILISATEUR
+                      Utilisateur
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      DATE SORTIE
+                      Date sortie
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      DATE RETOUR
+                      Date retour
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      STATUT
+                      Statut
                     </th>
                   </tr>
                 </thead>

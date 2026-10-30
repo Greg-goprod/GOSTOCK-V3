@@ -311,7 +311,7 @@ const Notifications: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">NOTIFICATIONS</h1>
+          <h1 className="mx-page-title">Notifications</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Événements spéciaux, rappels de retard et mouvements de matériel
           </p>
@@ -326,7 +326,7 @@ const Notifications: React.FC = () => {
             disabled={unreadCount === 0}
             className="font-bold"
           >
-            TOUT MARQUER COMME LU
+            Tout marquer comme lu
           </Button>
           <Button
             variant="primary"
@@ -334,7 +334,7 @@ const Notifications: React.FC = () => {
             onClick={generateNotifications}
             className="font-bold"
           >
-            ACTUALISER
+            Actualiser
           </Button>
         </div>
       </div>
@@ -427,7 +427,7 @@ const Notifications: React.FC = () => {
             <div className="text-center py-12">
               <Bell size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
               <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase">
-                AUCUNE NOTIFICATION
+                Aucune notification
               </h3>
               <p className="text-gray-500 dark:text-gray-400 font-medium">
                 {filter === 'all' 
@@ -559,7 +559,7 @@ const Notifications: React.FC = () => {
                       onClick={() => markAsUnread(notification.id)}
                       className="text-xs font-bold"
                     >
-                      MARQUER NON LUE
+                      Marquer non lue
                     </Button>
                   ) : (
                     <Button
@@ -569,7 +569,7 @@ const Notifications: React.FC = () => {
                       onClick={() => markAsRead(notification.id)}
                       className="text-xs font-bold"
                     >
-                      MARQUER COMME LUE
+                      Marquer comme lue
                     </Button>
                   )}
                   

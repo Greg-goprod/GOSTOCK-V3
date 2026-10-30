@@ -809,7 +809,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 icon={<Plus size={14} />}
                 onClick={handleAddUser}
               >
-                AJOUTER CONTACT
+                Ajouter contact
               </Button>
             </div>
             <div className="flex items-center gap-4">

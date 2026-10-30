@@ -76,8 +76,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
               >
                 <option value="">Tous</option>
-                {option.options?.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                {option.options?.map((opt, index) => (
+                  <option key={`${opt.value}-${index}`} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}

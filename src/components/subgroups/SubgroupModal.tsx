@@ -164,7 +164,7 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"

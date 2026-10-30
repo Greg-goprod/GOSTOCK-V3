@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, QrCode } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { locate } from '../../lib/navigation';
+import { BOTTOM_SPACES, NavSpace, locate } from '../../lib/navigation';
 import { useNavSpaces } from '../../lib/useNavSpaces';
 import { supabase } from '../../lib/supabase';
 
 const PANEL_KEY = 'gomat-nav-panel';
 
-// Navigation sur grand écran : rail des espaces + liste de l'espace choisi (repliable)
+// Navigation sur grand écran : rail des métiers + liste du métier choisi (repliable)
 const Sidebar: React.FC = () => {
   const { alertCount } = useApp();
   const location = useLocation();
+  const navigate = useNavigate();
   const spaces = useNavSpaces();
   const current = locate(location.pathname).space?.id;
   const [spaceId, setSpaceId] = useState(current ?? spaces[0]?.id);
@@ -36,46 +37,55 @@ const Sidebar: React.FC = () => {
   };
 
   const chooseSpace = (id: string) => {
+    const target = spaces.find(s => s.id === id);
+    // Espace d'une seule page (Véhicules) : on y va directement
+    if (target && target.links.length === 1) {
+      navigate(target.links[0].to);
+      return;
+    }
     if (id === spaceId && panelOpen) return togglePanel(false);
     setSpaceId(id);
     togglePanel(true);
   };
 
   const space = spaces.find(s => s.id === spaceId) ?? spaces[0];
-  const followHasAlerts = alertCount > 0;
+  const showPanel = panelOpen && space && space.links.length > 1;
+
+  const railButton = (s: NavSpace) => {
+    const active = s.id === current || (s.id === space?.id && showPanel);
+    return (
+      <button
+        key={s.id}
+        type="button"
+        onClick={() => chooseSpace(s.id)}
+        aria-current={s.id === current ? 'true' : undefined}
+        aria-label={s.label}
+        title={s.label}
+        className={`relative w-[68px] flex flex-col items-center gap-1 rounded-md px-1 py-2 text-[10.5px] font-semibold leading-tight transition-colors ${
+          active ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+        }`}
+      >
+        <s.icon size={20} aria-hidden="true" />
+        <span className="text-center">{s.short}</span>
+        {s.id === 'home' && alertCount > 0 && (
+          <span className="absolute top-1 right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-danger-600 text-white text-[10px] font-bold flex items-center justify-center" aria-label={`${alertCount} alerte(s)`}>
+            {alertCount > 99 ? '99+' : alertCount}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="hidden lg:flex h-full shrink-0 print:hidden">
-      {/* Rail des espaces */}
-      <nav aria-label="Espaces" className="w-[72px] flex flex-col items-center gap-1 py-3 border-r-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <NavLink to="/" aria-label="GO-Mat, accueil" className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-primary-600 text-white">
+      {/* Rail des métiers */}
+      <nav aria-label="Espaces" className="w-[80px] flex flex-col items-center gap-0.5 py-3 overflow-y-auto border-r-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <NavLink to="/" aria-label="GO-Mat, accueil" className="mb-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-600 text-white">
           <QrCode size={22} aria-hidden="true" />
         </NavLink>
-        {spaces.map(s => {
-          const active = s.id === space?.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => chooseSpace(s.id)}
-              aria-pressed={active && panelOpen}
-              aria-label={s.label}
-              title={s.label}
-              className={`relative w-[60px] flex flex-col items-center gap-1 rounded-md px-1 py-2 text-[10.5px] font-semibold leading-tight transition-colors ${
-                active ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <s.icon size={20} aria-hidden="true" />
-              <span className="text-center">{s.short}</span>
-              {s.id === 'follow' && followHasAlerts && (
-                <span className="absolute top-1 right-2 min-w-[16px] h-4 px-1 rounded-full bg-danger-600 text-white text-[10px] font-bold flex items-center justify-center" aria-label={`${alertCount} alerte(s)`}>
-                  {alertCount > 99 ? '99+' : alertCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
+        {spaces.filter(s => !BOTTOM_SPACES.includes(s.id)).map(railButton)}
         <div className="flex-1" />
+        {spaces.filter(s => BOTTOM_SPACES.includes(s.id)).map(railButton)}
         <button
           type="button"
           onClick={() => togglePanel(!panelOpen)}
@@ -88,7 +98,7 @@ const Sidebar: React.FC = () => {
       </nav>
 
       {/* Pages de l'espace */}
-      {panelOpen && space && (
+      {showPanel && (
         <nav aria-label={space.label} className="w-[232px] flex flex-col border-r-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="px-4 pt-5 pb-3">
             {companyLogo && <img src={companyLogo} alt="Logo de l'entreprise" className="max-h-8 max-w-[180px] object-contain mb-3" />}

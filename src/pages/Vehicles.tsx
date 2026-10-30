@@ -39,7 +39,7 @@ const Deadline: React.FC<{ label: string; date?: string }> = ({ label, date }) =
       ? 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200'
       : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span className={`inline-flex rounded px-2 py-0.5 text-[11px] font-bold ${cls}`}>
       {label} {state === 'overdue' ? 'échu' : ''} {formatDate(date)}
     </span>
   );
@@ -187,7 +187,7 @@ const Vehicles: React.FC = () => {
                 <div className="font-mono text-sm text-gray-600 dark:text-gray-300">{v.plate} · permis {v.licenseCategory}</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">{depots.find(d => d.id === v.depotId)?.name ?? 'Sans dépôt'}</div>
               </div>
-              <span className={`self-start inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${VEHICLE_STATUS[v.status].className}`}>{VEHICLE_STATUS[v.status].label}</span>
+              <span className={`self-start inline-flex rounded px-2 py-0.5 text-[11px] font-bold ${VEHICLE_STATUS[v.status].className}`}>{VEHICLE_STATUS[v.status].label}</span>
             </div>
             <div className="grid grid-cols-2 gap-3 items-end">
               <div>

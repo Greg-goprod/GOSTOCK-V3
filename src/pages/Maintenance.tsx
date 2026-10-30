@@ -121,7 +121,7 @@ const Maintenance: React.FC = () => {
                   <p className="font-bold text-gray-900 dark:text-white truncate">{plan.equipment_name}</p>
                   <p className="font-mono text-xs text-gray-600 dark:text-gray-400">{plan.article_number}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATE[plan.state].className}`}>{STATE[plan.state].label}</span>
+                <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-bold ${STATE[plan.state].className}`}>{STATE[plan.state].label}</span>
               </div>
               <div className="text-sm text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                 {plan.kind === 'electrical_check' ? <Zap size={14} className="text-warning-600" aria-hidden="true" /> : <ClipboardCheck size={14} className="text-primary-600" aria-hidden="true" />}

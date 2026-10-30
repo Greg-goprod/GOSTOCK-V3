@@ -406,7 +406,7 @@ const Scan: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">SCANNER QR CODE</h1>
+          <h1 className="mx-page-title">Scanner</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Scannez un QR code pour identifier un matériel, un utilisateur, un emprunt ou un bon de sortie
           </p>

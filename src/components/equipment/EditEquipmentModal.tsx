@@ -696,7 +696,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                   <div className="flex items-center gap-2 flex-wrap">
                     {formData.category_id && (
                       <>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                           <TagIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{categories.find(c => c.id === formData.category_id)?.name}
                         </span>
                         <span className="text-gray-500 dark:text-gray-400">→</span>
@@ -722,7 +722,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                       </span>
                     )}
                     <span className="text-gray-500 dark:text-gray-400">→</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
                       <Package className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{formData.name || 'Nom du matériel'}
                     </span>
                   </div>

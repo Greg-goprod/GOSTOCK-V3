@@ -252,7 +252,7 @@ const Users: React.FC = () => {
                 onClick={() => handleSort('email')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  EMAIL
+                  Email
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
@@ -261,7 +261,7 @@ const Users: React.FC = () => {
                 onClick={() => handleSort('phone')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  TÉLÉPHONE
+                  Téléphone
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
@@ -270,7 +270,7 @@ const Users: React.FC = () => {
                 onClick={() => handleSort('department')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  DÉPARTEMENT
+                  Département
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
@@ -279,12 +279,12 @@ const Users: React.FC = () => {
                 onClick={() => handleSort('role')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  RÔLE
+                  Rôle
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
               <th className="px-6 py-3 text-right text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                ACTIONS
+                Actions
               </th>
             </tr>
           </thead>
@@ -328,7 +328,7 @@ const Users: React.FC = () => {
                     onClick={() => handleShowQR(user.id)}
                     className="font-medium"
                   >
-                    QR CODE
+                    QR code
                   </Button>
                   <Button
                     variant="outline"
@@ -403,7 +403,7 @@ const Users: React.FC = () => {
                 onClick={() => handleShowQR(user.id)}
                 className="font-medium"
               >
-                QR CODE
+                QR code
               </Button>
               <Button
                 variant="outline"
@@ -436,7 +436,7 @@ const Users: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <h1 className="mx-page-title">PERSONNES</h1>
+        <h1 className="mx-page-title">Personnes</h1>
         
         <div className="flex flex-wrap gap-3">
           <div className="flex rounded-lg border border-gray-200 dark:border-gray-700">
@@ -447,7 +447,7 @@ const Users: React.FC = () => {
               onClick={() => setViewMode('grid')}
               className="rounded-r-none font-bold"
             >
-              GRILLE
+              Grille
             </Button>
             <Button
               variant={viewMode === 'list' ? 'primary' : 'outline'}
@@ -456,7 +456,7 @@ const Users: React.FC = () => {
               onClick={() => setViewMode('list')}
               className="rounded-l-none font-bold"
             >
-              LISTE
+              Liste
             </Button>
           </div>
           <Button 
@@ -465,9 +465,9 @@ const Users: React.FC = () => {
             onClick={() => setShowFilters(true)}
             className="font-bold"
           >
-            FILTRES
+            Filtres
             {Object.keys(activeFilters).length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded-full font-black">
+              <span className="ml-1 px-1.5 py-0.5 text-[11px] bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded font-black">
                 {Object.keys(activeFilters).length}
               </span>
             )}
@@ -484,7 +484,7 @@ const Users: React.FC = () => {
             onClick={handleAddUser}
             className="font-bold"
           >
-            AJOUTER UNE PERSONNE
+            Ajouter une personne
           </Button>
         </div>
       </div>

@@ -99,19 +99,19 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
     switch (status) {
       case 'in_progress':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200">
             En cours
           </span>
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 dark:bg-success-900/50 text-success-800 dark:text-success-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-success-100 dark:bg-success-900/50 text-success-800 dark:text-success-200">
             Terminée
           </span>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-danger-100 dark:bg-danger-900/50 text-danger-800 dark:text-danger-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-danger-100 dark:bg-danger-900/50 text-danger-800 dark:text-danger-200">
             Annulée
           </span>
         );
@@ -150,7 +150,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-primary-800 dark:text-primary-200 mb-2">
-                  MATÉRIEL
+                  Matériel
                 </h3>
                 <p className="font-medium text-primary-700 dark:text-primary-300">
                   {equipment.name}
@@ -170,7 +170,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                 onClick={handleAddMaintenance}
                 className="font-bold"
               >
-                NOUVELLE MAINTENANCE
+                Nouvelle maintenance
               </Button>
             </div>
           </div>
@@ -184,7 +184,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
             <div className="text-center py-12">
               <Wrench size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
               <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase">
-                AUCUN HISTORIQUE DE MAINTENANCE
+                Aucun historique de maintenance
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-4 font-medium">
                 Aucune maintenance n'a été enregistrée pour ce matériel.
@@ -195,7 +195,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                 onClick={handleAddMaintenance}
                 className="font-bold"
               >
-                AJOUTER UNE MAINTENANCE
+                Ajouter une maintenance
               </Button>
             </div>
           ) : (

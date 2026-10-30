@@ -96,7 +96,7 @@ const PurchaseOrders: React.FC = () => {
               <button type="button" onClick={() => setOpened(o.id)} className="w-full text-left rounded-lg bg-white dark:bg-gray-800 shadow p-4 hover:ring-2 hover:ring-primary-400 flex flex-wrap justify-between gap-2">
                 <span>
                   <span className="font-mono text-sm text-gray-700 dark:text-gray-300">{o.number}</span>{' '}
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS[o.status].className}`}>{STATUS[o.status].label}</span>
+                  <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${STATUS[o.status].className}`}>{STATUS[o.status].label}</span>
                   <span className="block font-bold text-gray-900 dark:text-white">{supplierName(o.supplier_id)}</span>
                   <span className="block text-xs text-gray-600 dark:text-gray-400">{depotName(o.depot_id)} · {o.purchase_order_lines.length} ligne{o.purchase_order_lines.length > 1 ? 's' : ''} · créée le {new Date(o.created_at).toLocaleDateString('fr-CH')}</span>
                 </span>
@@ -185,7 +185,7 @@ const OrderModal: React.FC<{ order: PurchaseOrder; onClose: () => void; onChange
     <Modal isOpen onClose={onClose} title={`${order.number} · ${supplier?.name ?? ''}`} size="xl">
       <div className="space-y-4">
         <div className="print:hidden flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS[order.status].className}`}>{STATUS[order.status].label}</span>
+          <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${STATUS[order.status].className}`}>{STATUS[order.status].label}</span>
           <span>Livraison : {depot?.name}</span>
           {supplier?.email && <span>· {supplier.email}</span>}
           {order.sent_at && <span>· envoyée le {new Date(order.sent_at).toLocaleDateString('fr-CH')}</span>}
