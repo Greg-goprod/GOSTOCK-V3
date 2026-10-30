@@ -109,7 +109,7 @@ const Costs: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Coûts</h1>
+          <h1 className="mx-page-title">Coûts</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Consommables (quantité × prix d'achat) et outils (jours × tarif interne) par chantier.</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">

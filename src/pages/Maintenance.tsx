@@ -8,6 +8,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { fileUrl } from '../lib/files';
 import { errorMessage, toLocalInput } from '../lib/requests';
+import { DateTimeInput } from '../components/common/DateInput';
 
 interface PlanStatus {
   id: string;
@@ -94,7 +95,7 @@ const Maintenance: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Entretien</h1>
+          <h1 className="mx-page-title">Entretien</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Révisions préventives et contrôles électriques (OIBT), tous les X mois ou toutes les X sorties.</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>Nouveau plan</Button>
@@ -236,7 +237,7 @@ const NewPlanModal: React.FC<{ onClose: () => void; onDone: () => Promise<void> 
           </div>
           <div>
             <label htmlFor="plan-last" className={labelClass}>Dernière intervention</label>
-            <input id="plan-last" type="datetime-local" value={lastDone} onChange={e => setLastDone(e.target.value)} className={inputClass} />
+            <DateTimeInput id="plan-last" value={lastDone} onChange={e => setLastDone(e.target.value)} className={inputClass} />
           </div>
           <label className="flex items-start gap-2 self-end pb-2">
             <input type="checkbox" checked={blocks} onChange={e => setBlocks(e.target.checked)} className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
@@ -316,7 +317,7 @@ const CompleteModal: React.FC<{ plan: PlanStatus; onClose: () => void; onDone: (
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="run-date" className={labelClass}>Date</label>
-            <input id="run-date" type="datetime-local" value={doneAt} onChange={e => setDoneAt(e.target.value)} className={inputClass} required />
+            <DateTimeInput id="run-date" value={doneAt} onChange={e => setDoneAt(e.target.value)} className={inputClass} required />
           </div>
           <div>
             <label htmlFor="run-tech" className={labelClass}>Technicien / entreprise</label>

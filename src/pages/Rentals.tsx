@@ -9,6 +9,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
+import DateInput from '../components/common/DateInput';
+import { confirmAction, promptAction } from '../lib/confirm';
 
 interface Rental {
   id: string;
@@ -132,8 +134,8 @@ const Rentals: React.FC = () => {
     await load();
   };
 
-  const markReturned = (rental: Rental) => {
-    const day = window.prompt('Rendu au loueur le (JJ.MM.AAAA) :', fmt(today()));
+  const markReturned = async (rental: Rental) => {
+    const day = await promptAction('Rendu au loueur le (JJ.MM.AAAA) :', fmt(today()));
     if (!day) return;
     const match = day.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
     if (!match) return toast.error('Date attendue : JJ.MM.AAAA');
@@ -145,7 +147,7 @@ const Rentals: React.FC = () => {
   const extend = (rental: Rental) => update(rental, { end_on: plusDays(rental.end_on, 7) }, `Prolongée jusqu'au ${fmt(plusDays(rental.end_on, 7))}`);
 
   const remove = async (rental: Rental) => {
-    if (!window.confirm(`Supprimer la location « ${rental.description} » ? Son coût disparaîtra des chantiers.`)) return;
+    if (!await confirmAction(`Supprimer la location « ${rental.description} » ? Son coût disparaîtra des chantiers.`)) return;
     const { error } = await supabase.from('rentals').delete().eq('id', rental.id);
     if (error) return toast.error(errorMessage(error));
     await load();
@@ -163,7 +165,7 @@ const Rentals: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Locations</h1>
+          <h1 className="mx-page-title">Locations</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Matériel loué chez un loueur. Alerte 2 jours avant la date de retour, puis chaque jour de retard.</p>
         </div>
         {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouvelle location</Button>}
@@ -259,11 +261,11 @@ const Rentals: React.FC = () => {
           </div>
           <div>
             <label htmlFor="rental-start" className={labelClass}>Début</label>
-            <input id="rental-start" type="date" value={form.start_on} onChange={e => setForm({ ...form, start_on: e.target.value })} className={inputClass} required />
+            <DateInput id="rental-start" value={form.start_on} onChange={e => setForm({ ...form, start_on: e.target.value })} className={inputClass} required />
           </div>
           <div>
             <label htmlFor="rental-end" className={labelClass}>À rendre le</label>
-            <input id="rental-end" type="date" value={form.end_on} min={form.start_on} onChange={e => setForm({ ...form, end_on: e.target.value })} className={inputClass} required />
+            <DateInput id="rental-end" value={form.end_on} min={form.start_on} onChange={e => setForm({ ...form, end_on: e.target.value })} className={inputClass} required />
           </div>
           <div>
             <label htmlFor="rental-fixed" className={labelClass}>Forfait (transport, nettoyage…)</label>

@@ -8,6 +8,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Permission, PERMISSION_LABELS, ROLE_LABELS, ROLE_PERMISSIONS } from '../../lib/roles';
 import { errorMessage } from '../../lib/requests';
+import DateInput from '../common/DateInput';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -274,7 +275,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
           </div>
           <div className="mt-2 max-w-xs">
             <label htmlFor="user-license-exp" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Valable jusqu'au (facultatif)</label>
-            <input id="user-license-exp" type="date" value={form.license_expires_on} onChange={e => setForm({ ...form, license_expires_on: e.target.value })} className={inputClass} />
+            <DateInput id="user-license-exp" value={form.license_expires_on} onChange={e => setForm({ ...form, license_expires_on: e.target.value })} className={inputClass} />
           </div>
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Une réservation de véhicule est refusée si le permis ne couvre pas sa catégorie.</p>
         </fieldset>
@@ -298,7 +299,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
             )}
             <div>
               <label htmlFor="user-until" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Accès jusqu'au{form.person_kind === 'employee' ? ' (facultatif)' : ''}</label>
-              <input id="user-until" type="date" value={form.access_until} onChange={e => setForm({ ...form, access_until: e.target.value })} className={inputClass} required={form.person_kind !== 'employee'} />
+              <DateInput id="user-until" value={form.access_until} onChange={e => setForm({ ...form, access_until: e.target.value })} className={inputClass} required={form.person_kind !== 'employee'} />
             </div>
           </div>
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Après cette date : plus de connexion ni de badge, et rien ne peut être emprunté au-delà.</p>
@@ -311,11 +312,11 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
               <>
                 <div>
                   <label htmlFor="user-deposit-paid" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Versée le</label>
-                  <input id="user-deposit-paid" type="date" value={form.deposit_paid_on} onChange={e => setForm({ ...form, deposit_paid_on: e.target.value })} className={inputClass} />
+                  <DateInput id="user-deposit-paid" value={form.deposit_paid_on} onChange={e => setForm({ ...form, deposit_paid_on: e.target.value })} className={inputClass} />
                 </div>
                 <div>
                   <label htmlFor="user-deposit-returned" className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Rendue le</label>
-                  <input id="user-deposit-returned" type="date" value={form.deposit_returned_on} onChange={e => setForm({ ...form, deposit_returned_on: e.target.value })} className={inputClass} />
+                  <DateInput id="user-deposit-returned" value={form.deposit_returned_on} onChange={e => setForm({ ...form, deposit_returned_on: e.target.value })} className={inputClass} />
                 </div>
               </>
             )}

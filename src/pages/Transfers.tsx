@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { findEquipmentByCode } from '../lib/scan';
+import { confirmAction, promptAction } from '../lib/confirm';
 
 interface TransferLine {
   id: string;
@@ -130,7 +131,7 @@ const Transfers: React.FC = () => {
     const it = item(line.equipment_id);
     if (it?.itemType === 'consumable') {
       const rest = line.quantity - line.received;
-      const answer = window.prompt(`${it.name} : quantité reçue (${rest} ${it.unit ?? ''} attendu)`, String(rest));
+      const answer = await promptAction(`${it.name} : quantité reçue (${rest} ${it.unit ?? ''} attendu)`, String(rest));
       if (answer === null) throw new Error('Annulé');
       const qty = Number(answer.replace(',', '.'));
       if (!(qty > 0)) {
@@ -149,7 +150,7 @@ const Transfers: React.FC = () => {
     const message = cancel
       ? `Annuler le transfert ${transfer.number} ? Les consommables reviennent au ${depotName(transfer.from_depot_id)}.`
       : `Clôturer la réception de ${transfer.number} ?${missing ? ` ${missing} ligne(s) incomplète(s) seront signalées comme écart.` : ''}`;
-    if (!window.confirm(message)) return;
+    if (!await confirmAction(message)) return;
     const { error } = await supabase.rpc('close_transfer', { p_transfer_id: transfer.id, p_cancel: cancel });
     if (error) return toast.error(errorMessage(error));
     toast.success(cancel ? 'Transfert annulé' : 'Réception clôturée');
@@ -161,7 +162,7 @@ const Transfers: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Transferts</h1>
+          <h1 className="mx-page-title">Transferts</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Du matériel part d'un dépôt ; le dépôt d'arrivée le réceptionne au scanner. Un outil en route ne peut pas sortir.</p>
         </div>
         {depots.length > 1 && <Button icon={<Plus size={16} />} onClick={openCreate}>Nouveau transfert</Button>}
@@ -284,7 +285,7 @@ const Transfers: React.FC = () => {
                 const complete = l.received >= l.quantity;
                 return (
                   <li key={l.id} className="py-2 flex flex-wrap items-center gap-2">
-                    <span className={`flex-1 min-w-[10rem] ${complete ? 'text-success-700 dark:text-success-300' : 'text-gray-900 dark:text-gray-100'}`}>{complete ? '✓ ' : ''}{it?.name}</span>
+                    <span className={`flex-1 min-w-[10rem] ${complete ? 'text-success-700 dark:text-success-300' : 'text-gray-900 dark:text-gray-100'}`}>{complete && <PackageCheck size={14} aria-hidden="true" className="inline mr-1 -mt-0.5" />}{it?.name}</span>
                     <span className="font-mono text-xs text-gray-600 dark:text-gray-400">{l.received} / {l.quantity} {it?.itemType === 'consumable' ? it.unit : ''}</span>
                     {!complete && receiving.status === 'in_transit' && (
                       <Button size="sm" variant="outline" onClick={() => receiveLine(l).then(() => toast.success(`Reçu : ${it?.name}`)).catch(e => toast.error(errorMessage(e)))}>Reçu</Button>

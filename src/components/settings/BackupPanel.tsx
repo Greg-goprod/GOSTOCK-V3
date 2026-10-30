@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Button from '../common/Button';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/requests';
+import { confirmAction } from '../../lib/confirm';
 
 // Toutes les tables de GO-Mat, sauf les abonnements de téléphones et les codes de badge (secrets)
 const TABLES = [
@@ -135,7 +136,7 @@ const BackupPanel: React.FC = () => {
   // Remet les lignes absentes, table par table dans l'ordre des dépendances ; rien n'est écrasé ni supprimé
   const restore = async () => {
     if (!restoreFile?.data.tables) return;
-    if (!window.confirm('Remettre les lignes supprimées depuis cette sauvegarde ? Les données actuelles ne sont ni modifiées ni supprimées.')) return;
+    if (!await confirmAction('Remettre les lignes supprimées depuis cette sauvegarde ? Les données actuelles ne sont ni modifiées ni supprimées.')) return;
     const tables = restoreFile.data.tables;
     const log: string[] = [];
     let total = 0;

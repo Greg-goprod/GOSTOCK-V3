@@ -129,7 +129,7 @@ const Planning: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Planning</h1>
+        <h1 className="mx-page-title">Planning</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Demandes à venir et sorties en cours, jour par jour. En rouge : plus de demandes que d'exemplaires.</p>
       </div>
 

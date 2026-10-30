@@ -99,7 +99,7 @@ const Consumables: React.FC = () => {
   if (depots.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Consommables</h1>
+        <h1 className="mx-page-title">Consommables</h1>
         <p className="text-gray-600 dark:text-gray-300">
           Aucun dépôt trouvé. Exécutez le script <span className="font-mono">20261029000002_depots_consommables.sql</span> dans Supabase, puis rechargez la page.
         </p>
@@ -111,7 +111,7 @@ const Consumables: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Consommables</h1>
+          <h1 className="mx-page-title">Consommables</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Stock par dépôt, sorties, réceptions et seuils d'alerte</p>
         </div>
         <div className="flex flex-wrap gap-2">

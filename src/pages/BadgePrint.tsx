@@ -40,7 +40,7 @@ const BadgePrint: React.FC = () => {
       <div className="print:hidden space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Badges</h1>
+            <h1 className="mx-page-title">Badges</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Cartes au format carte bancaire, 10 par feuille A4. Chacun retrouve aussi son badge sur son téléphone (« Mon badge »).</p>
           </div>
           <Button icon={<Printer size={16} />} onClick={() => window.print()} disabled={toPrint.length === 0}>

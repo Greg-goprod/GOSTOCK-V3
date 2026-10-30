@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { downloadWorkbook } from '../lib/excel';
+import { confirmAction } from '../lib/confirm';
 
 interface Depreciation {
   equipment_id: string;
@@ -192,7 +193,7 @@ const Accounting: React.FC = () => {
   const sendBexio = async () => {
     const entries = buildEntries();
     if (!entries.length) return toast.error('Aucune écriture pour cette année');
-    if (!window.confirm(`Envoyer ${entries.length} écriture(s) de ${year} dans bexio ? Ne le faites qu'une fois par année, sinon elles seront en double.`)) return;
+    if (!await confirmAction(`Envoyer ${entries.length} écriture(s) de ${year} dans bexio ? Ne le faites qu'une fois par année, sinon elles seront en double.`)) return;
     setSending(true);
     const { data, error } = await supabase.functions.invoke('bexio-export', {
       body: {
@@ -216,7 +217,7 @@ const Accounting: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Comptabilité</h1>
+          <h1 className="mx-page-title">Comptabilité</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Amortissement linéaire des outils et écritures de l'année, en Excel pour la fiduciaire.</p>
         </div>
         <div className="flex flex-wrap gap-2">

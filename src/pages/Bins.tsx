@@ -6,6 +6,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
+import { confirmAction } from '../lib/confirm';
 
 interface Bin {
   id: string;
@@ -110,7 +111,7 @@ const Bins: React.FC = () => {
 
   const removeBin = async (bin: Bin) => {
     const used = placements.filter(p => p.bin_id === bin.id).length;
-    if (!window.confirm(`Supprimer l'emplacement ${bin.code} ?${used ? ` ${used} article(s) n'auront plus d'emplacement.` : ''}`)) return;
+    if (!await confirmAction(`Supprimer l'emplacement ${bin.code} ?${used ? ` ${used} article(s) n'auront plus d'emplacement.` : ''}`)) return;
     const { error } = await supabase.from('storage_bins').delete().eq('id', bin.id);
     if (error) return toast.error(errorMessage(error));
     await load();
@@ -131,7 +132,7 @@ const Bins: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Emplacements</h1>
+          <h1 className="mx-page-title">Emplacements</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Allée, étagère, bac : la liste de préparation des demandes suit l'ordre de passage.</p>
         </div>
         <select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={`${inputClass} w-auto`}>

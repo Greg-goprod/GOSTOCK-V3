@@ -1,3 +1,7 @@
+@import './styles/geist.css';
+@import './styles/tokens-mx.css';
+@import './styles/gomat-mx.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

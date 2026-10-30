@@ -118,7 +118,7 @@ const SelfService: React.FC = () => {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Libre-service</h1>
+        <h1 className="mx-page-title">Libre-service</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Prenez les consommables de l'armoire ou déposez vos outils dans la boîte de retour, avec votre téléphone.</p>
       </div>
 

@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { findEquipmentByCode } from '../lib/scan';
 import { errorMessage } from '../lib/requests';
+import { confirmAction } from '../lib/confirm';
 
 interface CountLine {
   id: string;
@@ -116,7 +117,7 @@ const Inventory: React.FC = () => {
   const close = async () => {
     if (!session) return;
     const missing = lines.length - counted;
-    if (missing > 0 && !window.confirm(`${missing} article(s) non compté(s) : ils restent inchangés. Clôturer quand même ?`)) return;
+    if (missing > 0 && !await confirmAction(`${missing} article(s) non compté(s) : ils restent inchangés. Clôturer quand même ?`)) return;
     setBusy(true);
     const { data, error } = await supabase.rpc('close_inventory_count', { p_count_id: session.id });
     setBusy(false);
@@ -131,7 +132,7 @@ const Inventory: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Inventaire tournant</h1>
+          <h1 className="mx-page-title">Inventaire tournant</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Quelques articles à chaque passage, les moins récemment comptés d'abord. Comptage à l'aveugle, écarts expliqués à la clôture.</p>
         </div>
         <select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={inputClass}>

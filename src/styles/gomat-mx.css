@@ -1,0 +1,227 @@
+/* ==========================================================================
+   GO-Mat habillé avec la charte Mannyx (tokens --mx-*, voir tokens-mx.css)
+
+   Les classes Tailwind des écrans (gray-*, primary-*…) lisent des variables
+   qui changent avec le thème : chaque nuance prend, dans chaque thème, la
+   valeur MX correspondant à son usage dans GO-Mat (ex. gray-600 = texte
+   secondaire en clair, bordure de champ en sombre). Valeurs en canaux RGB
+   pour que les opacités Tailwind (bg-primary-600/20) restent possibles.
+   ========================================================================== */
+
+:root {
+  /* Neutres — thème clair */
+  --g-50: 246 246 248;   /* surface2 */
+  --g-100: 241 242 245;  /* chip, survol */
+  --g-200: 226 227 233;  /* bordure */
+  --g-300: 203 205 214;  /* bordure de champ */
+  --g-400: 130 133 143;  /* texte tertiaire */
+  --g-500: 107 110 120;
+  --g-600: 74 77 87;     /* texte secondaire */
+  --g-700: 51 54 63;
+  --g-800: 30 32 38;
+  --g-900: 16 17 20;     /* texte */
+  --g-950: 10 11 13;
+
+  /* Accent — thème clair (#5A46D6) */
+  --p-50: 243 241 253;
+  --p-100: 231 227 251;
+  --p-200: 205 198 245;
+  --p-300: 169 156 236;
+  --p-400: 122 103 230;
+  --p-500: 106 86 222;
+  --p-600: 90 70 214;
+  --p-700: 65 50 154;
+  --p-800: 59 45 147;
+  --p-900: 45 35 112;
+  --p-950: 28 22 71;
+
+  --gm-page: #dadbe0;    /* --scrim : fond de page */
+}
+
+.dark {
+  /* Neutres — thème sombre */
+  --g-50: 245 246 248;   /* texte */
+  --g-100: 245 246 248;
+  --g-200: 226 227 233;
+  --g-300: 180 183 192;  /* texte secondaire */
+  --g-400: 157 160 170;
+  --g-500: 125 129 140;  /* texte tertiaire */
+  --g-600: 46 50 63;     /* bordure de champ */
+  --g-700: 40 44 55;     /* bordure, surface2 */
+  --g-800: 20 22 29;     /* surface : cartes, panneaux */
+  --g-900: 25 27 33;     /* scrim : fond de page */
+  --g-950: 15 16 21;
+
+  /* Accent — thème sombre (#8672F5) */
+  --p-50: 246 245 255;
+  --p-100: 237 234 254;
+  --p-200: 218 212 252;
+  --p-300: 194 184 250;
+  --p-400: 169 155 248;
+  --p-500: 149 133 247;
+  --p-600: 134 114 245;
+  --p-700: 110 91 224;
+  --p-800: 58 49 128;
+  --p-900: 42 36 88;
+  --p-950: 23 20 46;
+
+  --gm-page: #191b21;
+}
+
+/* --------------------------------------------------------------------------
+   Fondations : police Geist, chiffres alignés, focus clavier visible
+   -------------------------------------------------------------------------- */
+html,
+body {
+  font-family: var(--mx-font-ui);
+}
+
+body {
+  background: var(--gm-page);
+  color: var(--mx-text);
+}
+
+/* Pas de police à chasse fixe dans la charte : Geist + chiffres tabulaires */
+.font-mono {
+  font-family: var(--mx-font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--mx-accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Champs : bordure 1.5px, rayon 6px, select avec chevron Lucide
+   -------------------------------------------------------------------------- */
+:where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']), select, textarea) {
+  border-width: 1.5px;
+  border-radius: var(--mx-radius-6, 6px);
+}
+
+:where(input, select, textarea)::placeholder {
+  color: var(--mx-text3);
+}
+
+select:not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2382858F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 16px;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--mx-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Titres de page (échelle MX : 52px, graisse 700, approche -0.05em)
+   -------------------------------------------------------------------------- */
+.mx-page-title {
+  font-size: clamp(30px, 4.2vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  color: var(--mx-text);
+}
+
+.mx-section-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mx-text3);
+}
+
+/* Cartes : survol en élévation + filet accent (micro-interaction MX) */
+.mx-card-hover {
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+}
+.mx-card-hover:hover {
+  box-shadow: var(--mx-shadow-lg);
+  border-color: var(--mx-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mx-card-hover,
+  .mx-card-hover:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Boutons (handoff : primaire avec ombre d'offset accent-deep, survol -2px,
+   appui scale .96 ; désactivé à 40 %)
+   -------------------------------------------------------------------------- */
+.mx-btn {
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  border: 1.5px solid transparent;
+  transition: transform 0.15s var(--mx-ease-spring, cubic-bezier(.2, .8, .3, 1.3)), box-shadow 0.15s, background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.mx-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+.mx-btn:not(:disabled):active {
+  transform: translateY(0) scale(0.96);
+}
+.mx-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.mx-btn-primary {
+  background: var(--mx-accent);
+  color: #fff;
+  box-shadow: 0 2px 0 var(--mx-accent-deep);
+}
+.mx-btn-primary:not(:disabled):hover {
+  background: var(--mx-accent-2);
+}
+.mx-btn-primary:not(:disabled):active {
+  box-shadow: 0 1px 0 var(--mx-accent-deep);
+}
+.mx-btn-secondary {
+  background: var(--mx-surface);
+  color: var(--mx-text);
+  border-color: var(--mx-border);
+}
+.mx-btn-secondary:not(:disabled):hover {
+  border-color: var(--mx-accent);
+  color: var(--mx-accent);
+}
+.mx-btn-ghost {
+  background: transparent;
+  color: var(--mx-text2);
+}
+.mx-btn-ghost:not(:disabled):hover {
+  background: var(--mx-accent-lt);
+  color: var(--mx-accent);
+}
+.mx-btn-danger {
+  background: var(--mx-danger);
+  color: #fff;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--mx-danger) 72%, #000);
+}
+.mx-btn-success {
+  background: var(--mx-green, #0f9d6e);
+  color: #fff;
+}
+.mx-btn-warning {
+  background: var(--mx-band, #f5c518);
+  color: var(--mx-band-text, #14110a);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mx-btn,
+  .mx-btn:not(:disabled):hover,
+  .mx-btn:not(:disabled):active {
+    transform: none;
+    transition: none;
+  }
+}

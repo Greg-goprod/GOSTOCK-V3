@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Briefcase, CheckCircle2, Inbox, UploadCloud, Minus, Plus, Trash2, Undo2, UserRound, WifiOff, X } from 'lucide-react';
+import { Briefcase, CheckCircle2, Plug, Inbox, UploadCloud, Minus, Plus, Trash2, Undo2, UserRound, WifiOff, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
@@ -19,6 +19,8 @@ import {
 } from '../lib/offlineCounter';
 import { errorMessage, toLocalInput } from '../lib/requests';
 import { CheckoutRecord, Equipment, EquipmentInstance, User } from '../types';
+import { DateTimeInput } from '../components/common/DateInput';
+import { confirmAction } from '../lib/confirm';
 
 type Mode = 'auto' | 'out' | 'in';
 
@@ -176,9 +178,10 @@ const Counter: React.FC = () => {
     setDestination('');
   };
 
-  const selectPerson = (user: User) => {
+  // Renvoie false si la personne garde son panier (changement refusé)
+  const selectPerson = async (user: User) => {
     if (person && person.id !== user.id && (cart.length || returns.length)) {
-      if (!window.confirm(`Passer à ${user.first_name} ${user.last_name} ? Le panier en cours sera vidé.`)) return;
+      if (!await confirmAction(`Passer à ${user.first_name} ${user.last_name} ? Le panier en cours sera vidé.`)) return false;
     }
     if (person?.id !== user.id) {
       reset();
@@ -249,7 +252,7 @@ const Counter: React.FC = () => {
         throw new Error('Kit pas emprunté');
       }
       setReturns(ids => [...ids, ...heldKit.map(c => c.id)]);
-      toast(`Kit « ${kit.name} » : ${heldKit.length} outil${heldKit.length > 1 ? 's' : ''} en retour. Retirez du panier ce qui manque : cela restera à son nom.`, { duration: 7000, icon: '🧰' });
+      toast(`Kit « ${kit.name} » : ${heldKit.length} outil${heldKit.length > 1 ? 's' : ''} en retour. Retirez du panier ce qui manque : cela restera à son nom.`, { duration: 7000, icon: <Briefcase size={18} aria-hidden="true" /> });
       return;
     }
     const problems: string[] = [];
@@ -333,7 +336,7 @@ const Counter: React.FC = () => {
       .filter(a => a.equipment_id === item.id && !cart.some(l => l.equipment.id === a.accessory_id))
       .map(a => equipment.find(e => e.id === a.accessory_id)?.name)
       .filter(Boolean);
-    if (reminders.length) toast(`Avec cet outil : ${reminders.join(', ')}`, { icon: '🔌', duration: 6000 });
+    if (reminders.length) toast(`Avec cet outil : ${reminders.join(', ')}`, { icon: <Plug size={18} aria-hidden="true" />, duration: 6000 });
   };
 
   const toolLines = cart.filter(l => l.equipment.itemType !== 'consumable');
@@ -388,7 +391,7 @@ const Counter: React.FC = () => {
     const keepForLater = (doneSteps: string[]) => {
       enqueue(op);
       setQueue(loadQueue());
-      toast(`Pas de réseau : ${doneSteps.length ? `fait ${doneSteps.join(', ')} ; ` : ''}le reste est gardé sur cet appareil et partira tout seul au retour du réseau.`, { icon: '📶', duration: 7000 });
+      toast(`Pas de réseau : ${doneSteps.length ? `fait ${doneSteps.join(', ')} ; ` : ''}le reste est gardé sur cet appareil et partira tout seul au retour du réseau.`, { icon: <WifiOff size={18} aria-hidden="true" />, duration: 7000 });
       finish();
     };
 
@@ -428,7 +431,7 @@ const Counter: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Comptoir</h1>
+          <h1 className="mx-page-title">Comptoir</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Badge de la personne, puis les articles ou le QR d'un kit. Un article qu'elle a déjà part en retour.</p>
         </div>
         <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="Mode de scan">
@@ -471,7 +474,7 @@ const Counter: React.FC = () => {
                     <span className="text-xs text-gray-600 dark:text-gray-400"> · {items.map(c => itemName(c.equipmentId)).join(', ')} · déposé le {new Date(items[0].droppedAt!).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}</span>
                   </span>
                   {u && (
-                    <Button size="sm" variant="outline" onClick={() => { selectPerson(u); setReturns(items.map(c => c.id)); }}>Contrôler</Button>
+                    <Button size="sm" variant="outline" onClick={async () => { if (await selectPerson(u)) setReturns(items.map(c => c.id)); }}>Contrôler</Button>
                   )}
                 </li>
               );
@@ -505,8 +508,8 @@ const Counter: React.FC = () => {
                 </div>
                 {op.error && (
                   <Button size="sm" variant="outline" icon={<Trash2 size={14} />} ariaLabel="Abandonner cette opération"
-                    onClick={() => {
-                      if (!window.confirm('Abandonner cette opération ? Elle ne sera pas enregistrée.')) return;
+                    onClick={async () => {
+                      if (!await confirmAction('Abandonner cette opération ? Elle ne sera pas enregistrée.')) return;
                       dropQueued(op.id);
                       setQueue(loadQueue());
                     }} />
@@ -698,7 +701,7 @@ const Counter: React.FC = () => {
                     <Button size="sm" variant="outline" onClick={() => setDue(toLocalInput(endOfWeek()))}>Vendredi</Button>
                     <Button size="sm" variant="outline" onClick={() => setDue(toLocalInput(at17(7)))}>+ 1 semaine</Button>
                   </div>
-                  <input id="counter-due" type="datetime-local" value={due} onChange={e => setDue(e.target.value)} className={inputClass} />
+                  <DateTimeInput id="counter-due" value={due} onChange={e => setDue(e.target.value)} className={inputClass} />
                 </div>
               )}
               <div>

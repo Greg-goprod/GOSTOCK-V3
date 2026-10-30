@@ -44,6 +44,7 @@ import DataHealth from './pages/DataHealth';
 import Onboarding from './pages/Onboarding';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
+import DialogHost from './components/common/DialogHost';
 
 // Page refusée par les droits : retour à l'accueil (la base refuserait de toute façon les données)
 const Guard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -68,6 +69,7 @@ const Home: React.FC = () => {
 function App() {
   return (
     <ErrorBoundary>
+      <DialogHost />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tableau-de-bord" element={<Guard><Dashboard /></Guard>} />

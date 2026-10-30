@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { REQUEST_STATUS, VEHICLE_STATUS, deadlineState, errorMessage } from '../lib/requests';
 import { RequestOverview, Vehicle } from '../types';
+import DateInput from '../components/common/DateInput';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -114,7 +115,7 @@ const Vehicles: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Véhicules</h1>
+          <h1 className="mx-page-title">Véhicules</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Flotte, réservations et états des lieux</p>
         </div>
         {canManage && <Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>Ajouter un véhicule</Button>}
@@ -300,10 +301,10 @@ const VehicleFormModal: React.FC<{ vehicle: Vehicle | null; onClose: () => void;
           <div><label htmlFor="v-seats" className={labelClass}>Places</label><input id="v-seats" type="number" min="1" value={form.seats} onChange={set('seats')} className={inputClass} /></div>
         </div>
         {!vehicle && <div><label htmlFor="v-km" className={labelClass}>Kilométrage actuel</label><input id="v-km" type="number" min="0" inputMode="numeric" value={form.currentKm} onChange={set('currentKm')} className={`${inputClass} font-mono`} /></div>}
-        <div><label htmlFor="v-service" className={labelClass}>Prochain service</label><input id="v-service" type="date" value={form.nextServiceDate} onChange={set('nextServiceDate')} className={inputClass} /></div>
+        <div><label htmlFor="v-service" className={labelClass}>Prochain service</label><DateInput id="v-service" value={form.nextServiceDate} onChange={set('nextServiceDate')} className={inputClass} /></div>
         <div><label htmlFor="v-service-km" className={labelClass}>Prochain service (km)</label><input id="v-service-km" type="number" min="0" value={form.nextServiceKm} onChange={set('nextServiceKm')} className={`${inputClass} font-mono`} /></div>
-        <div><label htmlFor="v-tires" className={labelClass}>Changement de pneus</label><input id="v-tires" type="date" value={form.tiresDate} onChange={set('tiresDate')} className={inputClass} /></div>
-        <div><label htmlFor="v-inspection" className={labelClass}>Prochaine expertise</label><input id="v-inspection" type="date" value={form.inspectionDate} onChange={set('inspectionDate')} className={inputClass} /></div>
+        <div><label htmlFor="v-tires" className={labelClass}>Changement de pneus</label><DateInput id="v-tires" value={form.tiresDate} onChange={set('tiresDate')} className={inputClass} /></div>
+        <div><label htmlFor="v-inspection" className={labelClass}>Prochaine expertise</label><DateInput id="v-inspection" value={form.inspectionDate} onChange={set('inspectionDate')} className={inputClass} /></div>
         <div className="sm:col-span-2"><label htmlFor="v-notes" className={labelClass}>Remarques</label><textarea id="v-notes" value={form.notes} onChange={set('notes')} rows={2} className={inputClass} /></div>
         {vehicle && vehicle.status !== 'in_use' && (
           <label className="sm:col-span-2 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 min-h-[44px] lg:min-h-0">

@@ -5,6 +5,7 @@ import Button from '../common/Button';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/requests';
 import { useApp } from '../../contexts/AppContext';
+import { confirmAction } from '../../lib/confirm';
 
 interface Recipient {
   id: string;
@@ -84,7 +85,7 @@ const NotificationRecipients: React.FC = () => {
   };
 
   const remove = async (recipient: Recipient) => {
-    if (!window.confirm(`Retirer ${recipient.email} des destinataires ?`)) return;
+    if (!await confirmAction(`Retirer ${recipient.email} des destinataires ?`)) return;
     const { error } = await supabase.from('notification_recipients').delete().eq('id', recipient.id);
     if (error) toast.error(errorMessage(error));
     await load();

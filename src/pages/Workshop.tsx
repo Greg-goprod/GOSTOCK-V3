@@ -7,6 +7,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
+import DateInput from '../components/common/DateInput';
 
 interface Repair {
   id: string;
@@ -147,7 +148,7 @@ const Workshop: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Atelier</h1>
+          <h1 className="mx-page-title">Atelier</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Réparations chez le fournisseur, garanties et batteries. Un outil en réparation ne peut pas sortir.</p>
         </div>
         {canAct && <Button icon={<Send size={16} />} onClick={() => startSend()}>Envoyer en réparation</Button>}
@@ -285,7 +286,7 @@ const Workshop: React.FC = () => {
           </div>
           <div>
             <label htmlFor="rep-expected" className={labelClass}>Retour prévu</label>
-            <input id="rep-expected" type="date" min={today} value={form.expected_on} onChange={e => setForm({ ...form, expected_on: e.target.value })} className={inputClass} />
+            <DateInput id="rep-expected" min={today} value={form.expected_on} onChange={e => setForm({ ...form, expected_on: e.target.value })} className={inputClass} />
           </div>
           <div>
             <label htmlFor="rep-ref" className={labelClass}>N° de dossier</label>
@@ -307,7 +308,7 @@ const Workshop: React.FC = () => {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="rep-back" className={labelClass}>Revenu le</label>
-              <input id="rep-back" type="date" value={closeForm.returned_on} max={today} onChange={e => setCloseForm({ ...closeForm, returned_on: e.target.value })} className={inputClass} />
+              <DateInput id="rep-back" value={closeForm.returned_on} max={today} onChange={e => setCloseForm({ ...closeForm, returned_on: e.target.value })} className={inputClass} />
             </div>
             <div>
               <label htmlFor="rep-cost" className={labelClass}>Coût (CHF)</label>

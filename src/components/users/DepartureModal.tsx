@@ -7,6 +7,8 @@ import { useApp } from '../../contexts/AppContext';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/requests';
 import { User } from '../../types';
+import DateInput from '../common/DateInput';
+import { confirmAction } from '../../lib/confirm';
 
 interface DepartureModalProps {
   user: User | null;
@@ -104,7 +106,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
   };
 
   const close = async () => {
-    if (remaining > 0 && !window.confirm(`${remaining} élément(s) ne sont pas rendus. Clôturer quand même ? Ils resteront au nom de ${fullName}.`)) return;
+    if (remaining > 0 && !await confirmAction(`${remaining} élément(s) ne sont pas rendus. Clôturer quand même ? Ils resteront au nom de ${fullName}.`)) return;
     setBusy(true);
     const { error } = await supabase.from('users').update({ active: false, left_on: leftOn }).eq('id', user.id);
     setBusy(false);
@@ -178,7 +180,7 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
         <div className="grid gap-3 sm:grid-cols-[12rem_1fr] items-end">
           <div>
             <label htmlFor="left-on" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de départ</label>
-            <input id="left-on" type="date" value={leftOn} onChange={e => setLeftOn(e.target.value)}
+            <DateInput id="left-on" value={leftOn} onChange={e => setLeftOn(e.target.value)}
               className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100" />
           </div>
           <div className="flex flex-wrap justify-end gap-2">

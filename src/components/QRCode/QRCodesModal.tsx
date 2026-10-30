@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React from 'react';
 import Modal from '../common/Modal';
 import QRCodeGenerator from './QRCodeGenerator';
@@ -24,7 +25,7 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
     // Create a new window for printing all QR codes
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
-      alert('Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloquées.');
+      toast.error('Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloquées.');
       return;
     }
     

@@ -6,6 +6,7 @@ import Modal from '../components/common/Modal';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
+import { confirmAction } from '../lib/confirm';
 
 type OrderStatus = 'draft' | 'sent' | 'partial' | 'received' | 'cancelled';
 
@@ -75,7 +76,7 @@ const PurchaseOrders: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">Commandes fournisseurs</h1>
+          <h1 className="mx-page-title">Commandes fournisseurs</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Créées depuis la feuille de commande, envoyées par e-mail, réceptionnées ligne à ligne.</p>
         </div>
         <div className="flex gap-2">
@@ -256,7 +257,7 @@ const OrderModal: React.FC<{ order: PurchaseOrder; onClose: () => void; onChange
 
         <div className="flex flex-wrap justify-end gap-2 print:hidden">
           {['draft', 'sent', 'partial'].includes(order.status) && (
-            <Button variant="outline" icon={<X size={16} />} onClick={() => window.confirm(`Annuler la commande ${order.number} ?`) && setStatus('cancelled', 'Commande annulée')} disabled={busy}>Annuler la commande</Button>
+            <Button variant="outline" icon={<X size={16} />} onClick={async () => { if (await confirmAction(`Annuler la commande ${order.number} ?`)) setStatus('cancelled', 'Commande annulée'); }} disabled={busy}>Annuler la commande</Button>
           )}
           <Button variant="outline" icon={<Printer size={16} />} onClick={() => window.print()}>Imprimer</Button>
           {order.status === 'draft' && <Button variant="outline" onClick={() => setStatus('sent', 'Marquée envoyée')} disabled={busy}>Marquer envoyée</Button>}
