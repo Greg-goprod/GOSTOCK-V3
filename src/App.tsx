@@ -33,6 +33,8 @@ import Transfers from './pages/Transfers';
 import Bins from './pages/Bins';
 import Planning from './pages/Planning';
 import Ppe from './pages/Ppe';
+import Workshop from './pages/Workshop';
+import Accounting from './pages/Accounting';
 import { useAuth } from './contexts/AuthContext';
 import { canAccess } from './lib/access';
 
@@ -84,6 +86,8 @@ function App() {
         <Route path="/emplacements" element={<Guard><Bins /></Guard>} />
         <Route path="/planning" element={<Guard><Planning /></Guard>} />
         <Route path="/epi" element={<Guard><Ppe /></Guard>} />
+        <Route path="/atelier" element={<Guard><Workshop /></Guard>} />
+        <Route path="/comptabilite" element={<Guard><Accounting /></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

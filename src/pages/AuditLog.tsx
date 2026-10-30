@@ -41,6 +41,7 @@ const TABLES: Record<string, string> = {
   transfers: 'Transfert',
   ppe_types: 'Type d\'EPI',
   ppe_issues: 'EPI remis',
+  repair_orders: 'Réparation',
 };
 
 const ACTIONS = { insert: 'Création', update: 'Modification', delete: 'Suppression' };

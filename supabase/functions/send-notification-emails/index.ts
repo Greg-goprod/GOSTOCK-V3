@@ -46,6 +46,9 @@ const KIND_LABEL: Record<string, { label: string; path: string; action: string }
   transfer: { label: 'Transfert', path: '/transferts', action: 'Voir les transferts' },
   ppe_renewal: { label: 'EPI', path: '/epi', action: 'Voir les EPI' },
   mission_end: { label: 'Fin de mission', path: '/users', action: 'Voir les personnes' },
+  warranty_end: { label: 'Garantie', path: '/atelier', action: "Ouvrir l'atelier" },
+  repair_late: { label: 'Réparation', path: '/atelier', action: "Ouvrir l'atelier" },
+  battery_end: { label: 'Batterie', path: '/atelier', action: "Ouvrir l'atelier" },
 };
 
 interface PendingEmail {
@@ -152,6 +155,7 @@ Deno.serve(async (req) => {
     supabase.rpc('check_monthly_report'),
     supabase.rpc('check_training_rental_deadlines'),
     supabase.rpc('check_people_deadlines'),
+    supabase.rpc('check_equipment_deadlines'),
   ]);
 
   const { data: pending, error } = await supabase.rpc('claim_notification_emails', { p_limit: 50 });

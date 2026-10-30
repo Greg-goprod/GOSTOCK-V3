@@ -66,6 +66,8 @@ const Header: React.FC = () => {
     if (path.startsWith('/emplacements')) return 'EMPLACEMENTS';
     if (path.startsWith('/planning')) return 'PLANNING';
     if (path.startsWith('/epi')) return 'EPI';
+    if (path.startsWith('/atelier')) return 'ATELIER';
+    if (path.startsWith('/comptabilite')) return 'COMPTABILITÉ';
     
     return 'GO-MAT';
   };

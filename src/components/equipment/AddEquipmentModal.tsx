@@ -9,6 +9,8 @@ import toast from 'react-hot-toast';
 import { Category, Supplier, EquipmentGroup, EquipmentSubgroup, Equipment } from '../../types';
 import { Package, Copy, QrCode, Info, Folder as FolderIcon, FolderOpen as FolderOpenIcon, Tag as TagIcon } from 'lucide-react';
 import TrainingSelect from '../trainings/TrainingSelect';
+import LifecycleFields from './LifecycleFields';
+import { EMPTY_LIFECYCLE, LifecycleValue, lifecyclePayload } from '../../lib/lifecycle';
 
 interface AddEquipmentModalProps {
   isOpen?: boolean;
@@ -46,6 +48,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     ean: '',
     supplier_reference: ''
   });
+  const [lifecycle, setLifecycle] = useState<LifecycleValue>(EMPTY_LIFECYCLE);
   const [quantityData, setQuantityData] = useState({
     qrType: 'individual' as 'individual' | 'batch',
     totalQuantity: 1
@@ -84,6 +87,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         ean: '',
         supplier_reference: ''
       });
+      setLifecycle(EMPTY_LIFECYCLE);
       setQuantityData({
         qrType: 'individual',
         totalQuantity: 1
@@ -230,6 +234,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
         required_training_id: formData.required_training_id || null,
         requires_signature: formData.requires_signature,
+        ...lifecyclePayload(lifecycle),
         catalog_product_id: formData.catalog_product_id || null,
         ean: formData.ean || null,
         supplier_reference: formData.supplier_reference || null,
@@ -602,6 +607,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                 </div>
                 <TrainingSelect id="eq-training" value={formData.required_training_id}
                   onChange={required_training_id => setFormData(prev => ({ ...prev, required_training_id }))} />
+                <LifecycleFields value={lifecycle} onChange={setLifecycle} />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

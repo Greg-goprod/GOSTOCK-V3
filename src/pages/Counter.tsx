@@ -68,6 +68,8 @@ const Counter: React.FC = () => {
   const { profile } = useAuth();
   const [online, setOnline] = useState(() => navigator.onLine);
   const [kits, setKits] = useState<Kit[]>([]);
+  // Accessoires à rappeler quand un outil sort (chargeur, batteries…)
+  const [accessories, setAccessories] = useState<{ equipment_id: string; accessory_id: string }[]>([]);
   const [badges, setBadges] = useState<Record<string, string>>({});
   const [queue, setQueue] = useState<CounterOperation[]>(loadQueue);
   const [syncing, setSyncing] = useState(false);
@@ -113,6 +115,7 @@ const Counter: React.FC = () => {
 
   useEffect(() => {
     supabase.from('kits').select('*, kit_items(*)').eq('active', true).then(({ data }) => { if (data) setKits(data as Kit[]); });
+    supabase.from('equipment_accessories').select('equipment_id, accessory_id').then(({ data }) => { if (data) setAccessories(data); });
     supabase.from('user_badges').select('user_id, code').then(({ data }) => {
       if (data) setBadges(Object.fromEntries(data.map(b => [String(b.code).toLowerCase(), b.user_id as string])));
     });
@@ -325,6 +328,11 @@ const Counter: React.FC = () => {
     }
     addToCart(item, instance);
     toast.success(`Sortie : ${item.name}`);
+    const reminders = accessories
+      .filter(a => a.equipment_id === item.id && !cart.some(l => l.equipment.id === a.accessory_id))
+      .map(a => equipment.find(e => e.id === a.accessory_id)?.name)
+      .filter(Boolean);
+    if (reminders.length) toast(`Avec cet outil : ${reminders.join(', ')}`, { icon: '🔌', duration: 6000 });
   };
 
   const toolLines = cart.filter(l => l.equipment.itemType !== 'consumable');

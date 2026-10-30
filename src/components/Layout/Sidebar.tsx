@@ -33,7 +33,9 @@ import {
   ArrowLeftRight,
   MapPin,
   CalendarRange,
-  ShieldCheck
+  ShieldCheck,
+  Hammer,
+  Calculator
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -70,9 +72,11 @@ const NAV_SECTIONS = [
   { title: 'Suivi', links: [
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/entretien', label: 'Entretien', icon: Wrench },
+    { to: '/atelier', label: 'Atelier', icon: Hammer },
     { to: '/incidents', label: 'Pertes et casse', icon: AlertTriangle },
     { to: '/pilotage', label: 'Pilotage', icon: Gauge },
     { to: '/couts', label: 'Coûts', icon: Coins },
+    { to: '/comptabilite', label: 'Comptabilité', icon: Calculator },
     { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },
   ] },
   { title: 'Réglages', links: [

@@ -15,6 +15,7 @@ export interface CatalogProduct {
   specs: { spec: string; value: string }[];
   supplied_accessories: { sku: string; name: string; qty?: number }[];
   url: string | null;
+  price?: number | null;
 }
 
 export type CatalogRow = Omit<CatalogProduct, 'id' | 'supplier_id'>;
@@ -32,7 +33,23 @@ interface SourceProduct {
   supplied_accessories?: { sku: string; name: string; qty?: number }[];
   gallery_images?: string[];
   url?: string | null;
+  // Prix public si le fichier en contient un (selon l'export : price, price_chf, list_price, prix)
+  price?: number | string | null;
+  price_chf?: number | string | null;
+  list_price?: number | string | null;
+  prix?: number | string | null;
 }
+
+// « 1'249.00 », « 1249,00 CHF » → 1249 ; absent → undefined (le prix existant n'est pas effacé)
+export const parsePrice = (value: unknown): number | null | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  const cleaned = String(value).replace(/[^\d.,-]/g, '').replace(/'/g, '');
+  const normalized = cleaned.includes(',') && !cleaned.includes('.') ? cleaned.replace(',', '.') : cleaned.replace(/,/g, '');
+  const n = Number(normalized);
+  return Number.isFinite(n) && normalized !== '' ? n : undefined;
+};
+const priceOf = (p: SourceProduct) => parsePrice(p.price ?? p.price_chf ?? p.list_price ?? p.prix);
 
 const MACHINE_ROOT = 'MACHINES';
 const BATCH_SIZE = 250;
@@ -57,6 +74,7 @@ const toRow = (p: SourceProduct): CatalogRow => {
     specs: (p.specs ?? []).map(({ spec, value }) => ({ spec, value })),
     supplied_accessories: p.supplied_accessories ?? [],
     url: p.url ?? null,
+    ...(priceOf(p) !== undefined ? { price: priceOf(p) } : {}),
   };
 };
 

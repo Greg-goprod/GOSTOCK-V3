@@ -48,7 +48,13 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   purchasePrice: item.purchase_price === null || item.purchase_price === undefined ? undefined : Number(item.purchase_price),
   depotId: item.depot_id,
   requiredTrainingId: item.required_training_id ?? undefined,
-  requiresSignature: Boolean(item.requires_signature)
+  requiresSignature: Boolean(item.requires_signature),
+  purchaseDate: item.purchase_date,
+  warrantyUntil: item.warranty_until,
+  depreciationYears: item.depreciation_years,
+  isBattery: Boolean(item.is_battery),
+  batteryLifeMonths: item.battery_life_months,
+  batteryMaxUses: item.battery_max_uses
 });
 
 // Nombre de jours avant l'échéance à partir duquel un retour est signalé
@@ -110,6 +116,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.rpc('check_monthly_report'),
         supabase.rpc('check_training_rental_deadlines'),
         supabase.rpc('check_people_deadlines'),
+        supabase.rpc('check_equipment_deadlines'),
       ]);
 
       // Charger toutes les données nécessaires en parallèle

@@ -30,6 +30,9 @@ const KINDS = [
   { id: 'transfer', label: 'Transferts entre dépôts' },
   { id: 'ppe_renewal', label: 'EPI à renouveler' },
   { id: 'mission_end', label: 'Fins de mission (intérimaires)' },
+  { id: 'warranty_end', label: 'Fins de garantie' },
+  { id: 'repair_late', label: 'Réparations en retard' },
+  { id: 'battery_end', label: 'Batteries en fin de vie' },
 ];
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';

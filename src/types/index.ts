@@ -27,6 +27,12 @@ export interface Equipment {
   depotId?: string;
   requiredTrainingId?: string;
   requiresSignature?: boolean;
+  purchaseDate?: string | null;
+  warrantyUntil?: string | null;
+  depreciationYears?: number | null;
+  isBattery?: boolean;
+  batteryLifeMonths?: number | null;
+  batteryMaxUses?: number | null;
 }
 
 export interface Depot {

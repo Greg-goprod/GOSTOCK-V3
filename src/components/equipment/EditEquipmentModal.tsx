@@ -3,6 +3,9 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
 import TrainingSelect from '../trainings/TrainingSelect';
+import LifecycleFields from './LifecycleFields';
+import { EMPTY_LIFECYCLE, LifecycleValue, lifecycleFrom, lifecyclePayload } from '../../lib/lifecycle';
+import AccessoryLinks from './AccessoryLinks';
 
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -48,6 +51,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
     daily_rate: '',
     required_training_id: ''
   });
+  const [lifecycle, setLifecycle] = useState<LifecycleValue>(EMPTY_LIFECYCLE);
   const [quantityData, setQuantityData] = useState({
     qrType: 'individual' as 'individual' | 'batch',
     totalQuantity: 1
@@ -78,6 +82,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         daily_rate: equipment.dailyRate === undefined ? '' : String(equipment.dailyRate),
         required_training_id: equipment.requiredTrainingId ?? ''
       });
+      setLifecycle(lifecycleFrom(equipment));
       setCurrentQrType(equipment.qrType || 'individual');
       setOriginalQuantity(equipment.totalQuantity || 1);
       setQuantityData({
@@ -302,6 +307,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
         required_training_id: formData.required_training_id || null,
         requires_signature: formData.requires_signature,
+        ...lifecyclePayload(lifecycle),
         qr_type: quantityData.qrType,
         total_quantity: quantityData.totalQuantity
       };
@@ -594,6 +600,8 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                 </div>
                 <TrainingSelect id="eq-training" value={formData.required_training_id}
                   onChange={required_training_id => setFormData(prev => ({ ...prev, required_training_id }))} />
+                <LifecycleFields value={lifecycle} onChange={setLifecycle} />
+                <AccessoryLinks equipmentId={equipment.id} />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
