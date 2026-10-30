@@ -211,6 +211,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
   const handleFinalSubmit = async () => {
     setIsLoading(true);
     setIsGeneratingQRCodes(true);
+    let createdId: string | null = null;
 
     try {
       if (!supabase) {
@@ -251,6 +252,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         .single();
 
       if (equipmentError) throw equipmentError;
+      createdId = equipment.id;
 
       // Si c'est un équipement avec QR individuels, créer les instances
       if (quantityData.qrType === 'individual') {
@@ -318,6 +320,9 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'ajout du matériel';
       console.error('Error adding equipment:', error);
+      // Article créé mais exemplaires refusés : on l'annule, sinon il apparaîtrait à moitié créé
+      // au prochain rechargement et un nouvel essai ferait un doublon
+      if (createdId) await supabase.from('equipment').delete().eq('id', createdId);
       toast.error(errorMessage);
     } finally {
       setIsGeneratingQRCodes(false);
@@ -761,7 +766,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
           <Accordion
             title="CONFIGURATION QR CODES"
             icon={<QrCode size={18} className="text-primary-600 dark:text-primary-400" />}
-            defaultOpen={false}
+            defaultOpen
           >
             <div className="space-y-4">
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -847,31 +852,32 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                 </div>
               </div>
 
-              <div className="flex justify-between gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('basic')}
-                >
-                  Retour
-                </Button>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={handleFinalSubmit}
-                    disabled={isSubmitDisabled}
-                  >
-                    {getSubmitButtonText()}
-                  </Button>
-                </div>
-              </div>
             </div>
           </Accordion>
+          {/* Pied collant du drawer : toujours visible */}
+          <div className="mx-drawer-footer flex justify-between gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setStep('basic')}
+            >
+              Retour
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleFinalSubmit}
+                disabled={isSubmitDisabled}
+              >
+                {getSubmitButtonText()}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </Modal>

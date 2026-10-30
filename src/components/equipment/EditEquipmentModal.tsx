@@ -393,7 +393,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
           <Accordion
             title="INFORMATIONS DE BASE"
             icon={<Info size={18} className="text-primary-600 dark:text-primary-400" />}
-            defaultOpen={false}
+            defaultOpen
           >
             <form onSubmit={handleBasicSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -752,7 +752,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
           <Accordion
             title="CONFIGURATION QR CODES"
             icon={<QrCode size={18} className="text-primary-600 dark:text-primary-400" />}
-            defaultOpen={false}
+            defaultOpen
           >
             <div className="space-y-4">
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -871,31 +871,32 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                 </div>
               )}
 
-              <div className="flex justify-between gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('basic')}
-                >
-                  Retour
-                </Button>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={handleFinalSubmit}
-                    disabled={isLoading || isGeneratingQRCodes}
-                  >
-                    {isGeneratingQRCodes ? 'Génération des QR codes...' : isLoading ? 'Modification en cours...' : 'Modifier le matériel'}
-                  </Button>
-                </div>
-              </div>
             </div>
           </Accordion>
+          {/* Pied collant du drawer : toujours visible */}
+          <div className="mx-drawer-footer flex justify-between gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setStep('basic')}
+            >
+              Retour
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleFinalSubmit}
+                disabled={isLoading || isGeneratingQRCodes}
+              >
+                {isGeneratingQRCodes ? 'Génération des QR codes...' : isLoading ? 'Modification en cours...' : 'Modifier le matériel'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </Modal>

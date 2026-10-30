@@ -345,6 +345,8 @@ export function MxCalendarGrid({
                   boxShadow: filled ? 'var(--mx-shadow)' : 'none',
                   outline: isFocused ? '2px solid var(--mx-accent)' : 'none',
                   outlineOffset: 1,
+                  // Jours du mois précédent / suivant nettement estompés (rapport de tests P17)
+                  opacity: otherMonth && !filled ? 0.4 : 1,
                 }}
               >
                 {date.getDate()}

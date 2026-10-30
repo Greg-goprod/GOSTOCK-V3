@@ -80,7 +80,7 @@ const SiteMap: React.FC = () => {
         ${here.length > 12 ? `<p style="margin:2px 0 0">+ ${here.length - 12} autre(s)</p>` : ''}`;
       L.circleMarker([site.latitude!, site.longitude!], { radius: here.length ? 11 : 7, color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.95 })
         .bindTooltip(site.name)
-        .bindPopup(popup, { maxWidth: 320 })
+        .bindPopup(popup, { maxWidth: 320, autoPanPadding: [24, 80] })
         .addTo(layer.current);
     }
     if (placed.length) {

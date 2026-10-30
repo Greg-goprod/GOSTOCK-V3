@@ -20,6 +20,7 @@ import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib
 import { RequestItemRow, RequestOverview, RequestStatus } from '../types';
 import { DateTimeInput } from '../components/common/DateInput';
 import { promptAction } from '../lib/confirm';
+import SiteNotice from '../components/common/SiteNotice';
 
 type Filter = 'todo' | 'approve' | 'out' | 'all';
 
@@ -457,7 +458,9 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
             {forOthers ? (
               <select id="req-user" value={requesterId} onChange={e => setRequesterId(e.target.value)} className={inputClass} required>
                 <option value="">— Choisir une personne —</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
+                {/* Personnes actives et dont l'accès court encore (pas les départs ni les missions terminées) */}
+                {users.filter(u => u.active !== false && (!u.accessUntil || u.accessUntil >= new Date().toISOString().slice(0, 10)))
+                  .map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
               </select>
             ) : (
               <input id="req-user" value={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`} className={inputClass} readOnly />
@@ -467,6 +470,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
             <label htmlFor="req-dest" className={labelClass}>Chantier ou service</label>
             <input id="req-dest" list="req-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
             <datalist id="req-dest-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
+            <SiteNotice value={destination} />
           </div>
           <div>
             <label htmlFor="req-start" className={labelClass}>Du</label>
@@ -596,7 +600,6 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
   const decider = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim();
   const [decisionNote, setDecisionNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const [prepared, setPrepared] = useState<Record<string, boolean>>({});
   const [issuing, setIssuing] = useState(false);
   const vehicleItem = items.find(i => i.item_kind === 'vehicle');
   const vehicle = vehicles.find(v => v.id === vehicleItem?.vehicle_id);
@@ -680,7 +683,18 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
     }
   };
 
-  // Préparation : le magasinier scanne chaque article de la demande
+  // Préparation enregistrée en base : on peut préparer le soir et sortir le matin
+  const savePreparation = async (item: RequestItemRow, isPrepared: boolean, instanceIds: string[]) => {
+    const { error } = await supabase.rpc('set_request_preparation', { p_item_id: item.id, p_prepared: isPrepared, p_instance_ids: instanceIds });
+    if (error) {
+      toast.error(errorMessage(error));
+      return false;
+    }
+    setItems(prev => prev.map(i => (i.id === item.id ? { ...i, prepared: isPrepared, prepared_instance_ids: instanceIds } : i)));
+    return true;
+  };
+
+  // Préparation : le magasinier scanne chaque article ; pour un outil suivi un par un, chaque exemplaire scanné est celui qui sortira
   const onScan = async (code: string) => {
     try {
       const found = await findEquipmentByCode(code);
@@ -689,8 +703,26 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
         toast.error(found ? `${found.equipment.name} ne fait pas partie de cette demande` : `Code inconnu : ${code}`);
         return;
       }
-      setPrepared(prev => ({ ...prev, [match.id]: true }));
-      toast.success(`${found!.equipment.name} préparé`);
+      const name = found!.equipment.name;
+      const instance = found!.instance;
+      if (!instance) {
+        if (await savePreparation(match, true, match.prepared_instance_ids ?? [])) toast.success(`${name} préparé`);
+        return;
+      }
+      const ids = match.prepared_instance_ids ?? [];
+      const needed = Math.ceil(match.quantity);
+      if (ids.includes(instance.id)) {
+        toast(`${instance.qr_code} est déjà scanné`);
+        return;
+      }
+      if (ids.length >= needed) {
+        toast.error(`${name} : les ${needed} exemplaire(s) demandés sont déjà scannés`);
+        return;
+      }
+      const next = [...ids, instance.id];
+      if (await savePreparation(match, next.length >= needed, next)) {
+        toast.success(next.length >= needed ? `${name} préparé` : `${name} : ${next.length} / ${needed} exemplaire(s) scanné(s)`);
+      }
     } catch (error) {
       toast.error(errorMessage(error));
     }
@@ -701,7 +733,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
     const item = i.item_kind === 'tool' ? equipment.find(e => e.id === i.equipment_id) : undefined;
     return item ? needsSignature(item) : false;
   });
-  const allPrepared = articleLines.every(i => prepared[i.id]);
+  const allPrepared = articleLines.every(i => i.prepared);
   // Préparer et sortir : le magasin uniquement (le collaborateur ne scanne jamais)
   const canIssue = can('scan') && ['approved', 'ready'].includes(request.status);
   const canCancelOwn = isOwner && !can('scan') && request.status === 'approved';
@@ -741,7 +773,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
           <div className="flex justify-between items-baseline mb-2">
             <h3 className="font-semibold text-gray-900 dark:text-white">Contenu</h3>
             {canIssue && articleLines.length > 0 && (
-              <span className="text-sm text-gray-600 dark:text-gray-400">{articleLines.filter(i => prepared[i.id]).length} / {articleLines.length} préparé(s)</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{articleLines.filter(i => i.prepared).length} / {articleLines.length} préparé(s)</span>
             )}
           </div>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -751,16 +783,19 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
                   {canIssue && i.item_kind !== 'vehicle' ? (
                     <button
                       type="button"
-                      onClick={() => setPrepared(prev => ({ ...prev, [i.id]: !prev[i.id] }))}
-                      aria-label={prepared[i.id] ? `${itemName(i)} préparé` : `Marquer ${itemName(i)} comme préparé`}
+                      onClick={() => savePreparation(i, !i.prepared, i.prepared ? [] : i.prepared_instance_ids ?? [])}
+                      aria-label={i.prepared ? `${itemName(i)} préparé` : `Marquer ${itemName(i)} comme préparé`}
                       className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center"
                     >
-                      {prepared[i.id]
+                      {i.prepared
                         ? <CheckCircle2 size={20} className="text-success-600 dark:text-success-400" />
                         : <Circle size={20} className="text-gray-400" />}
                     </button>
                   ) : i.item_kind === 'vehicle' ? <Truck size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" /> : null}
                   <span className="text-sm text-gray-900 dark:text-gray-100">{itemName(i)}</span>
+                  {canIssue && (i.prepared_instance_ids?.length ?? 0) > 0 && (
+                    <span className="text-xs text-gray-600 dark:text-gray-400">{`${i.prepared_instance_ids!.length} exemplaire(s) scanné(s)`}</span>
+                  )}
                 </div>
                 <span className="font-mono text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   {i.item_kind === 'vehicle' ? '' : `${i.quantity} ${itemUnit(i) ?? ''}`}

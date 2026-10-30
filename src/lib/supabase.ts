@@ -91,10 +91,9 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
 
     // Test de connectivité réseau d'abord
     try {
-      // La racine /rest/v1/ n'est plus accessible avec la clé anon (HTTP 401) : on teste une table publique
-      const healthCheckUrl = `${supabaseUrl}/rest/v1/status_configs?select=id&limit=1`;
+      // Point de santé du service de connexion : répond sans être connecté (les tables, elles, renvoient 401)
+      const healthCheckUrl = `${supabaseUrl}/auth/v1/health`;
       const healthResponse = await fetch(healthCheckUrl, {
-        method: 'HEAD',
         headers: {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${supabaseAnonKey}`,
@@ -214,13 +213,4 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
   }
 };
 
-// Test de connexion au chargement (uniquement en développement)
-if (import.meta.env.DEV && isSupabaseConfigured) {
-  testSupabaseConnection().then(result => {
-    if (result.success) {
-      console.log('🎉 Supabase connecté avec succès en mode développement');
-    } else {
-      console.warn('⚠️ Problème de connexion Supabase en développement:', result.error);
-    }
-  });
-}
+// Pas de test au chargement : avant la connexion, la base refuse les lectures (401 inutile dans la console)

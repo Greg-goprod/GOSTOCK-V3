@@ -123,6 +123,9 @@ export interface RequestItemRow {
   equipment_id?: string;
   vehicle_id?: string;
   quantity: number;
+  // Préparation enregistrée par le magasin (exemplaires scannés pour les outils suivis un par un)
+  prepared?: boolean;
+  prepared_instance_ids?: string[];
 }
 
 export interface StockNotification {

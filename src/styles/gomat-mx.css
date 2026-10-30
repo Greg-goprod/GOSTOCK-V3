@@ -274,6 +274,7 @@ label.block {
 }
 
 /* Pied de formulaire collant dans les drawers : les boutons restent visibles en bas du panneau */
+[role='dialog'] [data-mx-scroll] .mx-drawer-footer,
 [role='dialog'] [data-mx-scroll] form > div:last-child:has(> button[type='submit']),
 [role='dialog'] [data-mx-scroll] form > div:last-child:has(button[type='submit']):not(:has(input, select, textarea)) {
   position: sticky;

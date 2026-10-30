@@ -54,11 +54,28 @@ const outOfRange = (value: string, min?: string, max?: string) => {
   return false;
 };
 
-// Champ caché qui porte « required » et l'id du label : le formulaire refuse l'envoi si la date manque
-const Anchor: React.FC<{ id?: string; value: string; required?: boolean }> = ({ id, value, required }) => (
-  <input id={id} tabIndex={-1} aria-hidden="true" value={value} required={required} onChange={() => {}}
-    className="sr-only" style={{ pointerEvents: 'none' }} />
-);
+// Champ caché qui porte « required » et l'id du label : le formulaire refuse l'envoi si la date manque.
+// Le navigateur ne peut pas afficher sa bulle sur un champ caché : on montre le message sous le sélecteur.
+const Anchor: React.FC<{ id?: string; value: string; required?: boolean }> = ({ id, value, required }) => {
+  const [missing, setMissing] = React.useState(false);
+  React.useEffect(() => {
+    if (value) setMissing(false);
+  }, [value]);
+  return (
+    <>
+      <input id={id} tabIndex={-1} aria-hidden="true" value={value} required={required} onChange={() => {}}
+        onInvalid={event => {
+          event.preventDefault();
+          setMissing(true);
+          event.currentTarget.parentElement?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }}
+        className="sr-only" style={{ pointerEvents: 'none' }} />
+      {missing && (
+        <p role="alert" className="mt-1 text-[12.5px] font-medium text-danger-600 dark:text-danger-400">Ce champ est obligatoire.</p>
+      )}
+    </>
+  );
+};
 
 const DateInput: React.FC<FieldProps> = ({ id, value, onChange, min, max, required, disabled, className, 'aria-label': ariaLabel }) => (
   <div className={`relative ${className?.includes('w-auto') ? '' : 'w-full'}`}>

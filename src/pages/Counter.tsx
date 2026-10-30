@@ -21,6 +21,7 @@ import { errorMessage, toLocalInput } from '../lib/requests';
 import { CheckoutRecord, Equipment, EquipmentInstance, User } from '../types';
 import { DateTimeInput } from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
+import SiteNotice from '../components/common/SiteNotice';
 
 type Mode = 'auto' | 'out' | 'in';
 
@@ -290,8 +291,14 @@ const Counter: React.FC = () => {
       } else {
         userId = badgeMap[code] ?? null;
       }
-      const user = users.find(u => u.id === userId);
-      if (!user) throw new Error('Badge inconnu ou accès suspendu');
+      let user = users.find(u => u.id === userId);
+      // Personne créée depuis l'ouverture du comptoir : on la lit directement, puis on rafraîchit les listes
+      if (!user && userId) {
+        const { data: row } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+        if (row) user = { ...row, dateCreated: row.created_at } as User;
+        void app.refreshData();
+      }
+      if (!user) throw new Error(userId ? 'Personne introuvable' : 'Badge inconnu, accès suspendu ou personne partie');
       selectPerson(user);
       toast.success(`${user.first_name} ${user.last_name}`);
       return;
@@ -708,6 +715,7 @@ const Counter: React.FC = () => {
                 <label htmlFor="counter-dest" className={labelClass}>Chantier ou service</label>
                 <input id="counter-dest" list="counter-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
             <datalist id="counter-dest-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
+            <SiteNotice value={destination} />
               </div>
               {consumableLines.length > 0 && (
                 <div>

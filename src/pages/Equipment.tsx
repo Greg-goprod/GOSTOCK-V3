@@ -16,6 +16,10 @@ import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, Edit, Trash2, Download, U
 import EquipmentHistoryModal from '../components/equipment/EquipmentHistoryModal';
 import { Equipment as EquipmentType, EquipmentInstance } from '../types';
 import StatusBadge from '../components/common/StatusBadge';
+import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
+import { errorMessage } from '../lib/requests';
+import { confirmAction } from '../lib/confirm';
 
 export default function Equipment() {
   const {
@@ -140,15 +144,27 @@ export default function Equipment() {
     setShowDeleteModal(true);
   };
 
+  // Un outil avec un historique de sorties ne peut pas être supprimé (la base le refuse) : on propose de le retirer du service
   const confirmDelete = async () => {
     if (!selectedEquipment) return;
+    const id = selectedEquipment;
+    setShowDeleteModal(false);
+    setSelectedEquipment(null);
+    const { count } = await supabase.from('checkouts').select('id', { count: 'exact', head: true }).eq('equipment_id', id);
+    if (count) {
+      const name = equipment.find(e => e.id === id)?.name ?? 'Cet outil';
+      if (!await confirmAction(`${name} a un historique de ${count} sortie(s) : il ne peut pas être supprimé. Le retirer du service à la place ? Il n'apparaîtra plus comme disponible, son historique est conservé.`)) return;
+      const { error } = await supabase.from('equipment').update({ status: 'retired' }).eq('id', id);
+      if (error) return toast.error(errorMessage(error));
+      toast.success(`${name} retiré du service`);
+      await refreshData();
+      return;
+    }
     try {
-      await deleteEquipment(selectedEquipment);
+      await deleteEquipment(id);
     } catch {
       // Message déjà affiché par deleteEquipment
     }
-    setShowDeleteModal(false);
-    setSelectedEquipment(null);
   };
 
   const handleMaintenance = (equipmentId: string) => {

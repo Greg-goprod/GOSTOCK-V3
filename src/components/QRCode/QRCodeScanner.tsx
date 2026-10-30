@@ -13,6 +13,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
   const [isProcessing, setIsProcessing] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [lastScanStatus, setLastScanStatus] = useState<'success' | 'error' | 'duplicate' | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const lastScanTimeRef = useRef<number>(0);
@@ -85,6 +86,8 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
     } catch (error: unknown) {
       console.error('❌ Erreur scan:', error);
       setLastScanStatus('error');
+      // Motif affiché à l'écran (badge inconnu, accès suspendu, article introuvable…)
+      setLastError(error instanceof Error ? error.message : null);
       if (onError) {
         const errorMessage = error instanceof Error ? error.message : 'Erreur lors du traitement du scan';
         onError(errorMessage);
@@ -130,7 +133,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
   const getStatusMessage = () => {
     if (isProcessing) return 'Traitement en cours...';
     if (lastScanStatus === 'success') return 'Scan réussi !';
-    if (lastScanStatus === 'error') return 'Erreur de scan';
+    if (lastScanStatus === 'error') return lastError ? `Erreur de scan : ${lastError}` : 'Erreur de scan';
     if (lastScanStatus === 'duplicate') return 'Doublon ignoré';
     if (scannedValue) return 'Appuyez sur Entrée pour valider';
     return 'Prêt pour le scan...';

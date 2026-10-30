@@ -66,11 +66,11 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
     const qr = instanceId ? equipmentInstances.find(i => i.id === instanceId)?.qrCode : undefined;
     return qr ? `${name} · ${qr}` : name;
   };
-  const remaining = held.length + ppe.length + rentals.length;
   const fullName = `${user.first_name} ${user.last_name}`;
   const chf = (n: number) => n.toLocaleString('fr-CH', { style: 'currency', currency: 'CHF' });
-  // Caution versée et pas encore rendue : à rembourser à la personne au départ
+  // Caution versée et pas encore rendue : à rembourser à la personne au départ (compte comme un point à régler)
   const depositDue = user.depositAmount && user.depositAmount > 0 && !depositReturned ? user.depositAmount : 0;
+  const remaining = held.length + ppe.length + rentals.length + (depositDue ? 1 : 0);
 
   const returnDeposit = async () => {
     const { error } = await supabase.from('users').update({ deposit_returned_on: today() }).eq('id', user.id);
@@ -106,7 +106,12 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
   };
 
   const close = async () => {
-    if (remaining > 0 && !await confirmAction(`${remaining} élément(s) ne sont pas rendus. Clôturer quand même ? Ils resteront au nom de ${fullName}.`)) return;
+    const items = held.length + ppe.length + rentals.length;
+    const open = [
+      items ? `${items} élément(s) ne sont pas rendus : ils resteront au nom de ${fullName}.` : '',
+      depositDue ? `La caution de ${chf(depositDue)} n'est pas remboursée.` : '',
+    ].filter(Boolean).join('\n');
+    if (open && !await confirmAction(`Clôturer le départ quand même ?\n${open}`)) return;
     setBusy(true);
     const { error } = await supabase.from('users').update({ active: false, left_on: leftOn }).eq('id', user.id);
     setBusy(false);
@@ -120,7 +125,9 @@ const DepartureModal: React.FC<DepartureModalProps> = ({ user, onClose }) => {
     <Modal isOpen onClose={onClose} title={`Départ de ${fullName}`} size="lg">
       <div className="space-y-4">
         <p className={`text-sm font-semibold ${remaining ? 'text-warning-700 dark:text-warning-300' : 'text-success-700 dark:text-success-300'}`}>
-          {remaining ? `${remaining} élément${remaining > 1 ? 's' : ''} à rendre avant le départ` : 'Rien à rendre : le départ peut être clôturé.'}
+          {remaining
+            ? `${remaining} point${remaining > 1 ? 's' : ''} à régler avant le départ${depositDue ? ` (dont la caution de ${chf(depositDue)} à rembourser)` : ''}`
+            : 'Tout est réglé : le départ peut être clôturé.'}
         </p>
 
         {held.length > 0 && (

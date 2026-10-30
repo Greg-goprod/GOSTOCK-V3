@@ -11,6 +11,7 @@ import DepartureModal from '../components/users/DepartureModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { User } from '../types';
 import { ROLE_LABELS } from '../lib/roles';
+import { badgeValue } from '../lib/badges';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,8 @@ const Users: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  // Code du badge de la personne affichée (undefined : en chargement, null : pas de badge)
+  const [badgeCode, setBadgeCode] = useState<string | null | undefined>(undefined);
   const [showQRModal, setShowQRModal] = useState(false);
   const [sortField, setSortField] = useState<SortField>('first_name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -122,9 +125,13 @@ const Users: React.FC = () => {
     }
   };
 
-  const handleShowQR = (id: string) => {
+  // Le QR affiché est celui du badge (« GOMAT-USER:<code> »), lu par le comptoir et le scanner
+  const handleShowQR = async (id: string) => {
     setSelectedUser(id);
+    setBadgeCode(undefined);
     setShowQRModal(true);
+    const { data } = await supabase.from('user_badges').select('code').eq('user_id', id).maybeSingle();
+    setBadgeCode(data?.code ?? null);
   };
 
   const handleSort = (field: SortField) => {
@@ -497,10 +504,14 @@ const Users: React.FC = () => {
         title="QR CODE UTILISATEUR"
         size="sm"
       >
-        {selectedUser && (
+        {selectedUser && badgeCode === undefined && <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p>}
+        {selectedUser && badgeCode === null && (
+          <p className="text-sm text-gray-700 dark:text-gray-300">Aucun badge trouvé pour cette personne. Ouvrez sa fiche « Mon badge » ou « Imprimer les badges » pour en créer un.</p>
+        )}
+        {selectedUser && badgeCode && (
           <div className="flex justify-center">
             <QRCodeGenerator
-              value={selectedUser}
+              value={badgeValue(badgeCode)}
               title={users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || ''}
               subtitle={users.find(u => u.id === selectedUser)?.department}
               size={200}
