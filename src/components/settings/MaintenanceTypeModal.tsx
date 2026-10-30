@@ -125,7 +125,7 @@ const MaintenanceTypeModal: React.FC<MaintenanceTypeModalProps> = ({ isOpen, onC
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"

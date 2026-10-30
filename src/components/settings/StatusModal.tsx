@@ -144,7 +144,7 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"

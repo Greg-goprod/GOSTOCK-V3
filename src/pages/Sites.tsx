@@ -225,7 +225,7 @@ const Sites: React.FC = () => {
                   <h2 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <HardHat size={18} aria-hidden="true" className="shrink-0 text-primary-600" />
                     <span className="truncate">{site.name}</span>
-                    {site.status === 'closed' && <span className="rounded-full bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:text-gray-300">Clôturé</span>}
+                    {site.status === 'closed' && <span className="rounded bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-[11px] font-bold text-gray-700 dark:text-gray-300">Clôturé</span>}
                   </h2>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
                     {[site.client, site.address, name(site.manager_id) && `resp. ${name(site.manager_id)}`].filter(Boolean).join(' · ') || 'Aucun détail'}

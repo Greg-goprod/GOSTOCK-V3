@@ -115,9 +115,15 @@ if (!checkEnvironmentVariables()) {
               position="top-right"
               toastOptions={{
                 duration: 4000,
+                // Notifications de la charte Mannyx : surface, filet, ombre « modale »
                 style: {
-                  background: '#363636',
-                  color: '#fff',
+                  background: 'var(--mx-surface)',
+                  color: 'var(--mx-text)',
+                  border: '1.5px solid var(--mx-border)',
+                  borderRadius: '6px',
+                  boxShadow: 'var(--mx-shadow-lg)',
+                  fontSize: '13px',
+                  fontWeight: 500,
                 },
               }}
             />

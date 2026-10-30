@@ -225,3 +225,73 @@ input[type='radio'] {
     transition: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Carte (catalogue MX .card) : surface, filet 1px, rayon 6px, élévation 2
+   -------------------------------------------------------------------------- */
+.mx-card {
+  background: var(--mx-surface);
+  border: 1px solid var(--mx-border);
+  border-radius: 6px;
+  box-shadow: var(--mx-shadow);
+}
+
+/* --------------------------------------------------------------------------
+   Tableaux (catalogue MX) : en-tête --surface2 en petites capitales, lignes à
+   filet, survol teinté accent. Imposé sur toutes les pages de l'application.
+   -------------------------------------------------------------------------- */
+main table thead th {
+  background: var(--mx-surface2) !important;
+  color: var(--mx-text3) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+main table tbody td {
+  font-size: 13px;
+  border-top: 1px solid var(--mx-border);
+}
+main table tbody tr {
+  transition: background-color 0.12s;
+}
+main table tbody tr:hover > td {
+  background: rgba(var(--mx-accent-rgb), 0.04);
+}
+
+/* --------------------------------------------------------------------------
+   Formulaires : libellé de champ 12.5px/600 --text2, focus accent + halo 3px
+   -------------------------------------------------------------------------- */
+label.block {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mx-text2);
+}
+:where(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea):focus {
+  border-color: var(--mx-accent) !important;
+  box-shadow: 0 0 0 3px rgba(var(--mx-accent-rgb), 0.1);
+  outline: none;
+}
+
+/* Pied de formulaire collant dans les drawers : les boutons restent visibles en bas du panneau */
+[role='dialog'] [data-mx-scroll] form > div:last-child:has(> button[type='submit']),
+[role='dialog'] [data-mx-scroll] form > div:last-child:has(button[type='submit']):not(:has(input, select, textarea)) {
+  position: sticky;
+  bottom: calc(-1 * var(--mx-space-8, 8px));
+  margin-inline: calc(-1 * var(--mx-space-24, 24px));
+  margin-bottom: calc(-1 * var(--mx-space-8, 8px));
+  padding: 16px var(--mx-space-24, 24px);
+  background: var(--mx-surface);
+  border-top: 1.5px solid var(--mx-border);
+  z-index: 1;
+}
+
+/* Titres de bloc (h2/h3 des pages) : approche serrée de la charte */
+main :where(h2, h3) {
+  letter-spacing: -0.02em;
+}
+
+/* Boutons de la charte : jamais en capitales forcées */
+.mx-btn {
+  text-transform: none;
+}

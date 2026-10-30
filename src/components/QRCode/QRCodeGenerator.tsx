@@ -416,7 +416,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           onClick={handlePrint}
           className="mt-4 font-bold"
         >
-          IMPRIMER ÉTIQUETTE
+          Imprimer étiquette
         </Button>
       )}
     </div>

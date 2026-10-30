@@ -13,7 +13,7 @@ import Consumables from './pages/Consumables';
 import OrderSheet from './pages/OrderSheet';
 import Requests from './pages/Requests';
 import Vehicles from './pages/Vehicles';
-import Today from './pages/Today';
+import HomePage from './pages/Home';
 import Counter from './pages/Counter';
 import MyBadge from './pages/MyBadge';
 import BadgePrint from './pages/BadgePrint';
@@ -60,11 +60,8 @@ const BareGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return canAccess(pathname, can) ? <>{children}</> : <Navigate to="/" replace />;
 };
 
-// L'accueil « Aujourd'hui » sert le magasin ; un collaborateur arrive sur ses demandes
-const Home: React.FC = () => {
-  const { can } = useAuth();
-  return canAccess('/', can) ? <MainLayout><Today /></MainLayout> : <Navigate to="/demandes" replace />;
-};
+// Accueil adapté au rôle (actions rapides du magasinier, du responsable, du collaborateur)
+const Home: React.FC = () => <MainLayout><HomePage /></MainLayout>;
 
 function App() {
   return (

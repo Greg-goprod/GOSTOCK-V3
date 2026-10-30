@@ -503,7 +503,7 @@ export default function Equipment() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Équipements</h1>
+        <h1 className="mx-page-title">Outils</h1>
         <div className="flex flex-wrap gap-2">
           {canManage && (
             <Button

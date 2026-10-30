@@ -230,7 +230,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"

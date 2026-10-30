@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Users, CalendarClock, Bell, Settings, ScanLine, Droplets, ClipboardList, Inbox, Truck,
   BarChart3, ScanBarcode, Contact, Tags, Wrench, AlertTriangle, ListChecks, ShoppingCart, Coins, Gauge, History,
   HardHat, Map as MapIcon, Briefcase, GraduationCap, KeyRound, ArrowLeftRight, MapPin, CalendarRange, ShieldCheck,
-  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Boxes, Activity, Building2, Sun,
+  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse,
 } from 'lucide-react';
 
 export interface NavLinkItem {
@@ -21,58 +21,70 @@ export interface NavSpace {
   links: NavLinkItem[];
 }
 
-// Navigation en 5 espaces (rail + liste de l'espace) : 42 pages rangées par usage
+// Navigation par métier : un espace par domaine (rail) et ses pages (liste de l'espace).
+// Un espace d'une seule page s'ouvre directement depuis le rail.
 export const NAV_SPACES: NavSpace[] = [
-  { id: 'daily', label: 'Quotidien', short: 'Quotidien', icon: Sun, links: [
-    { to: '/', label: "Aujourd'hui", icon: LayoutDashboard },
-    { to: '/comptoir', label: 'Comptoir', icon: ScanBarcode },
-    { to: '/demandes', label: 'Demandes', icon: Inbox },
-    { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
-    { to: '/scan', label: 'Scanner', icon: ScanLine },
+  { id: 'home', label: 'Accueil', short: 'Accueil', icon: Home, links: [
+    { to: '/', label: 'Accueil', icon: LayoutDashboard },
     { to: '/recherche', label: 'Recherche', icon: Search },
-    { to: '/libre-service', label: 'Libre-service', icon: Hand },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/badge', label: 'Mon badge', icon: Contact },
   ] },
-  { id: 'field', label: 'Chantiers & flotte', short: 'Chantiers', icon: HardHat, links: [
-    { to: '/chantiers', label: 'Chantiers', icon: HardHat },
-    { to: '/carte', label: 'Carte', icon: MapIcon },
-    { to: '/planning', label: 'Planning', icon: CalendarRange },
-    { to: '/vehicules', label: 'Véhicules', icon: Truck },
-    { to: '/locations', label: 'Locations', icon: KeyRound },
-  ] },
-  { id: 'stock', label: 'Stock', short: 'Stock', icon: Boxes, links: [
-    { to: '/equipment', label: 'Outils', icon: Package },
-    { to: '/consommables', label: 'Consommables', icon: Droplets },
-    { to: '/kits', label: 'Kits', icon: Briefcase },
-    { to: '/inventaire', label: 'Inventaire', icon: ListChecks },
+  { id: 'store', label: 'Magasin', short: 'Magasin', icon: Warehouse, links: [
+    { to: '/comptoir', label: 'Comptoir', icon: ScanBarcode },
+    { to: '/scan', label: 'Scanner', icon: ScanLine },
+    { to: '/demandes', label: 'Demandes', icon: Inbox },
+    { to: '/checkouts', label: 'Sorties', icon: CalendarClock },
+    { to: '/libre-service', label: 'Libre-service', icon: Hand },
     { to: '/transferts', label: 'Transferts', icon: ArrowLeftRight },
     { to: '/emplacements', label: 'Emplacements', icon: MapPin },
-    { to: '/commande', label: 'À commander', icon: ClipboardList },
-    { to: '/commandes', label: 'Commandes', icon: ShoppingCart },
-    { to: '/prevision', label: "Prévision d'achat", icon: TrendingUp },
-    { to: '/etiquettes', label: 'Étiquettes', icon: Tags },
+    { to: '/inventaire', label: 'Inventaire', icon: ListChecks },
+    { to: '/ecran', label: 'Écran du magasin', icon: MonitorPlay },
   ] },
-  { id: 'follow', label: 'Suivi', short: 'Suivi', icon: Activity, links: [
-    { to: '/notifications', label: 'Notifications', icon: Bell },
+  { id: 'tools', label: 'Matériel', short: 'Matériel', icon: Package, links: [
+    { to: '/equipment', label: 'Outils', icon: Package },
+    { to: '/kits', label: 'Kits', icon: Briefcase },
     { to: '/entretien', label: 'Entretien', icon: Wrench },
     { to: '/atelier', label: 'Atelier', icon: Hammer },
     { to: '/incidents', label: 'Pertes et casse', icon: AlertTriangle },
+    { to: '/etiquettes', label: 'Étiquettes', icon: Tags },
+  ] },
+  { id: 'supplies', label: 'Consommables', short: 'Consom.', icon: Droplets, links: [
+    { to: '/consommables', label: 'Consommables', icon: Droplets },
+    { to: '/commande', label: 'À commander', icon: ClipboardList },
+    { to: '/commandes', label: 'Commandes', icon: ShoppingCart },
+    { to: '/prevision', label: "Prévision d'achat", icon: TrendingUp },
+  ] },
+  { id: 'fleet', label: 'Véhicules', short: 'Véhicules', icon: Truck, links: [
+    { to: '/vehicules', label: 'Véhicules', icon: Truck },
+  ] },
+  { id: 'sites', label: 'Chantiers', short: 'Chantiers', icon: HardHat, links: [
+    { to: '/chantiers', label: 'Chantiers', icon: HardHat },
+    { to: '/carte', label: 'Carte', icon: MapIcon },
+    { to: '/planning', label: 'Planning', icon: CalendarRange },
+    { to: '/locations', label: 'Locations', icon: KeyRound },
+  ] },
+  { id: 'people', label: 'Personnes', short: 'Personnes', icon: Users, links: [
+    { to: '/users', label: 'Personnes', icon: Users },
+    { to: '/formations', label: 'Formations', icon: GraduationCap },
+    { to: '/epi', label: 'EPI', icon: ShieldCheck },
+  ] },
+  { id: 'steering', label: 'Pilotage', short: 'Pilotage', icon: Gauge, links: [
     { to: '/pilotage', label: 'Pilotage', icon: Gauge },
     { to: '/tableau-de-bord', label: 'Statistiques', icon: BarChart3 },
     { to: '/couts', label: 'Coûts', icon: Coins },
     { to: '/comptabilite', label: 'Comptabilité', icon: Calculator },
-    { to: '/ecran', label: 'Écran du magasin', icon: MonitorPlay },
-  ] },
-  { id: 'admin', label: 'Administration', short: 'Admin', icon: Building2, links: [
-    { to: '/users', label: 'Personnes', icon: Users },
-    { to: '/formations', label: 'Formations', icon: GraduationCap },
-    { to: '/epi', label: 'EPI', icon: ShieldCheck },
     { to: '/journal', label: 'Journal', icon: History },
+  ] },
+  { id: 'settings', label: 'Réglages', short: 'Réglages', icon: Settings, links: [
+    { to: '/settings', label: 'Paramètres', icon: Settings },
     { to: '/donnees', label: 'Santé des données', icon: Stethoscope },
     { to: '/demarrage', label: 'Démarrage', icon: Rocket },
-    { to: '/settings', label: 'Paramètres', icon: Settings },
   ] },
 ];
+
+// Espaces rangés en bas du rail (réglages)
+export const BOTTOM_SPACES = ['settings'];
 
 // Pages hors menu, pour le fil d'Ariane
 const EXTRA_TITLES: Record<string, string> = {
@@ -95,4 +107,4 @@ export function locate(path: string): { space?: NavSpace; link?: NavLinkItem; ti
 }
 
 // Raccourcis de la barre du bas sur téléphone, dans l'ordre de préférence (les 4 premiers accessibles)
-export const MOBILE_SHORTCUTS = ['/', '/comptoir', '/demandes', '/scan', '/recherche', '/badge'];
+export const MOBILE_SHORTCUTS = ['/', '/scan', '/comptoir', '/demandes', '/badge', '/recherche'];

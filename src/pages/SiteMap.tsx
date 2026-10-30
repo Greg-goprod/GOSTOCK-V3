@@ -24,8 +24,8 @@ interface OpenItem {
 }
 
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-// Couleurs des pastilles : retard, matériel sur place, rien sur place
-const COLORS = { late: '#dc2626', items: '#ea580c', empty: '#6b7280' };
+// Couleurs des pastilles (tons MX) : danger = retard, bandeau ambre = matériel sur place, texte tertiaire = rien
+const COLORS = { late: '#d6273d', items: '#f0b429', empty: '#82858f' };
 
 // Où est mon matériel : chaque chantier sur la carte, avec ce qui s'y trouve encore
 const SiteMap: React.FC = () => {

@@ -266,7 +266,7 @@ export default function Checkouts() {
                     onClick={() => handleOpenReturnModal(deliveryNote)}
                     icon={<Eye size={16} />}
                   >
-                    DÉTAILS / RETOUR
+                    Détails / retour
                   </Button>
                 </div>
               </div>
@@ -383,7 +383,7 @@ export default function Checkouts() {
                           onClick={() => handleOpenReturnModal(deliveryNote)}
                           icon={<Eye size={14} />}
                         >
-                          DÉTAILS / RETOUR
+                          Détails / retour
                         </Button>
                       </td>
                     </tr>
@@ -517,7 +517,7 @@ export default function Checkouts() {
                                 })}
                                 icon={<CornerDownLeft size={14} />}
                               >
-                                RETOURNER
+                                Retourner
                               </Button>
                             )}
                           </div>
@@ -541,8 +541,12 @@ export default function Checkouts() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="space-y-6">
+      <div>
+        <h1 className="mx-page-title">Sorties</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Bons de sortie et matériel emprunté, avec leur date de retour.</p>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <input
           type="text"
           placeholder="Rechercher par équipement ou utilisateur..."
@@ -558,14 +562,14 @@ export default function Checkouts() {
             icon={<RefreshCw size={16} />}
             loading={isLoading}
           >
-            METTRE À JOUR LES STATUTS
+            Mettre à jour les statuts
           </Button>
           <Button
             variant="primary"
             onClick={() => setShowCheckoutModal(true)}
             icon={<Plus size={16} />}
           >
-            NOUVELLE SORTIE
+            Nouvelle sortie
           </Button>
           <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
             <Button

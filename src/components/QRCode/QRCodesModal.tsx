@@ -196,7 +196,7 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
             icon={<Printer size={18} />}
             onClick={handlePrintAll}
           >
-            IMPRIMER TOUS LES QR CODES
+            Imprimer tous les QR codes
           </Button>
         </div>
 

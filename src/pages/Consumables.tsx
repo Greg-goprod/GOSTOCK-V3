@@ -37,16 +37,16 @@ const errorMessage = (error: unknown) =>
 
 const StatePill: React.FC<{ quantity: number; isLow: boolean; lowDepots: string[]; showDepots: boolean }> = ({ quantity, isLow, lowDepots, showDepots }) => {
   if (quantity === 0) {
-    return <span className="inline-flex rounded-full bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-xs font-semibold">Épuisé</span>;
+    return <span className="inline-flex rounded bg-danger-100 text-danger-800 dark:bg-danger-900/40 dark:text-danger-200 px-2 py-0.5 text-[11px] font-bold">Épuisé</span>;
   }
   if (isLow) {
     return (
-      <span className="inline-flex rounded-full bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200 px-2 py-0.5 text-xs font-semibold">
+      <span className="inline-flex rounded bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-200 px-2 py-0.5 text-[11px] font-bold">
         Stock bas{showDepots && lowDepots.length > 0 ? ` · ${lowDepots.join(', ')}` : ''}
       </span>
     );
   }
-  return <span className="inline-flex rounded-full bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200 px-2 py-0.5 text-xs font-semibold">OK</span>;
+  return <span className="inline-flex rounded bg-success-100 text-success-800 dark:bg-success-900/40 dark:text-success-200 px-2 py-0.5 text-[11px] font-bold">OK</span>;
 };
 
 const Consumables: React.FC = () => {
@@ -594,7 +594,7 @@ const DepotsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 {d.address && <div className="text-sm text-gray-600 dark:text-gray-400">{d.address}</div>}
               </div>
               {d.isDefault ? (
-                <span className="rounded-full bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-200 px-2 py-0.5 text-xs font-semibold">Par défaut</span>
+                <span className="rounded bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-200 px-2 py-0.5 text-[11px] font-bold">Par défaut</span>
               ) : (
                 <Button size="sm" variant="outline" onClick={() => makeDefault(d.id)}>Définir par défaut</Button>
               )}

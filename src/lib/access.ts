@@ -3,8 +3,7 @@ import type { Permission } from './roles';
 // Droits requis par page (au moins un). Sans entrée : accessible à toute personne connectée.
 // La base applique les mêmes règles (RLS) : ceci ne fait que masquer ce qui serait refusé.
 export const ROUTE_ACCESS: Record<string, Permission[]> = {
-  // L'accueil « Aujourd'hui » sert le magasin ; un collaborateur est renvoyé vers ses demandes
-  '/': ['scan', 'approve', 'view_all', 'manage_stock'],
+  // L'accueil est ouvert à tous : son contenu s'adapte au rôle (src/pages/Home.tsx)
   '/scan': ['scan'],
   '/comptoir': ['scan'],
   '/etiquettes': ['manage_stock'],

@@ -185,7 +185,7 @@ const NotificationRecipients: React.FC = () => {
           </div>
         </fieldset>
         <div className="md:col-span-2">
-          <Button type="submit" variant="primary" icon={<Mail size={16} />}>AJOUTER LE DESTINATAIRE</Button>
+          <Button type="submit" variant="primary" icon={<Mail size={16} />}>Ajouter le destinataire</Button>
         </div>
       </form>
     </div>
