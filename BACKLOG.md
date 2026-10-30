@@ -6,6 +6,11 @@ Travaux commencés mais pas terminés, et dettes connues. Mis à jour le 30.10.2
 
 ### Notifications par e-mail — ⚠️ inachevé
 
+**Choix du 30.10 :** relais SMTP propre à GO-Mat sur Fly.io (`smtp-relay/`, copie isolée de celui de Mannyx avec
+sa propre clé, limité à `mail.infomaniak.com` et au domaine d'expédition), compte d'envoi Infomaniak dédié
+(`noreply@…`). Codes de connexion : même compte saisi dans Supabase → Authentication → SMTP Settings.
+Planification : `docs/sql/planification-envoi.sql` (à coller dans l'éditeur SQL).
+
 Fait :
 - Destinataires par type d'alerte et par dépôt (Paramètres → Notifications par e-mail)
 - Fonction Edge `send-notification-emails` déployée sur GO-MAT (relais SMTP Mannyx `go-prod-smtp-relay.fly.dev`)
