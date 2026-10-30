@@ -122,8 +122,20 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
 - Dates et heures : `DateInput`, `DateTimeInput`, `TimeInput` (même interface qu'un champ natif).
 - Navigation : rail de 5 espaces + liste de l'espace (src/lib/navigation.ts), barre du bas sur
   téléphone, recherche rapide Ctrl+K.
-- Reste à faire : pieds de formulaire collants dans les drawers (boutons encore dans le corps),
-  tableaux et cartes au format exact du catalogue MX page par page.
+- Reste à faire : tableaux et cartes au format exact du catalogue MX page par page.
+
+## Rapport de tests Chrome (30.10) — corrections
+
+Migration `20261030000024_corrections_tests_chrome.sql` appliquée sur GO-MAT.
+- Corrigés : P10 (exemplaire attaché à chaque sortie, sorties existantes réparées), P9 (restauration sans
+  doublon ni déclencheur), P8 (préparation enregistrée en base), P12 (caution comptée dans le solde de
+  départ), P1 (QR de badge = vrai code), P2 (badge d'une personne créée dans la session), P13 (personnes
+  parties exclues de « Pour qui »), P6 (outil avec historique : retrait du service au lieu de supprimer),
+  P14 (boutons toujours visibles), P11 (« Ce champ est obligatoire » sous les dates), P17 (jours hors mois
+  estompés), P15 (bulle de la carte), P4 (création annulée si les exemplaires échouent), P3 (plus de 401
+  au démarrage), P16 (motif de l'erreur de scan), P18 (avertissement si le chantier n'a pas de fiche).
+- **P7** (retour d'un kit par scan) : non reproduit — en base, le retour d'un kit fonctionne. À rejouer.
+- Données « TEST » des essais laissées en base (à supprimer sur demande).
 
 ## Dettes techniques
 
