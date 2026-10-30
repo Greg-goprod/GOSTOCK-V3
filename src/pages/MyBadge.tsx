@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ROLE_LABELS } from '../lib/roles';
 import { useInstallPrompt } from '../lib/install';
 import PushToggle from '../components/common/PushToggle';
+import PasswordSetting from '../components/common/PasswordSetting';
 
 // Badge personnel à présenter au magasin, depuis le téléphone ou imprimé
 const MyBadge: React.FC = () => {
@@ -88,6 +89,9 @@ const MyBadge: React.FC = () => {
         <div className="flex flex-wrap justify-center gap-2">
           <Button variant="outline" icon={<Printer size={16} />} onClick={() => window.print()} disabled={!code}>Imprimer ma carte</Button>
           <Button variant="outline" icon={<RefreshCw size={16} />} onClick={regenerate} loading={busy}>Badge perdu : nouveau code</Button>
+        </div>
+        <div className="w-full flex justify-center border-t border-gray-200 dark:border-gray-700 pt-4 print:hidden">
+          <PasswordSetting />
         </div>
       </div>
 
