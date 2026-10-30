@@ -22,6 +22,9 @@ import { DateTimeInput } from '../components/common/DateInput';
 import { promptAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
 
+// Objet loué : disponible seulement jusqu'à la fin du contrat
+const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
+
 type Filter = 'todo' | 'approve' | 'out' | 'all';
 
 const FILTERS: { id: Filter; label: string; statuses: RequestStatus[] | null }[] = [
@@ -402,13 +405,13 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
       return vehicles
         .filter(v => v.status !== 'retired' && !chosen.has(v.id))
         .filter(v => !term || `${v.name} ${v.plate}`.toLowerCase().includes(term))
-        .map(v => ({ id: v.id, name: v.name, detail: v.plate, unit: undefined }));
+        .map(v => ({ id: v.id, name: v.name, detail: `${v.plate}${rentalNote(v)}`, unit: undefined }));
     }
     return equipment
       .filter(e => (tab === 'consumable' ? e.itemType === 'consumable' : e.itemType !== 'consumable') && e.status !== 'retired' && !chosen.has(e.id))
       .filter(e => !term || `${e.name} ${e.articleNumber ?? ''} ${e.serialNumber ?? ''}`.toLowerCase().includes(term))
       .slice(0, 30)
-      .map(e => ({ id: e.id, name: e.name, detail: e.articleNumber || e.serialNumber || '', unit: e.unit }));
+      .map(e => ({ id: e.id, name: e.name, detail: `${e.articleNumber || e.serialNumber || ''}${rentalNote(e)}`, unit: e.unit }));
   }, [tab, search, items, vehicles, equipment]);
 
   const addItem = (c: { id: string; name: string; unit?: string }) => {

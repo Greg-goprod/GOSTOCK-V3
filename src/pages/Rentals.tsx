@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarPlus, CheckCircle2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarPlus, CheckCircle2, ClipboardCheck, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -11,6 +11,8 @@ import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
 import DateInput from '../components/common/DateInput';
 import { confirmAction, promptAction } from '../lib/confirm';
+import RentalInspectionModal from '../components/rentals/RentalInspectionModal';
+import { InspectionKind, RentalInspection, RentalKind, loadInspections, printInspection } from '../lib/rentalInspection';
 
 interface Rental {
   id: string;
@@ -33,7 +35,18 @@ interface Rental {
   cost: number;
   overdue_cost: number;
   site_name: string | null;
+  // Lus dans « rentals » (la vue rental_status ne les a pas)
+  kind: RentalKind;
+  plate: string | null;
+  license_category: string | null;
 }
+
+const KINDS: { id: RentalKind; label: string }[] = [
+  { id: 'vehicle', label: 'Véhicule' },
+  { id: 'equipment', label: 'Outil ou engin' },
+  { id: 'other', label: 'Autre (coût seulement)' },
+];
+const LICENSES = ['B', 'BE', 'C1', 'C1E', 'C', 'CE', 'D1', 'G'];
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -48,14 +61,15 @@ const plusDays = (day: string, n: number) => {
 const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-CH');
 
 const EMPTY = {
+  kind: 'equipment' as RentalKind, plate: '', license_category: 'B',
   rental_company: '', description: '', contract_ref: '', quantity: '1', daily_rate: '', fixed_cost: '',
   start_on: today(), end_on: plusDays(today(), 7), site_id: '', depot_id: '', responsible_id: '', contract: [] as string[], notes: '',
 };
 
 // Matériel loué chez un loueur : rendre à temps, savoir ce que ça coûte et à quel chantier
 const Rentals: React.FC = () => {
-  const { users, depots } = useApp();
-  const { can } = useAuth();
+  const { users, depots, refreshData } = useApp();
+  const { can, profile } = useAuth();
   const canEdit = can('manage_stock') || can('manage_fleet');
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [sites, setSites] = useState<{ id: string; name: string; status: string }[]>([]);
@@ -63,18 +77,30 @@ const Rentals: React.FC = () => {
   const [editing, setEditing] = useState<Rental | 'new' | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [inspections, setInspections] = useState<RentalInspection[]>([]);
+  const [inspecting, setInspecting] = useState<{ rental: Rental; kind: InspectionKind } | null>(null);
 
   const load = async () => {
-    const [r, s] = await Promise.all([
+    const [r, s, k] = await Promise.all([
       supabase.from('rental_status').select('*').order('end_on'),
       supabase.from('sites').select('id, name, status').order('name'),
+      supabase.from('rentals').select('id, kind, plate, license_category'),
     ]);
     if (r.error) toast.error(errorMessage(r.error));
-    setRentals(((r.data || []) as Rental[]).map(x => ({
+    const extra = new Map((k.data || []).map(x => [x.id as string, x]));
+    const list = ((r.data || []) as Rental[]).map(x => ({
       ...x, daily_rate: Number(x.daily_rate), fixed_cost: Number(x.fixed_cost), cost: Number(x.cost),
       overdue_cost: Number(x.overdue_cost), days_billed: Number(x.days_billed),
-    })));
+      kind: (extra.get(x.id)?.kind ?? 'other') as RentalKind, plate: extra.get(x.id)?.plate ?? null,
+      license_category: extra.get(x.id)?.license_category ?? null,
+    }));
+    setRentals(list);
     setSites(s.data || []);
+    try {
+      setInspections(await loadInspections(list.filter(x => x.kind !== 'other').map(x => x.id)));
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
   };
 
   useEffect(() => {
@@ -93,6 +119,7 @@ const Rentals: React.FC = () => {
   const openForm = (rental: Rental | 'new') => {
     setEditing(rental);
     setForm(rental === 'new' ? { ...EMPTY, start_on: today(), end_on: plusDays(today(), 7), depot_id: depots.find(d => d.isDefault)?.id ?? '' } : {
+      kind: rental.kind, plate: rental.plate ?? '', license_category: rental.license_category ?? 'B',
       rental_company: rental.rental_company, description: rental.description, contract_ref: rental.contract_ref ?? '',
       quantity: String(rental.quantity), daily_rate: String(rental.daily_rate), fixed_cost: rental.fixed_cost ? String(rental.fixed_cost) : '',
       start_on: rental.start_on, end_on: rental.end_on, site_id: rental.site_id ?? '', depot_id: rental.depot_id ?? '',
@@ -104,10 +131,13 @@ const Rentals: React.FC = () => {
     event.preventDefault();
     setSaving(true);
     const row = {
+      kind: form.kind,
+      plate: form.kind === 'vehicle' ? form.plate.trim().toUpperCase() || null : null,
+      license_category: form.kind === 'vehicle' ? form.license_category : null,
       rental_company: form.rental_company.trim(),
       description: form.description.trim(),
       contract_ref: form.contract_ref.trim() || null,
-      quantity: Math.max(1, Number(form.quantity) || 1),
+      quantity: form.kind === 'vehicle' ? 1 : Math.max(1, Number(form.quantity) || 1),
       daily_rate: Number(form.daily_rate) || 0,
       fixed_cost: Number(form.fixed_cost) || 0,
       start_on: form.start_on,
@@ -146,7 +176,20 @@ const Rentals: React.FC = () => {
 
   const extend = (rental: Rental) => update(rental, { end_on: plusDays(rental.end_on, 7) }, `Prolongée jusqu'au ${fmt(plusDays(rental.end_on, 7))}`);
 
+  const inspectionOf = (rental: Rental, kind: InspectionKind) => inspections.find(i => i.rental_id === rental.id && i.kind === kind);
+
+  const printPv = async (rental: Rental) => {
+    try {
+      await printInspection(rental, inspections.filter(i => i.rental_id === rental.id));
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
+  };
+
   const remove = async (rental: Rental) => {
+    if (inspectionOf(rental, 'reception')) {
+      return toast.error('Cette location a un état des lieux : elle ne peut plus être supprimée');
+    }
     if (!await confirmAction(`Supprimer la location « ${rental.description} » ? Son coût disparaîtra des chantiers.`)) return;
     const { error } = await supabase.from('rentals').delete().eq('id', rental.id);
     if (error) return toast.error(errorMessage(error));
@@ -205,7 +248,12 @@ const Rentals: React.FC = () => {
             <li key={r.id} className="p-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {r.quantity > 1 ? `${r.quantity} × ` : ''}{r.description}
+                  {r.quantity > 1 ? `${r.quantity} × ` : ''}{r.description}{r.plate ? ` · ${r.plate}` : ''}
+                  {r.kind !== 'other' && inspectionOf(r, 'reception') && r.state !== 'returned' && (
+                    <span className="ml-2 rounded-full bg-primary-50 dark:bg-primary-900/40 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:text-primary-200">
+                      {r.kind === 'vehicle' ? 'Dans la flotte' : 'Dans le stock'}
+                    </span>
+                  )}
                   <span className="text-gray-500 font-normal"> · {r.rental_company}{r.contract_ref ? ` · ${r.contract_ref}` : ''}</span>
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -215,18 +263,29 @@ const Rentals: React.FC = () => {
                   {' · '}{chf(r.daily_rate)}/jour · {r.days_billed} j facturés · <strong className="font-mono">{chf(r.cost)}</strong>
                 </p>
                 <p className={`text-xs font-semibold ${r.state === 'overdue' ? 'text-danger-700 dark:text-danger-300' : r.state === 'returned' ? 'text-success-700 dark:text-success-300' : daysLeft <= 2 ? 'text-warning-700 dark:text-warning-300' : 'text-gray-600 dark:text-gray-400'}`}>
-                  {r.state === 'returned' ? `Rendu le ${fmt(r.returned_on!)}`
+                  {r.kind !== 'other' && r.state !== 'returned' && !inspectionOf(r, 'reception') ? 'Réception à faire chez le loueur'
+                    : r.state === 'returned' ? `Rendu le ${fmt(r.returned_on!)}`
                     : r.state === 'overdue' ? `En retard de ${-daysLeft} jour${-daysLeft > 1 ? 's' : ''} (${chf(r.overdue_cost)} de plus)`
                     : daysLeft === 0 ? 'À rendre aujourd\'hui' : `À rendre dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
                 {r.contract_path && <Button size="sm" variant="outline" onClick={() => openContract(r.contract_path!)}>Contrat</Button>}
+                {inspectionOf(r, 'reception') && (
+                  <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => printPv(r)}>
+                    {inspectionOf(r, 'return') ? 'PV réception et restitution' : 'PV de réception'}
+                  </Button>
+                )}
                 {canEdit && r.state !== 'returned' && (
                   <>
                     <Button size="sm" variant="outline" icon={<CalendarPlus size={14} />} onClick={() => extend(r)}>+ 7 jours</Button>
-                    <Button size="sm" icon={<CheckCircle2 size={14} />} onClick={() => markReturned(r)}>Rendu</Button>
+                    {r.kind === 'other' && <Button size="sm" icon={<CheckCircle2 size={14} />} onClick={() => markReturned(r)}>Rendu</Button>}
                   </>
+                )}
+                {r.kind !== 'other' && r.state !== 'returned' && (canEdit || r.responsible_id === profile?.id) && (
+                  inspectionOf(r, 'reception')
+                    ? <Button size="sm" icon={<ClipboardCheck size={14} />} onClick={() => setInspecting({ rental: r, kind: 'return' })}>Restitution</Button>
+                    : <Button size="sm" icon={<ClipboardCheck size={14} />} onClick={() => setInspecting({ rental: r, kind: 'reception' })}>Réception</Button>
                 )}
                 {canEdit && <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier ${r.description}`} onClick={() => openForm(r)} />}
                 {canEdit && <Button size="sm" variant="danger" icon={<Trash2 size={14} />} ariaLabel={`Supprimer ${r.description}`} onClick={() => remove(r)} />}
@@ -238,6 +297,27 @@ const Rentals: React.FC = () => {
 
       <Modal isOpen={editing !== null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Nouvelle location' : 'Modifier la location'} size="lg">
         <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">
+          <fieldset className="sm:col-span-2">
+            <legend className={labelClass}>Type de location</legend>
+            <div className="inline-flex flex-wrap rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden" role="group">
+              {KINDS.map(k => {
+                // Après la réception, le type ne change plus (l'objet est déjà dans le stock)
+                const locked = editing !== 'new' && editing !== null && Boolean(inspectionOf(editing, 'reception'));
+                return (
+                  <button key={k.id} type="button" aria-pressed={form.kind === k.id} disabled={locked && form.kind !== k.id}
+                    onClick={() => setForm({ ...form, kind: k.id })}
+                    className={`px-3 py-2 min-h-[40px] text-sm font-semibold disabled:opacity-40 ${form.kind === k.id ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+                    {k.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+              {form.kind === 'other'
+                ? 'Suivi du coût seulement : rien n\'entre dans le stock.'
+                : `À la réception chez le loueur, un état des lieux (photos, dégâts, accessoires) fait entrer ${form.kind === 'vehicle' ? 'le véhicule dans la flotte' : 'l\'outil dans le stock'} : il peut alors être réservé et sorti jusqu'à la date de fin.`}
+            </p>
+          </fieldset>
           <div>
             <label htmlFor="rental-company" className={labelClass}>Loueur</label>
             <input id="rental-company" list="rental-companies" autoComplete="off" value={form.rental_company} onChange={e => setForm({ ...form, rental_company: e.target.value })} className={inputClass} required placeholder="ex. Loxam Crissier" />
@@ -248,13 +328,28 @@ const Rentals: React.FC = () => {
             <input id="rental-ref" value={form.contract_ref} onChange={e => setForm({ ...form, contract_ref: e.target.value })} className={inputClass} />
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="rental-desc" className={labelClass}>Matériel</label>
-            <input id="rental-desc" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className={inputClass} required placeholder="ex. Mini-pelle 1,8 t" />
+            <label htmlFor="rental-desc" className={labelClass}>{form.kind === 'vehicle' ? 'Véhicule' : 'Matériel'}</label>
+            <input id="rental-desc" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className={inputClass} required placeholder={form.kind === 'vehicle' ? 'ex. Fourgon Fiat Ducato' : 'ex. Mini-pelle 1,8 t'} />
           </div>
-          <div>
-            <label htmlFor="rental-qty" className={labelClass}>Quantité</label>
-            <input id="rental-qty" type="number" min={1} value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} className={`${inputClass} font-mono`} />
-          </div>
+          {form.kind === 'vehicle' ? (
+            <>
+              <div>
+                <label htmlFor="rental-plate" className={labelClass}>Plaque</label>
+                <input id="rental-plate" value={form.plate} onChange={e => setForm({ ...form, plate: e.target.value })} className={`${inputClass} font-mono uppercase`} required placeholder="ex. VD 123 456" />
+              </div>
+              <div>
+                <label htmlFor="rental-license" className={labelClass}>Permis nécessaire</label>
+                <select id="rental-license" value={form.license_category} onChange={e => setForm({ ...form, license_category: e.target.value })} className={inputClass}>
+                  {LICENSES.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label htmlFor="rental-qty" className={labelClass}>Quantité</label>
+              <input id="rental-qty" type="number" min={1} value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} className={`${inputClass} font-mono`} />
+            </div>
+          )}
           <div>
             <label htmlFor="rental-rate" className={labelClass}>Prix par jour (CHF, par unité)</label>
             <input id="rental-rate" type="number" min={0} step="0.05" inputMode="decimal" value={form.daily_rate} onChange={e => setForm({ ...form, daily_rate: e.target.value })} className={`${inputClass} font-mono`} required />
@@ -306,6 +401,19 @@ const Rentals: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {inspecting && (
+        <RentalInspectionModal
+          rental={inspecting.rental}
+          kind={inspecting.kind}
+          reception={inspectionOf(inspecting.rental, 'reception')}
+          onClose={() => setInspecting(null)}
+          onDone={async () => {
+            setInspecting(null);
+            await Promise.all([load(), refreshData()]);
+          }}
+        />
+      )}
     </div>
   );
 };

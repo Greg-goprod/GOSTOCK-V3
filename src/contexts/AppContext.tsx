@@ -54,7 +54,9 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   depreciationYears: item.depreciation_years,
   isBattery: Boolean(item.is_battery),
   batteryLifeMonths: item.battery_life_months,
-  batteryMaxUses: item.battery_max_uses
+  batteryMaxUses: item.battery_max_uses,
+  rentalId: item.rental_id ?? undefined,
+  rentalUntil: item.rental_until ?? undefined
 });
 
 // Nombre de jours avant l'échéance à partir duquel un retour est signalé
@@ -182,7 +184,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         nextServiceKm: v.next_service_km ?? undefined,
         tiresDate: v.tires_date ?? undefined,
         inspectionDate: v.inspection_date ?? undefined,
-        notes: v.notes ?? undefined
+        notes: v.notes ?? undefined,
+        rentalId: v.rental_id ?? undefined,
+        rentalUntil: v.rental_until ?? undefined
       })));
 
       setDepots((depotsResult.data || []).map((d: Record<string, any>) => ({

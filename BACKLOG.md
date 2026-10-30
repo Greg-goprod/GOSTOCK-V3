@@ -137,6 +137,20 @@ Migration `20261030000024_corrections_tests_chrome.sql` appliquée sur GO-MAT.
 - **P7** (retour d'un kit par scan) : non reproduit — en base, le retour d'un kit fonctionne. À rejouer.
 - Données « TEST » des essais laissées en base (à supprimer sur demande).
 
+## Locations dans le stock et états des lieux (lot 16, 30.10)
+
+- Migration `20261030000025_locations_etats_des_lieux.sql` : **à appliquer sur GO-MAT** (en attente de
+  confirmation dans Supabase).
+- Une location a un type : véhicule, outil / engin, ou « autre » (coût seulement, comme avant ; les
+  locations existantes restent « autre »).
+- Réception chez le loueur : état des lieux (vues photo obligatoires, km / carburant ou compteur d'heures,
+  dégâts déjà présents, accessoires, signatures) ; l'objet entre alors dans la flotte ou le matériel, avec la
+  pastille « Loué jusqu'au … ». Réservable et sortable seulement jusqu'à la fin du contrat (contrôlé en base).
+- Restitution : refusée tant que l'objet est sorti, en route ou prévu dans une demande ouverte ; l'objet est
+  ensuite retiré du stock (historique gardé) et la location clôturée. PV imprimable (réception seule, ou
+  réception et restitution côte à côte).
+- Photos dans le stockage privé « fichiers », dossier `etats-des-lieux`.
+
 ## Dettes techniques
 
 - **Vite 5 → 8** : failles limitées au serveur de développement ; saut majeur (Node ≥ 20.19).

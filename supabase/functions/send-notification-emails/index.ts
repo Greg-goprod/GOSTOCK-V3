@@ -287,12 +287,12 @@ async function sendSms(supabase: Client) {
 const BACKUP_TABLES = [
   'organizations', 'system_settings', 'depots', 'storage_bins', 'departments', 'role_configs', 'status_configs',
   'users', 'user_depots', 'trainings', 'user_trainings', 'ppe_types', 'ppe_issues', 'user_ppe_sizes',
-  'categories', 'equipment_groups', 'equipment_subgroups', 'suppliers', 'catalog_products',
+  'categories', 'equipment_groups', 'equipment_subgroups', 'suppliers', 'catalog_products', 'sites', 'rentals',
   'equipment', 'equipment_instances', 'equipment_accessories', 'consumable_stock', 'stock_movements',
-  'kits', 'kit_items', 'sites', 'requests', 'request_items', 'request_templates', 'delivery_notes', 'checkouts', 'return_checks',
+  'kits', 'kit_items', 'requests', 'request_items', 'request_templates', 'delivery_notes', 'checkouts', 'return_checks',
   'vehicles', 'vehicle_trips', 'fuel_entries', 'maintenance_types', 'equipment_maintenance', 'maintenance_plans', 'maintenance_plan_runs',
   'repair_orders', 'incidents', 'inventory_counts', 'inventory_count_lines', 'purchase_orders', 'purchase_order_lines',
-  'transfers', 'transfer_lines', 'rentals', 'notification_recipients', 'notifications', 'audit_log',
+  'transfers', 'transfer_lines', 'rental_inspections', 'notification_recipients', 'notifications', 'audit_log',
 ];
 const KEEP_BACKUPS = 12;
 

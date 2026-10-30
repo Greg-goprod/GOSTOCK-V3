@@ -27,6 +27,9 @@ export interface Equipment {
   depotId?: string;
   requiredTrainingId?: string;
   requiresSignature?: boolean;
+  // Outil loué chez un loueur (objet temporaire du stock) et date de fin du contrat (AAAA-MM-JJ)
+  rentalId?: string;
+  rentalUntil?: string;
   purchaseDate?: string | null;
   warrantyUntil?: string | null;
   depreciationYears?: number | null;
@@ -86,6 +89,9 @@ export interface Vehicle {
   tiresDate?: string;
   inspectionDate?: string;
   notes?: string;
+  // Véhicule loué (objet temporaire de la flotte) et date de fin du contrat (AAAA-MM-JJ)
+  rentalId?: string;
+  rentalUntil?: string;
 }
 
 export type RequestStatus = 'requested' | 'approved' | 'rejected' | 'ready' | 'out' | 'closed' | 'cancelled';

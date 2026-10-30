@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 import { REQUEST_STATUS, VEHICLE_STATUS, deadlineState, errorMessage } from '../lib/requests';
 import { RequestOverview, Vehicle } from '../types';
 import DateInput from '../components/common/DateInput';
+import RentalBadge from '../components/common/RentalBadge';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -183,7 +184,7 @@ const Vehicles: React.FC = () => {
           <li key={v.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
             <div className="flex justify-between gap-2">
               <div className="min-w-0">
-                <div className="font-semibold text-gray-900 dark:text-gray-100">{v.name}</div>
+                <div className="flex flex-wrap items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">{v.name}<RentalBadge until={v.rentalUntil} /></div>
                 <div className="font-mono text-sm text-gray-600 dark:text-gray-300">{v.plate} · permis {v.licenseCategory}</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">{depots.find(d => d.id === v.depotId)?.name ?? 'Sans dépôt'}</div>
               </div>
