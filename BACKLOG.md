@@ -94,6 +94,12 @@ recalculs) ; les fonctions de déclencheurs ne sont plus appelables directement.
 - **Export comptable** : comptes du plan PME suisse par défaut, à faire confirmer par la fiduciaire.
 - **Mise à jour du catalogue** : un nouveau fichier Makita (JSON) ou une liste de prix Excel est comparé
   avant import ; les produits absents du fichier ne sont pas supprimés.
+- **Langues (FR/DE/IT/EN)** : traduction de l'écran à la volée (`src/i18n/translator.ts`) d'après les
+  dictionnaires `src/i18n/{de,it,en}.json` (texte français → traduction, `{0}` pour les parties variables).
+  Langue choisie dans le menu du profil, la page de connexion ou Paramètres, gardée sur l'appareil.
+  Restent en français : messages générés par la base (notifications, e-mails, erreurs SQL), PDF/Excel
+  exportés, et toute phrase ajoutée au code sans entrée dans les dictionnaires (à compléter à chaque ajout).
+  Les données (noms d'articles, chantiers, personnes) ne sont jamais traduites.
 
 ## Dettes techniques
 

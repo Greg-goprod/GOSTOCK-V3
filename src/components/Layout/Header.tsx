@@ -6,6 +6,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROLE_LABELS } from '../../lib/roles';
+import LanguagePicker from '../common/LanguagePicker';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -162,6 +163,7 @@ const Header: React.FC = () => {
                   <Download size={16} aria-hidden="true" /> Installer l'application
                 </button>
               )}
+              <div className="px-2 py-2"><LanguagePicker /></div>
               <button
                 type="button"
                 role="menuitem"

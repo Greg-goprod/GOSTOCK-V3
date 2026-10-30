@@ -34,7 +34,7 @@ import {
   Truck,
   Building2,
   AlertTriangle as AlertTriangleIcon, PhoneCall, HardDriveDownload } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+import LanguagePicker from '../components/common/LanguagePicker';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -52,7 +52,6 @@ import {
 } from '../types';
 
 const Settings: React.FC = () => {
-  const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { refreshData } = useApp();
   
@@ -372,15 +371,7 @@ const Settings: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Langue
                 </label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as any)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                >
-                  <option value="fr">Français</option>
-                  <option value="en">English</option>
-                  <option value="de">Deutsch</option>
-                </select>
+                <LanguagePicker />
               </div>
               
               <div>

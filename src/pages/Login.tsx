@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Mail, QrCode } from 'lucide-react';
 import Button from '../components/common/Button';
 import { supabase } from '../lib/supabase';
+import LanguagePicker from '../components/common/LanguagePicker';
 
 const RESEND_DELAY = 60;
 
@@ -75,6 +76,7 @@ const Login: React.FC = () => {
           <QrCode size={40} className="text-primary-600 dark:text-primary-400" aria-hidden="true" />
           <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">GO-Mat</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">Gestion du matériel</p>
+          <LanguagePicker />
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow border border-gray-200 dark:border-gray-800 p-6">
