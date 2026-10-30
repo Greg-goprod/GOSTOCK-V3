@@ -30,7 +30,7 @@ const HelpPrint: React.FC = () => {
       <header className="mb-10 border-b-2 border-gray-900 pb-6">
         <p className="text-sm font-semibold uppercase tracking-wide text-primary-700">GO-Mat · gestion du matériel</p>
         <h1 className="mt-2 text-4xl font-bold">Mode d'emploi</h1>
-        <p className="mt-2 text-gray-700">Démarrage rapide, modes d'emploi par métier, questions fréquentes et glossaire.</p>
+        <p className="mt-2 text-gray-700">Chaque manipulation pas à pas, par métier, questions fréquentes et glossaire.</p>
         <ol className="mt-6 columns-2 text-sm">
           {CATEGORIES.map(c => <li key={c.id}>{c.label}</li>)}
           <li>Questions fréquentes</li>
@@ -45,24 +45,36 @@ const HelpPrint: React.FC = () => {
             <article key={article.id} className="mb-10">
               <h3 className="text-xl font-bold">{article.title}</h3>
               <p className="mb-4 text-gray-700">{article.summary}</p>
-              <ol className="space-y-4">
-                {article.steps.map((step, index) => (
-                  <li key={index} className="step flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">{index + 1}</span>
-                    <div className="flex-1">
-                      <p>{step.text}</p>
-                      {step.shot && (
-                        <figure className="mt-2">
-                          <img src={`/aide/${step.shot}.jpg`} alt="" className="mx-auto max-h-[420px] w-auto max-w-full rounded border border-gray-300"
-                            onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
-                        </figure>
-                      )}
+              {article.where && <p className="mb-4 text-sm text-gray-600">Où : {article.where}</p>}
+              {article.tasks.map(task => (
+                <div key={task.id} className="task mb-6">
+                  <h4 className="mb-2 text-base font-bold">{task.title}{task.who ? <span className="font-normal text-gray-600"> · {task.who}</span> : null}</h4>
+                  <ol className="space-y-3">
+                    {task.steps.map((step, index) => (
+                      <li key={index} className="step flex gap-3">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">{index + 1}</span>
+                        <div className="flex-1">
+                          <p>{step.text}</p>
+                          {step.shot && (
+                            <figure className="mt-2">
+                              <img src={`/aide/${step.shot}.jpg`} alt="" className="mx-auto max-h-[380px] w-auto max-w-full rounded border border-gray-300"
+                                onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
+                            </figure>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                  {task.result && <p className="step mt-2 text-sm"><strong>Résultat : </strong>{task.result}</p>}
+                  {task.problems?.length ? (
+                    <div className="step mt-2 text-sm">
+                      <strong>Ça ne marche pas ?</strong>
+                      <ul className="ml-5 list-disc">{task.problems.map(pb => <li key={pb.if}><em>{pb.if}</em> {pb.then}</li>)}</ul>
                     </div>
-                  </li>
-                ))}
-              </ol>
+                  ) : null}
+                </div>
+              ))}
               {article.tips?.length ? <p className="mt-3 text-sm"><strong>Astuces : </strong>{article.tips.join(' ')}</p> : null}
-              {article.warnings?.length ? <p className="mt-2 text-sm"><strong>Attention : </strong>{article.warnings.join(' ')}</p> : null}
             </article>
           ))}
         </section>

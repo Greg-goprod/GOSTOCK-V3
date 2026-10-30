@@ -1,62 +1,133 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, Lightbulb } from 'lucide-react';
-import type { HelpArticle } from '../../help/content';
+import { ArrowRight, CheckCircle2, ChevronRight, Lightbulb, MapPin, User, Wrench, ZoomIn } from 'lucide-react';
+import type { HelpArticle, HelpTask } from '../../help/content';
 
 // Capture d'écran de l'aide ; masquée si elle n'a pas encore été générée
-export const HelpShot: React.FC<{ name: string; alt: string; caption?: string }> = ({ name, alt, caption }) => {
+export const HelpShot: React.FC<{ name: string; alt: string }> = ({ name, alt }) => {
   const [missing, setMissing] = useState(false);
   if (missing) return null;
   return (
     <figure className="mt-3">
       {/* Clic : la capture en grand dans un nouvel onglet */}
-      <a href={`/aide/${name}.jpg`} target="_blank" rel="noopener" title="Agrandir la capture">
+      <a href={`/aide/${name}.jpg`} target="_blank" rel="noopener" title="Agrandir la capture"
+        className="group relative block w-fit max-w-full overflow-hidden rounded-lg border-[1.5px] border-gray-200 dark:border-gray-700 shadow-sm">
         <img src={`/aide/${name}.jpg`} alt={alt} loading="lazy" onError={() => setMissing(true)}
-          className="mx-auto max-h-[560px] w-auto max-w-full rounded-md border-[1.5px] border-gray-200 dark:border-gray-700" />
+          className="block max-h-[520px] w-auto max-w-full" />
+        <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-gray-900/75 px-2 py-1 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
+          <ZoomIn size={13} aria-hidden="true" /> Agrandir
+        </span>
       </a>
-      {caption && <figcaption className="mt-1 text-xs text-gray-600 dark:text-gray-400">{caption}</figcaption>}
     </figure>
   );
 };
 
-// Un article : résumé, étapes numérotées avec captures, astuces et pièges
+export const taskAnchor = (task: HelpTask) => `tache-${task.id}`;
+
+// Une tâche : étapes numérotées reliées par un trait, résultat attendu, et « Ça ne marche pas ? »
+export const HelpTaskView: React.FC<{ task: HelpTask; index: number }> = ({ task, index }) => (
+  <section id={taskAnchor(task)} className="scroll-mt-24 rounded-xl border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-[1.5px] border-gray-100 dark:border-gray-700/70 px-4 py-3 sm:px-5">
+      <span className="text-xs font-bold uppercase tracking-wide text-primary-700 dark:text-primary-300">Tâche {index + 1}</span>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{task.title}</h2>
+      {task.who && (
+        <span className="inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+          <User size={12} aria-hidden="true" /> {task.who}
+        </span>
+      )}
+    </header>
+
+    <div className="space-y-4 px-4 py-4 sm:px-5">
+      <ol className="relative">
+        {task.steps.map((step, i) => (
+          <li key={i} className="relative flex gap-3 pb-5 last:pb-0">
+            {/* Trait vertical entre deux étapes */}
+            {i < task.steps.length - 1 && <span className="absolute left-[13px] top-8 bottom-1 w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true" />}
+            <span className="relative z-[1] flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white" aria-hidden="true">
+              {i + 1}
+            </span>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{step.text}</p>
+              {step.shot && <HelpShot name={step.shot} alt={step.text} />}
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      {task.result && (
+        <div className="flex gap-2 rounded-lg border-[1.5px] border-success-200 dark:border-success-800 bg-success-50 dark:bg-success-900/25 px-3 py-2.5">
+          <CheckCircle2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-success-700 dark:text-success-300" />
+          <p className="text-sm text-gray-900 dark:text-gray-100"><strong>Résultat : </strong>{task.result}</p>
+        </div>
+      )}
+
+      {task.problems?.length ? (
+        <details className="group rounded-lg border-[1.5px] border-warning-200 dark:border-warning-800 bg-warning-50/60 dark:bg-warning-900/20">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold text-warning-900 dark:text-warning-200">
+            <Wrench size={16} aria-hidden="true" />
+            Ça ne marche pas ? ({task.problems.length})
+            <ChevronRight size={16} aria-hidden="true" className="ml-auto transition-transform group-open:rotate-90" />
+          </summary>
+          <dl className="space-y-2.5 px-3 pb-3">
+            {task.problems.map(p => (
+              <div key={p.if} className="rounded-md bg-white dark:bg-gray-800 px-3 py-2">
+                <dt className="text-sm font-semibold text-gray-900 dark:text-white">{p.if}</dt>
+                <dd className="mt-0.5 text-sm text-gray-700 dark:text-gray-300">{p.then}</dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      ) : null}
+    </div>
+  </section>
+);
+
+// Un article : en-tête (où, ouvrir la page), sommaire des tâches, tâches, astuces
 const HelpArticleView: React.FC<{ article: HelpArticle; onNavigate?: () => void; compact?: boolean }> = ({ article, onNavigate, compact }) => (
   <article className="space-y-5">
-    <div>
+    <div className="space-y-2">
       {!compact && <h1 className="mx-page-title">{article.title}</h1>}
-      <p className="mt-1 text-gray-700 dark:text-gray-300">{article.summary}</p>
-      {article.route && !article.route.startsWith('/ecran') && (
-        <Link to={article.route} onClick={onNavigate}
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-700 dark:text-primary-300 hover:underline">
-          Ouvrir la page <ArrowRight size={14} aria-hidden="true" />
-        </Link>
-      )}
+      <p className="text-gray-700 dark:text-gray-300">{article.summary}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        {article.where && (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 dark:bg-gray-700/60 px-2.5 py-1 text-sm text-gray-800 dark:text-gray-200">
+            <MapPin size={14} aria-hidden="true" /> {article.where}
+          </span>
+        )}
+        {article.route && !article.route.startsWith('/ecran') && (
+          <Link to={article.route} onClick={onNavigate} className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-sm">
+            Ouvrir la page <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        )}
+      </div>
     </div>
 
-    <ol className="space-y-5">
-      {article.steps.map((step, index) => (
-        <li key={index} className="flex gap-3">
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white" aria-hidden="true">
-            {index + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-gray-900 dark:text-gray-100">{step.text}</p>
-            {step.shot && <HelpShot name={step.shot} alt={step.text} caption={step.caption} />}
-          </div>
-        </li>
-      ))}
-    </ol>
+    {article.tasks.length > 1 && (
+      <nav aria-label="Dans cet article" className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
+        <p className="mx-section-label mb-2">Je veux…</p>
+        <ul className="grid gap-1 sm:grid-cols-2">
+          {article.tasks.map((task, i) => (
+            <li key={task.id}>
+              <a href={`#${taskAnchor(task)}`}
+                onClick={e => { e.preventDefault(); document.getElementById(taskAnchor(task))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 hover:bg-white dark:hover:bg-gray-700">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/50 text-[11px] font-bold text-primary-800 dark:text-primary-200">{i + 1}</span>
+                {task.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+
+    <div className="space-y-4">
+      {article.tasks.map((task, i) => <HelpTaskView key={task.id} task={task} index={i} />)}
+    </div>
 
     {article.tips?.length ? (
-      <div className="rounded-md border-[1.5px] border-info-200 dark:border-info-800 bg-info-50 dark:bg-info-900/30 p-3">
+      <div className="rounded-xl border-[1.5px] border-info-200 dark:border-info-800 bg-info-50 dark:bg-info-900/30 p-3">
         <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-info-800 dark:text-info-200"><Lightbulb size={16} aria-hidden="true" /> Astuces</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-gray-800 dark:text-gray-200">{article.tips.map(t => <li key={t}>{t}</li>)}</ul>
-      </div>
-    ) : null}
-    {article.warnings?.length ? (
-      <div className="rounded-md border-[1.5px] border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-900/30 p-3">
-        <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-warning-800 dark:text-warning-200"><AlertTriangle size={16} aria-hidden="true" /> Attention</p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-gray-800 dark:text-gray-200">{article.warnings.map(t => <li key={t}>{t}</li>)}</ul>
       </div>
     ) : null}
   </article>

@@ -60,6 +60,7 @@ const SHOTS = [
     }, marks: p => [p.getByRole('group', { name: 'Mode de scan' }), byRole(p, 'button', /^Valider$/)] },
   { name: 'demandes-1', path: '/demandes', marks: p => [byRole(p, 'button', /Nouvelle demande/)] },
   { name: 'demandes-2', path: '/demandes', act: async p => { await byRole(p, 'button', /Nouvelle demande/).first().click(); await p.waitForTimeout(900); } },
+  { name: 'demandes-3', path: '/demandes', act: async p => { await p.getByText('DEM2610-0002').first().click(); await p.waitForTimeout(1200); } },
   { name: 'sorties-1', path: '/checkouts' },
   { name: 'scanner-1', path: '/scan', viewport: MOBILE },
   { name: 'libre-service-1', path: '/libre-service', role: 'user', viewport: MOBILE },
@@ -75,8 +76,10 @@ const SHOTS = [
   { name: 'atelier-1', path: '/atelier' },
   { name: 'pertes-1', path: '/incidents' },
   { name: 'consommables-1', path: '/consommables' },
+  { name: 'consommables-2', path: '/consommables', act: async p => { await byRole(p, 'button', /^Sortir$/).first().click(); await p.waitForTimeout(900); } },
   { name: 'commande-1', path: '/commande' },
   { name: 'vehicules-1', path: '/vehicules' },
+  { name: 'vehicules-2', path: '/vehicules', act: async p => { await byRole(p, 'button', /Carnet/).first().click(); await p.waitForTimeout(1000); } },
   { name: 'locations-1', path: '/locations', marks: p => [byRole(p, 'button', /Nouvelle location/), byRole(p, 'button', /^Réception$/)] },
   { name: 'locations-2', path: '/locations', act: async p => { await byRole(p, 'button', /^Réception$/).first().click(); await p.waitForTimeout(1200); } },
   { name: 'location-engin-1', path: '/locations', act: async p => {
