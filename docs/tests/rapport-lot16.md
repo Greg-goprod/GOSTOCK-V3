@@ -7,6 +7,80 @@
 - **Règles suivies** : données préfixées « TEST » ; rien d'autre supprimé ni modifié ; code de l'application non modifié.
 - **Consignes** : `docs/tests/consignes-lot16.md` (branche `claude/loving-thompson-6zfo06`).
 
+---
+
+## 0. Contre-test des corrections — version `4a4fa16`
+
+- **Date** : 30 octobre 2026, de 14:55 à 15:25 (heure de Zurich)
+- **Version** : `4a4fa16` « Corrections du rapport de tests du lot 16 » (`GOMAT-essai` mis à jour par `git fetch` puis `checkout` de `FETCH_HEAD`, Vite redémarré sur le port 5190). Nouvelle migration `00027_message_permis` : **appliquée sur GO-MAT** (le nouveau message de L8 sort de la base).
+- **Session** : expirée au redémarrage ; reconnexion par l'utilisateur.
+
+### Verdict
+
+**P5, le dernier blocage, est corrigé.** R1 à R3 et L1 à L12 sont corrigés. Il reste deux points en attente, qui dépendent de l'utilisateur (P15 panneau affiché, rôles), et trois défauts mineurs nouveaux (N1 à N3).
+
+### Résultats
+
+| Point | Résultat | Preuve |
+|---|---|---|
+| **P5** formulaire | ✅ | « Nouvelle demande » ouverte et remplie : 15 retours d'onglet en 25 s, aucun écran « Chargement… », même champ, valeur « TEST P5 formulaire » conservée. Code servi : `SIGNED_IN` de la même personne traité en arrière-plan. |
+| **P5** panier du comptoir | ✅ | Badge et article scannés : après 16 retours d'onglet en 20 s, la personne et « Panier (1) · Retour · TEST Perceuse comptoir » sont conservés. |
+| **R2** formulaire d'outil | ✅ | Création : « Suivant » visible dès l'ouverture (976 px pour un écran de 1018 px) ; « URL de l'image » non masqué ; section `max-height: none; overflow: visible`. Modification : « Suivant » à 976 px, « Modifier le matériel » à 573 px. |
+| **R1** dialogues fermés | ✅ | « Confirmation », « Menu », « Filtres » fermés portent `aria-hidden` et `inert` ; le dialogue de confirmation est vidé après usage. |
+| **R3** suggestions de chantier | ✅ | Les options sont distinguées : « Chantier » et « Sans fiche chantier ». |
+| **P12** texte de confirmation | ✅ | « 1 point à régler avant le départ (dont la caution de 80.00 CHF à rembourser) » ; « Clôturer le départ quand même ? La caution de 80.00 CHF n'est pas remboursée. » ; « Annuler » laisse la personne active ; ensuite caution rendue et départ clôturé. |
+| **P15** panneau affiché | ⏳ En attente | Le panneau de prévisualisation était masqué pendant le test (il passe visible quelques millisecondes toutes les 6 s) : la carte ne se recentre pas. À refaire panneau affiché. |
+| **L1** listes après création | ✅ | « TEST L1 Alpha » et « TEST L1 Beta » créés, sans rechargement (page chargée 15 min plus tôt) : présents dans « Pour qui » et dans « Ajouter une personne » (attestation IPAF 3b). |
+| **L2** outil loué rendu au comptoir | ✅ | Refus au scan : « « TEST Nacelle 3b » est rendu au loueur : il ne peut plus sortir » ; panier vide. |
+| **L3** « Matériel » | ✅ | « TEST Nacelle 3b · Rendu au loueur ». |
+| **L4** pastille après « + 7 jours » | ✅ | « TEST Utilitaire 2 · Loué jusqu'au 06.11 » → « Prolongée jusqu'au 13.11.2026 » → « Loué jusqu'au 13.11 », sans rechargement. |
+| **L5** traductions des locations | ✅ | DE : « 250 CHF/Tag », « Fehlende Fotos: Gesamtansicht, Typenschild ». EN : « 250 CHF/day », « Missing photos: Overview, Rating plate ». |
+| **L6** PV traduit | ✅ | DE : « Übernahme- und Rückgabeprotokoll … Vermieter … Betriebsstunden … Keine Schäden festgestellt … Internes Dokument, erstellt mit GO-Mat ». EN : « Pickup and return report … Rental company … Hour meter ». Restent en français les accessoires par défaut (« Clés ou badge »…), enregistrés en base comme texte (N3). *Note* : mon premier relevé semblait encore français, parce que mon interception capturait le HTML avant la traduction (`translateDocument`) ; corrigé en interceptant sur un vrai document. |
+| **L7** noms des permis | ✅ | DE : « Hubarbeitsbühne – IPAF 1a (statisch, vertikal) », « Kranführer – Kategorie A (Turmdrehkran) ». EN : « Counterbalance forklift (forklift licence) ». |
+| **L8** message de refus | ✅ | « « TEST Perceuse comptoir » exige le permis machine « Nacelle PEMP – IPAF 3b (mobile à flèche) » : TEST Badge Comptoir ne l'a pas (à saisir dans « Permis et formations ») ». Exigence posée temporairement par API sur l'outil TEST, puis retirée. |
+| **L9** contrôles au plus tôt | ✅ | Permis machine : refus **au scan** (panier vide). Permis de véhicule : « TEST Permis B n'a pas le permis C1 requis » **dès le choix**. Restitution : « Encore prévu dans les demandes DEM2610-0007 : clôturez-les ou retirez-le d'abord » **au clic**, sans ouvrir l'état des lieux. |
+| **L10** demande au-delà de la location | ✅ | « Location jusqu'au 13.11.2026 : retour dépassé » dès le choix des dates. |
+| **L11** kilométrage vide | ✅ | Message de l'application : « Relevez le kilométrage » (plus d'infobulle native). |
+| **L12** annulation d'une demande | ✅ | « Annuler la demande » présent pour « À valider » ; « Demande DEM2610-0003 annulée », statut `cancelled`. Pas de demande de confirmation. |
+
+### Points jamais couverts auparavant
+
+| Point | Résultat | Preuve |
+|---|---|---|
+| **Accès expiré** | ✅ | « TEST Accès Expiré », accès jusqu'au 29.10.2026 : fiche « Intérimaire · accès échu le 29.10.2026 » ; absent de « Pour qui » ; badge refusé au comptoir (« Erreur de scan : Badge inconnu, accès suspendu ou personne partie »). Voir N1 et N2. |
+| **Hors ligne** (simulé : `navigator.onLine` à faux et événement `offline`) | ✅ | Bandeau « Hors ligne. Les scans continuent avec la copie locale du 30.10.26 15:13 ; chaque validation est gardée sur cet appareil et part toute seule au retour du réseau. » Scan du badge et de l'outil sur la copie locale, validation mise en file (« En attente d'envoi (1) »). Au retour du réseau : « 1 opération faite hors ligne envoyée », file vide, sortie créée en base avec son exemplaire. |
+| **Caméra** | ✅ (partiel) | Le navigateur de test refuse l'accès : « Accès à la caméra refusé. Autorisez la caméra pour ce site dans les réglages du navigateur. » Le décodage d'un vrai QR n'est pas testable ici. Petit défaut : le bouton affiche « Arrêter la caméra » alors que l'accès est refusé (revient à « Scanner avec la caméra » après clic). |
+| **Impressions** | ✅ | Badges : « Imprimer (9) », une carte et un QR par personne, impression lancée. Étiquettes : « Imprimer 1 étiquette ». Étiquette du kit : impression lancée. Rapport PDF du chantier : « Rapport matériel · TEST Chantier carte … TEST Nacelle 3b (TEST Loueur) 1 × 300,00 … Total matériel : CHF 300,00 » (« Période : du … au … » faute de dates sur le chantier). Liste de préparation : « Préparation DEM2610-0008 … ☐ TEST Article suppression GOMAT1-000002 1 × · Préparé par ». Solde de départ : « Solde de départ : TEST Badge Lot16 … Rien à rendre … Signature ». PV de location : voir L6. Impressions interceptées, sans imprimante réelle. |
+| **Rôles Magasinier, Responsable, Collaborateur** | ⏳ En attente | Il faut des comptes auxquels se connecter : les adresses TEST (`@example.com`) ne reçoivent pas de code, et l'administrateur ne peut pas définir de mot de passe. Solutions proposées à l'utilisateur : alias de messagerie qu'il reçoit, ou comptes avec mot de passe créés dans Supabase. |
+
+### Nouveaux défauts (mineurs)
+
+**N1 — Comptoir : « Pour le compte de » propose une personne à l'accès échu**
+- **Page** : Comptoir, après le scan d'un badge.
+- **Constaté** : la liste « Pour le compte de » contient « TEST Accès Expiré » (accès échu le 29.10.2026), alors que les personnes parties en sont exclues et que « Pour qui » (demandes) l'exclut aussi.
+- **Attendu** : mêmes règles que « Pour qui ».
+
+**N2 — Accès échu : motif générique et création sans avertissement**
+- Au comptoir, le refus dit « Badge inconnu, accès suspendu ou personne partie », sans préciser « accès échu le 29.10.2026 ».
+- La personne a pu être créée avec une date d'accès déjà passée, sans avertissement ; le message de création dit « connexion possible avec … ».
+- La planche de badges propose aussi cette personne.
+
+**N3 — Accessoires par défaut enregistrés en français**
+- Les accessoires cochés à la réception (« Clés ou badge », « Chargeur ou câbles », « Notice d'utilisation ») sont stockés en texte et restent en français dans le PV allemand ou anglais. Les enregistrer par code (traduit à l'affichage) éviterait ce mélange.
+
+### Données TEST ajoutées
+
+| Type | Nom | État final |
+|---|---|---|
+| Personnes | TEST L1 Alpha, TEST L1 Beta | actives |
+| Personne | TEST Intérimaire P12 (caution 80 CHF) | partie, caution rendue |
+| Personne | TEST Accès Expiré (accès au 29.10.2026) | accès échu |
+| Location véhicule | TEST Utilitaire 2 (TEST 456), réceptionnée, prolongée au 13.11 | en cours |
+| Demandes | DEM2610-0003 annulée ; DEM2610-0007 (TEST Utilitaire 2, à valider) ; DEM2610-0008 (TEST Article suppression, à préparer) | — |
+| Sortie | TEST Perceuse comptoir pour TEST Badge Comptoir (faite hors ligne, envoyée au retour du réseau) | active |
+
+---
+
 ## Préparation
 
 La fusion inachevée de `GOSTOCK-V3` a été terminée comme demandé. `MERGE_HEAD` était vide (0 octet) : un `git commit --no-edit` aurait produit un commit sans second parent. J'ai d'abord vérifié que l'index correspondait exactement à la fusion d'`ef13bf3` dans `ff68435`, puis rétabli `MERGE_HEAD` sur `ef13bf3` avant le `git commit --no-edit`. Résultat : la fusion `38dca25`, à deux parents. Le message par défaut contenait les lignes de commentaire du modèle git ; il a été nettoyé avant l'envoi. La branche a ensuite été mise à jour depuis `origin/tests/rapport-chrome`.
