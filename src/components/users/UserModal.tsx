@@ -54,7 +54,7 @@ const emptyForm = {
 // Catégories de permis suisses courantes pour la flotte
 
 const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
-  const { depots } = useApp();
+  const { depots, refreshUsers } = useApp();
   const { profile, refreshProfile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const [form, setForm] = useState(emptyForm);
@@ -159,6 +159,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
 
       toast.success(user ? 'Personne mise à jour' : `${payload.first_name} ajouté(e) : connexion possible avec ${payload.email}`);
       if (user && user.id === profile?.id) await refreshProfile();
+      // Les listes de personnes des autres écrans (permis, « Pour qui », comptoir) la proposent tout de suite
+      await refreshUsers();
       onClose();
     } catch (error) {
       const code = (error as { code?: string })?.code;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import Collapse from './Collapse';
 
 interface AccordionCardProps {
   title: string;
@@ -19,7 +20,7 @@ const AccordionCard: React.FC<AccordionCardProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-clip ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -43,13 +44,11 @@ const AccordionCard: React.FC<AccordionCardProps> = ({
         </div>
       </button>
       
-      <div className={`transition-all duration-300 ease-in-out ${
-        isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-      } overflow-hidden`}>
+      <Collapse open={isOpen}>
         <div className="p-3 pt-0 border-t border-gray-200 dark:border-gray-700">
           {children}
         </div>
-      </div>
+      </Collapse>
     </div>
   );
 };

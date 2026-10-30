@@ -1,5 +1,6 @@
 import React, { useState, ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import Collapse from './Collapse';
 
 interface AccordionProps {
   title: ReactNode;
@@ -25,7 +26,7 @@ const Accordion: React.FC<AccordionProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className={`border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ${className}`}>
+    <div className={`border border-gray-200 dark:border-gray-700 rounded-lg overflow-clip ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${titleClassName}`}
@@ -54,13 +55,11 @@ const Accordion: React.FC<AccordionProps> = ({
         </div>
       </button>
       
-      <div className={`transition-all duration-300 ease-in-out ${
-        isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-      } overflow-hidden ${contentClassName}`}>
+      <Collapse open={isOpen} className={contentClassName}>
         <div className="p-3 border-t border-gray-200 dark:border-gray-700">
           {children}
         </div>
-      </div>
+      </Collapse>
     </div>
   );
 };

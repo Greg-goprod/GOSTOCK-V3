@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { fileUrl } from './files';
+import { getLanguage, translateDocument } from '../i18n/translator';
 
 // État des lieux d'une location (réception chez le loueur, restitution) : document interne qui prouve
 // l'état du véhicule ou de l'outil, avec l'heure du serveur
@@ -82,8 +83,10 @@ export async function loadInspections(rentalIds: string[]): Promise<RentalInspec
 }
 
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const stamp = (at: string) => new Date(at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' });
-const day = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-CH');
+const LOCALES = { fr: 'fr-CH', de: 'de-CH', it: 'it-CH', en: 'en-GB' } as const;
+const locale = () => LOCALES[getLanguage()] ?? 'fr-CH';
+const stamp = (at: string) => new Date(at).toLocaleString(locale(), { dateStyle: 'short', timeStyle: 'short' });
+const day = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(locale());
 
 // PV imprimable (« Enregistrer en PDF » dans la fenêtre d'impression). Avec les deux états des lieux,
 // les vues sont mises côte à côte : réception à gauche, restitution à droite.
@@ -115,9 +118,9 @@ export async function printInspection(rental: InspectedRental, inspections: Rent
   const label = (kind: InspectionKind) => (kind === 'reception' ? 'Réception' : 'Restitution');
 
   const readings = (i: RentalInspection) => [
-    i.km !== null ? `Kilométrage : <b>${i.km.toLocaleString('fr-CH')} km</b>` : '',
-    i.fuel_level !== null ? `Carburant : <b>${FUEL[i.fuel_level]}</b>` : '',
-    i.hours !== null ? `Compteur d'heures : <b>${Number(i.hours).toLocaleString('fr-CH')} h</b>` : '',
+    i.km !== null ? `<span>Kilométrage :</span> <b>${i.km.toLocaleString(locale())} km</b>` : '',
+    i.fuel_level !== null ? `<span>Carburant :</span> <b>${FUEL[i.fuel_level]}</b>` : '',
+    i.hours !== null ? `<span>Compteur d'heures :</span> <b>${Number(i.hours).toLocaleString(locale())} h</b>` : '',
   ].filter(Boolean).join(' · ');
 
   const damages = (i: RentalInspection) => (i.damages.length
@@ -130,8 +133,8 @@ export async function printInspection(rental: InspectedRental, inspections: Rent
     : '<p>—</p>');
 
   const signatures = (i: RentalInspection) => `<div class="sig">
-      <div><img src="${i.staff_signature}" alt=""><p>${escape(i.staff_name)}<br><small>pour ${escape(org.data?.name ?? 'l\'entreprise')}</small></p></div>
-      <div>${i.lessor_signature ? `<img src="${i.lessor_signature}" alt="">` : '<div class="blank"></div>'}<p>${escape(i.lessor_name ?? 'Loueur absent')}<br><small>pour ${escape(rental.rental_company)}</small></p></div>
+      <div><img src="${i.staff_signature}" alt=""><p>${escape(i.staff_name)}<br><small>pour ${escape(org.data?.name ?? 'GO-Mat')}</small></p></div>
+      <div>${i.lessor_signature ? `<img src="${i.lessor_signature}" alt="">` : '<div class="blank"></div>'}<p>${i.lessor_name ? escape(i.lessor_name) : 'Loueur absent'}<br><small>pour ${escape(rental.rental_company)}</small></p></div>
     </div>`;
 
   const column = (i: RentalInspection) => `<section>
@@ -147,7 +150,7 @@ export async function printInspection(rental: InspectedRental, inspections: Rent
   const photoGrid = `<h2>Photos</h2><table class="views"><thead><tr><th>Vue</th>${shown.map(i => `<th>${label(i.kind)}</th>`).join('')}</tr></thead><tbody>
     ${views.map(v => `<tr><td>${escape(v.label)}</td>${shown.map(i => `<td class="ph">${img(i.photos[v.id])}</td>`).join('')}</tr>`).join('')}
     </tbody></table>
-    ${shown.map(i => (i.extra_photos.length ? `<h3>Autres photos · ${label(i.kind)}</h3><div class="extra">${i.extra_photos.map(p => img(p)).join('')}</div>` : '')).join('')}`;
+    ${shown.map(i => (i.extra_photos.length ? `<h3>Autres photos (${label(i.kind).toLowerCase()})</h3><div class="extra">${i.extra_photos.map(p => img(p)).join('')}</div>` : '')).join('')}`;
 
   const title = back ? 'PV de réception et de restitution' : 'PV de réception';
   win.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title} · ${escape(rental.description)}</title>
@@ -171,15 +174,20 @@ export async function printInspection(rental: InspectedRental, inspections: Rent
     </style></head><body>
     <header>
       <div><h1>${title}</h1>
-        <p><b>${escape(rental.description)}</b>${rental.plate ? ` · ${escape(rental.plate)}` : ''}${rental.quantity > 1 ? ` · ${rental.quantity} unités` : ''}<br>
-        Loueur : ${escape(rental.rental_company)}${rental.contract_ref ? ` · contrat ${escape(rental.contract_ref)}` : ''}<br>
-        Location du ${day(rental.start_on)} au ${day(rental.end_on)}</p></div>
+        <p><b>${escape(rental.description)}</b>${rental.plate ? ` · <span>${escape(rental.plate)}</span>` : ''}${rental.quantity > 1 ? ` · <span>${rental.quantity} unités</span>` : ''}<br>
+        <span>Loueur :</span> <span>${escape(rental.rental_company)}</span>${rental.contract_ref ? ` · <span>contrat ${escape(rental.contract_ref)}</span>` : ''}<br>
+        <span>Location du ${day(rental.start_on)} au ${day(rental.end_on)}</span></p></div>
       ${logo.data?.value ? `<img src="${logo.data.value}" alt="">` : `<b>${escape(org.data?.name ?? '')}</b>`}
     </header>
     <div class="cols">${shown.map(column).join('')}</div>
     ${photoGrid}
     <p class="note">Document interne établi avec GO-Mat. Date et heure enregistrées par le serveur au moment de l'état des lieux.</p>
-    <script>window.onload = () => setTimeout(() => window.print(), 400);</script>
     </body></html>`);
   win.document.close();
+  // Le PV suit la langue de l'interface (les données saisies restent telles quelles)
+  translateDocument(win.document);
+  // Impression une fois les photos chargées
+  const print = () => setTimeout(() => win.print(), 400);
+  if (win.document.readyState === 'complete') print();
+  else win.addEventListener('load', print, { once: true });
 }

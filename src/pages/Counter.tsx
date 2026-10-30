@@ -337,6 +337,24 @@ const Counter: React.FC = () => {
       toast.success(`Retour : ${item.name}`);
       return;
     }
+    // Refus dès le scan, avec le vrai motif (sinon la base refuse seulement à la validation)
+    if (item.status === 'retired') {
+      toast.error(item.rentalId ? `« ${item.name} » est rendu au loueur : il ne peut plus sortir` : `« ${item.name} » est retiré du service`);
+      throw new Error('Retiré');
+    }
+    if (item.rentalUntil && due.slice(0, 10) > item.rentalUntil) {
+      toast.error(`« ${item.name} » est loué jusqu'au ${new Date(`${item.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')} : choisissez un retour avant`);
+      throw new Error('Location');
+    }
+    if (item.requiredTrainingId && navigator.onLine && owner) {
+      const { data: problem } = await supabase.rpc('training_problem', {
+        p_user_id: owner.id, p_equipment_id: item.id, p_until: new Date(due).toISOString(),
+      });
+      if (problem) {
+        toast.error(problem as string, { duration: 8000 });
+        throw new Error('Permis');
+      }
+    }
     addToCart(item, instance);
     toast.success(`Sortie : ${item.name}`);
     const reminders = accessories
@@ -714,7 +732,7 @@ const Counter: React.FC = () => {
               <div>
                 <label htmlFor="counter-dest" className={labelClass}>Chantier ou service</label>
                 <input id="counter-dest" list="counter-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
-            <datalist id="counter-dest-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
+            <datalist id="counter-dest-sites">{sites.map(site => <option key={site.name} value={site.name} label={site.registered ? 'Chantier' : 'Sans fiche chantier'} />)}</datalist>
             <SiteNotice value={destination} />
               </div>
               {consumableLines.length > 0 && (

@@ -59,6 +59,29 @@ const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   rentalUntil: item.rental_until ?? undefined
 });
 
+const mapUserRow = (u: Record<string, any>) => ({
+  id: u.id,
+  first_name: u.first_name,
+  last_name: u.last_name,
+  email: u.email,
+  phone: u.phone,
+  department: u.department,
+  role: u.role,
+  permissions: u.permissions || [],
+  active: u.active !== false,
+  linked: !!u.auth_user_id,
+  licenseCategories: u.license_categories || [],
+  licenseExpiresOn: u.license_expires_on,
+  personKind: u.person_kind ?? 'employee',
+  company: u.company,
+  accessUntil: u.access_until,
+  leftOn: u.left_on,
+  depositAmount: u.deposit_amount,
+  depositPaidOn: u.deposit_paid_on,
+  depositReturnedOn: u.deposit_returned_on,
+  dateCreated: u.created_at
+});
+
 // Nombre de jours avant l'échéance à partir duquel un retour est signalé
 const DUE_SOON_DAYS = 3;
 
@@ -266,28 +289,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setDeliveryNotes(transformedDeliveryNotes);
       }
       
-      setUsers((usersResult.data || []).map((u: Record<string, any>) => ({
-        id: u.id,
-        first_name: u.first_name,
-        last_name: u.last_name,
-        email: u.email,
-        phone: u.phone,
-        department: u.department,
-        role: u.role,
-        permissions: u.permissions || [],
-        active: u.active !== false,
-        linked: !!u.auth_user_id,
-        licenseCategories: u.license_categories || [],
-        licenseExpiresOn: u.license_expires_on,
-        personKind: u.person_kind ?? 'employee',
-        company: u.company,
-        accessUntil: u.access_until,
-        leftOn: u.left_on,
-        depositAmount: u.deposit_amount,
-        depositPaidOn: u.deposit_paid_on,
-        depositReturnedOn: u.deposit_returned_on,
-        dateCreated: u.created_at
-      })));
+      setUsers((usersResult.data || []).map(mapUserRow));
       setEquipment(transformedEquipment);
       // Mapping strict pour Category
       setCategories(categoriesResult.data?.map((item: Record<string, any>) => ({
@@ -365,6 +367,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const refreshData = async () => {
     await fetchAppData();
+  };
+
+  // Liste des personnes seule (après une création ou une modification) : sans recharger tout le reste
+  const refreshUsers = async () => {
+    const { data, error } = await supabase.from('users').select('*').order('last_name');
+    if (!error) setUsers((data || []).map(mapUserRow));
   };
 
   const addEquipment = async (equipmentData: Omit<Equipment, 'id' | 'createdAt'>) => {
@@ -772,6 +780,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         updateEquipment,
         deleteEquipment,
         refreshData,
+        refreshUsers,
         refreshEquipmentData,
         forceUpdateEquipmentAvailability,
         forceUpdateOverdueCheckouts,

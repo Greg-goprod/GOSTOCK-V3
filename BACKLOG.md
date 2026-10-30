@@ -165,6 +165,18 @@ Migration `20261030000024_corrections_tests_chrome.sql` appliquée sur GO-MAT.
   exiger un permis machine. Permis de conduire : toutes les catégories suisses, avec les équivalences
   (B → B1/F/G/M, CE → C1E/BE, DE → D1E/BE, F → G/M…). Dénominations à faire valider par la sécurité / Suva.
 
+## Rapport de tests du lot 16 (30.10) — corrections
+
+- **P5** (critique) : revenir sur l'onglet ne démonte plus l'application (supabase-js émet SIGNED_IN à chaque retour ;
+  seul un vrai changement de personne affiche « Chargement… »). Vérifié par test simulé avant / après.
+- **R2** : sections repliables sans hauteur maximale (`Collapse`, `overflow: clip`) : pied de formulaire collant visible.
+- **L6** : PV de location traduit (`translateDocument`). **L1** : listes de personnes à jour après création.
+- L2/L9 comptoir : refus au scan (retiré, rendu au loueur, fin de location, permis machine) ; L3 « Rendu au loueur » ;
+  L4 pastille après prolongation ; L5/L7 traductions (dont les 18 permis) ; L8 message « Permis et formations »
+  (migration 00027) ; L9 permis du véhicule vérifié au choix, restitution vérifiée avant la saisie ; L10 fin de
+  location dans la disponibilité ; L11 kilométrage ; L12 annulation par le magasin ; R1 panneaux fermés masqués
+  (`inert`) ; R3 suggestions « Chantier » / « Sans fiche chantier ».
+
 ## Dettes techniques
 
 - **Vite 5 → 8** : failles limitées au serveur de développement ; saut majeur (Node ≥ 20.19).

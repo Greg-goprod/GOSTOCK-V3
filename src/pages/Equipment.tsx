@@ -330,7 +330,7 @@ export default function Equipment() {
               {/* Nom du matériel */}
               <div>
                 <h3 className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white break-words">{eq.name}</h3>
-                {eq.rentalUntil && <div className="mt-1"><RentalBadge until={eq.rentalUntil} /></div>}
+                {eq.rentalUntil && <div className="mt-1"><RentalBadge until={eq.rentalUntil} returned={eq.status === 'retired'} /></div>}
                 {eq.shortTitle && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{eq.shortTitle}</p>
                 )}

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ChevronsLeft, ChevronsRight, type LucideIcon } from 'lucide-react';
 
 import { MxPortal } from './MxPortal';
@@ -333,6 +333,17 @@ export function MxDrawer({
     stackFamily: 'drawer',
   });
 
+  // React 18 ne pose pas l'attribut `inert` reçu en propriété : on le règle sur le nœud lui-même,
+  // pour qu'un panneau fermé (encore monté pour l'animation) ne soit ni atteignable ni annoncé.
+  const nodeRef = useRef<(HTMLElement & { inert?: boolean }) | null>(null);
+  const setPanel = useCallback((node: HTMLElement | null) => {
+    nodeRef.current = node;
+    panelRef(node);
+  }, [panelRef]);
+  useEffect(() => {
+    if (nodeRef.current) nodeRef.current.inert = !open;
+  }, [open]);
+
   return (
     <MxPortal>
       <div
@@ -353,10 +364,11 @@ export function MxDrawer({
       />
 
       <div
-        ref={panelRef}
+        ref={setPanel}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        aria-hidden={open ? undefined : true}
         tabIndex={-1}
         {...((!open ? { inert: '' } : {}) as Record<string, string>)}
         // Ilot de theme LOCAL, absent en `inherit` (defaut) : rendu identique

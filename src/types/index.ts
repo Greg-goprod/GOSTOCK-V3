@@ -333,6 +333,7 @@ export interface AppContextType {
   updateEquipment: (id: string, equipmentData: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  refreshUsers: () => Promise<void>;
   refreshEquipmentData: () => Promise<Equipment[]>;
   forceUpdateEquipmentAvailability: () => Promise<void>;
   forceUpdateOverdueCheckouts: () => Promise<void>;

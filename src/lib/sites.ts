@@ -4,8 +4,14 @@ import { supabase } from './supabase';
 // Chantiers proposés à la saisie : d'abord les fiches chantier ouvertes, puis les noms déjà saisis
 // (demandes et sorties de consommables) ; même orthographe d'une sortie à l'autre, pour que les coûts
 // se regroupent bien par chantier. Les chantiers clôturés ne sont plus proposés.
+// « registered » : le nom a une fiche chantier (sinon le matériel n'est rattaché à aucun chantier).
+export interface SiteSuggestion {
+  name: string;
+  registered: boolean;
+}
+
 export function useSiteSuggestions() {
-  const [sites, setSites] = useState<string[]>([]);
+  const [sites, setSites] = useState<SiteSuggestion[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -22,7 +28,10 @@ export function useSiteSuggestions() {
         const k = key(value);
         if (value && !closed.has(k) && !open.some(name => key(name) === k) && !seen.has(k)) seen.set(k, value);
       }
-      setSites([...open, ...[...seen.values()].sort((a, b) => a.localeCompare(b, 'fr'))]);
+      setSites([
+        ...open.map(name => ({ name, registered: true })),
+        ...[...seen.values()].sort((a, b) => a.localeCompare(b, 'fr')).map(name => ({ name, registered: false })),
+      ]);
     });
   }, []);
 

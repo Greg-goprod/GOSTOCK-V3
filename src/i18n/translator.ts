@@ -12,7 +12,7 @@ export const LANGUAGES: { id: Language; label: string }[] = [
 ];
 
 const STORAGE_KEY = 'gomat-language';
-const ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'alt'];
+const ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'alt', 'label'];
 const SKIP = 'script, style, textarea, code, pre, [translate="no"], .notranslate';
 
 interface Pattern {
@@ -172,6 +172,21 @@ const loaders: Record<Exclude<Language, 'fr'>, () => Promise<{ default: Record<s
 };
 
 export const getLanguage = () => current;
+
+// Document imprimable ouvert dans une autre fenêtre (PV, rapports) : traduit une fois, avant l'impression
+export function translateDocument(doc: Document) {
+  if (current === 'fr') return;
+  doc.documentElement.lang = current;
+  doc.title = translateText(doc.title);
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const value = node.nodeValue ?? '';
+    const shown = translateText(value);
+    if (shown !== value) node.nodeValue = shown;
+    node = walker.nextNode();
+  }
+}
 
 export async function setLanguage(language: Language) {
   try { localStorage.setItem(STORAGE_KEY, language); } catch { /* stockage indisponible */ }

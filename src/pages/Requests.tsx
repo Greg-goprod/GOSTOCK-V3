@@ -382,12 +382,23 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
     (async () => {
       const result: Record<string, string> = {};
       for (const item of items) {
+        // Objet loué : réservable seulement jusqu'à la fin du contrat (contrôlé aussi en base)
+        const until = item.kind === 'vehicle' ? vehicles.find(v => v.id === item.id)?.rentalUntil : equipment.find(e => e.id === item.id)?.rentalUntil;
+        if (until && endIso.slice(0, 10) > until) {
+          result[item.id] = `Location jusqu'au ${new Date(`${until}T12:00:00`).toLocaleDateString('fr-CH')} : retour dépassé`;
+          continue;
+        }
         if (item.kind === 'tool') {
           const { data } = await supabase!.rpc('tool_availability', { p_equipment_id: item.id, p_start: startIso, p_end: endIso });
           result[item.id] = typeof data === 'number' ? `${data} disponible${data > 1 ? 's' : ''} sur la période` : '';
         } else if (item.kind === 'vehicle') {
           const { data } = await supabase!.rpc('vehicle_unavailability', { p_vehicle_id: item.id, p_start: startIso, p_end: endIso });
-          result[item.id] = data ? String(data) : 'Libre sur la période';
+          // Permis du conducteur vérifié dès le choix du véhicule (et non seulement à l'envoi)
+          const category = vehicles.find(v => v.id === item.id)?.licenseCategory;
+          const { data: license } = requesterId && category
+            ? await supabase!.rpc('license_covers', { p_user_id: requesterId, p_category: category, p_until: endIso })
+            : { data: null };
+          result[item.id] = data ? String(data) : license ? String(license) : 'Libre sur la période';
         } else {
           const stock = consumableStock.find(s => s.equipmentId === item.id && s.depotId === depotId)?.quantity ?? 0;
           result[item.id] = `${stock} ${item.unit ?? ''} en stock au dépôt`;
@@ -396,7 +407,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
       if (!cancelled) setAvailability(result);
     })();
     return () => { cancelled = true; };
-  }, [items, startIso, endIso, depotId, periodOk, consumableStock]);
+  }, [items, startIso, endIso, depotId, periodOk, consumableStock, requesterId, vehicles, equipment]);
 
   const candidates = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -472,7 +483,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
           <div>
             <label htmlFor="req-dest" className={labelClass}>Chantier ou service</label>
             <input id="req-dest" list="req-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
-            <datalist id="req-dest-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
+            <datalist id="req-dest-sites">{sites.map(site => <option key={site.name} value={site.name} label={site.registered ? 'Chantier' : 'Sans fiche chantier'} />)}</datalist>
             <SiteNotice value={destination} />
           </div>
           <div>
@@ -548,7 +559,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
                       {item.kind === 'vehicle' && <Truck size={14} className="inline mr-1 align-text-bottom" aria-hidden="true" />}
                       {item.name}
                     </div>
-                    <div className={`text-xs ${/réservé|échue|dépassé|maintenance|retiré|^0 /.test(availability[item.id] || '') ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                    <div className={`text-xs ${/réservé|échue|dépassé|maintenance|retiré|permis|^0 /.test(availability[item.id] || '') ? 'text-danger-700 dark:text-danger-300' : 'text-gray-600 dark:text-gray-400'}`}>
                       {availability[item.id] || (periodOk ? 'Vérification…' : 'Choisissez une période valide')}
                     </div>
                   </div>
@@ -826,9 +837,12 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
             ) : (
               <p className="text-sm text-gray-600 dark:text-gray-400">En attente de la décision d'un responsable.</p>
             )}
-            {isOwner && !can('approve') && (
+            {/* Annuler (sans motif de refus) : par le demandeur, ou par le magasin et les responsables */}
+            {(isOwner || can('approve') || can('scan')) && (
               <div className="flex justify-end">
-                <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>Annuler ma demande</Button>
+                <Button variant="outline" onClick={() => setStatus('cancelled', `Demande ${request.number} annulée`)} loading={busy}>
+                  {isOwner ? 'Annuler ma demande' : 'Annuler la demande'}
+                </Button>
               </div>
             )}
           </div>

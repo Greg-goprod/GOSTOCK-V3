@@ -9,6 +9,7 @@ import SignaturePad from '../common/SignaturePad';
 import { supabase } from '../../lib/supabase';
 import { fileUrl } from '../../lib/files';
 import { errorMessage } from '../../lib/requests';
+import { translateText } from '../../i18n/translator';
 import {
   DAMAGE_ZONES, DEFAULT_ACCESSORIES, InspectedRental, InspectionAccessory, InspectionKind, RentalInspection, VIEWS,
 } from '../../lib/rentalInspection';
@@ -73,7 +74,8 @@ const RentalInspectionModal: React.FC<Props> = ({ rental, kind, reception, onClo
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (missing.length) return toast.error(`Photos manquantes : ${missing.join(', ')}`);
+    // Noms des vues traduits un par un : la liste entière ne correspond à aucune phrase du dictionnaire
+    if (missing.length) return toast.error(`Photos manquantes : ${missing.map(label => translateText(label)).join(', ')}`);
     if (type === 'vehicle' && km.trim() === '') return toast.error('Relevez le kilométrage');
     if (type === 'vehicle' && reception?.km != null && Number(km) < reception.km) {
       return toast.error(`Le kilométrage ne peut pas être inférieur à celui de la réception (${reception.km.toLocaleString('fr-CH')} km)`);
@@ -123,7 +125,7 @@ const RentalInspectionModal: React.FC<Props> = ({ rental, kind, reception, onClo
             {type === 'vehicle' && (
               <div>
                 <label htmlFor="insp-km" className={labelClass}>Kilométrage</label>
-                <input id="insp-km" type="number" min={0} inputMode="numeric" value={km} onChange={e => setKm(e.target.value)} className={`${inputClass} font-mono`} required />
+                <input id="insp-km" type="number" min={0} inputMode="numeric" value={km} onChange={e => setKm(e.target.value)} className={`${inputClass} font-mono`} aria-required="true" />
               </div>
             )}
             {type === 'vehicle' && <FuelInput value={fuel} onChange={setFuel} />}

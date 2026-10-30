@@ -395,7 +395,7 @@ const StockActionModal: React.FC<StockActionModalProps> = ({ action, item, defau
             <div>
               <label htmlFor="stock-destination" className={labelClass}>Chantier ou service</label>
               <input id="stock-destination" list="stock-destination-sites" autoComplete="off" type="text" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens, Service technique" />
-            <datalist id="stock-destination-sites">{sites.map(site => <option key={site} value={site} />)}</datalist>
+            <datalist id="stock-destination-sites">{sites.map(site => <option key={site.name} value={site.name} label={site.registered ? 'Chantier' : 'Sans fiche chantier'} />)}</datalist>
               <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Indiquez une personne, un chantier ou un service (au moins l'un des deux).</p>
             </div>
           </>

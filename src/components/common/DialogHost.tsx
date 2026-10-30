@@ -17,7 +17,11 @@ const DialogHost: React.FC = () => {
     if (current) {
       setShown(current);
       setValue(current.defaultValue ?? '');
+      return;
     }
+    // Fermé : le texte de la dernière question disparaît après l'animation de sortie
+    const timer = window.setTimeout(() => setShown(null), 350);
+    return () => window.clearTimeout(timer);
   }, [current]);
 
   const answer = (result: boolean | string | null) => {

@@ -160,7 +160,7 @@ const SelfService: React.FC = () => {
             <div>
               <label htmlFor="ss-site" className={labelClass}>Pour le chantier</label>
               <input id="ss-site" list="ss-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
-              <datalist id="ss-sites">{sites.map(s => <option key={s} value={s} />)}</datalist>
+              <datalist id="ss-sites">{sites.map(site => <option key={site.name} value={site.name} label={site.registered ? 'Chantier' : 'Sans fiche chantier'} />)}</datalist>
             </div>
           </div>
           <div className="flex justify-end">

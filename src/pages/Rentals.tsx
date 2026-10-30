@@ -166,7 +166,8 @@ const Rentals: React.FC = () => {
     const { error } = await supabase.from('rentals').update(changes).eq('id', rental.id);
     if (error) return toast.error(errorMessage(error));
     toast.success(message);
-    await load();
+    // Véhicule ou outil dans le stock : sa pastille « Loué jusqu'au » suit la nouvelle date
+    await Promise.all([load(), rental.kind !== 'other' ? refreshData() : Promise.resolve()]);
   };
 
   const markReturned = async (rental: Rental) => {
@@ -182,6 +183,28 @@ const Rentals: React.FC = () => {
   const extend = (rental: Rental) => update(rental, { end_on: plusDays(rental.end_on, 7) }, `Prolongée jusqu'au ${fmt(plusDays(rental.end_on, 7))}`);
 
   const inspectionOf = (rental: Rental, kind: InspectionKind) => inspections.find(i => i.rental_id === rental.id && i.kind === kind);
+
+  // Restitution : on vérifie avant la saisie de l'état des lieux que rien n'est encore dehors ni prévu
+  const startReturn = async (rental: Rental) => {
+    const [v, e] = await Promise.all([
+      supabase.from('vehicles').select('id').eq('rental_id', rental.id),
+      supabase.from('equipment').select('id').eq('rental_id', rental.id),
+    ]);
+    const vehicleIds = (v.data || []).map(x => x.id as string);
+    const equipmentIds = (e.data || []).map(x => x.id as string);
+    const [trips, outs, planned] = await Promise.all([
+      vehicleIds.length ? supabase.from('vehicle_trips').select('id').in('vehicle_id', vehicleIds).is('end_at', null) : Promise.resolve({ data: [] }),
+      equipmentIds.length ? supabase.from('checkouts').select('id').in('equipment_id', equipmentIds).in('status', ['active', 'overdue']) : Promise.resolve({ data: [] }),
+      supabase.from('request_items').select('requests!inner(number, status)')
+        .or([...vehicleIds.map(id => `vehicle_id.eq.${id}`), ...equipmentIds.map(id => `equipment_id.eq.${id}`)].join(',') || 'id.is.null')
+        .in('requests.status', ['requested', 'approved', 'ready', 'out']),
+    ]);
+    if (trips.data?.length) return toast.error('Le véhicule est encore en route : clôturez le trajet d\'abord');
+    if (outs.data?.length) return toast.error('L\'outil est encore sorti : enregistrez son retour au comptoir d\'abord');
+    const numbers = [...new Set((planned.data || []).map(row => (row as unknown as { requests: { number: string } }).requests.number))];
+    if (numbers.length) return toast.error(`Encore prévu dans les demandes ${numbers.join(', ')} : clôturez-les ou retirez-le d'abord`, { duration: 8000 });
+    setInspecting({ rental, kind: 'return' });
+  };
 
   const printPv = async (rental: Rental) => {
     try {
@@ -265,7 +288,7 @@ const Rentals: React.FC = () => {
                   {fmt(r.start_on)} → {fmt(r.end_on)}
                   {r.site_name ? ` · ${r.site_name}` : ''}
                   {name(r.responsible_id) ? ` · ${name(r.responsible_id)}` : ''}
-                  {' · '}{chf(r.daily_rate)}/jour · {r.days_billed} j facturés · <strong className="font-mono">{chf(r.cost)}</strong>
+                  {' · '}<span>{`${chf(r.daily_rate)}/jour`}</span>{' · '}<span>{`${r.days_billed} j facturés`}</span>{' · '}<strong className="font-mono">{chf(r.cost)}</strong>
                 </p>
                 <p className={`text-xs font-semibold ${r.state === 'overdue' ? 'text-danger-700 dark:text-danger-300' : r.state === 'returned' ? 'text-success-700 dark:text-success-300' : daysLeft <= 2 ? 'text-warning-700 dark:text-warning-300' : 'text-gray-600 dark:text-gray-400'}`}>
                   {r.kind !== 'other' && r.state !== 'returned' && !inspectionOf(r, 'reception') ? 'Réception à faire chez le loueur'
@@ -289,7 +312,7 @@ const Rentals: React.FC = () => {
                 )}
                 {r.kind !== 'other' && r.state !== 'returned' && (canEdit || r.responsible_id === profile?.id) && (
                   inspectionOf(r, 'reception')
-                    ? <Button size="sm" icon={<ClipboardCheck size={14} />} onClick={() => setInspecting({ rental: r, kind: 'return' })}>Restitution</Button>
+                    ? <Button size="sm" icon={<ClipboardCheck size={14} />} onClick={() => startReturn(r)}>Restitution</Button>
                     : <Button size="sm" icon={<ClipboardCheck size={14} />} onClick={() => setInspecting({ rental: r, kind: 'reception' })}>Réception</Button>
                 )}
                 {canEdit && <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier ${r.description}`} onClick={() => openForm(r)} />}
