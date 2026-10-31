@@ -17,6 +17,7 @@ import { LICENSE_CATEGORIES } from '../lib/licenses';
 import TrainingSelect from '../components/trainings/TrainingSelect';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface Rental {
   id: string;
@@ -236,13 +237,14 @@ const Rentals: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
-          <PageTitle>Locations</PageTitle>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Matériel loué chez un loueur. Alerte 2 jours avant la date de retour, puis chaque jour de retard.</p>
-        </div>
-        {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouvelle location</Button>}
+      <div>
+        <PageTitle>Locations</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Matériel loué chez un loueur. Alerte 2 jours avant la date de retour, puis chaque jour de retard.</p>
       </div>
+      <PageCommands
+        filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+          options={[{ value: 'open', label: 'En cours' }, { value: 'all', label: 'Historique' }]} />}
+        primary={canEdit ? <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouvelle location</Button> : undefined} />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -261,8 +263,6 @@ const Rentals: React.FC = () => {
         </div>
       </div>
 
-      <MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
-        options={[{ value: 'open', label: 'En cours' }, { value: 'all', label: 'Historique' }]} />
 
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
         {shown.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune location{filter === 'open' ? ' en cours' : ''}.</li>}

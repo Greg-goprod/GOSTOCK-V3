@@ -15,6 +15,7 @@ import { confirmAction } from '../lib/confirm';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface Site {
   id: string;
@@ -190,19 +191,12 @@ const Sites: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Chantiers</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Budget matériel, dépenses et matériel encore sur place. Les sorties sont rattachées par le nom du chantier.</p>
-        </div>
-        {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau chantier</Button>}
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nom, client, adresse…" aria-label="Rechercher un chantier" className={`${inputClass} max-w-xs`} />
-        <MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
-          options={[{ value: 'open', label: 'En cours' }, { value: 'closed', label: 'Clôturés' }, { value: 'all', label: 'Tous' }]} />
-      </div>
+      <PageCommands search={<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nom, client, adresse…" aria-label="Rechercher un chantier" className={`${inputClass} w-full`} />} filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+          options={[{ value: 'open', label: 'En cours' }, { value: 'closed', label: 'Clôturés' }, { value: 'all', label: 'Tous' }]} />} primary={canEdit ? <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau chantier</Button> : undefined} />
 
       {shown.length === 0 && (
         <MxEmpty icon={HardHat} title={sites.length === 0 ? 'Aucun chantier' : 'Aucun chantier dans ce filtre'}

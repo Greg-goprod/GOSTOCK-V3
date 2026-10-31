@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Hand, Minus, Plus, Search, Settings2, Warehouse } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
@@ -13,6 +12,7 @@ import { useSiteSuggestions } from '../lib/sites';
 import { Equipment } from '../types';
 import PageTitle from '../components/common/PageTitle';
 import { useCurrentDepot } from '../lib/useCurrentDepot';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 type StockAction = 'consume' | 'receive' | 'count' | 'transfer' | 'threshold';
 
@@ -54,9 +54,8 @@ const StatePill: React.FC<{ quantity: number; isLow: boolean; lowDepots: string[
 const Consumables: React.FC = () => {
   const { equipment, depots, consumableStock, suppliers, refreshData } = useApp();
   // Dépôt affiché = dépôt choisi dans la barre du haut ('all' = tous)
-  const { depotId: currentDepot, setDepotId: setCurrentDepot } = useCurrentDepot();
+  const { depotId: currentDepot } = useCurrentDepot();
   const depotFilter = currentDepot || 'all';
-  const setDepotFilter = (value: string) => setCurrentDepot(value === 'all' ? '' : value);
   const [search, setSearch] = useState('');
   const [onlyLow, setOnlyLow] = useState(false);
   const [action, setAction] = useState<{ type: StockAction; item: Equipment } | null>(null);
@@ -114,60 +113,34 @@ const Consumables: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
-          <PageTitle>Consommables</PageTitle>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Stock par dépôt, sorties, réceptions et seuils d'alerte</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" icon={<Warehouse size={16} />} onClick={() => setShowDepots(true)}>
-            Dépôts
-          </Button>
-          <Link
-            to="/commande"
-            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm lg:text-xs font-medium text-gray-800 dark:text-gray-100 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 min-h-[44px] lg:min-h-0"
-          >
-            <ClipboardList size={16} aria-hidden="true" />
-            Feuille de commande
-          </Link>
-          <Button variant="outline" icon={<Hand size={16} />} onClick={() => setShowSelfService(true)}>Libre-service</Button>
-          <Button variant="outline" icon={<Settings2 size={16} />} onClick={() => setShowThresholds(true)}>
-            Seuils proposés
-          </Button>
-          <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>
-            Nouveau consommable
-          </Button>
-        </div>
+      <div>
+        <PageTitle>Consommables</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Stock par dépôt, sorties, réceptions et seuils d'alerte</p>
       </div>
-
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative basis-full sm:basis-auto sm:flex-1 sm:min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" aria-hidden="true" />
-          <input
-            type="search"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Article, référence, fournisseur…"
-            aria-label="Rechercher un consommable"
-            className={`${inputClass} pl-10`}
-          />
-        </div>
-        <select
-          value={depotFilter}
-          onChange={e => setDepotFilter(e.target.value)}
-          aria-label="Dépôt affiché"
-          className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 w-full sm:w-auto"
-        >
-          <option value="all">Tous les dépôts</option>
-          {depots.map(d => (
-            <option key={d.id} value={d.id}>{d.name}</option>
-          ))}
-        </select>
-        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 min-h-[44px] lg:min-h-0">
-          <input type="checkbox" checked={onlyLow} onChange={e => setOnlyLow(e.target.checked)} className="h-4 w-4" />
-          Stock bas seulement {lowCount > 0 && `(${lowCount})`}
-        </label>
-      </div>
+      {/* Le dépôt affiché se choisit dans la barre du haut ; la feuille de commande est l'onglet « À commander » */}
+      <PageCommands
+        search={
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" aria-hidden="true" />
+            <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Article, référence, fournisseur…"
+              aria-label="Rechercher un consommable" className={`${inputClass} pl-10`} />
+          </div>
+        }
+        filters={
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 min-h-[44px] lg:min-h-0">
+            <input type="checkbox" checked={onlyLow} onChange={e => setOnlyLow(e.target.checked)} />
+            Stock bas seulement {lowCount > 0 && `(${lowCount})`}
+          </label>
+        }
+        primary={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" icon={<Warehouse size={16} />} onClick={() => setShowDepots(true)}>Dépôts</Button>
+            <Button variant="outline" icon={<Hand size={16} />} onClick={() => setShowSelfService(true)}>Libre-service</Button>
+            <Button variant="outline" icon={<Settings2 size={16} />} onClick={() => setShowThresholds(true)}>Seuils proposés</Button>
+            <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouveau consommable</Button>
+          </div>
+        }
+      />
 
       {rows.length === 0 ? (
         <div className="text-center py-12 text-gray-600 dark:text-gray-400">

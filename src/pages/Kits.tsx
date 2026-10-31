@@ -12,6 +12,7 @@ import { Kit, KitItem, kitValue } from '../lib/kits';
 import { confirmAction } from '../lib/confirm';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -137,13 +138,11 @@ const Kits: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
-        <div>
-          <PageTitle>Kits</PageTitle>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Au comptoir, le QR du kit fait sortir tout son contenu ; au retour, il signale ce qui manque.</p>
-        </div>
-        {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau kit</Button>}
+      <div>
+        <PageTitle>Kits</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Au comptoir, le QR du kit fait sortir tout son contenu ; au retour, il signale ce qui manque.</p>
       </div>
+      <PageCommands primary={canEdit ? <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau kit</Button> : undefined} />
 
       {kits.length === 0 && (
         <div className="print:hidden">

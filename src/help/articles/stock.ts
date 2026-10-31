@@ -24,7 +24,7 @@ export const STOCK: HelpArticle[] = [
         id: 'sortir',
         title: 'Sortir un consommable sans passer par le comptoir',
         steps: [
-          { text: 'Choisis le dépôt dans « Dépôt affiché ».' },
+          { text: 'Choisis le dépôt dans la barre du haut (sélecteur de dépôt).' },
           { text: 'Sur la ligne de l\'article, clique sur « Sortir ». Le volet « Sortie de consommable » rappelle le stock du dépôt et le seuil.', shot: 'consommables-2' },
           { text: 'Vérifie le « Dépôt » et tape la « Quantité ».' },
           { text: 'Remplis « Pour qui » et/ou « Chantier ou service » (au moins l\'un des deux), une « Note (facultatif) », puis « Enregistrer ».' },
@@ -90,7 +90,7 @@ export const STOCK: HelpArticle[] = [
         id: 'creer',
         title: 'Créer les commandes',
         steps: [
-          { text: 'Ouvre « Feuille de commande » (« À commander »). Tu vois, par fournisseur, ce qui est sous le seuil et la quantité proposée.', shot: 'commande-1' },
+          { text: 'Ouvre l\'onglet « À commander » (feuille de commande). Tu vois, par fournisseur, ce qui est sous le seuil et la quantité proposée.', shot: 'commande-1' },
           { text: 'Choisis le dépôt, ajuste les quantités « À commander » si besoin.' },
           { text: 'Clique sur « Créer les bons de commande ».' },
         ],

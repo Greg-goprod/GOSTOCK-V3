@@ -216,8 +216,8 @@ export const MAGASIN: HelpArticle[] = [
         steps: [
           { text: 'Ouvre « Magasin » › « Sorties ».', shot: 'sorties-1' },
           { text: 'Tape le nom de l\'outil ou de la personne dans « Rechercher par équipement ou utilisateur… ».' },
-          { text: '« Grille » ou « Liste » changent l\'affichage. Les retards sont en rouge.' },
-          { text: '« Détails / retour » ouvre le bon : outils, dates, et le bouton « Retourner » pour enregistrer un retour sans passer par le comptoir.' },
+          { text: 'Les icônes à droite de la recherche changent l\'affichage : cartes, liste ou par équipement. Les retards sont en rouge.' },
+          { text: 'En liste, l\'icône en forme d\'œil (« Détails / retour ») ouvre le bon : outils, dates, et le bouton « Retourner » pour enregistrer un retour sans passer par le comptoir.' },
         ],
       },
     ],

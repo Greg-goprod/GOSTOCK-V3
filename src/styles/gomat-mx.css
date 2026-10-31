@@ -588,3 +588,45 @@ html:not(.dark) :is(.text-primary-700, .text-primary-800) {
   margin-top: auto !important;
   justify-content: flex-end;
 }
+
+/* Lot 22 : tableaux comme Mannyx — en-têtes petits (10,5×0,9), graisse 500, sans fond ; lignes d'environ 51px */
+main table thead th {
+  background: transparent !important;
+  font-size: calc(10.5px * var(--mx-scale, 1)) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em !important;
+  color: var(--mx-text3) !important;
+  padding-top: calc(10px * var(--mx-scale, 1)) !important;
+  padding-bottom: calc(10px * var(--mx-scale, 1)) !important;
+  border-bottom: 1px solid var(--mx-border);
+}
+main table thead {
+  background: transparent !important;
+}
+main table tbody td {
+  font-size: calc(14px * var(--mx-scale, 1));
+  padding-top: calc(10.5px * var(--mx-scale, 1)) !important;
+  padding-bottom: calc(10.5px * var(--mx-scale, 1)) !important;
+}
+
+/* Lot 22 : cartes au rayon de Mannyx (10×0,9 ≈ 9px) */
+.mx-card {
+  border-radius: calc(10px * var(--mx-scale, 1));
+}
+@media (min-width: 1024px) {
+  /* Titre de page masqué : pas d'espace vide au-dessus du contenu */
+  .has-module-head .mx-page-head:not(.mx-page-head-keep) + *,
+  .has-module-head .mx-page-head:not(.mx-page-head-keep) + p + * {
+    margin-top: 0 !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Bloc titre + phrase d'introduction masqué en entier, sans laisser d'espace au-dessus du contenu */
+  .has-module-head > * > div:has(> .mx-page-head:not(.mx-page-head-keep)):not(:has(> :not(.mx-page-head, p))) {
+    display: none;
+  }
+  .has-module-head > * > :is(.mx-page-head:not(.mx-page-head-keep), div:has(> .mx-page-head:not(.mx-page-head-keep)):not(:has(> :not(.mx-page-head, p)))):first-child + * {
+    margin-top: 0 !important;
+  }
+}

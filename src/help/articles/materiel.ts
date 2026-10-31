@@ -16,7 +16,7 @@ export const MATERIEL: HelpArticle[] = [
         steps: [
           { text: 'Ouvre « Matériel » › « Outils ».', shot: 'outils-1' },
           { text: 'Tape le nom, le numéro de série ou le numéro d\'article dans « Rechercher par nom, numéro de série ou numéro d\'article... ».' },
-          { text: '« Filtres » limite par catégorie, groupe ou statut. « Grille » / « Liste » changent l\'affichage.' },
+          { text: '« Filtres » limite par catégorie, groupe ou statut. Les icônes à droite (cartes / liste) changent l\'affichage ; s\'il y a beaucoup d\'outils, les flèches « ‹ › » changent de page.' },
           { text: 'Lis la colonne « Disponible » (sur « Stock total ») et le « Statut » : Disponible, Sorti, En maintenance, Retiré, Perdu.' },
         ],
       },
@@ -43,7 +43,7 @@ export const MATERIEL: HelpArticle[] = [
         id: 'permis',
         title: 'Exiger un permis machine pour un outil',
         steps: [
-          { text: 'Sur la carte de l\'outil, clique sur le crayon (« Modifier »).' },
+          { text: 'Sur la carte de l\'outil, clique sur « ⋮ » en haut à droite, puis « Modifier » (ou clique simplement sur la carte).' },
           { text: 'Dans « Permis machine ou formation obligatoire », choisis le permis (ex. « Nacelle PEMP (IPAF) »).' },
           { text: 'Clique sur « Enregistrer ».' },
         ],
@@ -53,7 +53,7 @@ export const MATERIEL: HelpArticle[] = [
         id: 'historique',
         title: 'Voir l\'historique d\'un outil',
         steps: [
-          { text: 'Sur la carte de l\'outil, clique sur l\'icône d\'historique.' },
+          { text: 'Sur la carte de l\'outil, clique sur « ⋮ », puis « Historique ».' },
           { text: 'Tu vois, du plus récent au plus ancien : sorties, retours (avec leur état), entretiens, pertes, réparations.' },
         ],
       },
@@ -62,7 +62,7 @@ export const MATERIEL: HelpArticle[] = [
         title: 'Retirer un outil du service (ou le supprimer)',
         steps: [
           { text: 'Ouvre la fiche (crayon) et passe le « Statut » à « Retiré du service », puis « Enregistrer ».' },
-          { text: 'Supprimer n\'est possible que pour un outil jamais sorti : bouton poubelle « Supprimer l\'équipement ».' },
+          { text: 'Supprimer n\'est possible que pour un outil jamais sorti : menu « ⋮ » de la carte, puis « Supprimer ».' },
         ],
         result: 'Un outil retiré n\'est plus proposé ; son historique reste consultable.',
       },

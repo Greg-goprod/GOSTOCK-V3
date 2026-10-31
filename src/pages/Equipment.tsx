@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import AddEquipmentModal from '../components/equipment/AddEquipmentModal';
@@ -12,7 +11,7 @@ import MaintenanceModal from '../components/maintenance/MaintenanceModal';
 import FilterPanel from '../components/common/FilterPanel';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ExcelImport from '../components/import/ExcelImport';
-import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, Edit, Trash2, Download, Upload, Search, Filter, History } from 'lucide-react';
+import { Plus, QrCode, Wrench, PenTool, Package, Edit, Trash2, Download, Upload, Search, Filter, History } from 'lucide-react';
 import EquipmentHistoryModal from '../components/equipment/EquipmentHistoryModal';
 import { Equipment as EquipmentType, EquipmentInstance } from '../types';
 import StatusBadge from '../components/common/StatusBadge';
@@ -21,8 +20,14 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import RentalBadge from '../components/common/RentalBadge';
-import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityViewToggle } from '../components/mx/MxEntityViewToggle';
+import { MxPagination } from '../components/mx/MxPagination';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
 
 export default function Equipment() {
   const {
@@ -52,7 +57,11 @@ export default function Equipment() {
   const [selectedEquipmentForQR, setSelectedEquipmentForQR] = useState<EquipmentType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // Cartes par défaut, choix mémorisé (comme Mannyx)
+  const [viewMode, setViewModeState] = useState<'grid' | 'list'>(() => readMxViewMode('gomat-view-outils', ['grid', 'list'] as const, 'grid'));
+  const setViewMode = (mode: 'grid' | 'list') => { setViewModeState(mode); writeMxViewMode('gomat-view-outils', mode); };
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => Number(readMxViewMode('gomat-pagesize-outils', ['24', '48', '96'] as const, '48')));
   const [sortField, setSortField] = useState<'name' | 'category' | 'status'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
@@ -247,141 +256,37 @@ export default function Equipment() {
     return equipmentInstances.filter(instance => instance.equipmentId === equipmentId);
   };
 
-  const renderEquipmentCard = (eq: EquipmentType) => {
-    // Calculer la disponibilité
+  // Pagination (comme Mannyx) : la liste et les cartes affichent la même page
+  const totalPages = Math.max(1, Math.ceil(sortedEquipment.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedEquipment = sortedEquipment.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-    // Calculer la quantité totale et disponible
-    const totalQuantity = eq.totalQuantity || 1;
-    
-    // Calculer la disponibilité en utilisant la fonction getAvailableQuantity
-    let availableQuantity = 0;
-    if (['maintenance', 'lost', 'retired'].includes(eq.status)) {
-      availableQuantity = 0;
-      
-      if (eq.name.includes('Trepied laser petit') || eq.name.toLowerCase().includes('accu')) {
-        console.log('=== BADGE DEBUG ===');
-        console.log('Équipement en maintenance/perdu/retiré, disponibilité forcée à 0');
-        console.log('Status:', eq.status);
-        console.log('=== FIN BADGE DEBUG ===');
-      }
-    } else {
-      availableQuantity = getAvailableQuantity(eq);
-    }
-    
-    if (eq.name.includes('Trepied laser petit') || eq.name.toLowerCase().includes('accu')) {
-      console.log('=== BADGE FINAL ===');
-      console.log('Nom:', eq.name);
-      console.log('Status:', eq.status);
-      console.log('Stock total:', totalQuantity);
-      console.log('Disponibilité calculée:', availableQuantity);
-      console.log('=== FIN BADGE FINAL ===');
-    }
-
+  // Carte d'entité de la charte : photo ronde, nom, stock et disponibilité, statut ; actions dans le menu « ⋮ »
+  const renderEntityCard = (eq: EquipmentType) => {
+    const available = getAvailableQuantity(eq);
     return (
-      <Card key={eq.id} className="p-5 mx-card-hover border-[1.5px] border-transparent min-h-[180px]">
-        <div className="flex items-start space-x-4 h-full">
-          {/* Image à gauche */}
-          <div className="relative flex-shrink-0 flex items-center justify-center overflow-visible">
-            {eq.imageUrl ? (
-              <img 
-                src={eq.imageUrl} 
-                alt={eq.name}
-                onClick={() => setZoomedImage({ url: eq.imageUrl!, name: eq.name })}
-                className="w-16 h-16 object-cover rounded-md border-[1.5px] border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-700 p-2 cursor-zoom-in"
-                onError={(e) => {
-                  console.log("Erreur de chargement d'image:", eq.imageUrl);
-                  
-                  // Stratégie 1: Essayer d'ajouter https:// si l'URL ne commence pas par http ou https
-                  const originalSrc = e.currentTarget.src;
-                  if (!originalSrc.startsWith('http')) {
-                    const newSrc = `https://${originalSrc}`;
-                    console.log("Tentative avec URL corrigée:", newSrc);
-                    e.currentTarget.src = newSrc;
-                    return;
-                  }
-                  
-                  // Si la stratégie 1 ne fonctionne pas, on passe à l'icône de repli
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    // Create a fallback div with the Tool icon
-                    const fallbackDiv = document.createElement('div');
-                    fallbackDiv.className = 'w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center p-2';
-                    
-                    // We can't directly insert a React component, so we'll use a simple SVG
-                    fallbackDiv.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500 dark:text-gray-400 mx-auto">
-                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                      </svg>
-                    `;
-                    
-                    parent.appendChild(fallbackDiv);
-                  }
-                }}
-              />
-            ) : (
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center p-2">
-                <PenTool className="w-8 h-8 text-gray-500 dark:text-gray-400" />
-              </div>
-            )}
-          </div>
-
-          {/* Informations à droite */}
-          <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-            <div className="space-y-3">
-              {/* Nom du matériel */}
-              <div>
-                <h3 className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white break-words">{eq.name}</h3>
-                {eq.rentalUntil && <div className="mt-1"><RentalBadge until={eq.rentalUntil} returned={eq.status === 'retired'} /></div>}
-                {eq.shortTitle && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{eq.shortTitle}</p>
-                )}
-              </div>
-
-              {/* Badges simplifiés */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                {/* Badge Stock */}
-                <span className="px-2 py-0.5 bg-primary-50 bg-opacity-80 dark:bg-primary-900 dark:bg-opacity-80 text-primary-800 dark:text-primary-100 border border-primary-200 dark:border-primary-700 rounded-sm text-[length:calc(10.5px*var(--mx-scale,1))] font-bold uppercase tracking-[0.04em]">
-                  Stock: {totalQuantity}
-                </span>
-                
-                {/* Badge Disponible */}
-                <span className={`px-2 py-0.5 ${availableQuantity > 0 ? 'bg-success-50 bg-opacity-80 dark:bg-success-900 dark:bg-opacity-80 text-success-800 dark:text-success-100 border border-success-200 dark:border-success-700' : 'bg-danger-50 bg-opacity-80 dark:bg-danger-900 dark:bg-opacity-80 text-danger-800 dark:text-danger-100 border border-danger-200 dark:border-danger-700'} rounded-sm text-[length:calc(10.5px*var(--mx-scale,1))] font-bold uppercase tracking-[0.04em]`}>
-                  Disponible: {availableQuantity}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-1.5 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button
-                variant="outline"
-                size="sm"
-                ariaLabel={`Code QR de ${eq.name}`}
-                onClick={() => handleShowQR(eq.id)}
-              >
-                <QrCode className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" ariaLabel={`Historique de ${eq.name}`} onClick={() => setHistoryFor(eq)}>
-                <History className="w-4 h-4" />
-              </Button>
-              {canManage && (
-                <>
-                  <Button variant="outline" size="sm" ariaLabel={`Modifier ${eq.name}`} onClick={() => handleEdit(eq.id)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" ariaLabel={`Maintenance de ${eq.name}`} onClick={() => handleMaintenance(eq.id)}>
-                    <Wrench className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-tone-danger hover:text-tone-danger">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </Card>
+      <MxEntityCard
+        avatarSrc={eq.imageUrl || null}
+        avatarName={eq.name}
+        title={eq.name}
+        infoParts={[
+          { content: `Stock ${eq.totalQuantity ?? 1}` },
+          { content: `Disponible ${available}` },
+        ]}
+        statusBadge={<StatusBadge status={eq.status} />}
+        due={eq.rentalUntil ? <RentalBadge until={eq.rentalUntil} returned={eq.status === 'retired'} /> : undefined}
+        menuLabel={`Actions pour ${eq.name}`}
+        menuActions={[
+          { id: 'qr', label: 'Code QR', icon: QrCode, onSelect: () => handleShowQR(eq.id) },
+          { id: 'history', label: 'Historique', icon: History, onSelect: () => setHistoryFor(eq) },
+          ...(canManage ? [
+            { id: 'edit', label: 'Modifier', icon: Edit, onSelect: () => handleEdit(eq.id) },
+            { id: 'maintenance', label: 'Maintenance', icon: Wrench, onSelect: () => handleMaintenance(eq.id) },
+            { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => handleDelete(eq.id) },
+          ] : []),
+        ]}
+        onOpen={() => (canManage ? handleEdit(eq.id) : setHistoryFor(eq))}
+      />
     );
   };
 
@@ -389,7 +294,7 @@ export default function Equipment() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden w-full z-10 relative">
         <div className="overflow-x-auto w-full">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -419,7 +324,7 @@ export default function Equipment() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredEquipment.map((eq) => {
+              {pagedEquipment.map((eq) => {
                 const category = categories.find(c => c.id === eq.category);
                 
                 return (
@@ -522,74 +427,50 @@ export default function Equipment() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <PageTitle>Outils</PageTitle>
-        <div className="flex flex-wrap gap-2">
-          {canManage && (
-            <Button
-              variant="outline"
-              onClick={() => setShowImportModal(true)}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Importer
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            onClick={exportToCSV}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exporter
-          </Button>
-          {canManage && (
-            <Button onClick={() => setShowAddModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Ajouter un équipement
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative basis-full sm:basis-auto sm:flex-1 sm:min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom, numéro de série ou numéro d'article..."
-            aria-label="Rechercher un équipement"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-        <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as typeof viewMode)}
-          options={[{ value: 'grid', label: 'Grille', icon: Grid3X3 }, { value: 'list', label: 'Liste', icon: List }]} />
-        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-          <select 
-            value={sortField}
-            onChange={(e) => setSortField(e.target.value as 'name' | 'category' | 'status')}
-            className="px-3 py-2 border-0 focus:ring-0 focus:outline-none"
-          >
-            <option value="name">Nom</option>
-            <option value="category">Catégorie</option>
-            <option value="status">Statut</option>
-          </select>
-          <Button
-            variant="outline"
-            onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-            className="flex items-center gap-2 rounded-none border-0"
-          >
-            {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
-          </Button>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter className="w-4 h-4 mr-2" />
-          Filtres
-        </Button>
-      </div>
+      <PageTitle>Outils</PageTitle>
+      {/* Commandes dans l'en-tête de module : recherche · filtres · pagination · vue · action principale */}
+      <PageCommands
+        search={
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" aria-hidden="true" />
+            <input type="text" placeholder="Rechercher par nom, numéro de série ou numéro d'article..." aria-label="Rechercher un équipement"
+              value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+              className="w-full pl-9 pr-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800" />
+          </div>
+        }
+        filters={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <select value={sortField} onChange={(e) => setSortField(e.target.value as 'name' | 'category' | 'status')} aria-label="Trier par"
+                className="rounded-r-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3">
+                <option value="name">Nom</option>
+                <option value="category">Catégorie</option>
+                <option value="status">Statut</option>
+              </select>
+              <Button variant="outline" onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')} className="rounded-l-none -ml-px"
+                ariaLabel={sortDirection === 'asc' ? 'Tri croissant' : 'Tri décroissant'}>
+                {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
+              </Button>
+            </div>
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} icon={<Filter className="w-4 h-4" />}>Filtres</Button>
+          </div>
+        }
+        pagination={totalPages > 1 || sortedEquipment.length > 24 ? (
+          <MxPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage}
+            previousLabel="Page précédente" nextLabel="Page suivante" totalLabel={`${sortedEquipment.length} outil(s)`}
+            pageSize={pageSize} pageSizeOptions={[{ value: '24', label: '24' }, { value: '48', label: '48' }, { value: '96', label: '96' }]}
+            onPageSizeChange={size => { setPageSize(size); setPage(1); writeMxViewMode('gomat-pagesize-outils', String(size)); }}
+            pageSizeLabel="Outils par page" />
+        ) : undefined}
+        view={<MxEntityViewToggle value={viewMode === 'grid' ? 'cards' : 'list'} onChange={mode => setViewMode(mode === 'cards' ? 'grid' : 'list')} aria-label="Affichage des outils" />}
+        primary={
+          <div className="flex items-center gap-2">
+            {canManage && <Button variant="outline" onClick={() => setShowImportModal(true)} icon={<Upload className="w-4 h-4" />}>Importer</Button>}
+            <Button variant="outline" onClick={exportToCSV} icon={<Download className="w-4 h-4" />}>Exporter</Button>
+            {canManage && <Button onClick={() => setShowAddModal(true)} icon={<Plus className="w-4 h-4" />}>Ajouter un équipement</Button>}
+          </div>
+        }
+      />
 
       <FilterPanel
         isOpen={showFilters}
@@ -645,18 +526,13 @@ export default function Equipment() {
 
       {/* Affichage conditionnel selon le mode de vue sélectionné */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {sortedEquipment.map(renderEquipmentCard)}
-        </div>
+        // Grille de cartes de la charte (jusqu'à 8 colonnes selon la largeur), carte d'entité standard
+        <MxCardGrid items={pagedEquipment} getItemKey={eq => eq.id} renderItem={renderEntityCard} />
       ) : (
         renderEquipmentList()
       )}
 
-      {filteredEquipment.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Aucun équipement trouvé.</p>
-        </div>
-      )}
+      {filteredEquipment.length === 0 && <MxEmpty icon={Package} title="Aucun équipement trouvé" />}
 
       {/* Modals */}
       {historyFor && <EquipmentHistoryModal equipment={historyFor} onClose={() => setHistoryFor(null)} />}

@@ -11,6 +11,7 @@ import { CheckoutWithCalculatedStatus, DeliveryNote } from "../types";
 import toast from "react-hot-toast";
 import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 // Interface étendue pour les bons de livraison avec statut calculé
 interface DeliveryNoteWithStatus extends Omit<DeliveryNote, 'status'> {
@@ -380,14 +381,8 @@ export default function Checkouts() {
                         </ul>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenReturnModal(deliveryNote)}
-                          icon={<Eye size={14} />}
-                        >
-                          Détails / retour
-                        </Button>
+                        {/* Action en icône, comme les tableaux de Mannyx */}
+                        <Button variant="secondary" size="sm" onClick={() => handleOpenReturnModal(deliveryNote)} icon={<Eye size={14} />} ariaLabel="Détails / retour" />
                       </td>
                     </tr>
                   );
@@ -549,35 +544,24 @@ export default function Checkouts() {
         <PageTitle>Sorties</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-2">Bons de sortie et matériel emprunté, avec leur date de retour.</p>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <input
-          type="text"
-          placeholder="Rechercher par équipement ou utilisateur..."
-          aria-label="Rechercher par équipement ou utilisateur"
-          className="w-full sm:w-64 p-2 px-3 border border-gray-300 rounded-md"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={handleForceUpdateStatus}
-            icon={<RefreshCw size={16} />}
-            loading={isLoading}
-          >
-            Mettre à jour les statuts
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => setShowCheckoutModal(true)}
-            icon={<Plus size={16} />}
-          >
-            Nouvelle sortie
-          </Button>
-          <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as typeof viewMode)}
-            options={[{ value: 'grid', label: 'Grille', icon: Grid3X3 }, { value: 'list', label: 'Liste', icon: List }, { value: 'equipment', label: 'Équipements', icon: CornerDownLeft }]} />
-        </div>
-      </div>
+      <PageCommands
+        search={
+          <input type="text" placeholder="Rechercher par équipement ou utilisateur..." aria-label="Rechercher par équipement ou utilisateur"
+            className="w-full px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        }
+        view={
+          // Vue « Équipements » en plus des cartes et de la liste ; icônes seules, comme la bascule de Mannyx
+          <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as typeof viewMode)} iconOnly
+            options={[{ value: 'grid', label: 'Cartes', icon: Grid3X3 }, { value: 'list', label: 'Liste', icon: List }, { value: 'equipment', label: 'Par équipement', icon: CornerDownLeft }]} />
+        }
+        primary={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={handleForceUpdateStatus} icon={<RefreshCw size={16} />} loading={isLoading} ariaLabel="Mettre à jour les statuts" />
+            <Button variant="primary" onClick={() => setShowCheckoutModal(true)} icon={<Plus size={16} />}>Nouvelle sortie</Button>
+          </div>
+        }
+      />
 
       {isLoading ? (
         <div className="text-center py-8">Chargement des données...</div>

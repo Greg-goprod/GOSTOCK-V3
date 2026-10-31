@@ -13,6 +13,7 @@ import { confirmAction, promptAction } from '../lib/confirm';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface TransferLine {
   id: string;
@@ -163,16 +164,12 @@ const Transfers: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Transferts</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Du matériel part d'un dépôt ; le dépôt d'arrivée le réceptionne au scanner. Un outil en route ne peut pas sortir.</p>
-        </div>
-        {depots.length > 1 && <Button icon={<Plus size={16} />} onClick={openCreate}>Nouveau transfert</Button>}
       </div>
-
-      <MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
-        options={[{ value: 'open', label: 'En route' }, { value: 'all', label: 'Historique' }]} />
+      <PageCommands filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+        options={[{ value: 'open', label: 'En route' }, { value: 'all', label: 'Historique' }]} />} primary={depots.length > 1 ? <Button icon={<Plus size={16} />} onClick={openCreate}>Nouveau transfert</Button> : undefined} />
 
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
         {shown.length === 0 && (

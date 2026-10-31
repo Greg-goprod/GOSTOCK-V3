@@ -39,7 +39,7 @@ export const PERSONNES: HelpArticle[] = [
         id: 'badge',
         title: 'Donner son badge à quelqu\'un',
         steps: [
-          { text: 'Sur la ligne de la personne, clique sur l\'icône QR : son badge s\'affiche, à imprimer.' },
+          { text: 'Sur la carte de la personne, clique sur « ⋮ » puis « QR code » (en liste : l\'icône QR) : son badge s\'affiche, à imprimer.' },
           { text: 'Pour plusieurs personnes : « Imprimer les badges », coche les personnes (« Tout cocher »), puis imprime.' },
           { text: 'Ou demande à la personne d\'ouvrir « Mon badge » sur son téléphone.' },
         ],
@@ -48,7 +48,7 @@ export const PERSONNES: HelpArticle[] = [
         id: 'bloquer',
         title: 'Bloquer l\'accès sans supprimer',
         steps: [
-          { text: 'Ouvre la fiche (crayon), décoche « Accès actif », puis « Enregistrer ».' },
+          { text: 'Ouvre la fiche (clic sur la carte, ou « ⋮ » puis « Modifier »), décoche « Accès actif », puis « Enregistrer ».' },
         ],
         result: 'La personne ne peut plus se connecter ni emprunter ; son historique est gardé.',
       },
@@ -56,7 +56,7 @@ export const PERSONNES: HelpArticle[] = [
         id: 'depart',
         title: 'Gérer un départ',
         steps: [
-          { text: 'Sur la ligne de la personne, clique sur « Départ ».' },
+          { text: 'Sur la carte de la personne, clique sur « ⋮ » puis « Départ ».' },
           { text: 'La liste montre ce qu\'elle doit encore rendre (matériel, EPI) et sa caution. Coche « Rendu » au fur et à mesure (« Imprimer la liste » si besoin).' },
           { text: 'Indique la « Date de départ » et, si besoin, « Caution rendue ».' },
           { text: 'Quand « Tout est réglé : le départ peut être clôturé », clique sur « Clôturer le départ ».' },

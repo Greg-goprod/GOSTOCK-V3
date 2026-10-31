@@ -24,6 +24,7 @@ import SiteNotice from '../components/common/SiteNotice';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 // Objet loué : disponible seulement jusqu'à la fin du contrat
 const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
@@ -192,28 +193,26 @@ const Requests: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
-          <PageTitle>{staff ? 'Demandes' : 'Mes demandes'}</PageTitle>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Réservations d'outils, de consommables et de véhicules</p>
-        </div>
-        <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>
+      <div>
+        <PageTitle>{staff ? 'Demandes' : 'Mes demandes'}</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Réservations d'outils, de consommables et de véhicules</p>
       </div>
 
       <MyNotices />
       {!staff && <MyEquipment />}
 
-      <div className="flex flex-wrap gap-2 items-center">
-        {FILTERS.filter(f => staff || f.id === 'all').map(f => (
-          <Button key={f.id} size="sm" variant={filter === f.id ? 'primary' : 'outline'} onClick={() => setFilter(f.id)}>
-            {f.label} ({counts[f.id] ?? 0})
-          </Button>
-        ))}
-        <div className="relative basis-full sm:basis-auto sm:flex-1 sm:min-w-[220px]">
+      {/* Filtres d'étape : bascule de la charte (comme les filtres de Mannyx) */}
+      <PageCommands
+        search={<div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" aria-hidden="true" />
           <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Numéro, personne, chantier, véhicule…" aria-label="Rechercher une demande" className={`${inputClass} pl-10`} />
-        </div>
-      </div>
+        </div>}
+        filters={staff ? (
+          <MxSegmented aria-label="Étape" value={filter} onChange={v => setFilter(v as typeof filter)}
+            options={FILTERS.map(f => ({ value: f.id, label: `${f.label} (${counts[f.id] ?? 0})` }))} />
+        ) : undefined}
+        primary={<Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>}
+      />
 
       {loading ? (
         <div className="py-12 text-center text-gray-600 dark:text-gray-400">Chargement…</div>
