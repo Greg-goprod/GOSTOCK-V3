@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, ArrowLeftRight, CalendarRange, ClipboardList, Contact, Gauge, Hand, HardHat, Inbox, ListChecks, PackageOpen,
-  Plus, ScanBarcode, ScanLine, Search, Settings, Tags, Truck, Undo2, Users, type LucideIcon,
+  ScanBarcode, ScanLine, Search, Settings, ShoppingBag, Tags, Truck, Undo2, Users, type LucideIcon,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -89,8 +89,8 @@ const Home: React.FC = () => {
     if (role === 'user') {
       return [
         { to: '/badge', label: 'Mon badge', hint: 'À présenter au magasin pour emprunter ou rendre', icon: Contact, primary: true },
-        { to: '/demandes', label: 'Nouvelle demande', hint: 'Réserver des outils, consommables ou un véhicule', icon: Plus, state: { newRequest: true } },
-        { to: '/demandes', label: 'Mon matériel', hint: 'Ce que j\'ai emprunté et quand le rendre', icon: PackageOpen, count: mine.length },
+        { to: '/shop', label: 'Shop', hint: 'Commander des outils, consommables ou un véhicule', icon: ShoppingBag },
+        { to: '/shop?vue=commandes', label: 'Mon matériel', hint: 'Ce que j\'ai emprunté et quand le rendre', icon: PackageOpen, count: mine.length },
         { to: '/libre-service', label: 'Libre-service', hint: 'Prendre des consommables, déposer un outil', icon: Hand },
         { to: '/recherche', label: 'Recherche', hint: 'Qui a quoi, où, quel chantier', icon: Search },
       ];
@@ -166,7 +166,7 @@ const Home: React.FC = () => {
           <section className="mx-card p-5" aria-labelledby="home-mine">
             <div className="flex justify-between items-baseline gap-2 mb-2">
               <h2 id="home-mine" className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{`Mon matériel (${mine.length})`}</h2>
-              <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Détail <ArrowRight size={14} aria-hidden="true" /></Link>
+              <Link to="/shop?vue=commandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Détail <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
             {loadingAppData ? <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p> : mine.length === 0 ? (
               <p className="text-sm text-gray-600 dark:text-gray-400">Tu n'as rien en prêt.</p>
@@ -189,7 +189,7 @@ const Home: React.FC = () => {
           <section className="mx-card p-5" aria-labelledby="home-requests">
             <div className="flex justify-between items-baseline gap-2 mb-2">
               <h2 id="home-requests" className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">Mes demandes en cours</h2>
-              <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Toutes <ArrowRight size={14} aria-hidden="true" /></Link>
+              <Link to="/shop?vue=commandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Toutes <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
             {myRequests.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucune demande en cours.</p> : (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">

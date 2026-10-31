@@ -129,7 +129,9 @@ export const MAGASIN: HelpArticle[] = [
         title: 'Commander du matériel',
         steps: [
           { text: 'Ouvre « Shop ». Cherche par nom ou référence, ou choisis un rayon à gauche et le type (Outils, Consommables).' },
-          { text: 'Clique sur un article pour voir sa fiche : photos, description, caractéristiques, ce qui est livré avec, et combien sont disponibles.' },
+          { text: 'Pour voir ce qui sera libre à tes dates, coche « Voir la disponibilité pour mes dates » et choisis le retrait et le retour : chaque carte affiche combien d\'outils sont libres sur cette période.' },
+          { text: 'Clique sur un article pour voir sa fiche : photos, description, caractéristiques, ce qui est livré avec, et « Souvent pris avec » (les articles que les autres commandent en même temps).' },
+          { text: 'Les « Lots prêts à commander » mettent d\'un coup tous les articles d\'un kit dans le panier. Choisis « Véhicules » pour réserver un véhicule (un seul par commande).' },
           { text: 'Clique sur « Ajouter » (ou choisis la quantité puis « Ajouter au panier »). Le panier est gardé même si tu fermes la page.' },
           { text: 'Clique sur « Panier » en haut à droite. Vérifie les quantités : pour chaque outil, GO-Mat dit combien sont libres sur ta période.' },
           { text: 'Magasinier ou responsable : choisis dans « Pour qui » la personne pour qui tu commandes (sinon c\'est pour toi).' },
@@ -144,6 +146,21 @@ export const MAGASIN: HelpArticle[] = [
         ],
       },
       {
+        id: 'recommander',
+        title: 'Commander à nouveau une ancienne commande',
+        steps: [
+          { text: 'Dans « Shop », « Mes commandes », clique sur « Commander à nouveau » sous la commande voulue.' },
+          { text: 'Les articles sont remis dans ton panier (ceux qui ne sont plus proposés sont ignorés). Change les dates si besoin, puis « Commander ».' },
+        ],
+      },
+      {
+        id: 'annuler',
+        title: 'Annuler ma commande',
+        steps: [
+          { text: 'Dans « Mes commandes », clique sur « Annuler la commande » tant qu\'elle n\'est pas sortie. Le matériel réservé redevient disponible.' },
+        ],
+      },
+      {
         id: 'suivre',
         title: 'Suivre ma commande',
         steps: [
@@ -151,6 +168,15 @@ export const MAGASIN: HelpArticle[] = [
           { text: 'Chaque commande montre ses articles et où elle en est : Envoyée, Validée, Prête, Retirée, Rendue (pas de « Rendue » pour des consommables).' },
           { text: 'Les avis « validée », « refusée » et « prête » s\'affichent en haut de « Mes commandes » ; la cloche en haut de l\'écran y mène directement.' },
           { text: 'Magasinier ou responsable : « Passées pour d\'autres » liste les commandes que tu as faites pour quelqu\'un d\'autre.' },
+        ],
+      },
+      {
+        id: 'livrer',
+        title: 'Préparer les livraisons sur chantier (magasin)',
+        who: 'Magasinier.',
+        steps: [
+          { text: 'Dans « Demandes », choisis le filtre « À livrer » : ce sont les commandes validées ou prêtes marquées « Livraison sur chantier ».' },
+          { text: 'Ouvre la commande pour voir le chantier ou l\'adresse (dans la remarque), prépare-la et sors-la comme d\'habitude.' },
         ],
       },
       {
@@ -182,7 +208,7 @@ export const MAGASIN: HelpArticle[] = [
     summary: 'Une demande réserve des outils, des consommables ou un véhicule pour une période.',
     route: '/demandes',
     routes: ['/demandes'],
-    where: 'Magasin › Demandes (« Mes demandes » pour un collaborateur).',
+    where: 'Magasin › Demandes (magasin et responsables). Les collaborateurs commandent dans le Shop.',
     tasks: [
       {
         id: 'creer',

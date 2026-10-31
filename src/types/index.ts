@@ -36,6 +36,8 @@ export interface Equipment {
   isBattery?: boolean;
   batteryLifeMonths?: number | null;
   batteryMaxUses?: number | null;
+  // Véhicule présenté comme un article du shop (jamais enregistré dans la table equipment)
+  vehicle?: boolean;
 }
 
 export interface Depot {

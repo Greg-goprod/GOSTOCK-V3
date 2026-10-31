@@ -162,7 +162,7 @@ export const DEMARRAGE: HelpArticle[] = [
         steps: [
           { text: 'Sur l\'accueil, « Mon matériel » montre ce que tu as emprunté et quand le rendre.', shot: 'accueil-collaborateur' },
           { text: 'Au magasin, ouvre « Mon badge » et présente le QR au magasinier.' },
-          { text: 'Pour demain ou plus tard, fais une « Nouvelle demande » : le magasin la prépare.' },
+          { text: 'Pour demain ou plus tard, commande dans le « Shop » : le magasin prépare ta commande.' },
           { text: 'Pour des consommables de l\'armoire, ou pour rendre un outil hors des heures, utilise « Libre-service ».' },
         ],
       },

@@ -29,10 +29,14 @@ import { PageCommands } from '../components/Layout/ModuleHeader';
 // Objet loué : disponible seulement jusqu'à la fin du contrat
 const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
 
-type Filter = 'todo' | 'approve' | 'out' | 'all';
+type Filter = 'todo' | 'deliver' | 'approve' | 'out' | 'all';
+
+// Commandes du shop à livrer sur chantier (le mode est écrit en tête de la remarque)
+const isDelivery = (r: { notes?: string }) => (r.notes ?? '').startsWith('Livraison sur chantier');
 
 const FILTERS: { id: Filter; label: string; statuses: RequestStatus[] | null }[] = [
   { id: 'todo', label: 'À préparer', statuses: ['approved', 'ready'] },
+  { id: 'deliver', label: 'À livrer', statuses: ['approved', 'ready'] },
   { id: 'approve', label: 'À valider', statuses: ['requested'] },
   { id: 'out', label: 'Sorties', statuses: ['out'] },
   { id: 'all', label: 'Toutes', statuses: null },
@@ -186,7 +190,7 @@ const Requests: React.FC = () => {
   }, [openId, loading, requests]);
 
   const counts = useMemo(
-    () => Object.fromEntries(FILTERS.map(f => [f.id, f.statuses ? requests.filter(r => f.statuses!.includes(r.status)).length : requests.length])),
+    () => Object.fromEntries(FILTERS.map(f => [f.id, (f.statuses ? requests.filter(r => f.statuses!.includes(r.status)) : requests).filter(r => f.id !== 'deliver' || isDelivery(r)).length])),
     [requests]
   );
 
@@ -195,6 +199,7 @@ const Requests: React.FC = () => {
     const term = search.trim().toLowerCase();
     return requests
       .filter(r => !statuses || statuses.includes(r.status))
+      .filter(r => filter !== 'deliver' || isDelivery(r))
       .filter(r => !term || [r.number, r.requester_name, r.destination, r.vehicle_names].some(v => (v || '').toLowerCase().includes(term)))
       // Toutes : les plus récentes d'abord ; sinon par date de début
       .sort((a, b) => filter === 'all'

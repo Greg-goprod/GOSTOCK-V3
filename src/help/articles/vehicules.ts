@@ -26,7 +26,7 @@ export const VEHICULES: HelpArticle[] = [
         id: 'reserver',
         title: 'Réserver un véhicule',
         steps: [
-          { text: 'Ouvre « Demandes » › « Nouvelle demande ».' },
+          { text: 'Ouvre « Shop » et choisis « Véhicules » (le magasin peut aussi passer par « Demandes » › « Nouvelle demande »).' },
           { text: 'Remplis « Pour qui » (le conducteur), le chantier, « Du » et « Au ».' },
           { text: 'Onglet « Véhicule » : clique sur le « + » du véhicule voulu. Sa disponibilité sur la période s\'affiche.' },
           { text: 'Clique sur « Envoyer la demande ».' },

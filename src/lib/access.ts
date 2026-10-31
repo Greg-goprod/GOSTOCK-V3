@@ -4,6 +4,8 @@ import type { Permission } from './roles';
 // La base applique les mêmes règles (RLS) : ceci ne fait que masquer ce qui serait refusé.
 export const ROUTE_ACCESS: Record<string, Permission[]> = {
   // L'accueil est ouvert à tous : son contenu s'adapte au rôle (src/pages/Home.tsx)
+  // Validation et préparation des commandes : le magasin ; les collaborateurs commandent dans le Shop
+  '/demandes': ['scan', 'approve', 'view_all'],
   '/scan': ['scan'],
   '/comptoir': ['scan'],
   '/etiquettes': ['manage_stock'],
