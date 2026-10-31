@@ -214,7 +214,7 @@ const Transfers: React.FC = () => {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="trf-from" className={labelClass}>Depuis</label>
-              <select id="trf-from" value={from} onChange={e => { setFrom(e.target.value); setLines([]); }} className={inputClass}>
+              <select id="trf-from" value={from} onChange={e => { const next = e.target.value; setFrom(next); setLines([]); if (to === next || !to) setTo(depots.find(d => d.id !== next)?.id ?? ''); }} className={inputClass}>
                 {depots.filter(d => myDepotIds.includes(d.id)).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>

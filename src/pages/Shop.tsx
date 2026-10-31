@@ -151,10 +151,10 @@ const Shop: React.FC = () => {
   }, [equipment, cart, userId, setCart]);
 
   const depotName = (id?: string) => depots.find(d => d.id === id)?.name;
-  const depotForStock = currentDepot || depots.find(d => d.isDefault)?.id || depots[0]?.id || '';
+  // « Tous les dépôts » : total ; sinon stock du dépôt choisi en haut
   const stockOf = useCallback((e: Equipment) => kindOf(e) === 'consumable'
-    ? consumableStock.find(s => s.equipmentId === e.id && s.depotId === depotForStock)?.quantity ?? 0
-    : e.availableQuantity ?? (e.status === 'available' ? 1 : 0), [consumableStock, depotForStock]);
+    ? consumableStock.filter(s => s.equipmentId === e.id && (!currentDepot || s.depotId === currentDepot)).reduce((n, s) => n + Number(s.quantity), 0)
+    : e.availableQuantity ?? (e.status === 'available' ? 1 : 0), [consumableStock, currentDepot]);
   // Outils : rattachés à un dépôt ; on l'indique quand ce n'est pas celui choisi en haut
   const toolElsewhere = (e: Equipment) => kindOf(e) === 'tool' && !!currentDepot && !!e.depotId && e.depotId !== currentDepot;
   const availabilityText = (e: Equipment, stock: number) => {
@@ -444,7 +444,6 @@ const CartDrawer: React.FC<{
     ...lines.filter(l => !l.item.requiresApproval && l.quantity > threshold).map(l => `${l.item.name} (plus de ${threshold})`),
   ];
   const short = lines.filter(l => l.kind === 'tool' && availability[l.id] !== undefined && availability[l.id] < l.quantity);
-  const nowInput = toLocalInput(new Date());
 
   // Disponibilité des outils sur la période choisie
   useEffect(() => {
@@ -545,15 +544,16 @@ const CartDrawer: React.FC<{
                   </select>
                 </div>
               )}
-              <div>
+              <div className="sm:col-span-2">
                 <label htmlFor="shop-start" className={labelClass}>Retrait le</label>
-                <DateTimeInput id="shop-start" value={start} min={nowInput} onChange={e => setStart(e.target.value)} required />
+                <DateTimeInput id="shop-start" value={start} onChange={e => setStart(e.target.value)} required />
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <label htmlFor="shop-end" className={labelClass}>Retour le</label>
-                <DateTimeInput id="shop-end" value={end} min={start || nowInput} onChange={e => setEnd(e.target.value)} required />
+                <DateTimeInput id="shop-end" value={end} onChange={e => setEnd(e.target.value)} required />
               </div>
               {inPast && <p className="sm:col-span-2 text-sm text-tone-danger">Le retrait est dans le passé : choisis une date à venir.</p>}
+              {!periodOk && !!start && !!end && <p className="sm:col-span-2 text-sm text-tone-danger">Le retour doit être après le retrait.</p>}
               <div>
                 <label htmlFor="shop-dest" className={labelClass}>Chantier ou service</label>
                 <input id="shop-dest" list="shop-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
@@ -607,7 +607,7 @@ const CartDrawer: React.FC<{
           {/* Toujours visible en bas du panneau, même sur téléphone */}
           <div className="sticky bottom-0 -mx-1 px-1 py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Continuer mes achats</Button>
-            <Button icon={<Check size={16} />} onClick={order} loading={saving} disabled={saving || short.length > 0 || inPast}>Commander</Button>
+            <Button icon={<Check size={16} />} onClick={order} loading={saving} disabled={saving || short.length > 0 || inPast || !periodOk}>Commander</Button>
           </div>
         </div>
       )}

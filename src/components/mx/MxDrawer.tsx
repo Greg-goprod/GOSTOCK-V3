@@ -547,7 +547,7 @@ export function MxDrawer({
             <button
               type="button"
               onClick={onClose}
-              aria-label={title}
+              aria-label="Fermer"
               // Contour de focus clavier, EXCEPTION 1 / 2 de tokens-mx.css. C'est
               // le seul element focusable du chrome du panneau : sans contour, un
               // utilisateur au clavier ne voyait pas comment fermer le drawer,

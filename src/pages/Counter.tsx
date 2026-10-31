@@ -560,7 +560,7 @@ const Counter: React.FC = () => {
                   </span>
                   <div className="min-w-0">
                     <p className="font-bold text-gray-900 dark:text-white truncate">{person.first_name} {person.last_name}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{person.department || 'Aucun service'} · {held.length} article{held.length > 1 ? 's' : ''} en sa possession</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{`${person.department || 'Aucun service'} · ${held.length} ${held.length > 1 ? 'articles' : 'article'} en sa possession`}</p>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" icon={<X size={14} />} ariaLabel="Changer de personne" onClick={() => { reset(); setPerson(null); }} />
