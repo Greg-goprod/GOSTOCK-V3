@@ -14,6 +14,9 @@ import DateInput from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -66,6 +69,7 @@ const Sites: React.FC = () => {
   const [openItems, setOpenItems] = useState<OpenItem[]>([]);
   const [filter, setFilter] = useState<'open' | 'closed' | 'all'>('open');
   const [search, setSearch] = useState('');
+  const [detail, setDetail] = useState<Site | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editing, setEditing] = useState<Site | 'new' | null>(null);
   const [form, setForm] = useState(EMPTY);
@@ -203,78 +207,97 @@ const Sites: React.FC = () => {
           description={sites.length === 0 ? 'Crées-en un : le nom doit être celui saisi dans « Chantier ou service » lors des sorties.' : undefined} />
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {shown.map(site => {
-          const items = openItems.filter(i => i.site_id === site.id);
+      <MxCardGrid
+        items={shown}
+        getItemKey={site => site.id}
+        renderItem={site => {
           const ratio = site.budget ? site.spent / site.budget : 0;
           const remaining = site.open_tools + site.open_rentals;
           return (
-            <article key={site.id} className={`rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3 min-w-0 ${site.status === 'closed' ? 'opacity-80' : ''}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h2 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <HardHat size={18} aria-hidden="true" className="shrink-0 text-primary-600" />
-                    <span className="truncate">{site.name}</span>
-                    {site.status === 'closed' && <span className="rounded bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold text-gray-700 dark:text-gray-300">Clôturé</span>}
-                  </h2>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {[site.client, site.address, name(site.manager_id) && `resp. ${name(site.manager_id)}`].filter(Boolean).join(' · ') || 'Aucun détail'}
-                  </p>
-                  {(site.start_on || site.end_on) && <p className="text-xs text-gray-600 dark:text-gray-400">Du {date(site.start_on)} au {date(site.end_on)}</p>}
-                </div>
-                {canEdit && (
-                  <div className="flex gap-1 shrink-0">
-                    <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier ${site.name}`} onClick={() => openForm(site)} />
-                    <Button size="sm" variant="outline" icon={site.status === 'open' ? <Lock size={14} /> : <Unlock size={14} />} onClick={() => toggleClosed(site)}>
-                      {site.status === 'open' ? 'Clôturer' : 'Rouvrir'}
-                    </Button>
-                  </div>
-                )}
-              </div>
+            <MxEntityCard
+              avatarName={site.name}
+              title={site.name}
+              infoParts={[
+                { content: [site.client, name(site.manager_id) && `resp. ${name(site.manager_id)}`].filter(Boolean).join(' · ') || '\u00A0' },
+                { content: site.budget !== null ? `${chf(site.spent)} / ${chf(site.budget)}` : `Dépensé ${chf(site.spent)}` },
+              ]}
+              statusBadge={site.status === 'closed' ? <MxBadge tone="neutral">Clôturé</MxBadge> : ratio > 1 ? <MxBadge tone="danger">Budget dépassé</MxBadge> : <MxBadge tone="success">En cours</MxBadge>}
+              due={<span>{remaining ? `${remaining} élément${remaining > 1 ? 's' : ''} sur place` : 'Rien sur place'}</span>}
+              menuLabel={`Actions pour ${site.name}`}
+              menuActions={[
+                { id: 'report', label: 'Rapport PDF', icon: FileText, onSelect: () => report(site) },
+                { id: 'similar', label: 'Préparer un chantier semblable', icon: Copy, onSelect: () => prepareSimilar(site) },
+                ...(canEdit ? [
+                  { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => openForm(site) },
+                  { id: 'toggle', label: site.status === 'open' ? 'Clôturer' : 'Rouvrir', icon: site.status === 'open' ? Lock : Unlock, onSelect: () => toggleClosed(site) },
+                ] : []),
+              ]}
+              onOpen={() => setDetail(site)}
+            />
+          );
+        }}
+      />
 
+      {detail && (() => {
+        const site = sites.find(x => x.id === detail.id) ?? detail;
+        const items = openItems.filter(i => i.site_id === site.id);
+        const ratio = site.budget ? site.spent / site.budget : 0;
+        const remaining = site.open_tools + site.open_rentals;
+        return (
+          <Modal isOpen onClose={() => setDetail(null)} title={site.name} size="lg">
+            <div className="space-y-4">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {[site.client, site.address, name(site.manager_id) && `resp. ${name(site.manager_id)}`].filter(Boolean).join(' · ') || 'Aucun détail'}
+                {(site.start_on || site.end_on) && ` · du ${date(site.start_on)} au ${date(site.end_on)}`}
+              </p>
               <div>
-                <div className="flex justify-between text-sm text-gray-800 dark:text-gray-200">
-                  <span>Dépensé <strong className="font-mono">{chf(site.spent)}</strong></span>
-                  {site.budget !== null && <span className="font-mono">budget {chf(site.budget)}</span>}
-                </div>
-                {site.budget !== null && site.budget > 0 && (
-                  <div className="mt-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(ratio * 100)} aria-label="Part du budget dépensée">
-                    <div className={`h-full ${ratio > 1 ? 'bg-danger-600' : ratio > 0.8 ? 'bg-warning-500' : 'bg-success-600'}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
-                  </div>
-                )}
-                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                  Consommables {chf(site.consumables_cost)} · Outils {chf(site.tools_cost)} · Locations {chf(site.rentals_cost)}
-                  {ratio > 1 && <span className="text-tone-danger font-semibold"> · budget dépassé</span>}
-                </p>
+            <div className="flex justify-between text-sm text-gray-800 dark:text-gray-200">
+              <span>Dépensé <strong className="font-mono">{chf(site.spent)}</strong></span>
+              {site.budget !== null && <span className="font-mono">budget {chf(site.budget)}</span>}
+            </div>
+            {site.budget !== null && site.budget > 0 && (
+              <div className="mt-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(ratio * 100)} aria-label="Part du budget dépensée">
+                <div className={`h-full ${ratio > 1 ? 'bg-danger-600' : ratio > 0.8 ? 'bg-warning-500' : 'bg-success-600'}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
               </div>
+            )}
+            <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+              Consommables {chf(site.consumables_cost)} · Outils {chf(site.tools_cost)} · Locations {chf(site.rentals_cost)}
+              {ratio > 1 && <span className="text-tone-danger font-semibold"> · budget dépassé</span>}
+            </p>
+          </div>
 
-              <div>
-                <button type="button" aria-expanded={expanded === site.id} onClick={() => setExpanded(expanded === site.id ? null : site.id)}
-                  className={`text-sm font-semibold ${remaining ? 'text-tone-warning' : 'text-gray-600 dark:text-gray-400'} hover:underline`}>
-                  {remaining ? `${remaining} élément${remaining > 1 ? 's' : ''} encore sur le chantier` : 'Rien sur le chantier'}
-                </button>
-                {expanded === site.id && items.length > 0 && (
-                  <ul className="mt-2 divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                    {items.map(i => (
-                      <li key={i.item_id} className="py-1.5 flex justify-between gap-2 text-gray-800 dark:text-gray-200">
-                        <span className="truncate">{i.kind === 'rental' ? 'Location · ' : ''}{i.label}{i.holder ? <span className="text-gray-500"> · {i.holder}</span> : null}</span>
-                        <span className={`shrink-0 text-xs ${i.late ? 'text-tone-danger font-semibold' : 'text-gray-500'}`}>
-                          {i.late ? 'en retard' : `→ ${new Date(i.due_at).toLocaleDateString('fr-CH')}`}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+          <div>
+            <button type="button" aria-expanded={expanded === site.id} onClick={() => setExpanded(expanded === site.id ? null : site.id)}
+              className={`text-sm font-semibold ${remaining ? 'text-tone-warning' : 'text-gray-600 dark:text-gray-400'} hover:underline`}>
+              {remaining ? `${remaining} élément${remaining > 1 ? 's' : ''} encore sur le chantier` : 'Rien sur le chantier'}
+            </button>
+            {expanded === site.id && items.length > 0 && (
+              <ul className="mt-2 divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                {items.map(i => (
+                  <li key={i.item_id} className="py-1.5 flex justify-between gap-2 text-gray-800 dark:text-gray-200">
+                    <span className="truncate">{i.kind === 'rental' ? 'Location · ' : ''}{i.label}{i.holder ? <span className="text-gray-500"> · {i.holder}</span> : null}</span>
+                    <span className={`shrink-0 text-xs ${i.late ? 'text-tone-danger font-semibold' : 'text-gray-500'}`}>
+                      {i.late ? 'en retard' : `→ ${new Date(i.due_at).toLocaleDateString('fr-CH')}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {site.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{site.notes}</p>}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => report(site)}>Rapport PDF</Button>
+            <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => prepareSimilar(site)}>Préparer un chantier semblable</Button>
+          </div>
               {site.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{site.notes}</p>}
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => report(site)}>Rapport PDF</Button>
                 <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => prepareSimilar(site)}>Préparer un chantier semblable</Button>
               </div>
-            </article>
-          );
-        })}
-      </div>
+            </div>
+          </Modal>
+        );
+      })()}
 
       <Modal isOpen={editing !== null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Nouveau chantier' : 'Modifier le chantier'}>
         <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">

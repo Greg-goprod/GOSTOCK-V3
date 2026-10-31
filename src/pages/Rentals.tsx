@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarPlus, CheckCircle2, ClipboardCheck, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarPlus, CheckCircle2, ClipboardCheck, FileText, Pencil, Plus, Trash2, Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -16,6 +16,10 @@ import { InspectionKind, RentalInspection, RentalKind, loadInspections, printIns
 import { LICENSE_CATEGORIES } from '../lib/licenses';
 import TrainingSelect from '../components/trainings/TrainingSelect';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -116,6 +120,7 @@ const Rentals: React.FC = () => {
   const open = rentals.filter(r => r.state !== 'returned');
   const shown = filter === 'open' ? open : [...rentals].sort((a, b) => b.start_on.localeCompare(a.start_on));
   const overdue = open.filter(r => r.state === 'overdue');
+  const [detail, setDetail] = useState<(typeof rentals)[number] | null>(null);
   const companies = useMemo(() => [...new Set(rentals.map(r => r.rental_company))].sort((a, b) => a.localeCompare(b, 'fr')), [rentals]);
   const name = (id: string | null) => {
     const u = users.find(x => x.id === id);
@@ -264,12 +269,53 @@ const Rentals: React.FC = () => {
       </div>
 
 
-      <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
-        {shown.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune location{filter === 'open' ? ' en cours' : ''}.</li>}
-        {shown.map(r => {
+      {shown.length === 0 && <MxEmpty icon={Truck} title={`Aucune location${filter === 'open' ? ' en cours' : ''}`} />}
+      <MxCardGrid
+        items={shown}
+        getItemKey={r => r.id}
+        renderItem={r => {
           const daysLeft = Math.round((new Date(`${r.end_on}T12:00:00`).getTime() - new Date(`${today()}T12:00:00`).getTime()) / 86400000);
+          const received = Boolean(inspectionOf(r, 'reception'));
+          const tone = r.state === 'overdue' ? 'danger' : r.state === 'returned' ? 'success' : daysLeft <= 2 ? 'warning' : 'info';
+          const label = r.state === 'overdue' ? 'En retard' : r.state === 'returned' ? 'Rendu' : r.kind !== 'other' && !received ? 'À réceptionner' : daysLeft <= 2 ? 'À rendre bientôt' : 'En cours';
           return (
-            <li key={r.id} className="p-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <MxEntityCard
+              avatarName={r.description}
+              title={`${r.quantity > 1 ? `${r.quantity} × ` : ''}${r.description}${r.plate ? ` · ${r.plate}` : ''}`}
+              infoParts={[
+                { content: `${r.rental_company}${r.contract_ref ? ` · ${r.contract_ref}` : ''}` },
+                { content: `${fmt(r.start_on)} → ${fmt(r.end_on)} · ${chf(r.cost)}` },
+              ]}
+              statusBadge={<MxBadge tone={tone}>{label}</MxBadge>}
+              due={<span>{r.state === 'returned' ? `Rendu le ${fmt(r.returned_on!)}` : r.state === 'overdue' ? `${-daysLeft} j de retard` : daysLeft === 0 ? 'À rendre aujourd\'hui' : `Dans ${daysLeft} j`}</span>}
+              menuLabel={`Actions pour ${r.description}`}
+              menuActions={[
+                ...(r.contract_path ? [{ id: 'contract', label: 'Contrat', icon: FileText, onSelect: () => openContract(r.contract_path!) }] : []),
+                ...(received ? [{ id: 'pv', label: inspectionOf(r, 'return') ? 'PV réception et restitution' : 'PV de réception', icon: FileText, onSelect: () => printPv(r) }] : []),
+                ...(canEdit && r.state !== 'returned' ? [{ id: 'extend', label: '+ 7 jours', icon: CalendarPlus, onSelect: () => extend(r) }] : []),
+                ...(canEdit && r.state !== 'returned' && r.kind === 'other' ? [{ id: 'returned', label: 'Rendu', icon: CheckCircle2, onSelect: () => markReturned(r) }] : []),
+                ...(r.kind !== 'other' && r.state !== 'returned' && (canEdit || r.responsible_id === profile?.id)
+                  ? [received
+                    ? { id: 'return', label: 'Restitution', icon: ClipboardCheck, onSelect: () => startReturn(r) }
+                    : { id: 'reception', label: 'Réception', icon: ClipboardCheck, onSelect: () => setInspecting({ rental: r, kind: 'reception' as const }) }]
+                  : []),
+                ...(canEdit ? [
+                  { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => openForm(r) },
+                  { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => remove(r) },
+                ] : []),
+              ]}
+              onOpen={() => setDetail(r)}
+            />
+          );
+        }}
+      />
+
+      {detail && (() => {
+        const r = rentals.find(x => x.id === detail.id) ?? detail;
+        const daysLeft = Math.round((new Date(`${r.end_on}T12:00:00`).getTime() - new Date(`${today()}T12:00:00`).getTime()) / 86400000);
+        return (
+          <Modal isOpen onClose={() => setDetail(null)} title={r.description} size="lg">
+            <div className="flex flex-col gap-4">
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 dark:text-gray-100">
                   {r.quantity > 1 ? `${r.quantity} × ` : ''}{r.description}{r.plate ? ` · ${r.plate}` : ''}
@@ -299,7 +345,7 @@ const Rentals: React.FC = () => {
                     : daysLeft === 0 ? 'À rendre aujourd\'hui' : `À rendre dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
+              <div className="flex flex-wrap gap-2">
                 {r.contract_path && <Button size="sm" variant="outline" onClick={() => openContract(r.contract_path!)}>Contrat</Button>}
                 {inspectionOf(r, 'reception') && (
                   <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => printPv(r)}>
@@ -320,10 +366,10 @@ const Rentals: React.FC = () => {
                 {canEdit && <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier ${r.description}`} onClick={() => openForm(r)} />}
                 {canEdit && <Button size="sm" variant="danger" icon={<Trash2 size={14} />} ariaLabel={`Supprimer ${r.description}`} onClick={() => remove(r)} />}
               </div>
-            </li>
-          );
-        })}
-      </ul>
+            </div>
+          </Modal>
+        );
+      })()}
 
       <Modal isOpen={editing !== null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Nouvelle location' : 'Modifier la location'} size="lg">
         <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Briefcase, Pencil, Plus, Printer, Trash2 , Boxes } from 'lucide-react';
+import { Pencil, Plus, Printer, Trash2 , Boxes } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -11,6 +11,9 @@ import { errorMessage } from '../lib/requests';
 import { Kit, KitItem, kitValue } from '../lib/kits';
 import { confirmAction } from '../lib/confirm';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -23,6 +26,7 @@ const Kits: React.FC = () => {
   const { can } = useAuth();
   const canEdit = can('manage_stock');
   const [kits, setKits] = useState<Kit[]>([]);
+  const [detail, setDetail] = useState<Kit | null>(null);
   const [editing, setEditing] = useState<Kit | 'new' | null>(null);
   const [form, setForm] = useState({ name: '', depot_id: '', description: '' });
   const [lines, setLines] = useState<KitItem[]>([]);
@@ -150,30 +154,49 @@ const Kits: React.FC = () => {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 print:hidden">
-        {kits.map(kit => {
-          const state = kitState(kit);
-          return (
-            <article key={kit.id} className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h2 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Briefcase size={18} aria-hidden="true" className="shrink-0 text-primary-600" />
-                    <span className="truncate">{kit.name}</span>
-                  </h2>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">{kit.code}{kit.depot_id ? ` · ${depots.find(d => d.id === kit.depot_id)?.name ?? ''}` : ''}</p>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button size="sm" variant="outline" icon={<Printer size={14} />} ariaLabel={`Imprimer l'étiquette de ${kit.name}`} onClick={() => setPrinting(kit)} />
-                  {canEdit && <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier ${kit.name}`} onClick={() => openForm(kit)} />}
-                  {canEdit && <Button size="sm" variant="danger" icon={<Trash2 size={14} />} ariaLabel={`Supprimer ${kit.name}`} onClick={() => remove(kit)} />}
-                </div>
-              </div>
+      <div className="print:hidden">
+        <MxCardGrid
+          items={kits}
+          getItemKey={kit => kit.id}
+          renderItem={kit => {
+            const state = kitState(kit);
+            const tone = state.out.length ? 'info' : state.missing.length ? 'warning' : 'success';
+            return (
+              <MxEntityCard
+                avatarName={kit.name}
+                title={kit.name}
+                infoParts={[
+                  { content: `${kit.code}${kit.depot_id ? ` · ${depots.find(d => d.id === kit.depot_id)?.name ?? ''}` : ''}` },
+                  { content: `${kit.kit_items.length} article${kit.kit_items.length > 1 ? 's' : ''}` },
+                ]}
+                statusBadge={<MxBadge tone={tone}>{state.out.length ? 'Sorti' : state.missing.length ? 'Incomplet' : 'Complet'}</MxBadge>}
+                due={state.out.length ? <span>{`Chez ${state.holders.join(', ')}`}</span> : undefined}
+                menuLabel={`Actions pour ${kit.name}`}
+                menuActions={[
+                  { id: 'print', label: 'Imprimer l\'étiquette', icon: Printer, onSelect: () => setPrinting(kit) },
+                  ...(canEdit ? [
+                    { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => openForm(kit) },
+                    { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => remove(kit) },
+                  ] : []),
+                ]}
+                onOpen={() => setDetail(kit)}
+              />
+            );
+          }}
+        />
+      </div>
+
+      {detail && (() => {
+        const state = kitState(detail);
+        return (
+          <Modal isOpen onClose={() => setDetail(null)} title={detail.name} size="md">
+            <div className="space-y-3">
+              <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">{detail.code}{detail.depot_id ? ` · ${depots.find(d => d.id === detail.depot_id)?.name ?? ''}` : ''}</p>
               <p className={`text-sm font-semibold ${state.out.length ? 'text-info-700 dark:text-info-100' : state.missing.length ? 'text-tone-warning' : 'text-tone-success'}`}>
-                {state.out.length ? `Sorti chez ${state.holders.join(', ')}` : state.missing.length ? `Incomplet : ${state.missing.length} outil${state.missing.length > 1 ? 's' : ''} pas disponible${state.missing.length > 1 ? 's' : ''}` : 'Complet, disponible'}
+                {state.out.length ? `Sorti chez ${state.holders.join(', ')}` : state.missing.length ? `Incomplet : ${state.missing.length} outil${state.missing.length > 1 ? 's' : ''} pas disponible${state.missing.length > 1 ? 's' : ''}` : 'Complet et disponible'}
               </p>
               <ul className="text-sm text-gray-800 dark:text-gray-200 space-y-0.5">
-                {kit.kit_items.map(line => {
+                {detail.kit_items.map(line => {
                   const missing = state.missing.includes(line);
                   return (
                     <li key={line.id} className={missing && !state.out.length ? 'text-tone-warning' : ''}>
@@ -183,11 +206,11 @@ const Kits: React.FC = () => {
                   );
                 })}
               </ul>
-              {kit.description && <p className="text-xs text-gray-600 dark:text-gray-400">{kit.description}</p>}
-            </article>
-          );
-        })}
-      </div>
+              {detail.description && <p className="text-xs text-gray-600 dark:text-gray-400">{detail.description}</p>}
+            </div>
+          </Modal>
+        );
+      })()}
 
       {printing && (
         <div className="hidden print:block">

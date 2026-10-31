@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, Minus, PackageCheck, Plus, Search, Truck, X, XCircle , ClipboardList } from 'lucide-react';
+import { CheckCircle2, Circle, Inbox, Minus, PackageCheck, Plus, Search, Truck, X, XCircle , ClipboardList } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -22,6 +22,9 @@ import { DateTimeInput } from '../components/common/DateInput';
 import { confirmAction, promptAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MX_TONE_LINE, type MxTone } from '../components/mx/tokens';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
@@ -60,6 +63,18 @@ const contentSummary = (r: RequestOverview) =>
   ].filter(Boolean).join(' · ');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Les demandes sont groupées par étape, comme les offres de Mannyx
+const STEP_GROUPS: { id: string; label: string; statuses: RequestStatus[] }[] = [
+  { id: 'requested', label: 'À valider', statuses: ['requested'] },
+  { id: 'approved', label: 'Validées, à préparer', statuses: ['approved'] },
+  { id: 'ready', label: 'Prêtes à retirer', statuses: ['ready'] },
+  { id: 'out', label: 'Sorties', statuses: ['out'] },
+  { id: 'done', label: 'Terminées', statuses: ['closed', 'rejected', 'cancelled'] },
+];
+const STEP_TOTAL = 5;
+const STEP_INDEX: Partial<Record<RequestStatus, number>> = { requested: 0, approved: 1, ready: 2, out: 3, closed: 4 };
+const STEP_TONE: Partial<Record<RequestStatus, MxTone>> = { requested: 'warning', approved: 'info', ready: 'success', out: 'accent', closed: 'neutral' };
 
 // Avis personnels : demande validée, refusée, prête à retirer
 export const MyNotices: React.FC = () => {
@@ -236,37 +251,48 @@ const Requests: React.FC = () => {
         <MxEmpty icon={ClipboardList} title={requests.length === 0 ? 'Aucune demande pour l\'instant' : 'Aucune demande dans cette liste'}
           description={requests.length === 0 ? 'Crée la première avec « Nouvelle demande ».' : undefined} />
       ) : (
-        <ul className="grid gap-3">
-          {visible.map(r => (
-            <li key={r.id}>
-              <button
-                type="button"
-                onClick={() => setSelected(r)}
-                className="w-full text-left bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:ring-2 hover:ring-primary-400 focus-visible:ring-2 focus-visible:ring-primary-500 transition"
-              >
-                <div className="flex flex-wrap justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-sm text-gray-600 dark:text-gray-300">{r.number}</span>
-                      <StatusPill status={r.status} />
-                    </div>
-                    <div className="mt-1 font-semibold text-gray-900 dark:text-gray-100">
-                      {r.requester_name}{r.destination && <span className="font-normal text-gray-600 dark:text-gray-300"> · {r.destination}</span>}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{contentSummary(r) || '—'}</div>
-                  </div>
-                  <div className="text-right text-sm">
-                    <div className="font-mono text-gray-900 dark:text-gray-100">{formatPeriod(r.start_at, r.end_at)}</div>
-                    <div className="text-gray-600 dark:text-gray-400">{r.depot_name}</div>
-                  </div>
-                </div>
-                {r.status === 'requested' && r.approval_reason && (
-                  <p className="mt-2 text-sm text-tone-warning">Validation requise : {r.approval_reason}</p>
+        <div className="space-y-6">
+          {STEP_GROUPS.map(group => {
+            const rows = visible.filter(r => group.statuses.includes(r.status));
+            if (rows.length === 0) return null;
+            return (
+              <section key={group.id} aria-label={group.label}>
+                <h2 className="mx-section-label mb-3">{`${group.label} (${rows.length})`}</h2>
+                <MxCardGrid
+                  items={rows}
+                  getItemKey={r => r.id}
+                  renderItem={r => {
+                    const at = STEP_INDEX[r.status];
+                    return (
+                      <MxEntityCard
+                        avatarName={r.requester_name}
+                        title={r.requester_name}
+                        infoParts={[
+                          { content: `${r.number}${r.destination ? ` · ${r.destination}` : ''}` },
+                          { content: contentSummary(r) || '—' },
+                        ]}
+                        statusBadge={<StatusPill status={r.status} />}
+                        steps={at === undefined ? undefined : {
+                          total: STEP_TOTAL, currentIndex: at, toneLine: MX_TONE_LINE[STEP_TONE[r.status] ?? 'info'],
+                          ariaLabel: `Étape ${at + 1} sur ${STEP_TOTAL} : ${REQUEST_STATUS[r.status].label}`,
+                        }}
+                        due={<span>{`${formatPeriod(r.start_at, r.end_at)} · ${r.depot_name}`}</span>}
+                        menuLabel={`Actions pour la demande ${r.number}`}
+                        menuActions={[{ id: 'open', label: 'Ouvrir', icon: Inbox, onSelect: () => setSelected(r) }]}
+                        onOpen={() => setSelected(r)}
+                      />
+                    );
+                  }}
+                />
+                {group.id === 'requested' && rows.some(r => r.approval_reason) && (
+                  <ul className="mt-2 space-y-0.5 text-sm text-tone-warning">
+                    {rows.filter(r => r.approval_reason).map(r => <li key={r.id}>{`${r.number} : validation requise (${r.approval_reason})`}</li>)}
+                  </ul>
                 )}
-              </button>
-            </li>
-          ))}
-        </ul>
+              </section>
+            );
+          })}
+        </div>
       )}
 
       {showNew && (
