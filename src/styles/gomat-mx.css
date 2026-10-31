@@ -122,11 +122,17 @@ input[type='radio'] {
 /* --------------------------------------------------------------------------
    Titres de page (échelle MX : 52px, graisse 700, approche -0.05em)
    -------------------------------------------------------------------------- */
+/* Titre de page comme dans Mannyx (MxPageHeader) : 26px / 700 / -0.04em, majuscules,
+   trait d'accent de 3px dessous (et non le grand titre de 52px du catalogue) */
 .mx-page-title {
-  font-size: clamp(30px, 4.2vw, 52px);
+  display: inline-block;
+  font-size: 26px;
   font-weight: 700;
-  letter-spacing: -0.05em;
-  line-height: 0.95;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  padding-bottom: 10px;
+  border-bottom: 3px solid var(--mx-accent);
   color: var(--mx-text);
 }
 
@@ -543,3 +549,7 @@ html:not(.dark) :is(.text-primary-700, .text-primary-800) {
 .mx-tint-badge-warning { background: color-mix(in srgb, var(--mx-tone-fill-warning) 13%, var(--mx-surface)); color: var(--mx-tone-text-warning); }
 .mx-tint-badge-danger { background: color-mix(in srgb, var(--mx-danger) 13%, var(--mx-surface)); color: var(--mx-tone-text-danger); }
 .mx-tint-badge-info { background: color-mix(in srgb, var(--mx-cyan) 18%, var(--mx-surface)); color: color-mix(in srgb, var(--mx-cyan) 55%, var(--mx-text)); }
+/* Sous-titre de page : un peu d'air sous le trait d'accent */
+.mx-page-title + p {
+  margin-top: 10px;
+}
