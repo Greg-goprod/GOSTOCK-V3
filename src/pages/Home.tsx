@@ -13,6 +13,7 @@ import { REQUEST_STATUS, formatPeriod } from '../lib/requests';
 import { RequestOverview } from '../types';
 import Today from './Today';
 import PageTitle from '../components/common/PageTitle';
+import ModuleGrid from '../components/home/ModuleGrid';
 
 interface Action {
   to: string;
@@ -142,6 +143,11 @@ const Home: React.FC = () => {
           </p>
         </div>
       </header>
+
+      {/* Grille de modules, comme le tableau de bord de Mannyx ; la vue propre au rôle suit dessous */}
+      <section aria-label="Modules" className="lg:!mt-0">
+        <ModuleGrid toApprove={toApprove} toPrepare={toPrepare} myRequests={myRequests.length} />
+      </section>
 
       <section aria-labelledby="quick-actions">
         <h2 id="quick-actions" className="mx-section-label mb-3">Actions rapides</h2>

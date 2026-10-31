@@ -126,7 +126,7 @@ export const DEMARRAGE: HelpArticle[] = [
         id: 'matin',
         title: 'Le matin',
         steps: [
-          { text: 'Ouvre l\'Accueil. Les tuiles du haut sont tes raccourcis ; « Aujourd\'hui au magasin » compte ce qui t\'attend.', shot: 'accueil-magasinier' },
+          { text: 'Ouvre l\'Accueil. En haut, une carte par module avec ses chiffres clés (clique dessus pour l\'ouvrir) ; dessous, tes actions rapides, puis « Aujourd\'hui au magasin ».', shot: 'accueil-magasinier' },
           { text: 'Clique sur « Demandes à préparer » et prépare chaque demande du jour (voir « Préparer une demande »).' },
           { text: 'Clique sur « Boîte de retour » s\'il y a un chiffre : contrôle les outils déposés la veille au soir.' },
         ],
