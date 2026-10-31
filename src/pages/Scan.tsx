@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { findEquipmentByCode } from '../lib/scan';
 import { Equipment, User as UserType } from '../types';
 import ReturnModal from '../components/checkout/ReturnModal';
+import PageTitle from '../components/common/PageTitle';
 
 const Scan: React.FC = () => {
   const navigate = useNavigate();
@@ -406,7 +407,7 @@ const Scan: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="mx-page-title">Scanner</h1>
+          <PageTitle>Scanner</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Scanne un QR code pour identifier un matériel, un utilisateur, un emprunt ou un bon de sortie
           </p>

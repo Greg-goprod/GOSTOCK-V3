@@ -11,6 +11,7 @@ import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
 import DateInput from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
+import PageTitle from '../components/common/PageTitle';
 
 interface Training {
   id: string;
@@ -175,7 +176,7 @@ const Trainings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Formations et permis machines</h1>
+          <PageTitle>Formations et permis machines</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Un outil qui exige un permis machine ou une formation ne sort pas pour quelqu'un qui ne l'a pas, ou dont l'attestation est expirée.</p>
         </div>
         {canEdit && <Button icon={<Plus size={16} />} onClick={() => openTraining('new')}>Nouveau permis ou formation</Button>}

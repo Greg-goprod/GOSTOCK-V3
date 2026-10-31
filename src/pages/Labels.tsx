@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Printer } from 'lucide-react';
 import Button from '../components/common/Button';
 import { useApp } from '../contexts/AppContext';
+import PageTitle from '../components/common/PageTitle';
 
 interface LabelFormat {
   id: string;
@@ -96,7 +97,7 @@ const Labels: React.FC = () => {
       <div className="print:hidden space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div>
-            <h1 className="mx-page-title">Étiquettes</h1>
+            <PageTitle>Étiquettes</PageTitle>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Choisis les articles et le nombre d'étiquettes, puis imprime à 100 % (sans « ajuster à la page »).</p>
           </div>
           <Button icon={<Printer size={16} />} onClick={() => window.print()} disabled={total === 0}>

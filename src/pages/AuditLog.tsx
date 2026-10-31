@@ -5,6 +5,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { ROLE_LABELS } from '../lib/roles';
+import PageTitle from '../components/common/PageTitle';
 
 interface AuditEntry {
   id: number;
@@ -116,7 +117,7 @@ const AuditLog: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Journal</h1>
+          <PageTitle>Journal</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Chaque modification : qui, quand, avant → après. Les recalculs automatiques ne sont pas listés.</p>
         </div>
         <div className="flex flex-wrap gap-2">

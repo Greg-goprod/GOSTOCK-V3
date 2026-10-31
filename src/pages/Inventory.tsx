@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { findEquipmentByCode } from '../lib/scan';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
+import PageTitle from '../components/common/PageTitle';
 
 interface CountLine {
   id: string;
@@ -132,7 +133,7 @@ const Inventory: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Inventaire tournant</h1>
+          <PageTitle>Inventaire tournant</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Quelques articles à chaque passage, les moins récemment comptés d'abord. Comptage à l'aveugle, écarts expliqués à la clôture.</p>
         </div>
         <select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={inputClass}>

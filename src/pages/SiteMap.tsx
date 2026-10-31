@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
+import PageTitle from '../components/common/PageTitle';
 
 interface SitePoint {
   id: string;
@@ -92,7 +93,7 @@ const SiteMap: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-end gap-3">
         <div>
-          <h1 className="mx-page-title">Carte</h1>
+          <PageTitle>Carte</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Où est mon matériel : chaque chantier avec ce qui s'y trouve encore. Touche une pastille pour le détail.</p>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">

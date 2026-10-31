@@ -22,6 +22,7 @@ import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import RentalBadge from '../components/common/RentalBadge';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
 
 export default function Equipment() {
   const {
@@ -522,7 +523,7 @@ export default function Equipment() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <h1 className="mx-page-title">Outils</h1>
+        <PageTitle>Outils</PageTitle>
         <div className="flex flex-wrap gap-2">
           {canManage && (
             <Button

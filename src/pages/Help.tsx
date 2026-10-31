@@ -5,6 +5,7 @@ import HelpArticleView, { taskAnchor } from '../components/help/HelpArticleView'
 import { ARTICLES, CATEGORIES, FAQ, GLOSSARY, QUICK, articleById, searchHelp } from '../help/content';
 import type { FaqItem, HelpArticle } from '../help/content';
 import { CATEGORY_ICONS } from '../help/icons';
+import PageTitle from '../components/common/PageTitle';
 
 const FaqEntry: React.FC<{ item: FaqItem }> = ({ item }) => (
   <details className="group rounded-lg border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
@@ -151,7 +152,7 @@ const Help: React.FC = () => {
       <section className="rounded-2xl border-[1.5px] border-gray-200 dark:border-gray-700 bg-gradient-to-br from-primary-50 to-white dark:from-primary-900/30 dark:to-gray-900 px-5 py-7 sm:px-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
-            <h1 className="mx-page-title">Aide et mode d'emploi</h1>
+            <PageTitle>Aide et mode d'emploi</PageTitle>
             <p className="mt-1 text-gray-700 dark:text-gray-300">
               Chaque manipulation expliquée pas à pas, avec les mots exacts des écrans. Sur n'importe quelle page, le « ? » en haut ouvre l'aide de cette page.
             </p>

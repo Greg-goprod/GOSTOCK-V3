@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
+import PageTitle from '../components/common/PageTitle';
 
 interface PpeType {
   id: string;
@@ -167,7 +168,7 @@ const Ppe: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="mx-page-title">EPI</h1>
+        <PageTitle>EPI</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Équipements de protection remis à chacun : taille, signature, et rappel avant le renouvellement.</p>
       </div>
 

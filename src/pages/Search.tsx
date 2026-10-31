@@ -5,6 +5,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Equipment, User } from '../types';
+import PageTitle from '../components/common/PageTitle';
 
 interface ResultBlock {
   title: string;
@@ -193,7 +194,7 @@ const Search: React.FC = () => {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="mx-page-title">Recherche</h1>
+        <PageTitle>Recherche</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Pose la question comme tu la dirais au magasin.</p>
       </div>
       <form onSubmit={submit} className="flex gap-2">

@@ -10,6 +10,7 @@ import { errorMessage } from '../lib/requests';
 import { findEquipmentByCode } from '../lib/scan';
 import { useSiteSuggestions } from '../lib/sites';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
 
 interface TakeLine {
   equipment_id: string;
@@ -119,7 +120,7 @@ const SelfService: React.FC = () => {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="mx-page-title">Libre-service</h1>
+        <PageTitle>Libre-service</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Prends les consommables de l'armoire ou dépose tes outils dans la boîte de retour, avec ton téléphone.</p>
       </div>
 

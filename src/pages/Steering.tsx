@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
+import PageTitle from '../components/common/PageTitle';
 
 interface ToolUsage {
   equipment_id: string;
@@ -103,7 +104,7 @@ const Steering: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="mx-page-title">Pilotage</h1>
+        <PageTitle>Pilotage</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Utilisation du matériel, retards et coûts : de quoi décider achats, reventes et rappels.</p>
       </div>
 

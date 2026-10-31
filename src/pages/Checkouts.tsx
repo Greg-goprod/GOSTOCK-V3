@@ -10,6 +10,7 @@ import { Plus, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft } from
 import { CheckoutWithCalculatedStatus, DeliveryNote } from "../types";
 import toast from "react-hot-toast";
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
 
 // Interface étendue pour les bons de livraison avec statut calculé
 interface DeliveryNoteWithStatus extends Omit<DeliveryNote, 'status'> {
@@ -545,7 +546,7 @@ export default function Checkouts() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="mx-page-title">Sorties</h1>
+        <PageTitle>Sorties</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-2">Bons de sortie et matériel emprunté, avec leur date de retour.</p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">

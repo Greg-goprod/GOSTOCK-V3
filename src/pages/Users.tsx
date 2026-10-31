@@ -15,6 +15,7 @@ import { badgeValue } from '../lib/badges';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
 
 type ViewMode = 'grid' | 'list';
 type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'department' | 'role';
@@ -444,7 +445,7 @@ const Users: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <h1 className="mx-page-title">Personnes</h1>
+        <PageTitle>Personnes</PageTitle>
         
         <div className="flex flex-wrap gap-3">
           <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as ViewMode)}

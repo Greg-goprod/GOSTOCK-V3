@@ -6,6 +6,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { downloadWorkbook } from '../lib/excel';
 import { errorMessage } from '../lib/requests';
+import PageTitle from '../components/common/PageTitle';
 
 interface CostLine {
   source: 'consumable' | 'tool' | 'rental';
@@ -109,7 +110,7 @@ const Costs: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Coûts</h1>
+          <PageTitle>Coûts</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Consommables (quantité × prix d'achat) et outils (jours × tarif interne) par chantier.</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">

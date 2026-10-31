@@ -549,7 +549,17 @@ html:not(.dark) :is(.text-primary-700, .text-primary-800) {
 .mx-tint-badge-warning { background: color-mix(in srgb, var(--mx-tone-fill-warning) 13%, var(--mx-surface)); color: var(--mx-tone-text-warning); }
 .mx-tint-badge-danger { background: color-mix(in srgb, var(--mx-danger) 13%, var(--mx-surface)); color: var(--mx-tone-text-danger); }
 .mx-tint-badge-info { background: color-mix(in srgb, var(--mx-cyan) 18%, var(--mx-surface)); color: color-mix(in srgb, var(--mx-cyan) 55%, var(--mx-text)); }
-/* Sous-titre de page : un peu d'air sous le trait d'accent */
-.mx-page-title + p {
+/* En-tête de page Mannyx : icône de la page (20px, --text) puis le titre ; le sous-titre respire sous le trait */
+.mx-page-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mx-page-icon {
+  flex-shrink: 0;
+  color: var(--mx-text);
+}
+:is(.mx-page-head, .mx-page-title) + p {
   margin-top: 10px;
 }

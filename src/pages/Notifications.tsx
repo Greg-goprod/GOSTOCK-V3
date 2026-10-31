@@ -10,6 +10,7 @@ import { AlertTriangle, Clock, CheckCircle, Bell, Calendar, Package, User, Trash
 import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import PageTitle from '../components/common/PageTitle';
 
 interface NotificationItem {
   id: string;
@@ -311,7 +312,7 @@ const Notifications: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Notifications</h1>
+          <PageTitle>Notifications</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Événements spéciaux, rappels de retard et mouvements de matériel
           </p>

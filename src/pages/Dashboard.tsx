@@ -26,6 +26,7 @@ import { supabase, testSupabaseConnection } from '../lib/supabase';
 import { Equipment } from '../types';
 import Button from '../components/common/Button';
 import { MxBadge } from '../components/mx/MxBadge';
+import PageTitle from '../components/common/PageTitle';
 
 const Dashboard: React.FC = () => {
   const { t } = useLanguage();
@@ -416,7 +417,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="mx-page-title">Statistiques</h1>
+          <PageTitle>Statistiques</PageTitle>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               {connectionStatus === 'connected' ? (
@@ -532,7 +533,7 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col gap-3">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="mx-page-title">Statistiques</h1>
+            <PageTitle>Statistiques</PageTitle>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Disponibilités, emprunts récents et matériel en maintenance.</p>
           </div>
           <div className="flex items-center gap-2">

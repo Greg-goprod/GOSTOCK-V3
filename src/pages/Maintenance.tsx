@@ -10,6 +10,7 @@ import { fileUrl } from '../lib/files';
 import { errorMessage, toLocalInput } from '../lib/requests';
 import { DateTimeInput } from '../components/common/DateInput';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import PageTitle from '../components/common/PageTitle';
 
 interface PlanStatus {
   id: string;
@@ -96,7 +97,7 @@ const Maintenance: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Entretien</h1>
+          <PageTitle>Entretien</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Révisions préventives et contrôles électriques (OIBT), tous les X mois ou toutes les X sorties.</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>Nouveau plan</Button>

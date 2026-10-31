@@ -24,6 +24,7 @@ import { confirmAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
 import { canBorrowNow } from '../lib/people';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
 
 type Mode = 'auto' | 'out' | 'in';
 
@@ -463,7 +464,7 @@ const Counter: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Comptoir</h1>
+          <PageTitle>Comptoir</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Badge de la personne, puis les articles ou le QR d'un kit. Un article qu'elle a déjà part en retour.</p>
         </div>
         <MxSegmented aria-label="Mode de scan" value={mode} onChange={v => setMode(v as Mode)}

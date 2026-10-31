@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { ROLE_LABELS } from '../lib/roles';
 import { errorMessage } from '../lib/requests';
 import { canBorrowNow } from '../lib/people';
+import PageTitle from '../components/common/PageTitle';
 
 // Planche de badges : 10 cartes par feuille A4, à découper ou à glisser dans un porte-badge
 const BadgePrint: React.FC = () => {
@@ -41,7 +42,7 @@ const BadgePrint: React.FC = () => {
       <div className="print:hidden space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div>
-            <h1 className="mx-page-title">Badges</h1>
+            <PageTitle>Badges</PageTitle>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Cartes au format carte bancaire, 10 par feuille A4. Chacun retrouve aussi son badge sur son téléphone (« Mon badge »).</p>
           </div>
           <Button icon={<Printer size={16} />} onClick={() => window.print()} disabled={toPrint.length === 0}>

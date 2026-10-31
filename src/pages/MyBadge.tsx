@@ -13,6 +13,7 @@ import { useInstallPrompt } from '../lib/install';
 import PushToggle from '../components/common/PushToggle';
 import PasswordSetting from '../components/common/PasswordSetting';
 import { confirmAction } from '../lib/confirm';
+import PageTitle from '../components/common/PageTitle';
 
 // Badge personnel à présenter au magasin, depuis le téléphone ou imprimé
 const MyBadge: React.FC = () => {
@@ -58,7 +59,7 @@ const MyBadge: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="print:hidden">
-        <h1 className="mx-page-title">Mon badge</h1>
+        <PageTitle>Mon badge</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Présente ce code au magasin pour sortir ou rendre du matériel.</p>
       </div>
 

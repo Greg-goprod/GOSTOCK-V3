@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { downloadWorkbook } from '../lib/excel';
 import { confirmAction } from '../lib/confirm';
+import PageTitle from '../components/common/PageTitle';
 
 interface Depreciation {
   equipment_id: string;
@@ -217,7 +218,7 @@ const Accounting: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Comptabilité</h1>
+          <PageTitle>Comptabilité</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Amortissement linéaire des outils et écritures de l'année, en Excel pour la fiduciaire.</p>
         </div>
         <div className="flex flex-wrap gap-2">

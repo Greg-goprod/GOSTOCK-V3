@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { REQUEST_STATUS, formatPeriod } from '../lib/requests';
 import { RequestOverview } from '../types';
 import Today from './Today';
+import PageTitle from '../components/common/PageTitle';
 
 interface Action {
   to: string;
@@ -134,7 +135,7 @@ const Home: React.FC = () => {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="mx-section-label">{profile ? ROLE_LABELS[profile.role] : ''}</p>
-          <h1 className="mx-page-title mt-2">{greeting}{profile ? `, ${profile.first_name}` : ''}</h1>
+          <PageTitle className="mt-2">{greeting}{profile ? `, ${profile.first_name}` : ''}</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-2 first-letter:uppercase">
             {new Date().toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>

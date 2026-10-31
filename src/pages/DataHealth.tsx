@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
+import PageTitle from '../components/common/PageTitle';
 
 interface Check {
   id: string;
@@ -82,7 +83,7 @@ const DataHealth: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="mx-page-title">Santé des données</h1>
+        <PageTitle>Santé des données</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Ce qui manque ou se répète. Une base propre, ce sont des coûts justes et des alertes utiles.</p>
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-center gap-4">

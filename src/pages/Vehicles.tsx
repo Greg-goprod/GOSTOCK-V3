@@ -17,6 +17,7 @@ import DateInput from '../components/common/DateInput';
 import RentalBadge from '../components/common/RentalBadge';
 import { LICENSE_CATEGORIES } from '../lib/licenses';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import PageTitle from '../components/common/PageTitle';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -118,7 +119,7 @@ const Vehicles: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Véhicules</h1>
+          <PageTitle>Véhicules</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Flotte, réservations et états des lieux</p>
         </div>
         {canManage && <Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>Ajouter un véhicule</Button>}

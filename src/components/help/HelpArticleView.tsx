@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, ChevronRight, Lightbulb, MapPin, Maximize2, Minimize2, User, Wrench, X, ZoomIn } from 'lucide-react';
 import type { HelpArticle, HelpTask } from '../../help/content';
+import PageTitle from '../common/PageTitle';
 
 // Zoom d'une capture par-dessus la page : se ferme avec la croix, Échap ou un clic sur le fond.
 // « Taille réelle » affiche l'image pixel pour pixel (défilement si elle dépasse l'écran).
@@ -133,7 +134,7 @@ export const HelpTaskView: React.FC<{ task: HelpTask; index: number }> = ({ task
 const HelpArticleView: React.FC<{ article: HelpArticle; onNavigate?: () => void; compact?: boolean }> = ({ article, onNavigate, compact }) => (
   <article className="space-y-5">
     <div className="space-y-2">
-      {!compact && <h1 className="mx-page-title">{article.title}</h1>}
+      {!compact && <PageTitle>{article.title}</PageTitle>}
       <p className="text-gray-700 dark:text-gray-300">{article.summary}</p>
       <div className="flex flex-wrap items-center gap-2">
         {article.where && (

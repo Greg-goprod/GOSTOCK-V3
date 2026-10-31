@@ -12,6 +12,7 @@ import { findEquipmentByCode } from '../lib/scan';
 import { confirmAction, promptAction } from '../lib/confirm';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import PageTitle from '../components/common/PageTitle';
 
 interface TransferLine {
   id: string;
@@ -164,7 +165,7 @@ const Transfers: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Transferts</h1>
+          <PageTitle>Transferts</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Du matériel part d'un dépôt ; le dépôt d'arrivée le réceptionne au scanner. Un outil en route ne peut pas sortir.</p>
         </div>
         {depots.length > 1 && <Button icon={<Plus size={16} />} onClick={openCreate}>Nouveau transfert</Button>}

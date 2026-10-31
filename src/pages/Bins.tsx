@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
+import PageTitle from '../components/common/PageTitle';
 
 interface Bin {
   id: string;
@@ -132,7 +133,7 @@ const Bins: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Emplacements</h1>
+          <PageTitle>Emplacements</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Allée, étagère, bac : la liste de préparation des demandes suit l'ordre de passage.</p>
         </div>
         <select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={`${inputClass} w-auto`}>

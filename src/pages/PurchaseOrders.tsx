@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import PageTitle from '../components/common/PageTitle';
 
 type OrderStatus = 'draft' | 'sent' | 'partial' | 'received' | 'cancelled';
 
@@ -77,7 +78,7 @@ const PurchaseOrders: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
         <div>
-          <h1 className="mx-page-title">Commandes fournisseurs</h1>
+          <PageTitle>Commandes fournisseurs</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Créées depuis la feuille de commande, envoyées par e-mail, réceptionnées ligne à ligne.</p>
         </div>
         <div className="flex gap-2">

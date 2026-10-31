@@ -14,6 +14,7 @@ import DateInput from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import PageTitle from '../components/common/PageTitle';
 
 interface Site {
   id: string;
@@ -191,7 +192,7 @@ const Sites: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Chantiers</h1>
+          <PageTitle>Chantiers</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Budget matériel, dépenses et matériel encore sur place. Les sorties sont rattachées par le nom du chantier.</p>
         </div>
         {canEdit && <Button icon={<Plus size={16} />} onClick={() => openForm('new')}>Nouveau chantier</Button>}

@@ -23,6 +23,7 @@ import { confirmAction, promptAction } from '../lib/confirm';
 import SiteNotice from '../components/common/SiteNotice';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
 
 // Objet loué : disponible seulement jusqu'à la fin du contrat
 const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
@@ -193,7 +194,7 @@ const Requests: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">{staff ? 'Demandes' : 'Mes demandes'}</h1>
+          <PageTitle>{staff ? 'Demandes' : 'Mes demandes'}</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Réservations d'outils, de consommables et de véhicules</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>

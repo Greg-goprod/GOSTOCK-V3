@@ -3,6 +3,7 @@ import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
 
 interface RequestRow {
   id: string;
@@ -130,7 +131,7 @@ const Planning: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="mx-page-title">Planning</h1>
+        <PageTitle>Planning</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Demandes à venir et sorties en cours, jour par jour. En rouge : plus de demandes que d'exemplaires.</p>
       </div>
 

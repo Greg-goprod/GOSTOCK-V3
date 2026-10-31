@@ -51,6 +51,7 @@ import {
   MaintenanceType,
   SystemSetting 
 } from '../types';
+import PageTitle from '../components/common/PageTitle';
 
 const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -327,7 +328,7 @@ const Settings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="mx-page-title">Paramètres</h1>
+          <PageTitle>Paramètres</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Configuration du système et gestion des données de référence
           </p>
