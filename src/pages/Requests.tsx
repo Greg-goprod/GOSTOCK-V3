@@ -42,7 +42,7 @@ const inputClass =
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 const StatusPill: React.FC<{ status: RequestStatus }> = ({ status }) => (
-  <span className={`inline-flex rounded px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${REQUEST_STATUS[status].className}`}>
+  <span className={`inline-flex rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold whitespace-nowrap ${REQUEST_STATUS[status].className}`}>
     {REQUEST_STATUS[status].label}
   </span>
 );
@@ -110,7 +110,7 @@ const MyEquipment: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {late && (
-                  <span className="rounded mx-tint-badge-danger px-2 py-0.5 text-[11px] font-bold">
+                  <span className="rounded mx-tint-badge-danger px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">
                     {daysLate} j de retard
                   </span>
                 )}
@@ -535,7 +535,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
             ) : candidates.map(c => (
               <li key={c.id}>
                 <button type="button" onClick={() => addItem(c)} className="mx-dr-list-item w-full flex justify-between items-center gap-3 text-left hover:border-primary-400">
-                  <span className="text-[13px] font-semibold text-gray-900 dark:text-gray-100">{c.name} <span className="font-mono text-[12px] font-medium text-gray-500 dark:text-gray-400">{c.detail}</span></span>
+                  <span className="text-[length:calc(13px*var(--mx-scale,1))] font-semibold text-gray-900 dark:text-gray-100">{c.name} <span className="font-mono text-[length:calc(12px*var(--mx-scale,1))] font-medium text-gray-500 dark:text-gray-400">{c.detail}</span></span>
                   <Plus size={16} className="text-primary-600 dark:text-primary-300 shrink-0" aria-hidden="true" />
                 </button>
               </li>
@@ -854,7 +854,8 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
 
         {/* Préparation et sortie */}
         {canIssue && !issuing && (
-          <div className="space-y-3">
+          // flex-1 + mt-auto du pied : le pied reste en bas du drawer même quand la demande est courte
+          <div className="flex-1 flex flex-col space-y-3">
             <div className="max-w-xs">
               <label htmlFor="pickup-by" className={labelClass}>Retiré par</label>
               <select id="pickup-by" value={pickupBy} onChange={e => setPickupBy(e.target.value)} className={inputClass}>
@@ -882,7 +883,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
               {!allPrepared && <p className="w-full text-right text-xs text-gray-600 dark:text-gray-400">Tous les articles doivent être préparés avant la sortie.</p>}
               {/* Action qui abandonne la demande : à gauche, en rouge, avec confirmation */}
               <button type="button" onClick={cancelRequest} disabled={busy}
-                className="mx-btn mx-btn-ghost mr-auto px-3 py-2 text-[12.5px] text-tone-danger hover:!bg-[color-mix(in_srgb,var(--mx-danger)_10%,transparent)]">
+                className="mx-btn mx-btn-ghost mr-auto px-3 py-2 text-[length:calc(12.5px*var(--mx-scale,1))] text-tone-danger hover:!bg-[color-mix(in_srgb,var(--mx-danger)_10%,transparent)]">
                 Annuler la demande
               </button>
               <PickListButton requestId={request.id} title={`Préparation ${request.number}`}

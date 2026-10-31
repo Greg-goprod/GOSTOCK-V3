@@ -160,8 +160,10 @@ async function newPage(browser, role, viewport) {
         const drawer = [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].map(e => e.getBoundingClientRect()).find(visible);
         const r = drawer || document.querySelector('main')?.getBoundingClientRect();
         if (!r) return null;
-        const x = Math.max(0, r.left), y = Math.max(0, r.top);
-        return { x, y, width: Math.min(r.width, innerWidth - x), height: Math.min(r.height, innerHeight - y) };
+        // Page : on garde l'en-tête de module (nom du module, onglets), juste au-dessus du contenu
+        const head = !drawer && document.querySelector('[data-module-header]')?.getBoundingClientRect();
+        const x = Math.max(0, r.left), y = Math.max(0, head && head.height ? head.top : r.top);
+        return { x, y, width: Math.min(r.width, innerWidth - x), height: Math.min(r.bottom - y, innerHeight - y) };
       });
       await page.screenshot({ path: path.join(OUT, `${shot.name}.jpg`), type: 'jpeg', quality: 90, ...(clip ? { clip } : {}) });
       console.log('✓', shot.name);

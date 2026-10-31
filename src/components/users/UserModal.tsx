@@ -217,8 +217,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user }) => {
               >
                 <input type="radio" name="role" value={role} checked={form.role === role} onChange={() => setForm({ ...form, role })} className="mt-1 text-primary-600 focus:ring-primary-500" />
                 <span>
-                  <span className="block text-[13.5px] font-bold text-gray-900 dark:text-gray-100">{ROLE_LABELS[role]}</span>
-                  <span className="mt-0.5 block text-[12px] text-gray-600 dark:text-gray-400">{ROLE_HINTS[role]}</span>
+                  <span className="block text-[length:calc(13.5px*var(--mx-scale,1))] font-bold text-gray-900 dark:text-gray-100">{ROLE_LABELS[role]}</span>
+                  <span className="mt-0.5 block text-[length:calc(12px*var(--mx-scale,1))] text-gray-600 dark:text-gray-400">{ROLE_HINTS[role]}</span>
                 </span>
               </label>
             ))}

@@ -1,137 +1,119 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { ExternalLink, PanelLeftClose, PanelLeftOpen, QrCode } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen, QrCode } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { BOTTOM_SPACES, NavSpace, locate } from '../../lib/navigation';
 import { useNavSpaces } from '../../lib/useNavSpaces';
 import { supabase } from '../../lib/supabase';
+import UserMenu from './UserMenu';
 
-const PANEL_KEY = 'gomat-nav-panel';
+const COLLAPSED_KEY = 'gomat-sidebar-collapsed';
+const LAST_PAGE_KEY = 'gomat-last-page';
 
-// Navigation sur grand écran : rail des métiers + liste du métier choisi (repliable)
+// Dernière page ouverte de chaque module : y revenir quand on clique sur le module
+const lastPages = (): Record<string, string> => {
+  try { return JSON.parse(localStorage.getItem(LAST_PAGE_KEY) ?? '{}'); } catch { return {}; }
+};
+
+// Menu sur grand écran, comme Mannyx : une seule colonne (180px, 58px repliée), un module par entrée
+// en majuscules, Réglages et Aide en bas, puis le compte. Les pages d'un module sont des onglets dans la page.
 const Sidebar: React.FC = () => {
   const { alertCount } = useApp();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const spaces = useNavSpaces();
-  const current = locate(location.pathname).space?.id;
-  const [spaceId, setSpaceId] = useState(current ?? spaces[0]?.id);
-  const [panelOpen, setPanelOpen] = useState(() => {
-    try { return localStorage.getItem(PANEL_KEY) !== 'closed'; } catch { return true; }
+  const current = locate(pathname).space?.id;
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(COLLAPSED_KEY) === '1'; } catch { return false; }
   });
   const [companyLogo, setCompanyLogo] = useState('');
-
-  // La liste suit la page ouverte (lien direct, retour arrière, recherche Ctrl+K)
-  useEffect(() => {
-    if (current) setSpaceId(current);
-  }, [current]);
 
   useEffect(() => {
     supabase.from('system_settings').select('value').eq('id', 'company_logo').maybeSingle()
       .then(({ data }) => { if (data?.value) setCompanyLogo(data.value); });
   }, []);
 
-  const togglePanel = (open: boolean) => {
-    setPanelOpen(open);
-    try { localStorage.setItem(PANEL_KEY, open ? 'open' : 'closed'); } catch { /* stockage indisponible */ }
+  // Mémorise la page ouverte dans son module
+  useEffect(() => {
+    if (!current) return;
+    try { localStorage.setItem(LAST_PAGE_KEY, JSON.stringify({ ...lastPages(), [current]: pathname })); } catch { /* stockage indisponible */ }
+  }, [current, pathname]);
+
+  const toggle = () => {
+    setCollapsed(c => {
+      try { localStorage.setItem(COLLAPSED_KEY, c ? '0' : '1'); } catch { /* stockage indisponible */ }
+      return !c;
+    });
   };
 
-  const chooseSpace = (id: string) => {
-    const target = spaces.find(s => s.id === id);
-    // Espace d'une seule page (Véhicules) : on y va directement
-    if (target && target.links.length === 1) {
-      navigate(target.links[0].to);
-      return;
-    }
-    if (id === spaceId && panelOpen) return togglePanel(false);
-    setSpaceId(id);
-    togglePanel(true);
-  };
-
-  const space = spaces.find(s => s.id === spaceId) ?? spaces[0];
-  const showPanel = panelOpen && space && space.links.length > 1;
-
-  const railButton = (s: NavSpace) => {
-    const active = s.id === current || (s.id === space?.id && showPanel);
+  const entry = (s: NavSpace) => {
+    const remembered = lastPages()[s.id];
+    const target = remembered && s.links.some(l => remembered === l.to || remembered.startsWith(`${l.to}/`)) ? remembered : s.links[0].to;
+    const active = s.id === current;
     return (
-      <button
-        key={s.id}
-        type="button"
-        onClick={() => chooseSpace(s.id)}
-        aria-current={s.id === current ? 'true' : undefined}
-        aria-label={s.label}
-        title={s.label}
-        className={`relative w-[68px] flex flex-col items-center gap-1 rounded-md px-1 py-2 text-[10.5px] font-semibold leading-tight transition-colors ${
-          active ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-        }`}
-      >
-        <s.icon size={20} aria-hidden="true" />
-        <span className="text-center">{s.short}</span>
-        {s.id === 'home' && alertCount > 0 && (
-          <span className="absolute top-1 right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-danger-600 text-white text-[10px] font-bold flex items-center justify-center" aria-label={`${alertCount} alerte(s)`}>
-            {alertCount > 99 ? '99+' : alertCount}
-          </span>
-        )}
-      </button>
+      <li key={s.id}>
+        <NavLink
+          to={target}
+          aria-current={active ? 'page' : undefined}
+          title={collapsed ? s.label : undefined}
+          aria-label={collapsed ? s.label : undefined}
+          className={`relative flex items-center gap-[calc(8px*var(--mx-scale,1))] rounded-[calc(4px*var(--mx-scale,1))] px-[calc(10px*var(--mx-scale,1))] py-[calc(7px*var(--mx-scale,1))] text-[length:calc(13px*var(--mx-scale,1))] uppercase tracking-[0.01em] transition-colors ${
+            collapsed ? 'justify-center' : ''} ${
+            active
+              ? 'bg-[rgba(var(--mx-accent-rgb),0.09)] font-semibold text-primary-700 dark:bg-[rgba(var(--mx-accent-rgb),0.16)] dark:text-primary-300'
+              : 'font-normal text-gray-500 dark:text-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/60 dark:hover:text-white'
+          }`}
+        >
+          <s.icon size={15} aria-hidden="true" className="shrink-0" />
+          {!collapsed && <span className="truncate">{s.label}</span>}
+          {s.id === 'home' && alertCount > 0 && (
+            <span className={`${collapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} min-w-[16px] h-4 px-1 rounded-full bg-danger-600 text-white text-[10px] font-bold flex items-center justify-center`} aria-label={`${alertCount} alerte(s)`}>
+              {alertCount > 99 ? '99+' : alertCount}
+            </span>
+          )}
+        </NavLink>
+      </li>
     );
   };
 
   return (
-    <div className="hidden lg:flex h-full shrink-0 print:hidden">
-      {/* Rail des métiers */}
-      <nav aria-label="Espaces" className="w-[80px] flex flex-col items-center gap-0.5 py-3 overflow-y-auto border-r-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <NavLink to="/" aria-label="GO-Mat, accueil" className="mb-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-600 text-white">
-          <QrCode size={22} aria-hidden="true" />
+    <aside
+      className="hidden lg:flex h-full shrink-0 flex-col bg-white dark:bg-gray-800 print:hidden"
+      style={{
+        width: collapsed ? 'var(--mx-sidebar-w-collapsed)' : 'calc(200px * var(--mx-scale, 1))',
+        boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04)',
+        transition: 'width .2s ease',
+        zIndex: 20,
+      }}
+    >
+      {/* Logo et bouton de repli (en haut, comme Mannyx) */}
+      <div className={`flex items-center gap-2 px-[calc(12px*var(--mx-scale,1))] pt-[calc(14px*var(--mx-scale,1))] pb-[calc(12px*var(--mx-scale,1))] ${collapsed ? 'flex-col' : 'justify-between'}`}>
+        <NavLink to="/" aria-label="GO-Mat, accueil" className="flex min-w-0 items-center gap-2">
+          {companyLogo && !collapsed
+            ? <img src={companyLogo} alt="Logo de l'entreprise" className="max-h-7 max-w-[120px] object-contain" />
+            : (
+              <>
+                <span className="flex h-[calc(28px*var(--mx-scale,1))] w-[calc(28px*var(--mx-scale,1))] shrink-0 items-center justify-center rounded-md bg-primary-600 text-white"><QrCode size={16} aria-hidden="true" /></span>
+                {!collapsed && <span className="text-[length:calc(14px*var(--mx-scale,1))] font-bold uppercase tracking-[0.12em] text-gray-900 dark:text-white">GO-Mat</span>}
+              </>
+            )}
         </NavLink>
-        {spaces.filter(s => !BOTTOM_SPACES.includes(s.id)).map(railButton)}
-        <div className="flex-1" />
-        {spaces.filter(s => BOTTOM_SPACES.includes(s.id)).map(railButton)}
-        <button
-          type="button"
-          onClick={() => togglePanel(!panelOpen)}
-          aria-label={panelOpen ? 'Replier la liste' : 'Déplier la liste'}
-          title={panelOpen ? 'Replier la liste' : 'Déplier la liste'}
-          className="flex h-10 w-10 items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          {panelOpen ? <PanelLeftClose size={18} aria-hidden="true" /> : <PanelLeftOpen size={18} aria-hidden="true" />}
+        <button type="button" onClick={toggle} aria-label={collapsed ? 'Ouvrir le menu' : 'Réduire le menu'} title={collapsed ? 'Ouvrir le menu' : 'Réduire le menu'}
+          className="flex h-[calc(32px*var(--mx-scale,1))] w-[calc(32px*var(--mx-scale,1))] shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+          {collapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
         </button>
+      </div>
+
+      <nav aria-label="Navigation principale" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[calc(8px*var(--mx-scale,1))]">
+        <ul className="flex flex-col gap-[2px]">{spaces.filter(s => !BOTTOM_SPACES.includes(s.id)).map(entry)}</ul>
+        <div className="flex-1" />
+        <ul className="flex flex-col gap-[2px] pb-2">{spaces.filter(s => BOTTOM_SPACES.includes(s.id)).map(entry)}</ul>
       </nav>
 
-      {/* Pages de l'espace */}
-      {showPanel && (
-        <nav aria-label={space.label} className="w-[232px] flex flex-col border-r-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="px-4 pt-5 pb-3">
-            {companyLogo && <img src={companyLogo} alt="Logo de l'entreprise" className="max-h-8 max-w-[180px] object-contain mb-3" />}
-            <p className="mx-section-label">GO-Mat</p>
-            <h2 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-gray-900 dark:text-white">{space.label}</h2>
-          </div>
-          <ul className="flex-1 overflow-y-auto px-2 pb-4 flex flex-col gap-0.5">
-            {space.links.map(link => (
-              <li key={link.to}>
-                <NavLink
-                  to={link.to}
-                  end={link.to === '/'}
-                  target={link.newTab ? '_blank' : undefined}
-                  rel={link.newTab ? 'noopener' : undefined}
-                  className={({ isActive }) => `group relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[13.5px] transition-[background-color,color,transform] duration-150 ${
-                    isActive
-                      ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-primary-600'
-                      : 'text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white hover:translate-x-0.5'
-                  }`}
-                >
-                  <link.icon size={16} aria-hidden="true" />
-                  <span className="flex-1 truncate">{link.label}</span>
-                  {link.newTab && <ExternalLink size={13} aria-label="nouvel onglet" className="opacity-60" />}
-                  {link.to === '/notifications' && alertCount > 0 && (
-                    <span className="rounded-full bg-danger-600 px-1.5 text-[10.5px] font-bold text-white">{alertCount}</span>
-                  )}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
-    </div>
+      {/* Compte, en bas du menu */}
+      <div className="border-t border-gray-200 dark:border-gray-700 p-[calc(8px*var(--mx-scale,1))]">
+        <UserMenu variant="sidebar" collapsed={collapsed} />
+      </div>
+    </aside>
   );
 };
 

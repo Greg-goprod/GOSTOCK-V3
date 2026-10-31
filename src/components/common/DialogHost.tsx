@@ -47,7 +47,7 @@ const DialogHost: React.FC = () => {
     >
       {view && (
         <form onSubmit={e => { e.preventDefault(); accept(); }} className="space-y-3">
-          <div className="text-[14px] leading-relaxed text-gray-800 dark:text-gray-100">
+          <div className="text-[length:calc(14px*var(--mx-scale,1))] leading-relaxed text-gray-800 dark:text-gray-100">
             {/* Une ligne par paragraphe : chaque phrase est traduite séparément */}
             {view.message.split('\n').map((line, index) => <p key={index}>{line}</p>)}
           </div>

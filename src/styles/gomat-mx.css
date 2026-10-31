@@ -35,7 +35,8 @@
   --p-900: 45 35 112;
   --p-950: 28 22 71;
 
-  --gm-page: #dadbe0;    /* --scrim : fond de page */
+  /* Fond de page comme Mannyx : halo violet en haut à droite sur un dégradé très clair */
+  --gm-page: radial-gradient(1200px 800px at 100% 0%, rgba(90, 70, 214, 0.05), transparent 50%), linear-gradient(135deg, #f5f7fb 0%, #ffffff 100%);
 }
 
 .dark {
@@ -65,7 +66,7 @@
   --p-900: 42 36 88;
   --p-950: 23 20 46;
 
-  --gm-page: #191b21;
+  --gm-page: radial-gradient(1200px 800px at -10% -20%, rgba(134, 114, 245, 0.08), transparent 60%), linear-gradient(135deg, #0b1020 0%, #141a2c 100%);
 }
 
 /* --------------------------------------------------------------------------
@@ -126,18 +127,18 @@ input[type='radio'] {
    trait d'accent de 3px dessous (et non le grand titre de 52px du catalogue) */
 .mx-page-title {
   display: inline-block;
-  font-size: 26px;
+  font-size: calc(26px * var(--mx-scale, 1));
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.1;
   text-transform: uppercase;
-  padding-bottom: 10px;
+  padding-bottom: calc(10px * var(--mx-scale, 1));
   border-bottom: 3px solid var(--mx-accent);
   color: var(--mx-text);
 }
 
 .mx-section-label {
-  font-size: 11px;
+  font-size: calc(11px * var(--mx-scale, 1));
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -249,13 +250,13 @@ input[type='radio'] {
 main table thead th {
   background: var(--mx-surface2) !important;
   color: var(--mx-text3) !important;
-  font-size: 11px !important;
+  font-size: calc(11px * var(--mx-scale, 1)) !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.06em !important;
 }
 main table tbody td {
-  font-size: 13px;
+  font-size: calc(13px * var(--mx-scale, 1));
   border-top: 1px solid var(--mx-border);
 }
 main table tbody tr {
@@ -269,7 +270,7 @@ main table tbody tr:hover > td {
    Formulaires : libellé de champ 12.5px/600 --text2, focus accent + halo 3px
    -------------------------------------------------------------------------- */
 label.block {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--mx-scale, 1));
   font-weight: 600;
   color: var(--mx-text2);
 }
@@ -336,7 +337,7 @@ main :where(h2, h3) {
 }
 @media (min-width: 1024px) {
   :where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']), select:not([multiple]):not([size])) {
-    min-height: 34px;
+    min-height: calc(34px * var(--mx-scale, 1));
   }
 }
 
@@ -346,7 +347,7 @@ input[type='checkbox']:not(.sr-only):not(.peer) {
   -webkit-appearance: none;
   flex-shrink: 0;
   width: 16px;
-  height: 16px;
+  height: calc(16px * var(--mx-scale, 1));
   margin: 0;
   border: 1.5px solid var(--mx-input-border);
   border-radius: 4px;
@@ -368,7 +369,7 @@ input[type='radio']:not(.sr-only):not(.peer) {
   -webkit-appearance: none;
   flex-shrink: 0;
   width: 18px;
-  height: 18px;
+  height: calc(18px * var(--mx-scale, 1));
   margin: 0;
   border: 1.5px solid var(--mx-input-border);
   border-radius: 50%;
@@ -392,12 +393,11 @@ label:has(> input[type='radio']:checked).border {
 
 /* DA2 : boutons du pied de drawer (.mx-dr-btn) — rayon 8px, 12 × 16px, le principal s'étire */
 [role='dialog'] [data-mx-scroll] :is(.mx-drawer-footer, form > div:last-child:has(> button[type='submit'])) .mx-btn {
-  border-radius: 8px;
-  padding: 12px 16px;
+  border-radius: calc(8px * var(--mx-scale, 1));
+  padding: 0 calc(12px * var(--mx-scale, 1));
+  height: calc(34px * var(--mx-scale, 1));
   min-height: 0;
-}
-[role='dialog'] [data-mx-scroll] :is(.mx-drawer-footer, form > div:last-child:has(> button[type='submit'])) .mx-btn-primary {
-  flex-grow: 1;
+  flex-grow: 0;
 }
 
 /* DA30 : contrôles de la carte en Geist */
@@ -424,8 +424,8 @@ label:has(> input[type='radio']:checked).border {
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 46px;
-  padding: 14px 16px;
+  min-height: calc(46px * var(--mx-scale, 1));
+  padding: calc(14px * var(--mx-scale, 1)) calc(16px * var(--mx-scale, 1));
   text-align: left;
   color: var(--mx-text);
   transition: background-color 0.12s, box-shadow 0.12s;
@@ -442,9 +442,9 @@ label:has(> input[type='radio']:checked).border {
 }
 .mx-acc-title {
   flex: 1;
-  line-height: 18px;
+  line-height: calc(18px * var(--mx-scale, 1));
   min-width: 0;
-  font-size: 14px;
+  font-size: calc(14px * var(--mx-scale, 1));
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -455,7 +455,7 @@ label:has(> input[type='radio']:checked).border {
 }
 .mx-acc-icon svg {
   width: 18px;
-  height: 18px;
+  height: calc(18px * var(--mx-scale, 1));
   color: inherit !important;
 }
 .mx-acc-chevron {
@@ -470,7 +470,7 @@ label:has(> input[type='radio']:checked).border {
   transform: rotate(180deg);
 }
 .mx-acc-body {
-  padding: 16px;
+  padding: calc(16px * var(--mx-scale, 1));
   border-top: 1.5px solid var(--mx-border);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -481,7 +481,7 @@ label:has(> input[type='radio']:checked).border {
 [role='dialog'] fieldset > legend,
 [role='dialog'] .mx-section-label,
 .mx-dr-label {
-  font-size: 11px !important;
+  font-size: calc(11px * var(--mx-scale, 1)) !important;
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase;
@@ -491,7 +491,7 @@ label:has(> input[type='radio']:checked).border {
 
 /* DA23 : lignes de liste dans un drawer (.mx-dr-list-item) */
 .mx-dr-list-item {
-  padding: 10px 12px;
+  padding: calc(10px * var(--mx-scale, 1)) calc(12px * var(--mx-scale, 1));
   background: var(--mx-surface2);
   border: 1.5px solid var(--mx-border);
   border-radius: 6px;
@@ -508,11 +508,11 @@ textarea {
 @media (min-width: 1024px) {
   :is(input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='number'],
       input[type='tel'], input[type='url'], input:not([type]), select:not([multiple]):not([size])):not(.mx-tall) {
-    height: 34px;
-    min-height: 34px;
+    height: calc(34px * var(--mx-scale, 1));
+    min-height: calc(34px * var(--mx-scale, 1));
     padding-top: 0;
     padding-bottom: 0;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--mx-scale, 1));
   }
 }
 
@@ -523,12 +523,10 @@ html:not(.dark) :is(.text-primary-700, .text-primary-800) {
 
 /* Contre-test DA2 : boutons des pieds passés par la prop footer de MxDrawer (confirmations) */
 .mx-dr-foot .mx-btn {
-  border-radius: 8px;
-  padding: 12px 16px;
+  border-radius: calc(8px * var(--mx-scale, 1));
+  padding: 0 calc(12px * var(--mx-scale, 1));
+  height: calc(34px * var(--mx-scale, 1));
   min-height: 0;
-}
-.mx-dr-foot :is(.mx-btn-primary, .mx-btn-danger) {
-  flex-grow: 1;
 }
 
 /* Contre-test DA11 : tuile principale de l'accueil (aplat accent) — texte au contraste de la charte */
@@ -562,4 +560,31 @@ html:not(.dark) :is(.text-primary-700, .text-primary-800) {
 }
 :is(.mx-page-head, .mx-page-title) + p {
   margin-top: 10px;
+}
+
+/* Lot 21 : densité compacte (×0,9) sur ordinateur, comme Mannyx ; taille normale sur tablette et téléphone */
+@media (min-width: 1024px) {
+  :root {
+    --mx-scale: 0.9;
+  }
+}
+
+/* Lot 21 : dans un module, sur grand écran, l'en-tête de module (nom du module + onglets) remplace le titre
+   de la page et sa phrase d'introduction (Mannyx n'a ni l'un ni l'autre) */
+@media (min-width: 1024px) {
+  .has-module-head .mx-page-head:not(.mx-page-head-keep),
+  .has-module-head .mx-page-head:not(.mx-page-head-keep) + p {
+    display: none;
+  }
+}
+
+/* Lot 21 : pied de drawer toujours en bas, même quand le contenu est court (comme Mannyx) */
+[role='dialog'] [data-mx-scroll] > :only-child {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+[role='dialog'] [data-mx-scroll] .mx-drawer-footer {
+  margin-top: auto !important;
+  justify-content: flex-end;
 }

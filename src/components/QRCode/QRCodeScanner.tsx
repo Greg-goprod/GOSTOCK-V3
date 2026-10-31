@@ -171,7 +171,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
           onKeyDown={handleKeyDown}
           placeholder="Scanne ou saisis un code..."
           disabled={isProcessing}
-          className={`w-full px-3 py-2.5 text-center border-[1.5px] rounded-md font-mono text-[14px] text-gray-900 dark:text-white transition-colors ${getStatusColor()}`}
+          className={`w-full px-3 py-2.5 text-center border-[1.5px] rounded-md font-mono text-[length:calc(14px*var(--mx-scale,1))] text-gray-900 dark:text-white transition-colors ${getStatusColor()}`}
           autoComplete="off"
           autoFocus={!disableAutoFocus}
         />
@@ -190,7 +190,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
         type="button"
         onClick={() => setCameraOn(on => !on)}
         aria-pressed={cameraOn}
-        className="mx-btn mx-btn-secondary mt-2 w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 min-h-[44px] lg:min-h-[34px] text-[12.5px]"
+        className="mx-btn mx-btn-secondary mt-2 w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 min-h-[44px] lg:min-h-[34px] text-[length:calc(12.5px*var(--mx-scale,1))]"
       >
         <Camera size={16} aria-hidden="true" /> {cameraOn ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
       </button>

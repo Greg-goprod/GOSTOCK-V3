@@ -190,7 +190,7 @@ const Transfers: React.FC = () => {
                 <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
                   <span className="font-mono">{t.number}</span>
                   <span className="inline-flex items-center gap-1">{depotName(t.from_depot_id)} <ArrowRight size={14} aria-hidden="true" /> {depotName(t.to_depot_id)}</span>
-                  <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${t.status === 'in_transit' ? 'mx-tint-badge-info' : t.status === 'received' ? 'mx-tint-badge-success' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>{STATUS[t.status]}</span>
+                  <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${t.status === 'in_transit' ? 'mx-tint-badge-info' : t.status === 'received' ? 'mx-tint-badge-success' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>{STATUS[t.status]}</span>
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   Envoyé le {new Date(t.sent_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}{t.sent_by ? ` par ${userName(t.sent_by)}` : ''}

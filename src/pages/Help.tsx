@@ -92,7 +92,7 @@ const SearchBox: React.FC<{ value: string; onChange: (v: string) => void }> = ({
     <input type="text" value={value} onChange={e => onChange(e.target.value)}
       placeholder="Que veux-tu faire ? Ex. rendre un kit, réserver un véhicule, code de connexion…"
       aria-label="Chercher dans l'aide"
-      className="w-full rounded-xl border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 pl-11 pr-10 text-[14px] text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
+      className="w-full rounded-xl border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 pl-11 pr-10 text-[length:calc(14px*var(--mx-scale,1))] text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
     {value && (
       <button type="button" onClick={() => onChange('')} aria-label="Effacer la recherche"
         className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -128,7 +128,7 @@ const Help: React.FC = () => {
               <Link to="/aide" className="hover:underline">Aide</Link>
               {category && <><ChevronRight size={13} aria-hidden="true" /><span>{category.label}</span></>}
             </nav>
-            <a href={`/aide/${id}`} target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
+            <a href={`/aide/${id}`} target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-1.5 text-[length:calc(12.5px*var(--mx-scale,1))]">
               <ExternalLink size={15} aria-hidden="true" /> Ouvrir dans un nouvel onglet
             </a>
           </div>
@@ -159,13 +159,13 @@ const Help: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             {/* L'aide à côté de l'application : on lit d'un côté, on travaille de l'autre */}
-            <a href="/aide" target="_blank" rel="noopener" className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-[12.5px]">
+            <a href="/aide" target="_blank" rel="noopener" className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-[length:calc(12.5px*var(--mx-scale,1))]">
               <ExternalLink size={16} aria-hidden="true" /> Nouvel onglet
             </a>
-            <a href="/aide/GO-Mat-mode-emploi.pdf" download className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-[12.5px]">
+            <a href="/aide/GO-Mat-mode-emploi.pdf" download className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-[length:calc(12.5px*var(--mx-scale,1))]">
               <FileDown size={16} aria-hidden="true" /> PDF
             </a>
-            <a href="/aide/imprimer" target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-2 text-[12.5px]">
+            <a href="/aide/imprimer" target="_blank" rel="noopener" className="mx-btn mx-btn-ghost inline-flex items-center gap-1.5 px-3 py-2 text-[length:calc(12.5px*var(--mx-scale,1))]">
               <Printer size={16} aria-hidden="true" /> Imprimer
             </a>
           </div>

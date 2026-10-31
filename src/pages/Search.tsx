@@ -200,13 +200,13 @@ const Search: React.FC = () => {
       <form onSubmit={submit} className="flex gap-2">
         <label htmlFor="search-q" className="sr-only">Question</label>
         <input id="search-q" type="search" value={text} onChange={e => setText(e.target.value)} autoFocus placeholder="qui a la meule 230 ?"
-          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-[14px] text-gray-900 dark:text-gray-100" />
+          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-[length:calc(14px*var(--mx-scale,1))] text-gray-900 dark:text-gray-100" />
         <button type="submit" aria-label="Chercher" className="mx-btn mx-btn-primary min-w-[48px] px-4 flex items-center justify-center"><SearchIcon size={20} /></button>
       </form>
       <div className="flex flex-wrap gap-2">
         {EXAMPLES.map(ex => (
           <button key={ex} type="button" onClick={() => { setText(ex); setParams({ q: ex }); }}
-            className="rounded border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1 text-[12px] font-semibold text-gray-700 dark:text-gray-300 hover:border-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
+            className="rounded border-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1 text-[length:calc(12px*var(--mx-scale,1))] font-semibold text-gray-700 dark:text-gray-300 hover:border-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
             {ex}
           </button>
         ))}

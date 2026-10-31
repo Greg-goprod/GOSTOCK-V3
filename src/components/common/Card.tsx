@@ -12,7 +12,7 @@ const Card: React.FC<CardProps> = ({ children, title, className = '' }) => {
     <div className={`mx-card overflow-hidden ${className}`}>
       {title && (
         <div className="px-5 pt-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{title}</h3>
+          <h3 className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{title}</h3>
         </div>
       )}
       <div className="p-4">{children}</div>

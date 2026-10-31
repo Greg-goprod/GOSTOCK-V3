@@ -71,7 +71,7 @@ const Anchor: React.FC<{ id?: string; value: string; required?: boolean }> = ({ 
         }}
         className="sr-only" style={{ pointerEvents: 'none' }} />
       {missing && (
-        <p role="alert" className="mt-1 text-[12.5px] font-medium text-tone-danger">Ce champ est obligatoire.</p>
+        <p role="alert" className="mt-1 text-[length:calc(12.5px*var(--mx-scale,1))] font-medium text-tone-danger">Ce champ est obligatoire.</p>
       )}
     </>
   );

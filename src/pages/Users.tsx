@@ -458,14 +458,14 @@ const Users: React.FC = () => {
           >
             Filtres
             {Object.keys(activeFilters).length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-[11px] bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded font-black">
+              <span className="ml-1 px-1.5 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded font-black">
                 {Object.keys(activeFilters).length}
               </span>
             )}
           </Button>
           <Link
             to="/badges"
-            className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3.5 py-[7px] min-h-[44px] lg:min-h-[32px] text-[12.5px]"
+            className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3.5 py-[7px] min-h-[44px] lg:min-h-[32px] text-[length:calc(12.5px*var(--mx-scale,1))]"
           >
             <Contact size={16} aria-hidden="true" /> Imprimer les badges
           </Link>

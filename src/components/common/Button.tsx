@@ -44,9 +44,9 @@ const Button: React.FC<ButtonProps> = ({
 
   // Libellé 12,5px / 600 (tronc MX). Sur mobile/tablette : cible tactile d'au moins 44px ; compact sur grand écran
   const sizeClasses = {
-    sm: 'text-[12.5px] px-2.5 py-1 min-h-[44px] min-w-[44px] lg:min-h-[28px] lg:min-w-0',
-    md: 'text-[12.5px] px-3.5 py-[7px] min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0',
-    lg: 'text-[12.5px] px-4 py-2 min-h-[44px] min-w-[44px]',
+    sm: 'text-[length:calc(12.5px*var(--mx-scale,1))] px-2.5 py-1 min-h-[44px] min-w-[44px] lg:min-h-[28px] lg:min-w-0',
+    md: 'text-[length:calc(12.5px*var(--mx-scale,1))] px-3.5 py-[7px] min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0',
+    lg: 'text-[length:calc(12.5px*var(--mx-scale,1))] px-4 py-2 min-h-[44px] min-w-[44px]',
   };
 
   return (

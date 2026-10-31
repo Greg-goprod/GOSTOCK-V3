@@ -240,7 +240,7 @@ const Trainings: React.FC = () => {
                       <li key={h.id} className="py-2 flex flex-wrap items-center gap-2 text-sm">
                         <span className="flex-1 min-w-[10rem] font-medium text-gray-900 dark:text-gray-100">{name(h.user_id)}</span>
                         <span className="text-xs text-gray-600 dark:text-gray-400">obtenue le {new Date(h.obtained_on).toLocaleDateString('fr-CH')}</span>
-                        <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${state.className}`}>{state.label}</span>
+                        <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${state.className}`}>{state.label}</span>
                         {h.certificate_path && (
                           <Button size="sm" variant="outline" onClick={() => openCertificate(h.certificate_path!)}>Attestation</Button>
                         )}

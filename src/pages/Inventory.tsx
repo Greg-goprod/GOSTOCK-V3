@@ -10,6 +10,7 @@ import { findEquipmentByCode } from '../lib/scan';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import PageTitle from '../components/common/PageTitle';
+import { useCurrentDepot } from '../lib/useCurrentDepot';
 
 interface CountLine {
   id: string;
@@ -38,7 +39,8 @@ const Inventory: React.FC = () => {
   const { depots, equipment, refreshData } = useApp();
   const { profile, can } = useAuth();
   const myDepots = profile?.depot_ids?.length ? depots.filter(d => profile.depot_ids.includes(d.id)) : depots;
-  const [depotId, setDepotId] = useState(myDepots.find(d => d.isDefault)?.id || myDepots[0]?.id || '');
+  const { depotId: currentDepot } = useCurrentDepot();
+  const [depotId, setDepotId] = useState(currentDepot || myDepots.find(d => d.isDefault)?.id || myDepots[0]?.id || '');
   const [size, setSize] = useState(20);
   const [session, setSession] = useState<InventoryCount | null>(null);
   const [history, setHistory] = useState<InventoryCount[]>([]);

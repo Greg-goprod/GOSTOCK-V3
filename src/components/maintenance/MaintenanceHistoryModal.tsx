@@ -99,19 +99,19 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
     switch (status) {
       case 'in_progress':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200">
             En cours
           </span>
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-success-100 dark:bg-success-900/50 text-tone-success">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-success-100 dark:bg-success-900/50 text-tone-success">
             Terminée
           </span>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-danger-100 dark:bg-danger-900/50 text-tone-danger">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-danger-100 dark:bg-danger-900/50 text-tone-danger">
             Annulée
           </span>
         );

@@ -124,10 +124,10 @@ const CommandPalette: React.FC = () => {
             aria-expanded="true"
             aria-controls="palette-results"
             aria-activedescendant={entries[active] ? `palette-${active}` : undefined}
-            className="flex-1 border-0 bg-transparent py-4 text-[15px] text-gray-900 dark:text-white focus:outline-none focus:ring-0"
+            className="flex-1 border-0 bg-transparent py-4 text-[length:calc(15px*var(--mx-scale,1))] text-gray-900 dark:text-white focus:outline-none focus:ring-0"
             style={{ borderWidth: 0 }}
           />
-          <kbd className="rounded-sm border border-gray-200 dark:border-gray-700 px-1.5 text-[11px] text-gray-500">Échap</kbd>
+          <kbd className="rounded-sm border border-gray-200 dark:border-gray-700 px-1.5 text-[length:calc(11px*var(--mx-scale,1))] text-gray-500">Échap</kbd>
         </div>
         <ul id="palette-results" ref={listRef} role="listbox" className="max-h-[50vh] overflow-y-auto py-2">
           {entries.length === 0 && <li className="px-4 py-6 text-center text-sm text-gray-500">Aucune page ne correspond.</li>}
@@ -144,7 +144,7 @@ const CommandPalette: React.FC = () => {
                   aria-selected={index === active}
                   onMouseMove={() => setActive(index)}
                   onClick={entry.run}
-                  className={`mx-2 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-[13.5px] ${
+                  className={`mx-2 flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-[length:calc(13.5px*var(--mx-scale,1))] ${
                     index === active ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200' : 'text-gray-700 dark:text-gray-200'
                   }`}
                 >

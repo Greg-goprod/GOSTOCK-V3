@@ -114,7 +114,7 @@ const DataHealth: React.FC = () => {
                   <ul className="text-sm text-gray-800 dark:text-gray-200 max-h-64 overflow-y-auto space-y-0.5">
                     {c.items.slice(0, 200).map((item, i) => <li key={i}>{item}</li>)}
                   </ul>
-                  <Link to={c.to} className="mx-btn mx-btn-secondary inline-flex items-center px-3.5 py-1.5 text-[12.5px]">Corriger →</Link>
+                  <Link to={c.to} className="mx-btn mx-btn-secondary inline-flex items-center px-3.5 py-1.5 text-[length:calc(12.5px*var(--mx-scale,1))]">Corriger →</Link>
                 </div>
               )}
             </li>

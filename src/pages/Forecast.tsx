@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { downloadWorkbook } from '../lib/excel';
 import PageTitle from '../components/common/PageTitle';
+import { useCurrentDepot } from '../lib/useCurrentDepot';
 
 interface ForecastRow {
   equipment_id: string;
@@ -35,7 +36,7 @@ const num = (n: number) => n.toLocaleString('fr-CH', { maximumFractionDigits: 1 
 const Forecast: React.FC = () => {
   const { depots } = useApp();
   const [rows, setRows] = useState<ForecastRow[]>([]);
-  const [depotId, setDepotId] = useState('');
+  const { depotId, setDepotId } = useCurrentDepot();
   const [onlyToOrder, setOnlyToOrder] = useState(true);
 
   useEffect(() => {

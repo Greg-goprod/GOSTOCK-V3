@@ -9,6 +9,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { LowStockItem } from '../types';
 import PageTitle from '../components/common/PageTitle';
+import { useCurrentDepot } from '../lib/useCurrentDepot';
 
 const formatQty = (value: number) =>
   Number.isInteger(value) ? String(value) : value.toLocaleString('fr-CH', { maximumFractionDigits: 2 });
@@ -21,7 +22,9 @@ const OrderSheet: React.FC = () => {
   const { depots } = useApp();
   const [items, setItems] = useState<LowStockItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [depotFilter, setDepotFilter] = useState('all');
+  const { depotId: currentDepot, setDepotId: setCurrentDepot } = useCurrentDepot();
+  const depotFilter = currentDepot || 'all';
+  const setDepotFilter = (value: string) => setCurrentDepot(value === 'all' ? '' : value);
   // Quantités à commander modifiables avant impression (non enregistrées)
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   // Déjà commandé et pas encore reçu, par article et dépôt

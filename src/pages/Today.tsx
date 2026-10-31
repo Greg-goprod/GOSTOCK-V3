@@ -13,7 +13,7 @@ const Kpi: React.FC<{ value: number | string; label: string; to: string; tone?: 
     to={to}
     className="mx-card mx-card-hover p-4 flex flex-col gap-1"
   >
-    <span className={`font-mono text-[29px] font-bold tracking-[-0.02em] tabular-nums ${tone === 'bad' ? 'text-tone-danger' : tone === 'warn' ? 'text-tone-warning' : 'text-gray-900 dark:text-white'}`}>
+    <span className={`font-mono text-[length:calc(29px*var(--mx-scale,1))] font-bold tracking-[-0.02em] tabular-nums ${tone === 'bad' ? 'text-tone-danger' : tone === 'warn' ? 'text-tone-warning' : 'text-gray-900 dark:text-white'}`}>
       {value}
     </span>
     <span className="text-sm text-gray-600 dark:text-gray-300">{label}</span>
@@ -23,7 +23,7 @@ const Kpi: React.FC<{ value: number | string; label: string; to: string; tone?: 
 const Block: React.FC<{ title: string; to: string; link: string; children: React.ReactNode; empty: string; count: number }> = ({ title, to, link, children, empty, count }) => (
   <section className="mx-card p-5 flex flex-col gap-3 min-w-0">
     <div className="flex justify-between items-baseline gap-2">
-      <h2 className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{title}</h2>
+      <h2 className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{title}</h2>
       <Link to={to} className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">
         {link} <ArrowRight size={14} aria-hidden="true" />
       </Link>
@@ -96,7 +96,7 @@ const Today: React.FC = () => {
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{r.requester_name}{r.destination ? ` · ${r.destination}` : ''}</div>
                   <div className="font-mono text-xs text-gray-600 dark:text-gray-400">{r.number} · {formatPeriod(r.start_at, r.end_at)}</div>
                 </div>
-                <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-bold ${REQUEST_STATUS[r.status].className}`}>{REQUEST_STATUS[r.status].label}</span>
+                <span className={`shrink-0 rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${REQUEST_STATUS[r.status].className}`}>{REQUEST_STATUS[r.status].label}</span>
               </li>
             ))}
           </Block>
@@ -108,7 +108,7 @@ const Today: React.FC = () => {
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{itemName(c.equipmentId)}</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">{userName(c.userId)} · prévu le {new Date(c.dueDate).toLocaleDateString('fr-CH')}</div>
                 </div>
-                <span className="shrink-0 rounded mx-tint-badge-danger px-2 py-0.5 text-[11px] font-bold">{daysLate(c.dueDate)} j</span>
+                <span className="shrink-0 rounded mx-tint-badge-danger px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">{daysLate(c.dueDate)} j</span>
               </li>
             ))}
           </Block>
@@ -135,7 +135,7 @@ const Today: React.FC = () => {
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{v.name}</div>
                   <div className="font-mono text-xs text-gray-600 dark:text-gray-400">{v.plate}</div>
                 </div>
-                <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-bold ${VEHICLE_STATUS[v.status].className}`}>{VEHICLE_STATUS[v.status].label}</span>
+                <span className={`shrink-0 rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${VEHICLE_STATUS[v.status].className}`}>{VEHICLE_STATUS[v.status].label}</span>
               </li>
             ))}
             {vehicleWarnings.filter(v => v.status !== 'in_use').map(v => (
@@ -144,7 +144,7 @@ const Today: React.FC = () => {
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{v.name}</div>
                   <div className="font-mono text-xs text-gray-600 dark:text-gray-400">{v.plate}</div>
                 </div>
-                <span className="shrink-0 rounded mx-tint-badge-warning px-2 py-0.5 text-[11px] font-bold">Échéance proche</span>
+                <span className="shrink-0 rounded mx-tint-badge-warning px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">Échéance proche</span>
               </li>
             ))}
           </Block>

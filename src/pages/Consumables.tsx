@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { useSiteSuggestions } from '../lib/sites';
 import { Equipment } from '../types';
 import PageTitle from '../components/common/PageTitle';
+import { useCurrentDepot } from '../lib/useCurrentDepot';
 
 type StockAction = 'consume' | 'receive' | 'count' | 'transfer' | 'threshold';
 
@@ -38,21 +39,24 @@ const errorMessage = (error: unknown) =>
 
 const StatePill: React.FC<{ quantity: number; isLow: boolean; lowDepots: string[]; showDepots: boolean }> = ({ quantity, isLow, lowDepots, showDepots }) => {
   if (quantity === 0) {
-    return <span className="inline-flex rounded mx-tint-badge-danger px-2 py-0.5 text-[11px] font-bold">Épuisé</span>;
+    return <span className="inline-flex rounded mx-tint-badge-danger px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">Épuisé</span>;
   }
   if (isLow) {
     return (
-      <span className="inline-flex rounded mx-tint-badge-warning px-2 py-0.5 text-[11px] font-bold">
+      <span className="inline-flex rounded mx-tint-badge-warning px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">
         Stock bas{showDepots && lowDepots.length > 0 ? ` · ${lowDepots.join(', ')}` : ''}
       </span>
     );
   }
-  return <span className="inline-flex rounded mx-tint-badge-success px-2 py-0.5 text-[11px] font-bold">OK</span>;
+  return <span className="inline-flex rounded mx-tint-badge-success px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">OK</span>;
 };
 
 const Consumables: React.FC = () => {
   const { equipment, depots, consumableStock, suppliers, refreshData } = useApp();
-  const [depotFilter, setDepotFilter] = useState<string>('all');
+  // Dépôt affiché = dépôt choisi dans la barre du haut ('all' = tous)
+  const { depotId: currentDepot, setDepotId: setCurrentDepot } = useCurrentDepot();
+  const depotFilter = currentDepot || 'all';
+  const setDepotFilter = (value: string) => setCurrentDepot(value === 'all' ? '' : value);
   const [search, setSearch] = useState('');
   const [onlyLow, setOnlyLow] = useState(false);
   const [action, setAction] = useState<{ type: StockAction; item: Equipment } | null>(null);
@@ -595,7 +599,7 @@ const DepotsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 {d.address && <div className="text-sm text-gray-600 dark:text-gray-400">{d.address}</div>}
               </div>
               {d.isDefault ? (
-                <span className="rounded bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-200 px-2 py-0.5 text-[11px] font-bold">Par défaut</span>
+                <span className="rounded bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-200 px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">Par défaut</span>
               ) : (
                 <Button size="sm" variant="outline" onClick={() => makeDefault(d.id)}>Définir par défaut</Button>
               )}

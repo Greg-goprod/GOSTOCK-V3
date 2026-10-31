@@ -16,7 +16,7 @@ const MobileNav: React.FC = () => {
   const shortcuts = MOBILE_SHORTCUTS.map(to => links.find(l => l.to === to)).filter(Boolean).slice(0, 4) as typeof links;
   const inShortcuts = shortcuts.some(l => l.to === locate(location.pathname).link?.to);
 
-  const item = 'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-semibold';
+  const item = 'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[length:calc(11px*var(--mx-scale,1))] font-semibold';
   return (
     <>
       <nav aria-label="Raccourcis" className="lg:hidden print:hidden fixed bottom-0 inset-x-0 z-40 flex border-t-[1.5px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 pb-[env(safe-area-inset-bottom)]">
@@ -45,12 +45,12 @@ const MobileNav: React.FC = () => {
                   <li key={link.to}>
                     <NavLink to={link.to} end={link.to === '/'} onClick={() => setOpen(false)}
                       target={link.newTab ? '_blank' : undefined} rel={link.newTab ? 'noopener' : undefined}
-                      className={({ isActive }) => `flex items-center gap-2 rounded-md border-[1.5px] px-2.5 py-2.5 text-[13px] font-medium ${
+                      className={({ isActive }) => `flex items-center gap-2 rounded-md border-[1.5px] px-2.5 py-2.5 text-[length:calc(13px*var(--mx-scale,1))] font-medium ${
                         isActive ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
                       }`}>
                       <link.icon size={16} aria-hidden="true" />
                       <span className="truncate">{link.label}</span>
-                      {link.to === '/notifications' && alertCount > 0 && <span className="ml-auto rounded-full bg-danger-600 px-1.5 text-[10px] font-bold text-white">{alertCount}</span>}
+                      {link.to === '/notifications' && alertCount > 0 && <span className="ml-auto rounded-full bg-danger-600 px-1.5 text-[length:calc(10px*var(--mx-scale,1))] font-bold text-white">{alertCount}</span>}
                     </NavLink>
                   </li>
                 ))}

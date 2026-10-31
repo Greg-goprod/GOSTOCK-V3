@@ -13,7 +13,8 @@ html {
 
 @media (min-width: 1024px) {
   html {
-    font-size: 14px;
+    /* 14px × 0,9 : densité compacte de Mannyx sur ordinateur */
+    font-size: 12.6px;
   }
 }
 

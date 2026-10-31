@@ -331,7 +331,7 @@ export default function Equipment() {
             <div className="space-y-3">
               {/* Nom du matériel */}
               <div>
-                <h3 className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white break-words">{eq.name}</h3>
+                <h3 className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white break-words">{eq.name}</h3>
                 {eq.rentalUntil && <div className="mt-1"><RentalBadge until={eq.rentalUntil} returned={eq.status === 'retired'} /></div>}
                 {eq.shortTitle && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{eq.shortTitle}</p>
@@ -341,12 +341,12 @@ export default function Equipment() {
               {/* Badges simplifiés */}
               <div className="flex flex-wrap items-center gap-1.5">
                 {/* Badge Stock */}
-                <span className="px-2 py-0.5 bg-primary-50 bg-opacity-80 dark:bg-primary-900 dark:bg-opacity-80 text-primary-800 dark:text-primary-100 border border-primary-200 dark:border-primary-700 rounded-sm text-[10.5px] font-bold uppercase tracking-[0.04em]">
+                <span className="px-2 py-0.5 bg-primary-50 bg-opacity-80 dark:bg-primary-900 dark:bg-opacity-80 text-primary-800 dark:text-primary-100 border border-primary-200 dark:border-primary-700 rounded-sm text-[length:calc(10.5px*var(--mx-scale,1))] font-bold uppercase tracking-[0.04em]">
                   Stock: {totalQuantity}
                 </span>
                 
                 {/* Badge Disponible */}
-                <span className={`px-2 py-0.5 ${availableQuantity > 0 ? 'bg-success-50 bg-opacity-80 dark:bg-success-900 dark:bg-opacity-80 text-success-800 dark:text-success-100 border border-success-200 dark:border-success-700' : 'bg-danger-50 bg-opacity-80 dark:bg-danger-900 dark:bg-opacity-80 text-danger-800 dark:text-danger-100 border border-danger-200 dark:border-danger-700'} rounded-sm text-[10.5px] font-bold uppercase tracking-[0.04em]`}>
+                <span className={`px-2 py-0.5 ${availableQuantity > 0 ? 'bg-success-50 bg-opacity-80 dark:bg-success-900 dark:bg-opacity-80 text-success-800 dark:text-success-100 border border-success-200 dark:border-success-700' : 'bg-danger-50 bg-opacity-80 dark:bg-danger-900 dark:bg-opacity-80 text-danger-800 dark:text-danger-100 border border-danger-200 dark:border-danger-700'} rounded-sm text-[length:calc(10.5px*var(--mx-scale,1))] font-bold uppercase tracking-[0.04em]`}>
                   Disponible: {availableQuantity}
                 </span>
               </div>

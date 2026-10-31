@@ -140,7 +140,7 @@ const Planning: React.FC = () => {
           options={[{ value: 'vehicles', label: 'Véhicules' }, { value: 'tools', label: 'Outils' }]} />
         <div className="inline-flex items-center gap-1">
           <button type="button" aria-label="Semaine précédente" onClick={() => setFrom(f => f - 7 * DAY)} className="mx-btn mx-btn-secondary min-h-[34px] min-w-[34px] flex items-center justify-center"><ChevronLeft size={18} /></button>
-          <button type="button" onClick={() => setFrom(startOfDay(Date.now()))} className="mx-btn mx-btn-secondary min-h-[34px] px-3.5 text-[12.5px]">Aujourd'hui</button>
+          <button type="button" onClick={() => setFrom(startOfDay(Date.now()))} className="mx-btn mx-btn-secondary min-h-[34px] px-3.5 text-[length:calc(12.5px*var(--mx-scale,1))]">Aujourd'hui</button>
           <button type="button" aria-label="Semaine suivante" onClick={() => setFrom(f => f + 7 * DAY)} className="mx-btn mx-btn-secondary min-h-[34px] min-w-[34px] flex items-center justify-center"><ChevronRight size={18} /></button>
         </div>
         <input type="search" value={siteFilter} onChange={e => setSiteFilter(e.target.value)} placeholder="Chantier…" aria-label="Filtrer par chantier" className={`${inputClass} w-44`} />

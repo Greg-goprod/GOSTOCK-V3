@@ -30,12 +30,12 @@ const ShotZoom: React.FC<{ src: string; alt: string; onClose: () => void }> = ({
       className="fixed inset-0 z-[1000] flex flex-col bg-black/85 backdrop-blur-sm">
       <div className="flex shrink-0 items-center justify-end gap-2 p-3" onClick={e => e.stopPropagation()}>
         <button type="button" onClick={() => setActual(a => !a)}
-          className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
+          className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[length:calc(12.5px*var(--mx-scale,1))]">
           {actual ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
           {actual ? 'Adapter à l\'écran' : 'Taille réelle'}
         </button>
         <button ref={closeRef} type="button" onClick={onClose} aria-label="Fermer"
-          className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
+          className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[length:calc(12.5px*var(--mx-scale,1))]">
           <X size={16} aria-hidden="true" /> Fermer
         </button>
       </div>
@@ -134,7 +134,7 @@ export const HelpTaskView: React.FC<{ task: HelpTask; index: number }> = ({ task
 const HelpArticleView: React.FC<{ article: HelpArticle; onNavigate?: () => void; compact?: boolean }> = ({ article, onNavigate, compact }) => (
   <article className="space-y-5">
     <div className="space-y-2">
-      {!compact && <PageTitle>{article.title}</PageTitle>}
+      {!compact && <PageTitle keep>{article.title}</PageTitle>}
       <p className="text-gray-700 dark:text-gray-300">{article.summary}</p>
       <div className="flex flex-wrap items-center gap-2">
         {article.where && (
@@ -143,7 +143,7 @@ const HelpArticleView: React.FC<{ article: HelpArticle; onNavigate?: () => void;
           </span>
         )}
         {article.route && !article.route.startsWith('/ecran') && (
-          <Link to={article.route} onClick={onNavigate} className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
+          <Link to={article.route} onClick={onNavigate} className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-[length:calc(12.5px*var(--mx-scale,1))]">
             Ouvrir la page <ArrowRight size={14} aria-hidden="true" />
           </Link>
         )}
@@ -159,7 +159,7 @@ const HelpArticleView: React.FC<{ article: HelpArticle; onNavigate?: () => void;
               <a href={`#${taskAnchor(task)}`}
                 onClick={e => { e.preventDefault(); document.getElementById(taskAnchor(task))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 hover:bg-white dark:hover:bg-gray-700">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/50 text-[11px] font-bold text-primary-800 dark:text-primary-200">{i + 1}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/50 text-[length:calc(11px*var(--mx-scale,1))] font-bold text-primary-800 dark:text-primary-200">{i + 1}</span>
                 {task.title}
               </a>
             </li>

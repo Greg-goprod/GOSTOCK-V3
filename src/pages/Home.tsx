@@ -40,11 +40,11 @@ const ActionTile: React.FC<{ action: Action }> = ({ action }) => {
         <Icon size={20} aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={`block text-[16px] font-bold tracking-[-0.02em] ${action.primary ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{action.label}</span>
-        <span className={`block text-[12.5px] mt-0.5 ${action.primary ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'}`}>{action.hint}</span>
+        <span className={`block text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] ${action.primary ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{action.label}</span>
+        <span className={`block text-[length:calc(12.5px*var(--mx-scale,1))] mt-0.5 ${action.primary ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'}`}>{action.hint}</span>
       </span>
       {action.count !== undefined && action.count > 0 && (
-        <span className={`shrink-0 font-mono text-[22px] font-bold tabular-nums ${
+        <span className={`shrink-0 font-mono text-[length:calc(22px*var(--mx-scale,1))] font-bold tabular-nums ${
           action.primary ? 'text-white' : action.tone === 'bad' ? 'text-tone-danger' : action.tone === 'warn' ? 'text-tone-warning' : 'text-gray-900 dark:text-white'
         }`}>{action.count}</span>
       )}
@@ -132,7 +132,8 @@ const Home: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      {/* Sur grand écran, l'en-tête de module (ACCUEIL) remplace ce bloc, comme le tableau de bord de Mannyx */}
+      <header className="flex flex-wrap items-end justify-between gap-3 lg:hidden">
         <div>
           <p className="mx-section-label">{profile ? ROLE_LABELS[profile.role] : ''}</p>
           <PageTitle className="mt-2">{greeting}{profile ? `, ${profile.first_name}` : ''}</PageTitle>
@@ -158,7 +159,7 @@ const Home: React.FC = () => {
         <div className="grid gap-4 lg:grid-cols-2">
           <section className="mx-card p-5" aria-labelledby="home-mine">
             <div className="flex justify-between items-baseline gap-2 mb-2">
-              <h2 id="home-mine" className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{`Mon matériel (${mine.length})`}</h2>
+              <h2 id="home-mine" className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">{`Mon matériel (${mine.length})`}</h2>
               <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Détail <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
             {loadingAppData ? <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p> : mine.length === 0 ? (
@@ -181,7 +182,7 @@ const Home: React.FC = () => {
           </section>
           <section className="mx-card p-5" aria-labelledby="home-requests">
             <div className="flex justify-between items-baseline gap-2 mb-2">
-              <h2 id="home-requests" className="text-[16px] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">Mes demandes en cours</h2>
+              <h2 id="home-requests" className="text-[length:calc(16px*var(--mx-scale,1))] font-bold tracking-[-0.02em] text-gray-900 dark:text-white">Mes demandes en cours</h2>
               <Link to="/demandes" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline inline-flex items-center gap-1 min-h-[44px] lg:min-h-[28px] px-2 -mr-2 rounded">Toutes <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
             {myRequests.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucune demande en cours.</p> : (
@@ -192,7 +193,7 @@ const Home: React.FC = () => {
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{r.destination || r.number}</div>
                       <div className="font-mono text-xs text-gray-600 dark:text-gray-400">{formatPeriod(r.start_at, r.end_at)}</div>
                     </div>
-                    <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-bold ${REQUEST_STATUS[r.status].className}`}>{REQUEST_STATUS[r.status].label}</span>
+                    <span className={`shrink-0 rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${REQUEST_STATUS[r.status].className}`}>{REQUEST_STATUS[r.status].label}</span>
                   </li>
                 ))}
               </ul>

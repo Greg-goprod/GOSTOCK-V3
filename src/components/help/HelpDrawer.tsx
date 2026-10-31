@@ -31,7 +31,7 @@ const HelpDrawer: React.FC = () => {
       <div translate="no" className="space-y-6">
         {/* Lire l'aide dans un autre onglet et garder la page de travail ouverte */}
         <a href={article ? `/aide/${article.id}` : '/aide'} target="_blank" rel="noopener" onClick={() => setOpen(false)}
-          className="mx-btn mx-btn-secondary inline-flex w-fit items-center gap-1.5 px-3 py-1.5 text-[12.5px]">
+          className="mx-btn mx-btn-secondary inline-flex w-fit items-center gap-1.5 px-3 py-1.5 text-[length:calc(12.5px*var(--mx-scale,1))]">
           <ExternalLink size={14} aria-hidden="true" /> Ouvrir dans un nouvel onglet
         </a>
         {article ? (

@@ -19,7 +19,7 @@ const Badge: React.FC<BadgeProps> = ({ variant = 'neutral', children, className 
   };
 
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${variantClasses[variant]} ${className}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[length:calc(10px*var(--mx-scale,1))] font-medium ${variantClasses[variant]} ${className}`}>
       {children}
     </span>
   );

@@ -733,7 +733,7 @@ const Dashboard: React.FC = () => {
                           {maintenance.title}
                         </p>
                         
-                        <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-3 text-[length:calc(10px*var(--mx-scale,1))] text-gray-500 dark:text-gray-400">
                           <div className="flex items-center gap-1">
                             <Calendar size={10} />
                             <span>Début: {new Date(maintenance.start_date).toLocaleDateString('fr-FR')}</span>
@@ -748,11 +748,11 @@ const Dashboard: React.FC = () => {
                       </div>
                       
                       <div className="text-right">
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                        <p className="text-[length:calc(10px*var(--mx-scale,1))] text-gray-500 dark:text-gray-400 font-mono">
                           {equipment.serial_number}
                         </p>
                         {daysSinceMaintenance > 7 && (
-                          <div className="flex items-center gap-1 text-tone-danger text-[10px] font-medium mt-1">
+                          <div className="flex items-center gap-1 text-tone-danger text-[length:calc(10px*var(--mx-scale,1))] font-medium mt-1">
                             <AlertTriangle size={10} />
                             <span>Maintenance prolongée</span>
                           </div>

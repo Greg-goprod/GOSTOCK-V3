@@ -173,7 +173,7 @@ const Workshop: React.FC = () => {
                       <Wrench size={16} aria-hidden="true" className="text-primary-600" />
                       {itemName(r.equipment_id)}{qr(r.instance_id) ? <span className="font-mono text-xs text-gray-500">{qr(r.instance_id)}</span> : null}
                       <span className="text-gray-500 font-normal">· {r.repairer}{r.reference ? ` · ${r.reference}` : ''}</span>
-                      {r.under_warranty && <span className="rounded mx-tint-badge-success px-2 py-0.5 text-[11px] font-bold">sous garantie</span>}
+                      {r.under_warranty && <span className="rounded mx-tint-badge-success px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">sous garantie</span>}
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                       {r.reason} · envoyé le {fmt(r.sent_on)}
@@ -223,7 +223,7 @@ const Workshop: React.FC = () => {
               <span className="text-xs text-gray-600 dark:text-gray-400 font-mono">
                 {b.age_months}{b.battery_life_months ? `/${b.battery_life_months}` : ''} mois · {b.uses}{b.battery_max_uses ? `/${b.battery_max_uses}` : ''} sorties
               </span>
-              <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${b.state === 'end' ? 'mx-tint-badge-danger' : b.state === 'soon' ? 'mx-tint-badge-warning' : 'mx-tint-badge-success'}`}>
+              <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${b.state === 'end' ? 'mx-tint-badge-danger' : b.state === 'soon' ? 'mx-tint-badge-warning' : 'mx-tint-badge-success'}`}>
                 {b.state === 'end' ? 'fin de vie' : b.state === 'soon' ? 'bientôt' : 'ok'}
               </span>
             </li>

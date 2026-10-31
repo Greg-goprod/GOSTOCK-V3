@@ -25,6 +25,7 @@ import SiteNotice from '../components/common/SiteNotice';
 import { canBorrowNow } from '../lib/people';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
+import { useCurrentDepot } from '../lib/useCurrentDepot';
 
 type Mode = 'auto' | 'out' | 'in';
 
@@ -109,7 +110,8 @@ const Counter: React.FC = () => {
   const [due, setDue] = useState(toLocalInput(at17(1)));
   const [destination, setDestination] = useState('');
   const myDepots = profile?.depot_ids?.length ? depots.filter(d => profile.depot_ids.includes(d.id)) : depots;
-  const [depotId, setDepotId] = useState(myDepots.find(d => d.isDefault)?.id || myDepots[0]?.id || '');
+  const { depotId: currentDepot } = useCurrentDepot();
+  const [depotId, setDepotId] = useState(currentDepot || myDepots.find(d => d.isDefault)?.id || myDepots[0]?.id || '');
   const [busy, setBusy] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
