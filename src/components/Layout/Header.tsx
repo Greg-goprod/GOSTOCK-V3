@@ -5,6 +5,8 @@ import { OPEN_HELP } from '../help/HelpDrawer';
 import { locate } from '../../lib/navigation';
 import { OPEN_PALETTE } from './CommandPalette';
 import { useApp } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { canAccess } from '../../lib/access';
 import { useTheme } from '../../contexts/ThemeContext';
 import DepotSwitcher from './DepotSwitcher';
 import UserMenu from './UserMenu';
@@ -12,6 +14,10 @@ import UserMenu from './UserMenu';
 const Header: React.FC = () => {
   const location = useLocation();
   const { alertCount: unreadNotifications } = useApp();
+  const { can } = useAuth();
+  // Le collaborateur n'a pas accès à la page Notifications : ses avis (demande validée, refusée,
+  // prête) et son matériel à rendre sont dans Shop › Mes commandes
+  const bellTarget = canAccess('/notifications', can) ? '/notifications' : '/shop?vue=commandes';
   const { theme, toggleTheme } = useTheme();
   const place = locate(location.pathname);
   const iconButton = 'p-1.5 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 lg:h-[calc(32px*var(--mx-scale,1))] lg:w-[calc(32px*var(--mx-scale,1))] flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
@@ -44,7 +50,7 @@ const Header: React.FC = () => {
           <HelpCircle size={17} className="text-gray-600 dark:text-gray-300" aria-hidden="true" />
         </button>
 
-        <Link to="/notifications" aria-label={unreadNotifications > 0 ? `Notifications : ${unreadNotifications} alerte(s)` : 'Notifications'} className={`relative ${iconButton}`}>
+        <Link to={bellTarget} aria-label={unreadNotifications > 0 ? `Notifications : ${unreadNotifications} alerte(s)` : 'Notifications'} className={`relative ${iconButton}`}>
           <Bell size={17} className="text-gray-600 dark:text-gray-300" aria-hidden="true" />
           {unreadNotifications > 0 && (
             <span className="absolute top-1 right-1 lg:-top-1 lg:-right-1 bg-primary-600 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center font-bold">

@@ -36,7 +36,7 @@ const ModuleGrid: React.FC<{ toApprove: number; toPrepare: number; myRequests: n
 
   const metrics: Record<string, MxModuleCardMetric[]> = {
     store: staff
-      ? [metric('prep', 'Demandes à préparer', toPrepare), metric('out', 'Outils sortis', active.length), metric('late', 'Retours en retard', late.length)]
+      ? [metric('prep', 'Validées, à préparer', toPrepare), metric('out', 'Outils sortis', active.length), metric('late', 'Retours en retard', late.length)]
       : [metric('mine', 'Mon matériel', mine.length), metric('req', 'Mes demandes en cours', myRequests), metric('late', 'En retard', mine.filter(c => late.includes(c)).length)],
     tools: [
       metric('tools', 'Outils', tools.length),

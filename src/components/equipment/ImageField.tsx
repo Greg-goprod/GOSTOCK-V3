@@ -26,21 +26,31 @@ async function compress(file: File): Promise<Blob> {
 
 // Image d'un article : lien (catalogue fournisseur), photo prise au téléphone ou fichier importé.
 // La valeur est toujours une adresse publique : le shop l'affiche telle quelle.
-const ImageField: React.FC<{ value: string; onChange: (url: string) => void }> = ({ value, onChange }) => {
+const ImageField: React.FC<{ value: string; onChange: (url: string) => void; onBrokenChange?: (broken: boolean) => void }> = ({ value, onChange, onBrokenChange }) => {
   const id = useId();
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [broken, setBroken] = useState(false);
+  const [broken, setBrokenState] = useState(false);
+  const setBroken = (b: boolean) => { setBrokenState(b); onBrokenChange?.(b); };
 
   const send = async (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) return toast.error('Choisis une image (JPG, PNG ou WebP)');
+    const heic = /hei[cf]$/i.test(file.name) || /heic|heif/i.test(file.type);
+    if (!file.type.startsWith('image/') && !heic) return toast.error('Choisis une image (JPG, PNG ou WebP)');
     setBusy(true);
     try {
+      const body = await compress(file);
+      // Le navigateur n'a pas pu lire la photo (HEIC d'iPhone sur un PC, par exemple)
+      if (body === file && !/^image\/(jpeg|png|webp)$/.test(file.type)) {
+        toast.error(heic
+          ? 'Photo iPhone (HEIC) non lisible ici : prends la photo directement avec « Prendre une photo », ou exporte-la en JPG.'
+          : 'Format d\'image non pris en charge : utilise JPG, PNG ou WebP.');
+        return;
+      }
       const path = `${new Date().getFullYear()}/${crypto.randomUUID()}.jpg`;
-      const { error } = await supabase.storage.from(BUCKET).upload(path, await compress(file), { contentType: 'image/jpeg' });
+      const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType: 'image/jpeg' });
       if (error) throw error;
       setBroken(false);
       onChange(supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl);
@@ -87,7 +97,7 @@ const ImageField: React.FC<{ value: string; onChange: (url: string) => void }> =
           </div>
           {broken && value && <p className="text-xs text-tone-danger">Image introuvable à cette adresse : vérifie le lien.</p>}
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => send(e.target.files)} />
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => send(e.target.files)} />
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,.heic" className="hidden" onChange={e => send(e.target.files)} />
         </div>
       </div>
     </div>

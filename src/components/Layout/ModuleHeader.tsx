@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
@@ -27,6 +27,14 @@ export const PageCommands: React.FC<{
   primary?: React.ReactNode;
 }> = ({ search, filters, pagination, view, primary }) => {
   const { target } = useContext(CommandsTarget);
+  // Suit la largeur de la fenêtre (rotation de tablette, fenêtre redimensionnée)
+  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)');
+    const update = () => setWide(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
   const row = (
     <div className="flex flex-wrap items-center gap-[calc(8px*var(--mx-scale,1))]">
       {search && <div className="min-w-[calc(220px*var(--mx-scale,1))] flex-1">{search}</div>}
@@ -37,7 +45,7 @@ export const PageCommands: React.FC<{
     </div>
   );
   // Sans en-tête de module (téléphone, page hors menu), les commandes restent dans la page
-  return target && window.matchMedia('(min-width: 1024px)').matches ? createPortal(row, target) : <div className="mb-4">{row}</div>;
+  return target && wide ? createPortal(row, target) : <div className="mb-4">{row}</div>;
 };
 
 // En-tête de module, fixe (ne défile pas) : icône + NOM DU MODULE souligné, onglets des pages du module,

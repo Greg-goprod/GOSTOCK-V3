@@ -42,6 +42,8 @@ const Inventory: React.FC = () => {
   const myDepots = profile?.depot_ids?.length ? depots.filter(d => profile.depot_ids.includes(d.id)) : depots;
   const { depotId: currentDepot } = useCurrentDepot();
   const [depotId, setDepotId] = useState(currentDepot || myDepots.find(d => d.isDefault)?.id || myDepots[0]?.id || '');
+  // Suit le dépôt choisi dans la barre du haut
+  useEffect(() => { if (currentDepot) setDepotId(currentDepot); }, [currentDepot]);
   const [size, setSize] = useState(20);
   const [session, setSession] = useState<InventoryCount | null>(null);
   const [history, setHistory] = useState<InventoryCount[]>([]);

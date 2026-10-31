@@ -58,7 +58,7 @@ const contentSummary = (r: RequestOverview) =>
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Avis personnels : demande validée, refusée, prête à retirer
-const MyNotices: React.FC = () => {
+export const MyNotices: React.FC = () => {
   const { stockNotifications, markStockNotificationRead } = useApp();
   const { profile } = useAuth();
   const mine = stockNotifications.filter(n => n.recipientUserId && n.recipientUserId === profile?.id);
@@ -82,7 +82,7 @@ const MyNotices: React.FC = () => {
 };
 
 // Ce que la personne connectée a en sa possession (le magasin le voit dans « Sorties »)
-const MyEquipment: React.FC = () => {
+export const MyEquipment: React.FC = () => {
   const { checkouts, equipment, equipmentInstances } = useApp();
   const { profile } = useAuth();
   const [reporting, setReporting] = useState<{ checkoutId: string; equipmentId: string } | null>(null);
@@ -144,13 +144,17 @@ const Requests: React.FC = () => {
   // Demande préremplie (« Refaire cette demande »)
   const [prefill, setPrefill] = useState<RequestPrefill | null>(null);
   const [selected, setSelected] = useState<RequestOverview | null>(null);
+  // Commande ouverte depuis le comptoir (« Sortir la commande »)
+  const [openId, setOpenId] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
   // Demande préparée depuis une fiche chantier (« Préparer un chantier semblable ») ou ouverte depuis l'accueil
   useEffect(() => {
-    const state = location.state as { prefill?: RequestPrefill; newRequest?: boolean } | null;
+    const state = location.state as { prefill?: RequestPrefill; newRequest?: boolean; openRequest?: string } | null;
+    if (state?.openRequest) setOpenId(state.openRequest);
     const incoming = state?.prefill;
+    if (state?.openRequest) navigate(location.pathname, { replace: true, state: null });
     if (incoming || state?.newRequest) {
       if (incoming) setPrefill(incoming);
       setShowNew(true);
@@ -173,6 +177,13 @@ const Requests: React.FC = () => {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!openId || loading) return;
+    const found = requests.find(r => r.id === openId);
+    if (found) setSelected(found);
+    setOpenId(null);
+  }, [openId, loading, requests]);
 
   const counts = useMemo(
     () => Object.fromEntries(FILTERS.map(f => [f.id, f.statuses ? requests.filter(r => f.statuses!.includes(r.status)).length : requests.length])),

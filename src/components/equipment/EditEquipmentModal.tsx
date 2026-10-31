@@ -9,6 +9,8 @@ import { EMPTY_LIFECYCLE, LifecycleValue, lifecycleFrom, lifecyclePayload } from
 import AccessoryLinks from './AccessoryLinks';
 
 import { supabase } from '../../lib/supabase';
+import { confirmAction } from '../../lib/confirm';
+import { useApp } from '../../contexts/AppContext';
 import toast from 'react-hot-toast';
 import { Equipment, Category, Supplier, EquipmentGroup, EquipmentSubgroup } from '../../types';
 import { Package, QrCode, Copy, AlertTriangle, Info, Folder as FolderIcon, FolderOpen as FolderOpenIcon, Tag as TagIcon } from 'lucide-react';
@@ -20,6 +22,10 @@ interface EditEquipmentModalProps {
 }
 
 const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose, equipment }) => {
+  // Lien d'image qui ne s'affiche pas : on demande confirmation avant d'enregistrer
+  const [imageBroken, setImageBroken] = useState(false);
+  // Recharge la liste après l'enregistrement : image, nom… visibles tout de suite (Matériel, Shop)
+  const { refreshEquipmentData } = useApp();
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [groups, setGroups] = useState<EquipmentGroup[]>([]);
@@ -289,6 +295,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
   };
 
   const handleFinalSubmit = async () => {
+    if (imageBroken && formData.image_url && !(await confirmAction('Le lien de l\'image ne s\'affiche pas : elle n\'apparaîtra pas dans le shop. Enregistrer quand même ?'))) return;
     setIsLoading(true);
     setIsGeneratingQRCodes(false);
 
@@ -336,6 +343,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
         setIsGeneratingQRCodes(false);
       }
 
+      await refreshEquipmentData();
       toast.success('Matériel modifié avec succès');
       onClose();
     } catch (error: any) {
@@ -647,7 +655,7 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
                 />
               </div>
 
-              <ImageField value={formData.image_url} onChange={url => setFormData(prev => ({ ...prev, image_url: url }))} />
+              <ImageField value={formData.image_url} onChange={url => setFormData(prev => ({ ...prev, image_url: url }))} onBrokenChange={setImageBroken} />
 
               {/* Aperçu hiérarchique */}
               {(formData.group_id || formData.subgroup_id) && (

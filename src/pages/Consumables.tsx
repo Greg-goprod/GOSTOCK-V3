@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Hand, Minus, Plus, Search, Settings2, Warehouse } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Hand, Minus, Pencil, Plus, Search, Settings2, Warehouse } from 'lucide-react';
+import ImageField from '../components/equipment/ImageField';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -59,6 +60,8 @@ const Consumables: React.FC = () => {
   const [search, setSearch] = useState('');
   const [onlyLow, setOnlyLow] = useState(false);
   const [action, setAction] = useState<{ type: StockAction; item: Equipment } | null>(null);
+  // Fiche du consommable : nom, image du shop, validation, description
+  const [editing, setEditing] = useState<Equipment | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [showDepots, setShowDepots] = useState(false);
   const [showThresholds, setShowThresholds] = useState(false);
@@ -170,7 +173,10 @@ const Consumables: React.FC = () => {
                 <Button variant="outline" icon={<ClipboardList size={14} />} onClick={() => setAction({ type: 'count', item })}>Inventaire</Button>
                 <Button variant="outline" icon={<ArrowLeftRight size={14} />} onClick={() => setAction({ type: 'transfer', item })}>Transfert</Button>
               </div>
-              <Button variant="outline" fullWidth icon={<Settings2 size={14} />} onClick={() => setAction({ type: 'threshold', item })}>Seuil minimum</Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" icon={<Settings2 size={14} />} onClick={() => setAction({ type: 'threshold', item })}>Seuil minimum</Button>
+                <Button variant="outline" icon={<Pencil size={14} />} onClick={() => setEditing(item)}>Modifier</Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -213,6 +219,7 @@ const Consumables: React.FC = () => {
                         <Button size="sm" variant="outline" icon={<ClipboardList size={14} />} onClick={() => setAction({ type: 'count', item })} ariaLabel="Inventaire" />
                         <Button size="sm" variant="outline" icon={<ArrowLeftRight size={14} />} onClick={() => setAction({ type: 'transfer', item })} ariaLabel="Transférer entre dépôts" />
                         <Button size="sm" variant="outline" icon={<Settings2 size={14} />} onClick={() => setAction({ type: 'threshold', item })} ariaLabel="Seuil minimum" />
+                        <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setEditing(item)} ariaLabel={`Modifier ${item.name}`} />
                       </div>
                     </td>
                   </tr>
@@ -235,6 +242,10 @@ const Consumables: React.FC = () => {
             await refreshData();
           }}
         />
+      )}
+
+      {editing && (
+        <EditConsumableModal item={editing} onClose={() => setEditing(null)} onDone={async () => { setEditing(null); await refreshData(); }} />
       )}
 
       {showNew && (
@@ -414,6 +425,8 @@ const NewConsumableModal: React.FC<NewConsumableModalProps> = ({ suppliers, depo
     depotId: depots.find(d => d.isDefault)?.id || depots[0]?.id || '',
     quantity: '',
     minQuantity: '',
+    imageUrl: '',
+    requiresApproval: false,
   });
   const [catalogProduct, setCatalogProduct] = useState<CatalogProduct | null>(null);
   const [saving, setSaving] = useState(false);
@@ -439,7 +452,8 @@ const NewConsumableModal: React.FC<NewConsumableModalProps> = ({ suppliers, depo
           purchase_price: form.purchasePrice ? Number(form.purchasePrice.replace(',', '.')) : null,
           catalog_product_id: catalogProduct?.id ?? null,
           ean: catalogProduct?.ean ?? null,
-          image_url: catalogProduct?.image_url ?? null,
+          image_url: form.imageUrl.trim() || catalogProduct?.image_url || null,
+          requires_approval: form.requiresApproval,
           description: catalogProduct ? catalogDescription(catalogProduct) : null,
         })
         .select('id')
@@ -471,7 +485,7 @@ const NewConsumableModal: React.FC<NewConsumableModalProps> = ({ suppliers, depo
           <CatalogPicker
             onSelect={product => {
               setCatalogProduct(product);
-              setForm(prev => ({ ...prev, name: product.name, supplierId: product.supplier_id, supplierReference: product.reference }));
+              setForm(prev => ({ ...prev, name: product.name, supplierId: product.supplier_id, supplierReference: product.reference, imageUrl: product.image_url || prev.imageUrl }));
             }}
           />
         </div>
@@ -515,6 +529,10 @@ const NewConsumableModal: React.FC<NewConsumableModalProps> = ({ suppliers, depo
           <input id="new-min" type="number" min="0" step="any" inputMode="decimal" value={form.minQuantity} onChange={set('minQuantity')} className={inputClass} />
           <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Alerte et feuille de commande sous ce seuil, dans ce dépôt.</p>
         </div>
+        <div className="sm:col-span-2">
+          <ImageField value={form.imageUrl} onChange={url => setForm(prev => ({ ...prev, imageUrl: url }))} />
+        </div>
+        <ApprovalCheckbox checked={form.requiresApproval} onChange={v => setForm(prev => ({ ...prev, requiresApproval: v }))} />
         <div className="sm:col-span-2 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button>
           <Button type="submit" loading={saving}>Créer</Button>
@@ -681,3 +699,60 @@ const ThresholdsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 export default Consumables;
+
+const ApprovalCheckbox: React.FC<{ checked: boolean; onChange: (v: boolean) => void }> = ({ checked, onChange }) => (
+  <label className="sm:col-span-2 flex items-start gap-3 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">
+    <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-1 h-4 w-4" />
+    <span>
+      <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Validation requise</span>
+      <span className="block text-xs text-gray-600 dark:text-gray-400">Une commande contenant cet article doit être validée par un responsable.</span>
+    </span>
+  </label>
+);
+
+const EditConsumableModal: React.FC<{ item: Equipment; onClose: () => void; onDone: () => Promise<void> }> = ({ item, onClose, onDone }) => {
+  const [name, setName] = useState(item.name);
+  const [imageUrl, setImageUrl] = useState(item.imageUrl ?? '');
+  const [description, setDescription] = useState(item.description ?? '');
+  const [requiresApproval, setRequiresApproval] = useState(!!item.requiresApproval);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!name.trim()) return toast.error('Le nom est obligatoire');
+    setSaving(true);
+    const { error } = await supabase.from('equipment').update({
+      name: name.trim(),
+      image_url: imageUrl.trim() || null,
+      description: description.trim() || null,
+      requires_approval: requiresApproval,
+    }).eq('id', item.id);
+    setSaving(false);
+    if (error) return toast.error(errorMessage(error));
+    toast.success(`${name.trim()} enregistré`);
+    await onDone();
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title={`Modifier ${item.name}`} size="lg">
+      <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label htmlFor="edit-name" className={labelClass}>Nom</label>
+          <input id="edit-name" value={name} onChange={e => setName(e.target.value)} className={inputClass} required />
+        </div>
+        <div className="sm:col-span-2">
+          <ImageField value={imageUrl} onChange={setImageUrl} />
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="edit-desc" className={labelClass}>Description (affichée dans le shop)</label>
+          <textarea id="edit-desc" rows={3} value={description} onChange={e => setDescription(e.target.value)} className={inputClass} />
+        </div>
+        <ApprovalCheckbox checked={requiresApproval} onChange={setRequiresApproval} />
+        <div className="sm:col-span-2 flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button>
+          <Button type="submit" loading={saving}>Enregistrer</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Briefcase, CheckCircle2, Plug, Inbox, UploadCloud, Minus, Plus, Trash2, Undo2, UserRound, WifiOff, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import Button from '../components/common/Button';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
 import PhotoInput from '../components/common/PhotoInput';
@@ -564,7 +565,9 @@ const Counter: React.FC = () => {
                 </div>
                 <Button size="sm" variant="outline" icon={<X size={14} />} ariaLabel="Changer de personne" onClick={() => { reset(); setPerson(null); }} />
               </div>
-            ) : (
+            ) : null}
+            {person && <PendingOrders userId={person.id} />}
+            {person ? null : (
               <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                 <UserRound size={22} aria-hidden="true" />
                 <p className="text-sm">Scanne le badge (carte ou téléphone), ou <button type="button" className="text-primary-700 dark:text-primary-300 underline inline-flex items-center min-h-[44px] lg:min-h-0 px-1" onClick={() => setPickerOpen(o => !o)}>choisis la personne</button>.</p>
@@ -771,6 +774,35 @@ const Counter: React.FC = () => {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+};
+
+// Commandes validées (Shop ou Demandes) de la personne : à sortir depuis la demande,
+// pour que la commande soit clôturée et le bon de sortie rattaché
+const PendingOrders: React.FC<{ userId: string }> = ({ userId }) => {
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<{ id: string; number: string; status: string; start_at: string; tool_lines: number; consumable_lines: number }[]>([]);
+  useEffect(() => {
+    if (!navigator.onLine) return;
+    supabase.from('requests_overview').select('id, number, status, start_at, tool_lines, consumable_lines')
+      .eq('requester_id', userId).in('status', ['approved', 'ready']).order('start_at')
+      .then(({ data }) => setOrders(data || []));
+  }, [userId]);
+  if (orders.length === 0) return null;
+  return (
+    <div className="rounded-md mx-tint-badge-info p-3 space-y-2" role="status">
+      <p className="text-sm font-semibold">{orders.length === 1 ? '1 commande à sortir pour cette personne' : `${orders.length} commandes à sortir pour cette personne`}</p>
+      <ul className="space-y-1.5">
+        {orders.map(o => (
+          <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span><span className="font-mono">{o.number}</span> · {o.status === 'ready' ? 'Prête' : 'Validée'} · {new Date(o.start_at).toLocaleDateString('fr-CH')}
+              {' · '}{[o.tool_lines && `${o.tool_lines} outil(s)`, o.consumable_lines && `${o.consumable_lines} consommable(s)`].filter(Boolean).join(', ')}</span>
+            <Button size="sm" onClick={() => navigate('/demandes', { state: { openRequest: o.id } })}>Sortir la commande</Button>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs">Sors-la depuis la commande : elle sera clôturée. Un scan ici ferait une sortie à part.</p>
     </div>
   );
 };

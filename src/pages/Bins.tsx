@@ -42,6 +42,8 @@ const Bins: React.FC = () => {
   const myDepots = profile?.depot_ids?.length ? depots.filter(d => profile.depot_ids.includes(d.id)) : depots;
   const { depotId: currentDepot } = useCurrentDepot();
   const [depotId, setDepotId] = useState(currentDepot);
+  // Suit le dépôt choisi dans la barre du haut
+  useEffect(() => { if (currentDepot) setDepotId(currentDepot); }, [currentDepot]);
   const [bins, setBins] = useState<Bin[]>([]);
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [search, setSearch] = useState('');

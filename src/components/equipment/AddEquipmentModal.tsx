@@ -6,6 +6,7 @@ import Accordion from '../common/Accordion';
 import CatalogPicker from '../common/CatalogPicker';
 import { CatalogProduct, catalogDescription } from '../../lib/catalog';
 import { supabase } from '../../lib/supabase';
+import { confirmAction } from '../../lib/confirm';
 import toast from 'react-hot-toast';
 import { Category, Supplier, EquipmentGroup, EquipmentSubgroup, Equipment } from '../../types';
 import { Package, Copy, QrCode, Info, Folder as FolderIcon, FolderOpen as FolderOpenIcon, Tag as TagIcon } from 'lucide-react';
@@ -20,6 +21,8 @@ interface AddEquipmentModalProps {
 }
 
 const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, onClose, onAdd }) => {
+  // Lien d'image qui ne s'affiche pas : on demande confirmation avant d'enregistrer
+  const [imageBroken, setImageBroken] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [groups, setGroups] = useState<EquipmentGroup[]>([]);
@@ -210,6 +213,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
   };
 
   const handleFinalSubmit = async () => {
+    if (imageBroken && formData.image_url && !(await confirmAction('Le lien de l\'image ne s\'affiche pas : elle n\'apparaîtra pas dans le shop. Enregistrer quand même ?'))) return;
     setIsLoading(true);
     setIsGeneratingQRCodes(true);
     let createdId: string | null = null;
@@ -661,7 +665,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                 />
               </div>
 
-              <ImageField value={formData.image_url} onChange={url => setFormData(prev => ({ ...prev, image_url: url }))} />
+              <ImageField value={formData.image_url} onChange={url => setFormData(prev => ({ ...prev, image_url: url }))} onBrokenChange={setImageBroken} />
 
               {/* Aperçu hiérarchique */}
               {(formData.group_id || formData.subgroup_id) && (
