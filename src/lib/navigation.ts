@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Users, CalendarClock, Bell, Settings, ScanLine, Droplets, ClipboardList, Inbox, Truck,
   BarChart3, ScanBarcode, Contact, Tags, Wrench, AlertTriangle, ListChecks, ShoppingCart, Coins, Gauge, History,
   HardHat, Map as MapIcon, Briefcase, GraduationCap, KeyRound, ArrowLeftRight, MapPin, CalendarRange, ShieldCheck,
-  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse, LifeBuoy,
+  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse, LifeBuoy, ShoppingBag,
 } from 'lucide-react';
 
 export interface NavLinkItem {
@@ -33,6 +33,7 @@ export const NAV_SPACES: NavSpace[] = [
     { to: '/badge', label: 'Mon badge', icon: Contact },
   ] },
   { id: 'store', label: 'Magasin', short: 'Magasin', icon: Warehouse, links: [
+    { to: '/shop', label: 'Shop', icon: ShoppingBag },
     { to: '/comptoir', label: 'Comptoir', icon: ScanBarcode },
     { to: '/scan', label: 'Scanner', icon: ScanLine },
     { to: '/demandes', label: 'Demandes', icon: Inbox },
@@ -112,4 +113,4 @@ export function locate(path: string): { space?: NavSpace; link?: NavLinkItem; ti
 }
 
 // Raccourcis de la barre du bas sur téléphone, dans l'ordre de préférence (les 4 premiers accessibles)
-export const MOBILE_SHORTCUTS = ['/', '/scan', '/comptoir', '/demandes', '/badge', '/recherche'];
+export const MOBILE_SHORTCUTS = ['/', '/scan', '/comptoir', '/shop', '/demandes', '/badge', '/recherche'];

@@ -116,6 +116,52 @@ export const MAGASIN: HelpArticle[] = [
     tips: ['Garde le curseur dans « Scanne ou saisis un code… » : une douchette tape le code et valide toute seule.'],
   },
   {
+    id: 'shop',
+    category: 'magasin',
+    title: 'Le shop : commander du matériel comme en ligne',
+    summary: 'Catalogue en images, panier, retrait au dépôt ou livraison sur le chantier, suivi de la commande.',
+    route: '/shop',
+    routes: ['/shop'],
+    where: 'Magasin › Shop (tout le monde).',
+    tasks: [
+      {
+        id: 'commander',
+        title: 'Commander du matériel',
+        steps: [
+          { text: 'Ouvre « Shop ». Cherche par nom ou référence, ou choisis un rayon à gauche et le type (Outils, Consommables).' },
+          { text: 'Clique sur un article pour voir sa fiche : photos, description, caractéristiques, ce qui est livré avec, et combien sont disponibles.' },
+          { text: 'Clique sur « Ajouter » (ou choisis la quantité puis « Ajouter au panier »). Le panier est gardé même si tu fermes la page.' },
+          { text: 'Clique sur « Panier » en haut à droite. Vérifie les quantités : pour chaque outil, GO-Mat dit combien sont libres sur ta période.' },
+          { text: 'Remplis « Retrait le », « Retour le », le chantier et le dépôt. Choisis « Retrait au dépôt » ou « Livraison sur chantier » (avec l\'adresse si besoin).' },
+          { text: 'Clique sur « Commander ».' },
+        ],
+        result: 'Sans article soumis à validation, la commande part directement en préparation. Sinon, un responsable la valide d\'abord.',
+        problems: [
+          { if: '« Seulement 1 libre(s) sur la période ».', then: 'Baisse la quantité ou change les dates.' },
+          { if: 'Le badge « Permis requis » est affiché.', then: 'Il faut avoir ce permis machine (valide) pour que le magasin puisse te le sortir.' },
+        ],
+      },
+      {
+        id: 'suivre',
+        title: 'Suivre ma commande',
+        steps: [
+          { text: 'Dans « Shop », choisis « Mes commandes ».' },
+          { text: 'Chaque commande montre où elle en est : Envoyée, Validée, Prête, Retirée, Rendue. Tu reçois aussi une notification quand elle est prête.' },
+        ],
+      },
+      {
+        id: 'photo',
+        title: 'Mettre une photo sur un article (magasin)',
+        who: 'Magasinier, responsable.',
+        steps: [
+          { text: 'Ouvre la fiche de l\'article (Matériel › Outils, ou Consommables) et clique sur « Modifier ».' },
+          { text: 'Dans « Image (affichée dans le shop) » : colle le lien de l\'image du catalogue fournisseur, ou « Prendre une photo », ou « Importer un fichier ».' },
+          { text: 'Pour qu\'un article demande la validation d\'un responsable, coche « Validation requise » sur la même fiche. Puis « Enregistrer ».' },
+        ],
+      },
+    ],
+  },
+  {
     id: 'demandes',
     category: 'magasin',
     title: 'Les demandes : réserver, valider, préparer, sortir',

@@ -1,3 +1,4 @@
+import ImageField from './ImageField';
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
@@ -660,46 +661,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL de l'image
-                </label>
-                <div className="space-y-2">
-                <input
-                  type="url"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-                  placeholder="https://example.com/image.jpg"
-                />
-                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                   Entre une URL d'image valide et accessible publiquement. Exemple: https://images.pexels.com/photos/1029243/pexels-photo-1029243.jpeg
-                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Utilise des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
-                </p>
-                 {formData.image_url && (
-                   <div className="mt-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
-                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Aperçu de l'image:</p>
-                     <div className="flex justify-center">
-                       <img 
-                         src={formData.image_url} 
-                         alt="Aperçu" 
-                        className="h-32 object-contain rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white shadow-sm"
-                         onError={(e) => {
-                           e.currentTarget.style.display = 'none';
-                           const errorMsg = document.createElement('p');
-                           errorMsg.className = 'text-xs text-danger-500 mt-2';
-                          errorMsg.textContent = "Impossible de charger l'image. Vérifie que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
-                           e.currentTarget.parentElement?.appendChild(errorMsg);
-                         }}
-                       />
-                     </div>
-                   </div>
-                 )}
-                </div>
-              </div>
+              <ImageField value={formData.image_url} onChange={url => setFormData(prev => ({ ...prev, image_url: url }))} />
 
               {/* Aperçu hiérarchique */}
               {(formData.group_id || formData.subgroup_id) && (

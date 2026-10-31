@@ -12,6 +12,7 @@ import Settings from './pages/Settings';
 import Consumables from './pages/Consumables';
 import OrderSheet from './pages/OrderSheet';
 import Requests from './pages/Requests';
+import Shop from './pages/Shop';
 import Vehicles from './pages/Vehicles';
 import HomePage from './pages/Home';
 import Counter from './pages/Counter';
@@ -80,6 +81,7 @@ function App() {
         <Route path="/consommables" element={<Guard><Consumables /></Guard>} />
         <Route path="/commande" element={<Guard><OrderSheet /></Guard>} />
         <Route path="/demandes" element={<Guard><Requests /></Guard>} />
+        <Route path="/shop" element={<Guard><Shop /></Guard>} />
         <Route path="/vehicules" element={<Guard><Vehicles /></Guard>} />
         <Route path="/settings" element={<Guard><Settings /></Guard>} />
         <Route path="/comptoir" element={<Guard><Counter /></Guard>} />
