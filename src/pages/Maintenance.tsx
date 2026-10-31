@@ -11,6 +11,8 @@ import { errorMessage, toLocalInput } from '../lib/requests';
 import { DateTimeInput } from '../components/common/DateInput';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PageTitle from '../components/common/PageTitle';
+import { MxSegmented } from '../components/mx/MxSegmented';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface PlanStatus {
   id: string;
@@ -95,18 +97,13 @@ const Maintenance: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Entretien</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Révisions préventives et contrôles électriques (OIBT), tous les X mois ou toutes les X sorties.</p>
-        </div>
-        <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>Nouveau plan</Button>
       </div>
-
-      <div className="flex gap-2">
-        <Button size="sm" variant={tab === 'todo' ? 'primary' : 'outline'} onClick={() => setTab('todo')}>À faire ({todo.length})</Button>
-        <Button size="sm" variant={tab === 'all' ? 'primary' : 'outline'} onClick={() => setTab('all')}>Tous les plans ({plans.length})</Button>
-      </div>
+      <PageCommands filters={<MxSegmented aria-label="Filtre" value={tab} onChange={v => setTab(v as typeof tab)}
+        options={[{ value: 'todo', label: `À faire (${todo.length})` }, { value: 'all', label: `Tous les plans (${plans.length})` }]} />}
+        primary={<Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>Nouveau plan</Button>} />
 
       {loading ? (
         <p className="text-gray-600 dark:text-gray-400">Chargement…</p>

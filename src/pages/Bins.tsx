@@ -7,7 +7,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
+import { useCurrentDepot } from '../lib/useCurrentDepot';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface Bin {
   id: string;
@@ -38,7 +40,8 @@ const Bins: React.FC = () => {
   const { profile, can } = useAuth();
   const canEdit = can('manage_stock');
   const myDepots = profile?.depot_ids?.length ? depots.filter(d => profile.depot_ids.includes(d.id)) : depots;
-  const [depotId, setDepotId] = useState('');
+  const { depotId: currentDepot } = useCurrentDepot();
+  const [depotId, setDepotId] = useState(currentDepot);
   const [bins, setBins] = useState<Bin[]>([]);
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [search, setSearch] = useState('');
@@ -131,15 +134,13 @@ const Bins: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Emplacements</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Allée, étagère, bac : la liste de préparation des demandes suit l'ordre de passage.</p>
-        </div>
-        <select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={`${inputClass} w-auto`}>
-          {myDepots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
       </div>
+      <PageCommands filters={<select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={`${inputClass} w-auto`}>
+        {myDepots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+      </select>} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-4 self-start">

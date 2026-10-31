@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { ROLE_LABELS } from '../lib/roles';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface AuditEntry {
   id: number;
@@ -115,22 +116,20 @@ const AuditLog: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Journal</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Chaque modification : qui, quand, avant → après. Les recalculs automatiques ne sont pas listés.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <select value={table} onChange={e => setTable(e.target.value)} aria-label="Type" className={inputClass}>
-            <option value="">Tout</option>
-            {Object.entries(TABLES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-          </select>
-          <select value={person} onChange={e => setPerson(e.target.value)} aria-label="Personne" className={inputClass}>
-            <option value="">Tout le monde</option>
-            {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
-          </select>
-        </div>
       </div>
+      <PageCommands filters={<div className="flex flex-wrap gap-2">
+        <select value={table} onChange={e => setTable(e.target.value)} aria-label="Type" className={inputClass}>
+          <option value="">Tout</option>
+          {Object.entries(TABLES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </select>
+        <select value={person} onChange={e => setPerson(e.target.value)} aria-label="Personne" className={inputClass}>
+          <option value="">Tout le monde</option>
+          {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
+        </select>
+      </div>} />
 
       <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
         {entries.length === 0 && !loading && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune entrée.</li>}

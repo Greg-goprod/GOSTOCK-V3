@@ -11,6 +11,7 @@ import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface NotificationItem {
   id: string;
@@ -310,35 +311,17 @@ const Notifications: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Notifications</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Événements spéciaux, rappels de retard et mouvements de matériel
           </p>
           <div className="mt-2"><PushToggle /></div>
-        </div>
-        
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="outline"
-            icon={<CheckCircle size={18} />}
-            onClick={markAllAsRead}
-            disabled={unreadCount === 0}
-            className="font-bold"
-          >
-            Tout marquer comme lu
-          </Button>
-          <Button
-            variant="primary"
-            icon={<Bell size={18} />}
-            onClick={generateNotifications}
-            className="font-bold"
-          >
-            Actualiser
-          </Button>
-        </div>
       </div>
+      <PageCommands primary={<div className="flex flex-wrap gap-2">
+        <Button variant="outline" icon={<CheckCircle size={16} />} onClick={markAllAsRead} disabled={unreadCount === 0}>Tout marquer comme lu</Button>
+        <Button icon={<Bell size={16} />} onClick={generateNotifications}>Actualiser</Button>
+      </div>} />
 
       {/* Alertes créées par la base : stock bas, demandes à valider, échéances de véhicules */}
       {stockNotifications.length > 0 && (

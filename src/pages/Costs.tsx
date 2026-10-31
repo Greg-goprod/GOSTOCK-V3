@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { downloadWorkbook } from '../lib/excel';
 import { errorMessage } from '../lib/requests';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface CostLine {
   source: 'consumable' | 'tool' | 'rental';
@@ -108,16 +109,12 @@ const Costs: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Coûts</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Consommables (quantité × prix d'achat) et outils (jours × tarif interne) par chantier.</p>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <input type="month" value={month} onChange={e => setMonth(e.target.value)} aria-label="Mois" className={inputClass} />
-          <Button icon={<Download size={16} />} onClick={exportExcel} disabled={lines.length === 0}>Exporter Excel</Button>
-        </div>
       </div>
+      <PageCommands filters={<input type="month" value={month} onChange={e => setMonth(e.target.value)} aria-label="Mois" className={inputClass} />}
+        primary={<Button icon={<Download size={16} />} onClick={exportExcel} disabled={lines.length === 0}>Exporter Excel</Button>} />
 
       {(missingRates || missingPrices) && (
         <p className="rounded-md bg-warning-50 dark:bg-warning-900/30 text-tone-warning text-sm p-3">

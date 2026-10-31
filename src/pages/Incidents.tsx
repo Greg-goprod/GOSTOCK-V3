@@ -11,6 +11,8 @@ import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PageTitle from '../components/common/PageTitle';
+import { MxSegmented } from '../components/mx/MxSegmented';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 export type IncidentKind = 'lost' | 'stolen' | 'broken';
 type Decision = 'pending' | 'replaced' | 'deducted' | 'insurance' | 'written_off' | 'found';
@@ -97,13 +99,13 @@ const Incidents: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Pertes et casse</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Déclarations, valeur et suite donnée par le responsable.</p>
-        </div>
-        <Button icon={<Plus size={16} />} onClick={() => setDeclaring(true)}>Déclarer</Button>
       </div>
+      <PageCommands filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+        options={[{ value: 'pending', label: `À décider (${incidents.filter(i => i.decision === 'pending').length})` }, { value: 'all', label: `Tous (${incidents.length})` }]} />}
+        primary={<Button icon={<Plus size={16} />} onClick={() => setDeclaring(true)}>Déclarer</Button>} />
 
       {byPerson.length > 0 && (
         <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4">
@@ -118,13 +120,6 @@ const Incidents: React.FC = () => {
           </ul>
         </section>
       )}
-
-      <div className="flex gap-2">
-        <Button size="sm" variant={filter === 'pending' ? 'primary' : 'outline'} onClick={() => setFilter('pending')}>
-          À décider ({incidents.filter(i => i.decision === 'pending').length})
-        </Button>
-        <Button size="sm" variant={filter === 'all' ? 'primary' : 'outline'} onClick={() => setFilter('all')}>Tous ({incidents.length})</Button>
-      </div>
 
       {shown.length === 0 ? (
         <MxEmpty icon={ShieldCheck} title="Aucun incident" />

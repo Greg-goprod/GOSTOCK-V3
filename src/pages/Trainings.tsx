@@ -12,6 +12,7 @@ import { errorMessage } from '../lib/requests';
 import DateInput from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface Training {
   id: string;
@@ -174,13 +175,11 @@ const Trainings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Formations et permis machines</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Un outil qui exige un permis machine ou une formation ne sort pas pour quelqu'un qui ne l'a pas, ou dont l'attestation est expirée.</p>
-        </div>
-        {canEdit && <Button icon={<Plus size={16} />} onClick={() => openTraining('new')}>Nouveau permis ou formation</Button>}
       </div>
+      <PageCommands primary={canEdit ? <Button icon={<Plus size={16} />} onClick={() => openTraining('new')}>Nouveau permis ou formation</Button> : undefined} />
 
       {trainings.length === 0 ? (
         <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-6 text-sm text-gray-600 dark:text-gray-400">

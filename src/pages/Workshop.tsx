@@ -10,6 +10,7 @@ import { errorMessage } from '../lib/requests';
 import DateInput from '../components/common/DateInput';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface Repair {
   id: string;
@@ -148,16 +149,13 @@ const Workshop: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Atelier</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Réparations chez le fournisseur, garanties et batteries. Un outil en réparation ne peut pas sortir.</p>
-        </div>
-        {canAct && <Button icon={<Send size={16} />} onClick={() => startSend()}>Envoyer en réparation</Button>}
       </div>
-
-      <MxSegmented aria-label="Rubrique" value={tab} onChange={v => setTab(v as Tab)}
-        options={tabs.map(([id, label, n]) => ({ value: id, label: `${label}${n ? ` (${n})` : ''}` }))} />
+      <PageCommands filters={<MxSegmented aria-label="Rubrique" value={tab} onChange={v => setTab(v as Tab)}
+        options={tabs.map(([id, label, n]) => ({ value: id, label: `${label}${n ? ` (${n})` : ''}` }))} />}
+        primary={canAct ? <Button icon={<Send size={16} />} onClick={() => startSend()}>Envoyer en réparation</Button> : undefined} />
 
       {tab === 'repairs' && (
         <div className="space-y-4">

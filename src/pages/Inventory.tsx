@@ -10,6 +10,7 @@ import { findEquipmentByCode } from '../lib/scan';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 import { useCurrentDepot } from '../lib/useCurrentDepot';
 
 interface CountLine {
@@ -133,15 +134,13 @@ const Inventory: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <div>
+      <div>
           <PageTitle>Inventaire tournant</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Quelques articles à chaque passage, les moins récemment comptés d'abord. Comptage à l'aveugle, écarts expliqués à la clôture.</p>
-        </div>
-        <select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={inputClass}>
-          {myDepots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
       </div>
+      <PageCommands filters={<select value={depotId} onChange={e => setDepotId(e.target.value)} aria-label="Dépôt" className={inputClass}>
+        {myDepots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+      </select>} />
 
       {!session ? (
         <div className="rounded-lg bg-white dark:bg-gray-800 shadow p-5 space-y-4">
