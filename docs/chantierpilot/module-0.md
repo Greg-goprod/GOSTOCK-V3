@@ -1,6 +1,6 @@
 # Module 0 — Fondation multi-entreprise : état d'avancement
 
-**Statut au 1er novembre 2026 : développé et testé en base locale (étapes 0.1 à 0.6). Migrations 35, 36 et 38 NON appliquées sur GO-MAT.** Rien ne change pour les utilisateurs tant que tu n'as pas donné le feu vert.
+**Statut au 1er novembre 2026 : migrations 35, 36 et 38 APPLIQUÉES sur GO-MAT (avec vérifications après chacune). Reste : déclarer l'administrateur de la plateforme, redéployer la fonction de sauvegarde, rejouer les tests e2e.** Rien ne change pour les utilisateurs tant que tu n'as pas donné le feu vert.
 
 ## Ce qui est fait (migrations 35 et 36, batteries de tests)
 
@@ -51,3 +51,14 @@ L'application déployée reste compatible avec une base sans les migrations 35, 
 5. En cas de problème : `supabase/rollback/module0_neutraliser.sql` (retire l'isolation sans toucher aux données) ou restauration de la sauvegarde.
 
 Vérifications faites en lecture seule sur GO-MAT : 55 tables, une entreprise « Ma société », 19 personnes dont 1 administrateur, aucun e-mail en double, noms de contraintes attendus présents.
+
+
+## Journal de mise en service sur GO-MAT (1er novembre 2026)
+
+| Étape | Résultat |
+|---|---|
+| Instantané | Schéma `snapshot_avant_module0` : personnes (19), entreprises, réglages, états, rôles, articles (81), notifications (114), 154 fonctions, 181 règles d'accès. À supprimer quand tout est validé. |
+| Migration 35 | Appliquée. 55 tables avec `organization_id`, 55 règles d'isolation, tout dans ENTREPRISE TEST. Connexions simulées (magasinier, collaborateur, administrateur) : droits et données identiques à avant. |
+| Migration 36 | Première tentative refusée par Supabase : le réglage « SET » au niveau d'une fonction n'est pas autorisé. Remplacé par un réglage posé dans le corps des 12 fonctions concernées, et suppression des `DROP FUNCTION` (les anciennes signatures restent, sans droit d'exécution). Appliquée : 55 gardes d'écriture, toutes les fonctions de rappel exécutées sans erreur côté utilisateur. |
+| Migration 38 | Appliquée. Règles de stockage par entreprise : un dossier d'entreprise est accepté, celui d'une autre refusé ; les 33 anciens fichiers restent lisibles. `notification_reads` dans l'isolation. |
+| Reste | Administrateur de la plateforme (en attente de confirmation de l'adresse), redéploiement de `send-notification-emails` (sauvegarde par entreprise), tests e2e par le Claude local, essai manuel avec une 2e entreprise. |
