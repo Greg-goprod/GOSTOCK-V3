@@ -6,3 +6,4 @@ cd "$(dirname "$0")"
 psql -q -f isolation.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f cycle.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f notifications.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
+psql -q -f rbac.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
