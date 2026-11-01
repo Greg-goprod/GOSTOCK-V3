@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ArrowLeft, Search } from "lucide-react";
 import { useApp } from "../../contexts/AppContext";
+import ExtendModal from "./ExtendModal";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 
@@ -109,6 +110,8 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
     RETURNABLE_STATUSES.includes(c.status)
   );
   const selectedIds = Object.keys(returningItems).filter((id) => returningItems[id]);
+  // Prolongation de ce qui reste dehors (après un retour partiel, par exemple)
+  const [extending, setExtending] = useState(false);
 
   const toggleAll = () => {
     const allSelected = returnableCheckouts.every((c) => returningItems[c.id]);
@@ -337,7 +340,12 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex justify-end space-x-3">
+          <div className="flex flex-wrap justify-end gap-3">
+            {returnableCheckouts.length > 0 && (
+              <Button variant="outline" onClick={() => setExtending(true)} disabled={isSubmitting}>
+                Prolonger ce qui reste
+              </Button>
+            )}
             <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
               Annuler
             </Button>
@@ -351,6 +359,14 @@ const ReturnModal: React.FC<ReturnModalProps> = ({
             </Button>
           </div>
         </div>
+      )}
+      {extending && (
+        <ExtendModal
+          mode="staff"
+          lines={returnableCheckouts.map(c => ({ id: c.id, name: c.equipment?.name ?? 'Équipement', due: c.due_date ?? new Date().toISOString() }))}
+          onClose={() => setExtending(false)}
+          onDone={() => { setExtending(false); onClose(); }}
+        />
       )}
     </Modal>
   );

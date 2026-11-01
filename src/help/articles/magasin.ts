@@ -154,6 +154,15 @@ export const MAGASIN: HelpArticle[] = [
         ],
       },
       {
+        id: 'prolonger',
+        title: 'Garder le matériel plus longtemps',
+        steps: [
+          { text: 'Dans « Shop », « Mes commandes », ouvre le bloc « Matériel chez moi » et clique sur « Prolonger » en face de l\'outil (pour une commande sortie avec un véhicule : « Demander une prolongation » sous la commande).' },
+          { text: 'Choisis la nouvelle date de retour, dis pourquoi si tu veux, puis « Envoyer la demande ».' },
+        ],
+        result: 'Le magasin reçoit ta demande. Quand il prolonge, tu reçois l\'avis « Emprunt prolongé ». S\'il refuse (matériel réservé par quelqu\'un d\'autre), il te le dit.',
+      },
+      {
         id: 'annuler',
         title: 'Annuler ma commande',
         steps: [
@@ -297,6 +306,30 @@ export const MAGASIN: HelpArticle[] = [
     routes: ['/checkouts'],
     where: 'Magasin › Sorties.',
     tasks: [
+      {
+        id: 'prolonger',
+        title: 'Prolonger un emprunt (magasin)',
+        who: 'Magasinier, responsable.',
+        steps: [
+          { text: 'Dans « Sorties », ouvre le bon (« Détails / retour »), puis clique sur « Prolonger ce qui reste ».' },
+          { text: 'Coche les équipements à prolonger (seuls ceux qui ne sont pas rendus apparaissent : après un retour partiel, il ne reste que le reste).' },
+          { text: 'Choisis « Nouveau retour le », ajoute un motif si tu veux, puis « Prolonger ».' },
+          { text: 'Pour une demande avec un véhicule ou des outils restés dehors : ouvre la demande dans « Demandes » (état « Sortie ») et clique sur « Prolonger ce qui reste dehors ».' },
+        ],
+        result: 'La date de retour change, la note de la sortie garde la trace, et la personne reçoit un avis. Une sortie en retard prolongée redevient « active ».',
+        problems: [
+          { if: '« … est déjà réservé par d\'autres demandes… ».', then: 'Un autre outil du même type est réservé pour cette période : choisis une date plus proche, ou une date avant la réservation.' },
+          { if: '« La nouvelle date doit être après le retour prévu ».', then: 'Une prolongation repousse le retour ; elle ne peut pas l\'avancer. Un an au plus.' },
+        ],
+      },
+      {
+        id: 'demande-prolongation',
+        title: 'Répondre à une demande de prolongation',
+        steps: [
+          { text: 'Les demandes arrivent dans « Notifications » (« Demande de prolongation : … ») avec le motif et la date souhaitée.' },
+          { text: 'Ouvre la sortie dans « Sorties » et prolonge-la (voir ci-dessus), puis marque l\'alerte comme lue.' },
+        ],
+      },
       {
         id: 'voir',
         title: 'Retrouver qui a un outil',

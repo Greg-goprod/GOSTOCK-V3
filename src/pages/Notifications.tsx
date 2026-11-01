@@ -316,6 +316,7 @@ const Notifications: React.FC = () => {
               <h2 className="font-bold text-gray-900 dark:text-white">Alertes ({stockNotifications.length})</h2>
               <div className="flex flex-wrap gap-3 text-sm font-medium">
                 <Link to="/commande" className="text-primary-700 dark:text-primary-300 hover:underline">Feuille de commande</Link>
+                <Link to="/checkouts" className="text-primary-700 dark:text-primary-300 hover:underline">Sorties</Link>
                 <Link to="/demandes" className="text-primary-700 dark:text-primary-300 hover:underline">Demandes</Link>
                 <Link to="/vehicules" className="text-primary-700 dark:text-primary-300 hover:underline">Véhicules</Link>
               </div>
