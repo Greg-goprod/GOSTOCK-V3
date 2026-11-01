@@ -15,6 +15,12 @@
 - Bascule Cartes / Liste sur les 15 autres pages.
 - Planning de chantier (module 1) : démarre après l'étape 1 des droits.
 
+## À FAIRE ENSUITE (dans cet ordre, une chose à la fois)
+1. Diagnostic de démarrage (ci-dessous), puis décision sur les 36 KO.
+2. Notifications en vue Cartes : refaire la carte (message en entier, date relative, point « non lue », bouton « Marquer comme lue » sur la carte). La carte actuelle est faite pour des personnes ou des outils : le message est coupé et les initiales n'ont aucun sens.
+3. Relancer les trois batteries, puis `e2e-coherence`.
+4. Migration 40 (droits compatibles Mannyx).
+
 ## BLOQUANT ACTUEL (une seule chose)
 Les tests lancés par ton Claude local après le module multi-entreprise ont donné **36 KO** (242 OK sur 281 au test complet, etc.).
 On ne sait pas encore s'il s'agit de vraies régressions ou de tests trop pressés (attente fixe de 900 ms). **Étape suivante : lancer le diagnostic `scripts/diag-demarrage.cjs`** (lecture seule, 2 minutes), puis décider.
