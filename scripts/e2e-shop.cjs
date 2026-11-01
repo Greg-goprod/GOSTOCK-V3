@@ -30,6 +30,7 @@ if (!MOCK && !PASSWORD) { console.error('E2E_PASSWORD manquant (variable d\'envi
 const results = [];
 const consoleErrors = [];
 let order = null; // numéro de la commande créée
+let cancelled = false; // vrai seulement si l'annulation a été constatée
 
 async function contextFor(browser, who, viewport = { width: 1440, height: 900 }) {
   const ctx = await browser.newContext({ viewport, locale: 'fr-CH' });
@@ -210,8 +211,10 @@ const goShop = async (page) => { await page.goto(`${BASE}/shop`); await page.wai
     if (!order) return { status: 'NON TESTÉ', detail: 'pas de commande créée' };
     await p.goto(`${BASE}/shop?vue=commandes`); await p.waitForTimeout(2000);
     await p.getByRole('button', { name: 'Annuler la commande' }).first().click(); await p.waitForTimeout(500);
-    await p.getByRole('button', { name: /Confirmer|Oui|OK/ }).first().click();
+    // Le bouton se cherche dans la fenêtre de confirmation (un bouton « OK » d'avis existe aussi sur la page)
+    await p.getByRole('dialog').getByRole('button', { name: 'Confirmer', exact: true }).click();
     await p.locator('[role="status"]').filter({ hasText: /annulée/ }).first().waitFor({ timeout: 15000 });
+    cancelled = true;
   });
 
   /* ---------------- Pages en cartes (magasin) : bureau + téléphone ---------------- */
@@ -261,7 +264,7 @@ const goShop = async (page) => { await page.goto(`${BASE}/shop`); await page.wai
     `Commit testé : à renseigner avec \`git log --oneline -1\`. Base : ${MOCK ? 'SIMULÉE (essai à blanc)' : 'GO-MAT'}. Comptes : ${COLLAB} et ${STAFF}.`,
     '',
     `Synthèse : ${count('OK')} OK · ${count('PARTIEL')} PARTIEL · ${count('KO')} KO · ${count('NON TESTÉ')} NON TESTÉ`,
-    order ? `Commande de test créée puis annulée : ${order}` : 'Aucune commande créée.',
+    order ? (cancelled ? `Commande de test créée puis annulée : ${order}` : `ATTENTION : la commande de test ${order} n'a PAS été annulée par le script : annule-la à la main (Shop › Mes commandes › Annuler la commande).`) : 'Aucune commande créée.',
     '',
     '| Point | Verdict | Détail | Capture |', '|---|---|---|---|',
     ...results.map(r => `| ${r.id} — ${r.title} | ${r.status} | ${r.detail.replace(/\|/g, '/')} | ${r.shot ? `[${path.basename(r.shot)}](${r.shot})` : ''} |`),
