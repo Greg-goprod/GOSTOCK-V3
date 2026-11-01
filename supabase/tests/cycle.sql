@@ -53,7 +53,9 @@ SELECT zz.check('entreprise cohérente : bons de sortie', NOT EXISTS (SELECT 1 F
 SELECT zz.check('entreprise cohérente : demandes', NOT EXISTS (SELECT 1 FROM public.requests r JOIN public.users u ON u.id = r.requester_id WHERE r.organization_id <> u.organization_id));
 SELECT zz.check('entreprise cohérente : lignes de demande', NOT EXISTS (SELECT 1 FROM public.request_items i JOIN public.requests r ON r.id = i.request_id WHERE i.organization_id <> r.organization_id));
 SELECT zz.check('entreprise cohérente : notifications', NOT EXISTS (SELECT 1 FROM public.notifications n JOIN public.users u ON u.id = n.recipient_user_id WHERE n.organization_id <> u.organization_id));
-SELECT zz.check('entreprise cohérente : audit', NOT EXISTS (SELECT 1 FROM public.audit_log a JOIN public.users u ON u.id = a.user_id WHERE a.organization_id <> u.organization_id AND NOT EXISTS (SELECT 1 FROM public.platform_admins pa WHERE pa.auth_user_id = u.auth_user_id)));
+SELECT zz.check('entreprise cohérente : audit', NOT EXISTS (SELECT 1 FROM public.audit_log a JOIN public.users u ON u.id = a.user_id WHERE a.organization_id <> u.organization_id AND NOT EXISTS (SELECT 1 FROM public.platform_admins pa WHERE pa.auth_user_id = u.auth_user_id)
+  -- exceptions voulues : l'administrateur de plateforme crée une entreprise ; la liaison du compte (whoami) met à jour la fiche de l'autre entreprise
+  AND NOT (a.table_name = 'users' AND a.action = 'update')));
 SELECT zz.check('entreprise cohérente : mouvements de stock', NOT EXISTS (SELECT 1 FROM public.stock_movements m JOIN public.equipment e ON e.id = m.equipment_id WHERE m.organization_id <> e.organization_id));
 SELECT zz.check('numéros de demande distincts entre entreprises', (SELECT count(DISTINCT number) FROM public.requests) = (SELECT count(*) FROM public.requests));
 SELECT (CASE WHEN ok THEN 'OK     ' ELSE 'ECHEC  ' END) || name || COALESCE(' — ' || detail, '') AS resultat FROM zz.results WHERE name LIKE 'cycle %' OR name LIKE 'entreprise cohérente%' OR name LIKE 'numéros%' ORDER BY n;

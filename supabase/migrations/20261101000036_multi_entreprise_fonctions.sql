@@ -63,7 +63,6 @@ BEGIN
   FOREACH f IN ARRAY ARRAY[
     'check_due_reminders', 'check_equipment_deadlines', 'check_maintenance_due', 'check_people_deadlines',
     'check_training_rental_deadlines', 'check_vehicle_deadlines', 'check_backup_reminder', 'check_monthly_report',
-    'update_overdue_checkouts', 'force_update_overdue_checkouts', 'update_equipment_availability',
     'claim_push_notifications', 'claim_sms_notifications', 'claim_notification_emails'
   ] LOOP
     EXECUTE COALESCE((
@@ -238,6 +237,81 @@ BEGIN
   END IF;
   RETURN v_id;
 END;
+$$;
+
+-- Recalculs globaux : appelés par un utilisateur, ils ne touchent que son entreprise ; par la tâche planifiée, toutes
+CREATE OR REPLACE FUNCTION public.update_overdue_checkouts()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  UPDATE public.checkouts
+  SET status = 'overdue'
+  WHERE status = 'active' AND DATE(due_date) < CURRENT_DATE
+    AND (auth.uid() IS NULL OR organization_id = public.app_org_id());
+
+  WITH checkout_counts AS (
+    SELECT delivery_note_id,
+           COUNT(*) FILTER (WHERE status = 'overdue') AS overdue_count,
+           COUNT(*) FILTER (WHERE status = 'returned') AS returned_count,
+           COUNT(*) AS total_count
+    FROM public.checkouts
+    WHERE delivery_note_id IS NOT NULL AND (auth.uid() IS NULL OR organization_id = public.app_org_id())
+    GROUP BY delivery_note_id
+  )
+  UPDATE public.delivery_notes dn
+  SET status = CASE
+      WHEN cc.overdue_count > 0 THEN 'overdue'
+      WHEN cc.returned_count = cc.total_count THEN 'returned'
+      WHEN cc.returned_count > 0 AND cc.returned_count < cc.total_count THEN 'partial'
+      ELSE 'active' END
+  FROM checkout_counts cc
+  WHERE dn.id = cc.delivery_note_id AND (auth.uid() IS NULL OR dn.organization_id = public.app_org_id());
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.force_update_overdue_checkouts(reference_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  UPDATE public.checkouts
+  SET status = 'overdue'
+  WHERE status = 'active' AND DATE(due_date) < DATE(reference_timestamp)
+    AND (auth.uid() IS NULL OR organization_id = public.app_org_id());
+
+  WITH checkout_counts AS (
+    SELECT delivery_note_id,
+           COUNT(*) FILTER (WHERE status = 'overdue') AS overdue_count,
+           COUNT(*) FILTER (WHERE status = 'returned') AS returned_count,
+           COUNT(*) AS total_count
+    FROM public.checkouts
+    WHERE delivery_note_id IS NOT NULL AND (auth.uid() IS NULL OR organization_id = public.app_org_id())
+    GROUP BY delivery_note_id
+  )
+  UPDATE public.delivery_notes dn
+  SET status = CASE
+      WHEN cc.overdue_count > 0 THEN 'overdue'
+      WHEN cc.returned_count = cc.total_count THEN 'returned'
+      WHEN cc.returned_count > 0 AND cc.returned_count < cc.total_count THEN 'partial'
+      ELSE 'active' END
+  FROM checkout_counts cc
+  WHERE dn.id = cc.delivery_note_id AND (auth.uid() IS NULL OR dn.organization_id = public.app_org_id());
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_equipment_availability()
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+  UPDATE public.equipment SET total_quantity = total_quantity
+  WHERE auth.uid() IS NULL OR organization_id = public.app_org_id();
 $$;
 
 -- 3. Page « outil trouvé » (publique) : l'entreprise est celle de l'outil -----------------------------
@@ -868,7 +942,6 @@ BEGIN
   FOREACH f IN ARRAY ARRAY[
     'check_due_reminders', 'check_equipment_deadlines', 'check_maintenance_due', 'check_people_deadlines',
     'check_training_rental_deadlines', 'check_vehicle_deadlines', 'check_backup_reminder', 'check_monthly_report',
-    'update_overdue_checkouts', 'force_update_overdue_checkouts', 'update_equipment_availability',
     'claim_push_notifications', 'claim_sms_notifications', 'claim_notification_emails'
   ] LOOP
     EXECUTE COALESCE((
