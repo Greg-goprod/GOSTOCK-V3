@@ -14,6 +14,7 @@ import { MxEmpty } from '../components/mx/MxEmpty';
 import { MxCardGrid } from '../components/mx/MxCardGrid';
 import { MxEntityCard } from '../components/mx/MxEntityCard';
 import { MxBadge } from '../components/mx/MxBadge';
+import { liveConsumables } from '../lib/stock';
 
 interface PpeType {
   id: string;
@@ -167,7 +168,7 @@ const Ppe: React.FC = () => {
   };
 
   const personIssues = person ? issues.filter(i => i.user_id === person) : [];
-  const consumables = equipment.filter(e => e.itemType === 'consumable');
+  const consumables = liveConsumables(equipment);
 
   return (
     <div className="space-y-6">

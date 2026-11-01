@@ -723,6 +723,24 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   }, []);
 
   // Notifications : la base est la seule source. L'état « lu » est propre à chaque personne.
+  // Articles et stocks : relus en arrière-plan pour que les écrans (Consommables, accueil…) ne retardent pas sur la base
+  const refreshStock = async () => {
+    if (!supabase) return;
+    const [eq, stock] = await Promise.all([
+      supabase.from('equipment').select('*').order('created_at', { ascending: false }),
+      supabase.from('consumable_stock').select('*'),
+    ]);
+    if (eq.error || stock.error) return;
+    setEquipment((eq.data || []).map(mapEquipmentRow));
+    setConsumableStock((stock.data || []).map((s: Record<string, any>) => ({
+      id: s.id,
+      equipmentId: s.equipment_id,
+      depotId: s.depot_id,
+      quantity: Number(s.quantity),
+      minQuantity: Number(s.min_quantity)
+    })));
+  };
+
   const refreshNotifications = async () => {
     if (!supabase) return;
     const [list, count] = await Promise.all([
@@ -753,8 +771,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       return;
     }
     void refreshNotifications();
-    const timer = window.setInterval(() => { if (!document.hidden) void refreshNotifications(); }, 60_000);
-    const onVisible = () => { if (!document.hidden) void refreshNotifications(); };
+    const timer = window.setInterval(() => { if (!document.hidden) { void refreshNotifications(); void refreshStock(); } }, 60_000);
+    const onVisible = () => { if (!document.hidden) { void refreshNotifications(); void refreshStock(); } };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
     return () => {

@@ -5,6 +5,7 @@ import { useNavSpaces } from '../../lib/useNavSpaces';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { liveConsumables, lowStockRows } from '../../lib/stock';
 
 // Accueil comme le tableau de bord de Mannyx : une carte par module accessible, avec 3 chiffres.
 // Pour un collaborateur, la carte Magasin montre ses propres chiffres (son matériel, ses demandes).
@@ -27,8 +28,8 @@ const ModuleGrid: React.FC<{ toApprove: number; toPrepare: number; myRequests: n
   const late = active.filter(c => c.status === 'overdue' || (c.dueDate && new Date(c.dueDate).getTime() < now));
   const mine = active.filter(c => c.userId === profile?.id);
   const tools = equipment.filter(e => e.itemType !== 'consumable' && e.status !== 'retired');
-  const consumables = equipment.filter(e => e.itemType === 'consumable');
-  const low = consumableStock.filter(s => s.minQuantity > 0 && s.quantity < s.minQuantity).length;
+  const consumables = liveConsumables(equipment);
+  const low = lowStockRows(consumableStock, consumables).length;
   const staff = can('scan') || can('view_all') || can('approve');
   const metric = (id: string, label: string, value: number | null): MxModuleCardMetric => ({
     id, label, value: value === null ? '' : value.toLocaleString('fr-CH'), loading: value === null,
