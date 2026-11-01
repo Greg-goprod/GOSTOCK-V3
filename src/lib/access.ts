@@ -39,6 +39,8 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   '/tableau-de-bord': ['view_all'],
   '/users': ['manage_people'],
   '/settings': ['settings'],
+  // Console de la plateforme : seul l'administrateur de la plateforme (droit venant de la base)
+  '/entreprises': ['platform'],
 };
 
 export const canAccess = (path: string, can: (p: Permission) => boolean) => {

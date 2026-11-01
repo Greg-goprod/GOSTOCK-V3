@@ -3,6 +3,7 @@ import { Camera, ImageOff, Link2, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/requests';
+import { organizationFolder } from '../../lib/organization';
 
 // Compartiment public des photos d'articles (migration 00031)
 const BUCKET = 'photos-articles';
@@ -49,7 +50,7 @@ const ImageField: React.FC<{ value: string; onChange: (url: string) => void; onB
           : 'Format d\'image non pris en charge : utilise JPG, PNG ou WebP.');
         return;
       }
-      const path = `${new Date().getFullYear()}/${crypto.randomUUID()}.jpg`;
+      const path = `${organizationFolder()}${new Date().getFullYear()}/${crypto.randomUUID()}.jpg`;
       const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType: 'image/jpeg' });
       if (error) throw error;
       setBroken(false);

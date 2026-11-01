@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { Permission, Profile } from '../lib/roles';
+import { setActiveOrganizationId } from '../lib/organization';
 
 interface AuthContextType {
   session: Session | null;
@@ -10,6 +11,8 @@ interface AuthContextType {
   loading: boolean;
   can: (permission: Permission) => boolean;
   refreshProfile: () => Promise<void>;
+  // Change d'entreprise (compte rattaché à plusieurs) puis recharge l'application
+  switchOrganization: (organizationId: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -21,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   // Personne connectée : un SIGNED_IN pour la même personne (retour sur l'onglet) ne recharge pas l'écran
   const userIdRef = useRef<string | null>(null);
+  const profileRef = useRef<Profile | null>(null);
 
   // whoami() lie le compte à la fiche de même e-mail à la première connexion
   const loadProfile = useCallback(async (current: Session | null) => {
@@ -36,7 +40,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
-          setProfile(JSON.parse(cached) as Profile);
+          const cachedProfile = JSON.parse(cached) as Profile;
+          setActiveOrganizationId(cachedProfile.organization?.id ?? null);
+          profileRef.current = cachedProfile;
+          setProfile(cachedProfile);
           return;
         }
       } catch {
@@ -51,6 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     // Même contenu : on garde l'objet actuel pour ne pas relancer les écrans qui dépendent du profil
     const next = (data as Profile | null) ?? null;
+    // L'entreprise active a changé ailleurs (autre onglet, autre appareil) : tout ce qui est affiché vient de
+    // l'ancienne entreprise, on recharge plutôt que de mélanger
+    const before = profileRef.current?.organization?.id;
+    const after = next?.organization?.id;
+    if (before && after && before !== after) {
+      window.location.reload();
+      return;
+    }
+    setActiveOrganizationId(after ?? null);
+    profileRef.current = next;
     setProfile(prev => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
   }, []);
 
@@ -94,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [loadProfile]);
 
-  const can = useCallback((permission: Permission) => !!profile?.permissions.includes(permission), [profile]);
+  const can = useCallback((permission: Permission) => (permission === 'platform' ? !!profile?.platform_admin : !!profile?.permissions.includes(permission)), [profile]);
 
   const value: AuthContextType = {
     session,
@@ -102,6 +119,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     can,
     refreshProfile: () => loadProfile(session),
+    switchOrganization: async (organizationId: string) => {
+      const { error } = await supabase.rpc('switch_organization', { p_organization_id: organizationId });
+      if (error) throw error;
+      // Tout est rechargé : plus rien ne reste affiché de l'ancienne entreprise
+      window.location.assign('/');
+    },
     signOut: async () => {
       await supabase.auth.signOut();
     },

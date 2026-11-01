@@ -48,6 +48,7 @@ import { canAccess } from './lib/access';
 import DialogHost from './components/common/DialogHost';
 import Help from './pages/Help';
 import HelpPrint from './pages/HelpPrint';
+import Organizations from './pages/Organizations';
 
 // Page refusée par les droits : retour à l'accueil (la base refuserait de toute façon les données)
 const Guard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -84,6 +85,7 @@ function App() {
         <Route path="/shop" element={<Guard><Shop /></Guard>} />
         <Route path="/vehicules" element={<Guard><Vehicles /></Guard>} />
         <Route path="/settings" element={<Guard><Settings /></Guard>} />
+        <Route path="/entreprises" element={<Guard><Organizations /></Guard>} />
         <Route path="/comptoir" element={<Guard><Counter /></Guard>} />
         <Route path="/badge" element={<Guard><MyBadge /></Guard>} />
         <Route path="/aide" element={<Guard><Help /></Guard>} />

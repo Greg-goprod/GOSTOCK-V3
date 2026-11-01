@@ -189,6 +189,38 @@ SELECT zz.check('B : ses avis, pas ceux de A', zz.count($$SELECT 1 FROM public.n
 SELECT zz.check('B : retour de son propre emprunt accepté', zz.raises(format($f$SELECT public.return_with_check(%L, 'ok', NULL, NULL)$f$, :'checkout_b')) IS NULL);
 RESET ROLE;
 
+-- 9b. Série des numéros d'article -----------------------------------------------------------------------------
+SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
+SELECT zz.check('A change la série de son entreprise', public.set_article_series('ISOSER') LIKE 'ISOSER-%');
+SELECT zz.check('A ne change pas la série de B', zz.raises(format($f$SELECT public.set_article_series('PIRATE', %L)$f$, :ORG2)) IS NOT NULL);
+SELECT zz.check('A ne prend pas la série de B', zz.raises($$SELECT public.set_article_series('GM0002')$$) IS NOT NULL);
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
+SELECT zz.check('un simple utilisateur ne change pas la série', zz.raises($$SELECT public.set_article_series('USERSR')$$) IS NOT NULL);
+RESET ROLE;
+
+-- 10. Fichiers rangés par entreprise (étape 0.5) --------------------------------------------------------------
+SELECT set_config('request.jwt.claim.sub', '', false);
+-- Base locale : le schéma storage simulé n'a ni droits ni sécurité par ligne (Supabase les fournit)
+GRANT USAGE ON SCHEMA storage TO authenticated;
+GRANT ALL ON storage.objects TO authenticated;
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+INSERT INTO storage.objects (bucket_id, name) VALUES
+  ('fichiers', 'retours/ancien.jpg'), ('fichiers', :ORG1 || '/retours/a.jpg'), ('fichiers', :ORG2 || '/retours/b.jpg'),
+  ('backups', :ORG2 || '/sauvegarde-b.json'), ('backups', 'GO-Mat_ancienne.json');
+SELECT zz.check('chemin sans dossier = entreprise historique', public.storage_path_org('retours/x.jpg') = :ORG1::uuid AND public.storage_path_org(:ORG2 || '/x.jpg') = :ORG2::uuid);
+SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
+SELECT zz.check('A lit les fichiers de son entreprise (anciens et nouveaux)', zz.count($$SELECT 1 FROM storage.objects WHERE bucket_id = 'fichiers'$$) = 2);
+SELECT zz.check('A ne lit pas les fichiers de B', zz.count(format($f$SELECT 1 FROM storage.objects WHERE name LIKE '%s%%'$f$, :ORG2)) = 0);
+SELECT zz.check('A envoie un fichier dans son dossier', zz.raises(format($f$INSERT INTO storage.objects (bucket_id, name) VALUES ('fichiers', '%s/retours/neuf.jpg')$f$, :ORG1)) IS NULL);
+SELECT zz.check('A n''envoie pas dans le dossier de B', zz.raises(format($f$INSERT INTO storage.objects (bucket_id, name) VALUES ('fichiers', '%s/retours/intrus.jpg')$f$, :ORG2)) IS NOT NULL);
+SELECT zz.check('A lit les sauvegardes de son entreprise (anciennes), pas celles de B', zz.count($$SELECT 1 FROM storage.objects WHERE bucket_id = 'backups'$$) = 1);
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', :B, false); SET ROLE authenticated;
+SELECT zz.check('B lit uniquement son dossier', zz.count($$SELECT 1 FROM storage.objects WHERE bucket_id = 'fichiers'$$) = 1 AND zz.count($$SELECT 1 FROM storage.objects WHERE bucket_id = 'backups'$$) = 1);
+SELECT zz.check('B ne supprime pas les fichiers de A', zz.affected($$DELETE FROM storage.objects WHERE bucket_id = 'fichiers' AND name NOT LIKE '%b.jpg'$$) = 0);
+RESET ROLE;
+
 -- Bilan -----------------------------------------------------------------------------------------
 SELECT (CASE WHEN ok THEN 'OK     ' ELSE 'ECHEC  ' END) || name || COALESCE(' — ' || detail, '') AS resultat FROM zz.results ORDER BY n;
 SELECT count(*) FILTER (WHERE ok) AS ok, count(*) FILTER (WHERE NOT ok) AS echecs FROM zz.results;

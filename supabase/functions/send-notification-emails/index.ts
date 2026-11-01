@@ -292,13 +292,30 @@ const BACKUP_TABLES = [
   'kits', 'kit_items', 'requests', 'request_items', 'request_templates', 'delivery_notes', 'checkouts', 'return_checks',
   'vehicles', 'vehicle_trips', 'fuel_entries', 'maintenance_types', 'equipment_maintenance', 'maintenance_plans', 'maintenance_plan_runs',
   'repair_orders', 'incidents', 'inventory_counts', 'inventory_count_lines', 'purchase_orders', 'purchase_order_lines',
-  'transfers', 'transfer_lines', 'rental_inspections', 'notification_recipients', 'notifications', 'audit_log',
+  'transfers', 'transfer_lines', 'rental_inspections', 'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const KEEP_BACKUPS = 12;
 
-// Une sauvegarde complète tous les 30 jours dans le stockage privé ; les plus anciennes sont effacées
+// Une sauvegarde complète par entreprise tous les 30 jours, dans le dossier « <entreprise>/ » du stockage privé ;
+// les plus anciennes de chaque entreprise sont effacées. Chaque fichier ne contient que les données de son entreprise.
 async function autoBackup(supabase: Client) {
-  const { data: settings } = await supabase.from('system_settings').select('id, value').in('id', ['auto_backup', 'last_auto_backup_at']);
+  const { data: organizations, error: orgError } = await supabase.from('organizations').select('id, name').eq('active', true);
+  if (orgError) throw new Error(orgError.message);
+  const results: Record<string, unknown> = {};
+  for (const org of organizations ?? []) {
+    try {
+      results[org.name] = await autoBackupOrganization(supabase, org.id as string);
+    } catch (error) {
+      // Une entreprise en échec ne bloque pas les autres
+      results[org.name] = `erreur : ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+  return results;
+}
+
+async function autoBackupOrganization(supabase: Client, organizationId: string) {
+  const { data: settings } = await supabase.from('system_settings').select('id, value')
+    .eq('organization_id', organizationId).in('id', ['auto_backup', 'last_auto_backup_at']);
   const value = (id: string) => settings?.find((s) => s.id === id)?.value ?? '';
   if (value('auto_backup') !== 'true') return 'désactivée';
   const last = value('last_auto_backup_at');
@@ -308,7 +325,9 @@ async function autoBackup(supabase: Client) {
   for (const table of BACKUP_TABLES) {
     const rows: unknown[] = [];
     for (let from = 0; ; from += 1000) {
-      const { data, error } = await supabase.from(table).select('*').range(from, from + 999);
+      // La clé de l'entreprise est « id » dans la table des entreprises, « organization_id » partout ailleurs
+      const query = supabase.from(table).select('*').eq(table === 'organizations' ? 'id' : 'organization_id', organizationId);
+      const { data, error } = await query.range(from, from + 999);
       if (error) {
         tables[`_erreur_${table}`] = [error.message];
         break;
@@ -320,13 +339,16 @@ async function autoBackup(supabase: Client) {
   }
   const stamp = new Date().toISOString();
   const name = `GO-Mat_sauvegarde_${stamp.slice(0, 10)}.json`;
-  const file = new Blob([JSON.stringify({ application: 'GO-Mat', exported_at: stamp, automatic: true, tables })], { type: 'application/json' });
-  const { error } = await supabase.storage.from('backups').upload(name, file, { upsert: true, contentType: 'application/json' });
+  const file = new Blob([JSON.stringify({ application: 'GO-Mat', organization_id: organizationId, exported_at: stamp, automatic: true, tables })], { type: 'application/json' });
+  const { error } = await supabase.storage.from('backups').upload(`${organizationId}/${name}`, file, { upsert: true, contentType: 'application/json' });
   if (error) throw new Error(error.message);
-  await supabase.from('system_settings').update({ value: stamp }).eq('id', 'last_auto_backup_at');
+  await supabase.from('system_settings').upsert(
+    { organization_id: organizationId, id: 'last_auto_backup_at', value: stamp, description: 'Dernière sauvegarde automatique' },
+    { onConflict: 'organization_id,id' },
+  );
 
-  const { data: files } = await supabase.storage.from('backups').list('', { sortBy: { column: 'name', order: 'desc' } });
-  const old = (files ?? []).filter((f) => f.name.endsWith('.json')).slice(KEEP_BACKUPS).map((f) => f.name);
+  const { data: files } = await supabase.storage.from('backups').list(organizationId, { sortBy: { column: 'name', order: 'desc' } });
+  const old = (files ?? []).filter((f) => f.name.endsWith('.json')).slice(KEEP_BACKUPS).map((f) => `${organizationId}/${f.name}`);
   if (old.length) await supabase.storage.from('backups').remove(old);
-  return { file: name, removed: old.length };
+  return { file: `${organizationId}/${name}`, removed: old.length };
 }

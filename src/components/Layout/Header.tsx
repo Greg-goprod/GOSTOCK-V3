@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { canAccess } from '../../lib/access';
 import { useTheme } from '../../contexts/ThemeContext';
 import DepotSwitcher from './DepotSwitcher';
+import OrgSwitcher from './OrgSwitcher';
 import UserMenu from './UserMenu';
 
 const Header: React.FC = () => {
@@ -26,7 +27,7 @@ const Header: React.FC = () => {
     <header className="relative z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 lg:px-[calc(20px*var(--mx-scale,1))] py-2 lg:py-0 lg:h-[calc(56px*var(--mx-scale,1))] flex items-center justify-between gap-3 print:hidden"
       style={{ boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
       {/* Grand écran : sélecteur de dépôt (comme le sélecteur d'événement de Mannyx) ; téléphone : logo et page */}
-      <div className="hidden lg:block"><DepotSwitcher /></div>
+      <div className="hidden lg:flex items-center gap-2"><OrgSwitcher /><DepotSwitcher /></div>
       <div className="lg:hidden min-w-0 flex items-center gap-1.5 text-[13px]">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-600 text-white"><QrCode size={18} aria-hidden="true" /></span>
         <span className="font-semibold text-gray-900 dark:text-white truncate" aria-current="page">{place.title}</span>
@@ -62,6 +63,8 @@ const Header: React.FC = () => {
         <button type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'} className={iconButton}>
           {theme === 'dark' ? <Sun size={17} className="text-gray-600 dark:text-gray-300" /> : <Moon size={17} className="text-gray-600 dark:text-gray-300" />}
         </button>
+
+        <div className="lg:hidden"><OrgSwitcher compact /></div>
 
         {/* Sur téléphone, le compte reste en haut à droite (le menu latéral n'existe pas) */}
         <div className="lg:hidden"><UserMenu variant="compact" /></div>

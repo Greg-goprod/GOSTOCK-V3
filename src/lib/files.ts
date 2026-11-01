@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { organizationFolder } from './organization';
 
 // Compartiment privé des photos et PV (migration 00011)
 const BUCKET = 'fichiers';
@@ -22,7 +23,7 @@ async function compressImage(file: File): Promise<Blob> {
 export async function uploadFile(file: File, folder: string): Promise<string> {
   const isPdf = file.type === 'application/pdf';
   const body = isPdf ? file : await compressImage(file);
-  const path = `${folder}/${crypto.randomUUID()}.${isPdf ? 'pdf' : 'jpg'}`;
+  const path = `${organizationFolder()}${folder}/${crypto.randomUUID()}.${isPdf ? 'pdf' : 'jpg'}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, body, {
     contentType: isPdf ? 'application/pdf' : 'image/jpeg',
     upsert: false,

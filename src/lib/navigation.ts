@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Users, CalendarClock, Bell, Settings, ScanLine, Droplets, ClipboardList, Inbox, Truck,
   BarChart3, ScanBarcode, Contact, Tags, Wrench, AlertTriangle, ListChecks, ShoppingCart, Coins, Gauge, History,
   HardHat, Map as MapIcon, Briefcase, GraduationCap, KeyRound, ArrowLeftRight, MapPin, CalendarRange, ShieldCheck,
-  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse, LifeBuoy, ShoppingBag,
+  Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse, LifeBuoy, ShoppingBag, Building2,
 } from 'lucide-react';
 
 export interface NavLinkItem {
@@ -83,6 +83,7 @@ export const NAV_SPACES: NavSpace[] = [
     { to: '/settings', label: 'Paramètres', icon: Settings },
     { to: '/donnees', label: 'Santé des données', icon: Stethoscope },
     { to: '/demarrage', label: 'Démarrage', icon: Rocket },
+    { to: '/entreprises', label: 'Entreprises', icon: Building2 },
   ] },
   { id: 'help', label: 'Aide', short: 'Aide', icon: LifeBuoy, links: [
     { to: '/aide', label: 'Aide et mode d\'emploi', icon: LifeBuoy },

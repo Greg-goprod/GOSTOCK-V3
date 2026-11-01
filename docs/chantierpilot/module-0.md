@@ -1,6 +1,6 @@
 # Module 0 — Fondation multi-entreprise : état d'avancement
 
-**Statut au 1er novembre 2026 : développé et testé en base locale. NON appliqué sur GO-MAT.** Rien ne change pour les utilisateurs tant que tu n'as pas donné le feu vert.
+**Statut au 1er novembre 2026 : développé et testé en base locale (étapes 0.1 à 0.6). Migrations 35, 36 et 38 NON appliquées sur GO-MAT.** Rien ne change pour les utilisateurs tant que tu n'as pas donné le feu vert.
 
 ## Ce qui est fait (migrations 35 et 36, batteries de tests)
 
@@ -14,12 +14,25 @@
 
 Tests : `supabase/tests/isolation.sql` (73 contrôles) et `supabase/tests/cycle.sql` (cycle complet commande → sortie → prolongation → retour dans deux entreprises, cohérence des lignes créées) : **91 contrôles, 0 échec**. Lancer : `bash supabase/tests/run.sh` sur la base locale reconstruite.
 
-## Ce qui reste avant d'ouvrir une deuxième entreprise (bloquants)
+## Étapes 0.5 et 0.6 (faites le 1er novembre, mêmes tests)
 
-1. **Sauvegarde automatique (fonction de bord `send-notification-emails`)** : elle exporte toutes les tables en un seul fichier. Avec plusieurs entreprises, elle mélangerait leurs données. À faire par entreprise (un fichier par entreprise, date de dernière sauvegarde par entreprise). **Bloquant.**
-2. **Stockage de fichiers (0.5)** : les buckets (`photos-articles`, fichiers de retour, sauvegardes) ne sont pas encore rangés par entreprise. Les règles d'accès doivent comparer le dossier à l'entreprise active. **Bloquant.**
-3. **Interface (0.6)** : sélecteur d'entreprise dans l'en-tête pour les comptes à plusieurs entreprises, écran de création des entreprises (réservé à toi), enregistrement des réglages (`system_settings`) avec la clé `organization_id`, page « outil trouvé » qui gère « entreprise inconnue ».
-4. **Rejeu des tests e2e** (e2e-complet et e2e-emprunts) sur la base avec les migrations 35 et 36, par ton Claude local.
+| Étape | Contenu | État |
+|---|---|---|
+| 0.5 | Migration 38 : fichiers rangés par entreprise (`fichiers`, `backups`, `photos-articles`), anciens fichiers rattachés à l'entreprise historique sans les déplacer ; table des lectures de notifications reprise dans l'isolation | Fait, testé (batterie d'isolation : 85 contrôles) |
+| 0.5 | Sauvegarde automatique : un fichier **par entreprise** (`<entreprise>/GO-Mat_sauvegarde_….json`), date de dernière sauvegarde par entreprise, une entreprise en échec ne bloque pas les autres | Écrit (fonction de bord `send-notification-emails`) : **à redéployer** par toi |
+| 0.5 | Série des numéros d'article propre à chaque entreprise (modifiable par son administrateur seulement) | Fait, testé |
+| 0.6 | Sélecteur d'entreprise dans la barre du haut (comptes à plusieurs entreprises), rechargement complet au changement, rechargement automatique si l'entreprise active a changé dans un autre onglet | Fait, testé sur maquette |
+| 0.6 | Console « Entreprises » (Réglages) : créer, lister, suspendre ; réservée à l'administrateur de la plateforme | Fait, testé sur maquette |
+| 0.7 | Rejeu des tests e2e sur la vraie base après mise en service | **À faire par ton Claude local** |
+
+L'application déployée reste compatible avec une base sans les migrations 35, 36 et 38 : tant qu'elles ne sont pas appliquées, le sélecteur et la console n'apparaissent pas et les fichiers restent rangés comme avant.
+
+## Ce qui reste avant d'ouvrir une deuxième entreprise
+
+1. Appliquer les migrations **35, 36 et 38** (la 37 est déjà en place), dans cet ordre, après une sauvegarde complète.
+2. Redéployer la fonction `send-notification-emails` (sauvegarde par entreprise).
+3. Te déclarer administrateur de la plateforme (voir « Mise en service »).
+4. Rejouer les tests e2e (ton Claude local), puis créer une première entreprise de test depuis la console et vérifier à la main qu'elle ne voit rien de « ENTREPRISE TEST ».
 
 ## Limites connues (acceptées pour l'instant)
 
@@ -31,7 +44,7 @@ Tests : `supabase/tests/isolation.sql` (73 contrôles) et `supabase/tests/cycle.
 ## Mise en service sur GO-MAT (quand tu donnes le feu vert)
 
 1. Sauvegarde complète (Paramètres → Sauvegarde) **et** export Supabase si possible.
-2. Appliquer la migration 35, puis la 36 (éditeur SQL, une à la fois).
+2. Appliquer la migration 35, puis la 36, puis la 38 (éditeur SQL, une à la fois ; la 37 est déjà appliquée).
 3. Te déclarer administrateur de plateforme, avec ton propre compte, depuis l'éditeur SQL :
    `insert into public.platform_admins (auth_user_id) select id from auth.users where email = '<ton e-mail de connexion>';`
 4. Rejeu des tests e2e par ton Claude local.

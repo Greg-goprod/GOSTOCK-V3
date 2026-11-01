@@ -13,6 +13,8 @@ CREATE FUNCTION zz.check(p_name text, p_ok boolean, p_detail text DEFAULT NULL) 
 CREATE FUNCTION zz.count(p_sql text) RETURNS integer LANGUAGE plpgsql AS $$ DECLARE n integer; BEGIN EXECUTE 'SELECT count(*) FROM (' || p_sql || ') s' INTO n; RETURN n; END $$;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA zz TO authenticated;
 
+-- Les notifications laissées par d'autres tests de la même base sont déclarées lues : on ne compte que les nôtres
+UPDATE public.notifications SET read_at = now() WHERE read_at IS NULL;
 INSERT INTO auth.users (id, email) VALUES (:S1, 's1@notif.test'), (:S2, 's2@notif.test'), (:C, 'c@notif.test');
 INSERT INTO public.users (email, first_name, last_name, role) VALUES
   ('s1@notif.test', 'Stan', 'Un', 'technician'), ('s2@notif.test', 'Sara', 'Deux', 'technician'), ('c@notif.test', 'Colin', 'Collab', 'user');
@@ -29,7 +31,7 @@ SELECT id AS pc FROM public.notifications WHERE message LIKE 'PC%' \gset
 SELECT id AS ps1 FROM public.notifications WHERE message LIKE 'PS1%' \gset
 
 SELECT set_config('request.jwt.claim.sub', :S1, false); SET ROLE authenticated;
-SELECT zz.check('S1 voit l''alerte du magasin et son avis, pas celui du collaborateur', zz.count('SELECT 1 FROM public.my_notifications()') = 3 AND zz.count($$SELECT 1 FROM public.my_notifications() WHERE message LIKE 'PC%'$$) = 0);
+SELECT zz.check('S1 voit l''alerte du magasin et son avis, pas celui du collaborateur', zz.count($$SELECT 1 FROM public.my_notifications() WHERE message ~ '^(N1|N2|PS1)'$$) = 3 AND zz.count($$SELECT 1 FROM public.my_notifications() WHERE message LIKE 'PC%'$$) = 0);
 SELECT zz.check('S1 : 2 non lues (l''ancienne est lue)', public.unread_notification_count() = 2);
 SELECT public.mark_notifications_read(ARRAY[:'n1'::uuid]) AS r \gset
 SELECT zz.check('S1 : lire l''alerte du magasin', :r = 1 AND public.unread_notification_count() = 1);

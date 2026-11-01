@@ -950,3 +950,40 @@ BEGIN
     ), 'SELECT 1');
   END LOOP;
 END $$;
+
+-- 11. Série des numéros d'article : celle de l'entreprise active, modifiable par son administrateur seulement ----
+CREATE OR REPLACE FUNCTION public.preview_article_number(p_organization_id uuid DEFAULT public.new_row_org_id())
+RETURNS text
+LANGUAGE sql
+STABLE
+SET search_path = public, extensions
+AS $$
+  SELECT article_series || '-' || lpad((article_counter + 1)::text, 6, '0')
+  FROM public.organizations
+  WHERE id = p_organization_id;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_article_series(p_series text, p_organization_id uuid DEFAULT public.new_row_org_id())
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_series text := upper(trim(p_series));
+BEGIN
+  IF auth.uid() IS NOT NULL AND (NOT public.app_has('settings') OR p_organization_id IS DISTINCT FROM public.app_org_id()) THEN
+    RAISE EXCEPTION 'Seul un administrateur change la série d''articles de son entreprise';
+  END IF;
+  IF v_series !~ '^[A-Z0-9]{6}$' THEN
+    RAISE EXCEPTION 'La série doit contenir exactement 6 lettres ou chiffres (sans accent ni espace)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.organizations WHERE article_series = v_series AND id <> p_organization_id) THEN
+    RAISE EXCEPTION 'Cette série est déjà utilisée par une autre entreprise';
+  END IF;
+  UPDATE public.organizations SET article_series = v_series WHERE id = p_organization_id;
+  RETURN public.preview_article_number(p_organization_id);
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.set_article_series(text, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.set_article_series(text, uuid) TO authenticated;

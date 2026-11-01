@@ -40,8 +40,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
-// Organisation unique tant que l'app n'a pas de connexion (voir default_organization_id())
-const DEFAULT_ORGANIZATION_ID = '00000000-0000-0000-0000-000000000001';
 import { 
   Category, 
   Supplier, 
@@ -52,6 +50,7 @@ import {
   SystemSetting 
 } from '../types';
 import PageTitle from '../components/common/PageTitle';
+import { getActiveOrganizationId } from '../lib/organization';
 
 const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -209,7 +208,7 @@ const Settings: React.FC = () => {
     const { data: organization } = await supabase!
       .from('organizations')
       .select('article_series')
-      .eq('id', DEFAULT_ORGANIZATION_ID)
+      .eq('id', getActiveOrganizationId() ?? '')
       .maybeSingle();
     if (organization) setArticleSeries(organization.article_series ?? '');
     const { data: preview } = await supabase!.rpc('preview_article_number');

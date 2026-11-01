@@ -8,7 +8,9 @@ export type Permission =
   | 'scan'
   | 'approve'
   | 'view_all'
-  | 'all_depots';
+  | 'all_depots'
+  // Administrateur de la plateforme (création des entreprises) : ne s'attribue pas, il vient de la base
+  | 'platform';
 
 export interface Profile {
   id: string;
@@ -18,6 +20,10 @@ export interface Profile {
   role: 'admin' | 'manager' | 'technician' | 'user';
   permissions: Permission[];
   depot_ids: string[];
+  // Entreprise active, entreprises du compte et droit « plateforme » (module multi-entreprise)
+  organization?: { id: string; name: string };
+  organizations?: { id: string; name: string; role: string; current: boolean }[];
+  platform_admin?: boolean;
 }
 
 export const ROLE_LABELS: Record<Profile['role'], string> = {
@@ -36,6 +42,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   manage_people: 'Gérer les personnes',
   all_depots: 'Tous les dépôts',
   settings: 'Réglages (administrateur)',
+  platform: 'Administrateur de la plateforme',
 };
 
 // Mêmes valeurs que role_permissions() en base

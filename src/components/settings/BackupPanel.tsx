@@ -5,6 +5,7 @@ import Button from '../common/Button';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/requests';
 import { confirmAction } from '../../lib/confirm';
+import { getActiveOrganizationId } from '../../lib/organization';
 
 // Toutes les tables de GO-Mat, sauf les abonnements de téléphones et les codes de badge (secrets)
 const TABLES = [
@@ -15,12 +16,14 @@ const TABLES = [
   'kits', 'kit_items', 'requests', 'request_items', 'request_templates', 'delivery_notes', 'checkouts', 'return_checks',
   'vehicles', 'vehicle_trips', 'fuel_entries', 'maintenance_types', 'equipment_maintenance', 'maintenance_plans', 'maintenance_plan_runs',
   'repair_orders', 'incidents', 'inventory_counts', 'inventory_count_lines', 'purchase_orders', 'purchase_order_lines',
-  'transfers', 'transfer_lines', 'rental_inspections', 'notification_recipients', 'notifications', 'audit_log',
+  'transfers', 'transfer_lines', 'rental_inspections', 'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const PAGE = 1000;
 
 interface StoredBackup {
   name: string;
+  // Chemin complet dans le stockage (dossier de l'entreprise compris)
+  path: string;
   created_at: string;
   size?: number;
 }
@@ -47,8 +50,17 @@ const BackupPanel: React.FC = () => {
     setLast(value('last_backup_at'));
     setLastAuto(value('last_auto_backup_at'));
     setAuto(value('auto_backup') !== 'false');
-    const files = await supabase.storage.from('backups').list('', { sortBy: { column: 'name', order: 'desc' } });
-    setStored(((files.data || []) as StoredBackup[]).filter(f => f.name.endsWith('.json')));
+    // Sauvegardes de l'entreprise : dossier à son nom, plus les anciennes sans dossier (visibles de l'entreprise historique seulement)
+    const sort = { sortBy: { column: 'name', order: 'desc' } } as const;
+    const org = getActiveOrganizationId();
+    const [own, legacy] = await Promise.all([
+      org ? supabase.storage.from('backups').list(org, sort) : Promise.resolve({ data: [] }),
+      supabase.storage.from('backups').list('', sort),
+    ]);
+    const withPath = (list: { name: string; created_at: string }[] | null, folder: string) =>
+      (list || []).filter(f => f.name.endsWith('.json')).map(f => ({ ...f, path: folder ? `${folder}/${f.name}` : f.name }));
+    setStored([...withPath(own.data as never, org || ''), ...withPath(legacy.data as never, '')]
+      .sort((a, b) => b.name.localeCompare(a.name)) as StoredBackup[]);
   };
 
   useEffect(() => {
@@ -103,8 +115,8 @@ const BackupPanel: React.FC = () => {
     }
   };
 
-  const downloadStored = async (name: string) => {
-    const { data, error } = await supabase.storage.from('backups').createSignedUrl(name, 60, { download: name });
+  const downloadStored = async (path: string) => {
+    const { data, error } = await supabase.storage.from('backups').createSignedUrl(path, 60, { download: path.split('/').pop() });
     if (error || !data) return toast.error(error ? errorMessage(error) : 'Fichier introuvable');
     window.location.assign(data.signedUrl);
   };
@@ -122,9 +134,10 @@ const BackupPanel: React.FC = () => {
     }
   };
 
-  const pickStoredRestore = async (name: string) => {
+  const pickStoredRestore = async (path: string) => {
     setRestoreLog([]);
-    const { data, error } = await supabase.storage.from('backups').download(name);
+    const name = path.split('/').pop() || path;
+    const { data, error } = await supabase.storage.from('backups').download(path);
     if (error || !data) return toast.error(error ? errorMessage(error) : 'Fichier introuvable');
     try {
       setRestoreFile({ name, data: JSON.parse(await data.text()) as BackupFile });
@@ -189,11 +202,11 @@ const BackupPanel: React.FC = () => {
         {stored.length > 0 && (
           <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             {stored.map(f => (
-              <li key={f.name} className="py-1.5 flex flex-wrap items-center justify-between gap-2">
+              <li key={f.path} className="py-1.5 flex flex-wrap items-center justify-between gap-2">
                 <span className="font-mono text-gray-800 dark:text-gray-200">{f.name}</span>
                 <span className="flex gap-2">
-                  <Button size="sm" variant="outline" icon={<Download size={14} />} onClick={() => downloadStored(f.name)}>Télécharger</Button>
-                  <Button size="sm" variant="outline" icon={<RotateCcw size={14} />} onClick={() => pickStoredRestore(f.name)}>Restaurer…</Button>
+                  <Button size="sm" variant="outline" icon={<Download size={14} />} onClick={() => downloadStored(f.path)}>Télécharger</Button>
+                  <Button size="sm" variant="outline" icon={<RotateCcw size={14} />} onClick={() => pickStoredRestore(f.path)}>Restaurer…</Button>
                 </span>
               </li>
             ))}
