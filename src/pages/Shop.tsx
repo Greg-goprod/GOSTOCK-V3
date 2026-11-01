@@ -116,7 +116,7 @@ interface KitRow { id: string; name: string; description: string | null; kit_ite
 interface CatalogInfo { description: string | null; images: string[]; specs: { spec: string; value: string }[]; supplied_accessories: { sku: string; name: string; qty?: number }[] }
 
 const Shop: React.FC = () => {
-  const { equipment: tools, equipmentGroups, consumableStock, depots, users, vehicles } = useApp();
+  const { equipment: tools, equipmentGroups, consumableStock, depots, users, vehicles, loadingAppData } = useApp();
   // Outils, consommables et véhicules sont présentés ensemble dans le catalogue
   const equipment = useMemo(() => [...tools, ...vehicles.map(vehicleItem)], [tools, vehicles]);
   const { profile, can } = useAuth();
@@ -181,12 +181,14 @@ const Shop: React.FC = () => {
 
   // Article retiré du service ou supprimé : enlevé du panier, avec un avis
   useEffect(() => {
-    if (!userId || equipment.length === 0 || cart.length === 0) return;
+    // Tant que les données se chargent, un article « introuvable » n'est pas un article retiré : on ne touche pas au panier
+    // (les véhicules peuvent arriver avant les outils et faire croire que tout le panier a disparu)
+    if (loadingAppData || !userId || equipment.length === 0 || cart.length === 0) return;
     const gone = cart.filter(l => isRetired(equipment.find(e => e.id === l.id)));
     if (gone.length === 0) return;
     setCart(prev => prev.filter(l => !gone.some(g => g.id === l.id)));
     toast(`${gone.length === 1 ? 'Un article n\'est plus proposé et a été retiré' : `${gone.length} articles ne sont plus proposés et ont été retirés`} de ton panier.`, { icon: 'ℹ️' });
-  }, [equipment, cart, userId, setCart]);
+  }, [equipment, cart, userId, setCart, loadingAppData]);
 
   const depotName = (id?: string) => depots.find(d => d.id === id)?.name;
   // « Tous les dépôts » : total ; sinon stock du dépôt choisi en haut
@@ -219,7 +221,7 @@ const Shop: React.FC = () => {
       .sort((a, b) => Number(stockOf(b) > 0) - Number(stockOf(a) > 0) || Number(!!b.imageUrl) - Number(!!a.imageUrl) || a.name.localeCompare(b.name, 'fr'));
   }, [catalogue, kind, group, availableOnly, search, stockOf]);
 
-  const validCart = cart.filter(l => !isRetired(equipment.find(e => e.id === l.id)));
+  const validCart = loadingAppData ? cart : cart.filter(l => !isRetired(equipment.find(e => e.id === l.id)));
   const inCart = (id: string) => validCart.find(l => l.id === id)?.quantity ?? 0;
   const setQty = (e: Equipment, qty: number) => setCart(prev => {
     if (qty <= 0) return prev.filter(l => l.id !== e.id);

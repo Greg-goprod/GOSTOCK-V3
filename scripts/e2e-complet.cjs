@@ -81,11 +81,12 @@ async function api(c, method, route, body, extra = {}, anon = false) {
     const tokenKey = Object.keys(localStorage).find(k => /^sb-.*-auth-token$/.test(k));
     const token = anon || !tokenKey ? key : (JSON.parse(localStorage.getItem(tokenKey) || '{}').access_token || key);
     const isFormData = body && body.__file;
-    const res = await fetch(base + route, {
+    let res;
+    try { res = await fetch(base + route, {
       method,
       headers: { apikey: key, Authorization: `Bearer ${token}`, ...(isFormData ? { 'Content-Type': body.type } : { 'Content-Type': 'application/json' }), ...extra },
       body: body === undefined ? undefined : isFormData ? Uint8Array.from(atob(body.b64), ch => ch.charCodeAt(0)) : JSON.stringify(body),
-    });
+    }); } catch (e) { return { status: 0, body: { message: `requête bloquée avant la base (${e.message})` } }; }
     let json = null; try { json = await res.json(); } catch { /* corps vide */ }
     return { status: res.status, body: json };
   }, { base: c.base, key: c.key, method, route, body, extra, anon });
@@ -192,7 +193,7 @@ const PAGES = ['/', '/shop', '/shop?vue=commandes', '/demandes', '/consommables'
       ok(r.status >= 400, `envoi accepté (HTTP ${r.status})`);
     });
     await step('G2-injection', 'Filtre avec apostrophe/injection : pas d\'erreur 500', async () => {
-      const r = await api(c, 'GET', `/rest/v1/equipment?select=id&name=ilike.${encodeURIComponent("%'; drop table equipment;--%")}`); ok(r.status < 500, `HTTP ${r.status}`);
+      const r = await api(c, 'GET', `/rest/v1/equipment?select=id&name=ilike.${encodeURIComponent("%'; drop table equipment;--%")}`); ok(r.status < 500, `HTTP ${r.status}`); return INFO(r.status === 0 ? 'bloquée avant d\'atteindre la base (pare-feu)' : `HTTP ${r.status}, ${rows(r).length} ligne(s)`);
     });
     await step('G2-anonyme', 'Sans connexion : equipment, users, requests illisibles', async () => {
       for (const t of ['equipment', 'users', 'requests', 'checkouts']) { const r = await api(c, 'GET', `/rest/v1/${t}?select=id&limit=1`, undefined, {}, true); ok(rows(r).length === 0, `${t} lisible sans connexion (${rows(r).length} ligne)`); }
@@ -437,7 +438,7 @@ const PAGES = ['/', '/shop', '/shop?vue=commandes', '/demandes', '/consommables'
           ok(jsErrors.length === before, `erreur JavaScript : ${jsErrors[jsErrors.length - 1]}`);
           const a11y = await p.evaluate((vw) => {
             const vis = e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
-            const name = e => (e.getAttribute('aria-label') || e.getAttribute('title') || e.innerText || '').trim() || (e.getAttribute('aria-labelledby') && document.getElementById(e.getAttribute('aria-labelledby'))?.innerText?.trim()) || (e.querySelector('img[alt]')?.getAttribute('alt') || '').trim();
+            const name = e => (e.getAttribute('aria-label') || e.getAttribute('title') || e.innerText || e.textContent || '').trim() || (e.getAttribute('aria-labelledby') && document.getElementById(e.getAttribute('aria-labelledby'))?.innerText?.trim()) || (e.querySelector('img[alt]')?.getAttribute('alt') || '').trim();
             const btn = [...document.querySelectorAll('button, [role=button], a[href]')].filter(vis).filter(e => !name(e)).length;
             const inp = [...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea')].filter(vis).filter(e => !(e.getAttribute('aria-label') || e.labels?.length || e.getAttribute('aria-labelledby') || e.getAttribute('placeholder'))).length;
             const small = vw < 600 ? [...document.querySelectorAll('button, a[href], [role=button]')].filter(vis).filter(e => { const r = e.getBoundingClientRect(); return r.height < 30 && r.width < 30; }).length : 0;
