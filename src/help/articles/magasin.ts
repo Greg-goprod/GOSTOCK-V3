@@ -247,6 +247,7 @@ export const MAGASIN: HelpArticle[] = [
         steps: [
           { text: 'Ouvre « Demandes » et le filtre « À valider » (ou la tuile « Demandes à valider » de l\'accueil).' },
           { text: 'Clique sur la demande : la raison de la validation s\'affiche (« Validation requise : … »).' },
+          { text: 'Lis l\'encadré « À vérifier avant de valider » s\'il apparaît : il signale une quantité supérieure au stock du dépôt, supérieure au parc d\'outils, ou très élevée (erreur de saisie possible).' },
           { text: 'Pour refuser, écris d\'abord le motif dans « Remarque (obligatoire si refus) », puis « Refuser ». Sinon « Valider ».' },
         ],
         result: 'Le demandeur est prévenu. Une demande validée passe dans « À préparer ».',

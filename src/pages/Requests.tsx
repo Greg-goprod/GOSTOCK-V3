@@ -637,7 +637,7 @@ const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void;
 /* ------------------------------------------------------------------------ */
 
 const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => void; onChanged: () => Promise<void>; onRepeat: (prefill: RequestPrefill) => void }> = ({ request, onClose, onChanged, onRepeat }) => {
-  const { equipment, vehicles, users, refreshData } = useApp();
+  const { equipment, vehicles, users, refreshData, consumableStock } = useApp();
   const { profile, can } = useAuth();
   const isOwner = profile?.id === request.requester_id;
   // Retrait par un tiers (chef d'équipe…) : le demandeur reste responsable du matériel
@@ -653,6 +653,20 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
   const [decisionNote, setDecisionNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [issuing, setIssuing] = useState(false);
+  // Quantités qui sortent de l'ordinaire : à lire avant de valider (le stock n'est contrôlé qu'à la sortie)
+  const quantityWarnings = items.flatMap(i => {
+    const e = equipment.find(x => x.id === i.equipment_id);
+    if (!e || i.item_kind === 'vehicle') return [];
+    const qty = Number(i.quantity);
+    if (i.item_kind === 'consumable') {
+      const stock = consumableStock.find(x => x.equipmentId === e.id && x.depotId === request.depot_id)?.quantity ?? 0;
+      if (qty > stock) return [`${e.name} : ${qty} demandé, ${stock} en stock au dépôt`];
+      if (qty >= 1000) return [`${e.name} : quantité très élevée (${qty}), vérifie qu'il n'y a pas d'erreur de saisie`];
+    } else if (qty > (e.totalQuantity ?? 1)) {
+      return [`${e.name} : ${qty} demandé, mais seulement ${e.totalQuantity ?? 1} en parc`];
+    }
+    return [];
+  });
   const vehicleItem = items.find(i => i.item_kind === 'vehicle');
   const vehicle = vehicles.find(v => v.id === vehicleItem?.vehicle_id);
   const [km, setKm] = useState('');
@@ -868,6 +882,12 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
         {request.status === 'requested' && (
           <div className="space-y-3 rounded-md border border-warning-200 dark:border-warning-800 p-3">
             <p className="text-sm text-gray-800 dark:text-gray-200">Validation requise : {request.approval_reason}</p>
+            {quantityWarnings.length > 0 && (
+              <div role="alert" className="rounded-md mx-tint-badge-warning p-3 text-sm space-y-1">
+                <p className="font-semibold">À vérifier avant de valider</p>
+                <ul className="list-disc pl-5">{quantityWarnings.map(w => <li key={w}>{w}</li>)}</ul>
+              </div>
+            )}
             {can('approve') ? (
               <>
                 <div>

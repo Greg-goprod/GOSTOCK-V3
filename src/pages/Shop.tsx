@@ -562,7 +562,7 @@ const CartDrawer: React.FC<{
   start: string; end: string; setStart: (v: string) => void; setEnd: (v: string) => void;
   items: Equipment[]; users: { id: string; first_name: string; last_name: string; active?: boolean; accessUntil?: string | null }[]; staff: boolean; profileId: string; onOrdered: () => void;
 }> = ({ open, onClose, cart, setCart, start, end, setStart, setEnd, items, users, staff, profileId, onOrdered }) => {
-  const { depots, vehicles } = useApp();
+  const { depots, vehicles, consumableStock } = useApp();
   const { depotId: currentDepot } = useCurrentDepot();
   const sites = useSiteSuggestions();
 
@@ -691,6 +691,10 @@ const CartDrawer: React.FC<{
                             : <span className="text-tone-danger">{`Seulement ${free} libre(s) sur la période`}</span>}
                     </p>
                     {l.item.requiresApproval && <p className="text-xs text-tone-warning">Validation requise</p>}
+                    {l.kind === 'consumable' && (() => {
+                      const stock = consumableStock.find(x => x.equipmentId === l.id && x.depotId === depotId)?.quantity ?? 0;
+                      return l.quantity > stock ? <p className="text-xs text-tone-warning">{`Plus que le stock du dépôt (${stock}) : le magasin devra confirmer`}</p> : null;
+                    })()}
                   </div>
                   <div className="flex items-center gap-1">
                     {l.kind !== 'vehicle' && <Qty value={l.quantity} onChange={n => setQty(l.id, n)} label={l.item.name} />}
