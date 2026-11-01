@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardCheck, Plus, Wrench, Zap } from 'lucide-react';
+import { CheckCircle2, ClipboardCheck, Plus, Wrench } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -10,6 +10,9 @@ import { fileUrl } from '../lib/files';
 import { errorMessage, toLocalInput } from '../lib/requests';
 import { DateTimeInput } from '../components/common/DateInput';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { PageCommands } from '../components/Layout/ModuleHeader';
@@ -60,7 +63,7 @@ const nextDue = (p: PlanStatus) => [
 
 // Entretien préventif et contrôles électriques (OIBT) : plans, échéances, interventions
 const Maintenance: React.FC = () => {
-  const { refreshData } = useApp();
+  const { refreshData, equipment: allEquipment } = useApp();
   const [plans, setPlans] = useState<PlanStatus[]>([]);
   const [runs, setRuns] = useState<PlanRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,34 +114,33 @@ const Maintenance: React.FC = () => {
         <MxEmpty icon={tab === 'todo' ? CheckCircle2 : Wrench} title={tab === 'todo' ? 'Rien à faire' : 'Aucun plan'}
           description={tab === 'todo' ? 'Tous les entretiens sont à jour.' : 'Crées-en un pour chaque outil à réviser ou à contrôler (OIBT).'} />
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {shown.map(plan => (
-            <li key={plan.id} className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-start gap-2">
-                <div className="min-w-0">
-                  <p className="font-bold text-gray-900 dark:text-white truncate">{plan.equipment_name}</p>
-                  <p className="font-mono text-xs text-gray-600 dark:text-gray-400">{plan.article_number}</p>
-                </div>
-                <span className={`shrink-0 rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${STATE[plan.state].className}`}>{STATE[plan.state].label}</span>
-              </div>
-              <div className="text-sm text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                {plan.kind === 'electrical_check' ? <Zap size={14} className="text-tone-warning" aria-hidden="true" /> : <ClipboardCheck size={14} className="text-primary-600" aria-hidden="true" />}
-                {plan.title}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {[plan.interval_months && `tous les ${plan.interval_months} mois`, plan.interval_checkouts && `toutes les ${plan.interval_checkouts} sorties`].filter(Boolean).join(' ou ')}
-                {' · '}dernier le {new Date(plan.last_done_at).toLocaleDateString('fr-CH')}
-                {' · '}prochain {nextDue(plan)}
-                {plan.blocks_checkout && <span className="block text-tone-danger">Sorties bloquées une fois échu</span>}
-              </p>
-              <div className="flex flex-wrap gap-2 mt-auto">
-                <Button size="sm" icon={<CheckCircle2 size={14} />} onClick={() => setCompleting(plan)} disabled={!plan.active}>Fait</Button>
-                <Button size="sm" variant="outline" onClick={() => setHistoryOf(plan)}>Historique</Button>
-                <Button size="sm" variant="outline" onClick={() => toggleActive(plan)}>{plan.active ? 'Suspendre' : 'Réactiver'}</Button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <MxCardGrid
+          items={shown}
+          getItemKey={plan => plan.id}
+          renderItem={plan => {
+            const tone = ({ overdue: 'danger', soon: 'warning', ok: 'success', inactive: 'neutral' } as const)[plan.state];
+            return (
+              <MxEntityCard
+                avatarSrc={allEquipment.find(e => e.id === plan.equipment_id)?.imageUrl || null}
+                avatarName={plan.equipment_name}
+                title={plan.equipment_name}
+                infoParts={[
+                  { content: `${plan.title}${plan.article_number ? ` · ${plan.article_number}` : ''}` },
+                  { content: [plan.interval_months && `tous les ${plan.interval_months} mois`, plan.interval_checkouts && `toutes les ${plan.interval_checkouts} sorties`].filter(Boolean).join(' ou ') || '\u00A0' },
+                ]}
+                statusBadge={<MxBadge tone={tone}>{STATE[plan.state].label}</MxBadge>}
+                due={<span>{`Prochain ${nextDue(plan)}`}{plan.blocks_checkout ? ' · bloque les sorties' : ''}</span>}
+                menuLabel={`Actions pour ${plan.equipment_name}`}
+                menuActions={[
+                  { id: 'done', label: 'Fait', icon: CheckCircle2, disabled: !plan.active, onSelect: () => setCompleting(plan) },
+                  { id: 'history', label: 'Historique', icon: ClipboardCheck, onSelect: () => setHistoryOf(plan) },
+                  { id: 'toggle', label: plan.active ? 'Suspendre' : 'Réactiver', icon: Wrench, onSelect: () => toggleActive(plan) },
+                ]}
+                onOpen={() => (plan.active ? setCompleting(plan) : setHistoryOf(plan))}
+              />
+            );
+          }}
+        />
       )}
 
       {creating && <NewPlanModal onClose={() => setCreating(false)} onDone={async () => { setCreating(false); await load(); }} />}

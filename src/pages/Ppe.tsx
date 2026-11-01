@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { HardHat, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, HardHat, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -10,6 +10,10 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import PageTitle from '../components/common/PageTitle';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 
 interface PpeType {
   id: string;
@@ -172,7 +176,7 @@ const Ppe: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-400 mt-1">Équipements de protection remis à chacun : taille, signature, et rappel avant le renouvellement.</p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid gap-4">
         {canIssue && (
           <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3">
             <h2 className="font-bold text-gray-900 dark:text-white">Remettre un EPI</h2>
@@ -230,71 +234,87 @@ const Ppe: React.FC = () => {
           </section>
         )}
 
-        <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-3 self-start">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="font-bold text-gray-900 dark:text-white">Types d'EPI</h2>
-            {canManageTypes && <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={() => openType('new')}>Ajouter</Button>}
-          </div>
-          {types.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-400">Exemples : casque (renouvelé tous les 4 ans), chaussures S3 (tailles 38 à 47, 1 an), harnais (à rendre au départ).</p>}
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            {types.map(t => (
-              <li key={t.id} className="py-2 flex items-start gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{t.name}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {[t.sizes.length ? `tailles ${t.sizes.join(', ')}` : 'taille unique', t.renewal_months ? `renouvelé tous les ${t.renewal_months} mois` : 'sans échéance',
-                      t.returnable ? 'à rendre au départ' : '', t.equipment_id ? `stock : ${equipment.find(e => e.id === t.equipment_id)?.name ?? ''}` : ''].filter(Boolean).join(' · ')}
-                  </p>
-                </div>
-                {canManageTypes && (
-                  <>
-                    <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier ${t.name}`} onClick={() => openType(t)} />
-                    <Button size="sm" variant="outline" icon={<Trash2 size={14} />} ariaLabel={`Supprimer ${t.name}`} onClick={() => removeType(t)} />
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
       </div>
 
-      <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-2">
-        <h2 className="font-bold text-gray-900 dark:text-white">À renouveler dans les 30 jours ({due.length})</h2>
-        {due.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Rien à renouveler.</p> : (
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            {due.map(i => {
-              const late = new Date(i.renew_on!).getTime() < Date.now();
-              return (
-                <li key={i.id} className="py-2 flex flex-wrap items-center gap-2">
-                  <span className="flex-1 min-w-[12rem] text-gray-900 dark:text-gray-100">{userName(i.user_id)} · {typeOf(i.ppe_type_id)?.name}{i.size ? ` · ${i.size}` : ''}</span>
-                  <span className={`text-xs font-semibold ${late ? 'text-tone-danger' : 'text-tone-warning'}`}>{late ? 'échu le' : 'le'} {fmt(i.renew_on!)}</span>
-                  {canIssue && <Button size="sm" variant="outline" onClick={() => renew(i)}>Renouveler</Button>}
-                </li>
-              );
-            })}
-          </ul>
+      <section aria-label="Types d'EPI">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="mx-section-label">{`Types d'EPI (${types.length})`}</h2>
+          {canManageTypes && <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={() => openType('new')}>Ajouter</Button>}
+        </div>
+        {types.length === 0 ? <MxEmpty icon={HardHat} title="Aucun type d'EPI" description="Exemples : casque (renouvelé tous les 4 ans), chaussures S3 (tailles 38 à 47, 1 an), harnais (à rendre au départ)." /> : (
+          <MxCardGrid
+            items={types}
+            getItemKey={t => t.id}
+            renderItem={t => (
+              <MxEntityCard
+                avatarName={t.name}
+                title={t.name}
+                infoParts={[
+                  { content: t.sizes.length ? `Tailles ${t.sizes.join(', ')}` : 'Taille unique' },
+                  { content: t.renewal_months ? `Renouvelé tous les ${t.renewal_months} mois` : 'Sans échéance' },
+                ]}
+                statusBadge={t.returnable ? <MxBadge tone="warning">À rendre au départ</MxBadge> : undefined}
+                due={t.equipment_id ? <span>{`Stock : ${equipment.find(e => e.id === t.equipment_id)?.name ?? ''}`}</span> : undefined}
+                menuLabel={`Actions pour ${t.name}`}
+                menuActions={canManageTypes ? [
+                  { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => openType(t) },
+                  { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => removeType(t) },
+                ] : []}
+                onOpen={() => { if (canManageTypes) openType(t); }}
+              />
+            )}
+          />
         )}
       </section>
 
-      <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-2">
+      <section aria-label="À renouveler">
+        <h2 className="mx-section-label mb-3">{`À renouveler dans les 30 jours (${due.length})`}</h2>
+        {due.length === 0 ? <MxEmpty icon={CheckCircle2} title="Rien à renouveler" /> : (
+          <MxCardGrid
+            items={due}
+            getItemKey={i => i.id}
+            renderItem={i => {
+              const late = new Date(i.renew_on!).getTime() < Date.now();
+              return (
+                <MxEntityCard
+                  avatarName={userName(i.user_id)}
+                  title={userName(i.user_id)}
+                  infoParts={[{ content: `${typeOf(i.ppe_type_id)?.name ?? 'EPI'}${i.size ? ` · ${i.size}` : ''}` }]}
+                  statusBadge={<MxBadge tone={late ? 'danger' : 'warning'}>{late ? 'Échu' : 'Bientôt'}</MxBadge>}
+                  due={<span>{`${late ? 'Échu le' : 'Le'} ${fmt(i.renew_on!)}`}</span>}
+                  menuLabel={`Actions pour ${userName(i.user_id)}`}
+                  menuActions={canIssue ? [{ id: 'renew', label: 'Renouveler', icon: RefreshCw, onSelect: () => renew(i) }] : []}
+                  onOpen={() => { if (canIssue) renew(i); }}
+                />
+              );
+            }}
+          />
+        )}
+      </section>
+
+      <section className="space-y-3" aria-label="Dotation d'une personne">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-bold text-gray-900 dark:text-white flex-1">Dotation d'une personne</h2>
+          <h2 className="mx-section-label flex-1">Dotation d'une personne</h2>
           <select value={person} onChange={e => setPerson(e.target.value)} aria-label="Personne" className={`${inputClass} w-auto`}>
             <option value="">Choisir…</option>
             {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
           </select>
         </div>
         {person && (personIssues.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucun EPI remis.</p> : (
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            {personIssues.map(i => (
-              <li key={i.id} className="py-1.5 flex flex-wrap justify-between gap-2 text-gray-800 dark:text-gray-200">
-                <span>{i.quantity > 1 ? `${i.quantity} × ` : ''}{typeOf(i.ppe_type_id)?.name}{i.size ? ` · ${i.size}` : ''}</span>
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  remis le {fmt(i.issued_on)}{i.renew_on ? ` · à renouveler le ${fmt(i.renew_on)}` : ''}{i.returned_on ? ` · rendu le ${fmt(i.returned_on)}` : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <MxCardGrid
+            items={personIssues}
+            getItemKey={i => i.id}
+            renderItem={i => (
+              <MxEntityCard
+                avatarName={typeOf(i.ppe_type_id)?.name ?? 'EPI'}
+                title={`${i.quantity > 1 ? `${i.quantity} × ` : ''}${typeOf(i.ppe_type_id)?.name ?? 'EPI'}${i.size ? ` · ${i.size}` : ''}`}
+                infoParts={[{ content: `Remis le ${fmt(i.issued_on)}` }]}
+                statusBadge={i.returned_on ? <MxBadge tone="neutral">Rendu</MxBadge> : i.renew_on && new Date(i.renew_on).getTime() < Date.now() ? <MxBadge tone="danger">Échu</MxBadge> : <MxBadge tone="success">En dotation</MxBadge>}
+                due={i.returned_on ? <span>{`Rendu le ${fmt(i.returned_on)}`}</span> : i.renew_on ? <span>{`À renouveler le ${fmt(i.renew_on)}`}</span> : undefined}
+                onOpen={() => undefined}
+              />
+            )}
+          />
         ))}
       </section>
 

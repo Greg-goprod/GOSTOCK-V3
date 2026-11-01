@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -12,6 +12,9 @@ import { errorMessage } from '../lib/requests';
 import DateInput from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
 import PageTitle from '../components/common/PageTitle';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
 interface Training {
@@ -53,6 +56,7 @@ const Trainings: React.FC = () => {
   const canEdit = can('manage_people');
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [holders, setHolders] = useState<UserTraining[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [editingTraining, setEditingTraining] = useState<Training | 'new' | null>(null);
   const [trainingForm, setTrainingForm] = useState({ name: '', validity_months: '', description: '', kind: 'machine_permit' as Training['kind'] });
@@ -186,78 +190,95 @@ const Trainings: React.FC = () => {
           Aucun permis ni formation. Exemples : nacelle PEMP IPAF 3b (5 ans), chariot élévateur, grutier, travail en hauteur.
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-          <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700 self-start">
-            {[...trainings].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'machine_permit' ? -1 : 1)).map((t, index, list) => {
-              const soon = soonCount(t.id);
-              const header = index === 0 || list[index - 1].kind !== t.kind;
-              return (
-                <li key={t.id}>
-                  {header && <p className="mx-section-label px-4 pt-3 pb-1">{t.kind === 'machine_permit' ? 'Permis machines' : 'Formations'}</p>}
-                  <button type="button" aria-current={selected === t.id} onClick={() => setSelected(t.id)}
-                    className={`w-full text-left px-4 py-3 min-h-[44px] text-sm ${selected === t.id ? 'bg-primary-50 dark:bg-primary-900/40 font-bold text-primary-800 dark:text-primary-200' : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
-                    <span className="flex items-center gap-2">
-                      <GraduationCap size={16} aria-hidden="true" className="shrink-0" />
-                      <span className="flex-1 truncate">{t.name}</span>
-                      <span className="font-mono text-xs text-gray-500">{holders.filter(h => h.training_id === t.id).length}</span>
-                    </span>
-                    {soon > 0 && <span className="block text-xs text-tone-warning font-normal">{soon} à renouveler</span>}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-
-          {training && (
-            <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 space-y-4 min-w-0">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <h2 className="font-bold text-gray-900 dark:text-white">{training.name}</h2>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {training.validity_months ? `Valable ${training.validity_months} mois` : 'Sans échéance'}
-                    {training.description ? ` · ${training.description}` : ''}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Exigée pour : {requiredBy.length ? requiredBy.map(e => e.name).join(', ') : 'aucun outil (à choisir dans la fiche de l\'outil)'}
-                  </p>
-                </div>
-                {canEdit && (
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel="Modifier la formation" onClick={() => openTraining(training)} />
-                    <Button size="sm" variant="danger" icon={<Trash2 size={14} />} ariaLabel="Supprimer la formation" onClick={() => removeTraining(training)} />
-                  </div>
-                )}
-              </div>
-
-              {selectedHolders.length === 0 ? (
-                <p className="text-sm text-gray-600 dark:text-gray-400">Personne n'a encore cette formation.</p>
-              ) : (
-                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {selectedHolders.map(h => {
-                    const state = stateOf(h);
+        <div className="space-y-6">
+          {(['machine_permit', 'training'] as const).map(kind => {
+            const list = trainings.filter(t => t.kind === kind);
+            if (list.length === 0) return null;
+            return (
+              <section key={kind} aria-label={kind === 'machine_permit' ? 'Permis machines' : 'Formations'}>
+                <h2 className="mx-section-label mb-3">{kind === 'machine_permit' ? 'Permis machines' : 'Formations'}</h2>
+                <MxCardGrid
+                  items={list}
+                  getItemKey={t => t.id}
+                  renderItem={t => {
+                    const soon = soonCount(t.id);
+                    const count = holders.filter(h => h.training_id === t.id).length;
                     return (
-                      <li key={h.id} className="py-2 flex flex-wrap items-center gap-2 text-sm">
-                        <span className="flex-1 min-w-[10rem] font-medium text-gray-900 dark:text-gray-100">{name(h.user_id)}</span>
-                        <span className="text-xs text-gray-600 dark:text-gray-400">obtenue le {new Date(h.obtained_on).toLocaleDateString('fr-CH')}</span>
-                        <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${state.className}`}>{state.label}</span>
-                        {h.certificate_path && (
-                          <Button size="sm" variant="outline" onClick={() => openCertificate(h.certificate_path!)}>Attestation</Button>
-                        )}
-                        {canEdit && (
-                          <>
-                            <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier pour ${name(h.user_id)}`} onClick={() => openHolder(h)} />
-                            <Button size="sm" variant="outline" icon={<Trash2 size={14} />} ariaLabel={`Retirer à ${name(h.user_id)}`} onClick={() => removeHolder(h)} />
-                          </>
-                        )}
-                      </li>
+                      <MxEntityCard
+                        avatarName={t.name}
+                        title={t.name}
+                        infoParts={[
+                          { content: t.validity_months ? `Valable ${t.validity_months} mois` : 'Sans échéance' },
+                          { content: `${count} personne${count > 1 ? 's' : ''}` },
+                        ]}
+                        statusBadge={soon > 0 ? <MxBadge tone="warning">{`${soon} à renouveler`}</MxBadge> : <MxBadge tone={count ? 'success' : 'neutral'}>{count ? 'À jour' : 'Aucun titulaire'}</MxBadge>}
+                        menuLabel={`Actions pour ${t.name}`}
+                        menuActions={canEdit ? [
+                          { id: 'add', label: 'Ajouter une personne', icon: Plus, onSelect: () => { setSelected(t.id); setDetailOpen(true); openHolder('new'); } },
+                          { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => openTraining(t) },
+                          { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => removeTraining(t) },
+                        ] : []}
+                        onOpen={() => { setSelected(t.id); setDetailOpen(true); }}
+                      />
                     );
-                  })}
-                </ul>
-              )}
-              {canEdit && <Button variant="outline" icon={<Plus size={16} />} onClick={() => openHolder('new')}>Ajouter une personne</Button>}
-            </section>
-          )}
+                  }}
+                />
+              </section>
+            );
+          })}
         </div>
+      )}
+
+      {training && (
+        <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title={training.name} size="lg">
+            <div className="space-y-4 min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="font-bold text-gray-900 dark:text-white">{training.name}</h2>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {training.validity_months ? `Valable ${training.validity_months} mois` : 'Sans échéance'}
+                  {training.description ? ` · ${training.description}` : ''}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Exigée pour : {requiredBy.length ? requiredBy.map(e => e.name).join(', ') : 'aucun outil (à choisir dans la fiche de l\'outil)'}
+                </p>
+              </div>
+              {canEdit && (
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel="Modifier la formation" onClick={() => openTraining(training)} />
+                  <Button size="sm" variant="danger" icon={<Trash2 size={14} />} ariaLabel="Supprimer la formation" onClick={() => removeTraining(training)} />
+                </div>
+              )}
+            </div>
+
+            {selectedHolders.length === 0 ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">Personne n'a encore cette formation.</p>
+            ) : (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {selectedHolders.map(h => {
+                  const state = stateOf(h);
+                  return (
+                    <li key={h.id} className="py-2 flex flex-wrap items-center gap-2 text-sm">
+                      <span className="flex-1 min-w-[10rem] font-medium text-gray-900 dark:text-gray-100">{name(h.user_id)}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">obtenue le {new Date(h.obtained_on).toLocaleDateString('fr-CH')}</span>
+                      <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${state.className}`}>{state.label}</span>
+                      {h.certificate_path && (
+                        <Button size="sm" variant="outline" onClick={() => openCertificate(h.certificate_path!)}>Attestation</Button>
+                      )}
+                      {canEdit && (
+                        <>
+                          <Button size="sm" variant="outline" icon={<Pencil size={14} />} ariaLabel={`Modifier pour ${name(h.user_id)}`} onClick={() => openHolder(h)} />
+                          <Button size="sm" variant="outline" icon={<Trash2 size={14} />} ariaLabel={`Retirer à ${name(h.user_id)}`} onClick={() => removeHolder(h)} />
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {canEdit && <Button variant="outline" icon={<Plus size={16} />} onClick={() => openHolder('new')}>Ajouter une personne</Button>}
+          </div>
+        </Modal>
       )}
 
       <Modal isOpen={editingTraining !== null} onClose={() => setEditingTraining(null)} title={editingTraining === 'new' ? 'Nouveau permis ou formation' : 'Modifier'}>

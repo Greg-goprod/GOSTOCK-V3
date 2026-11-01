@@ -9,6 +9,10 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import DateInput from '../components/common/DateInput';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -160,73 +164,84 @@ const Workshop: React.FC = () => {
       {tab === 'repairs' && (
         <div className="space-y-4">
           <p className="text-sm text-gray-700 dark:text-gray-300">Coût des réparations {new Date().getFullYear()} : <strong className="font-mono">{chf(yearCost)}</strong></p>
-          <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
-            {repairs.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune réparation.</li>}
-            {repairs.map(r => {
-              const late = r.status === 'sent' && r.expected_on && r.expected_on < today;
-              return (
-                <li key={r.id} className="p-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
-                      <Wrench size={16} aria-hidden="true" className="text-primary-600" />
-                      {itemName(r.equipment_id)}{qr(r.instance_id) ? <span className="font-mono text-xs text-gray-500">{qr(r.instance_id)}</span> : null}
-                      <span className="text-gray-500 font-normal">· {r.repairer}{r.reference ? ` · ${r.reference}` : ''}</span>
-                      {r.under_warranty && <span className="rounded mx-tint-badge-success px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">sous garantie</span>}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {r.reason} · envoyé le {fmt(r.sent_on)}
-                      {r.status === 'sent' && r.expected_on ? ` · retour prévu le ${fmt(r.expected_on)}` : ''}
-                      {r.status === 'returned' ? ` · revenu le ${fmt(r.returned_on!)}${r.cost !== null ? ` · ${chf(r.cost)}` : ''}` : ''}
-                      {r.status === 'cancelled' ? ' · annulé' : ''}
-                    </p>
-                    {late && <p className="text-xs font-semibold text-tone-danger">En retard : relancer {r.repairer}</p>}
-                  </div>
-                  {r.status === 'sent' && canAct && (
-                    <Button size="sm" icon={<CheckCircle2 size={14} />} onClick={() => { setClosing(r); setCloseForm({ returned_on: today, cost: r.under_warranty ? '0' : '', notes: '' }); }}>Revenu</Button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          {repairs.length === 0 ? <MxEmpty icon={Wrench} title="Aucune réparation" /> : (
+            <MxCardGrid
+              items={repairs}
+              getItemKey={r => r.id}
+              renderItem={r => {
+                const late = r.status === 'sent' && !!r.expected_on && r.expected_on < today;
+                const eq = equipment.find(e => e.id === r.equipment_id);
+                const tone = r.status === 'returned' ? 'success' : r.status === 'cancelled' ? 'neutral' : late ? 'danger' : 'info';
+                const label = r.status === 'returned' ? 'Revenu' : r.status === 'cancelled' ? 'Annulé' : late ? 'En retard' : 'Chez le réparateur';
+                const close = () => { setClosing(r); setCloseForm({ returned_on: today, cost: r.under_warranty ? '0' : '', notes: '' }); };
+                return (
+                  <MxEntityCard
+                    avatarSrc={eq?.imageUrl || null}
+                    avatarName={itemName(r.equipment_id)}
+                    title={`${itemName(r.equipment_id)}${qr(r.instance_id) ? ` · ${qr(r.instance_id)}` : ''}`}
+                    infoParts={[
+                      { content: `${r.repairer}${r.reference ? ` · ${r.reference}` : ''}` },
+                      { content: r.reason || '\u00A0' },
+                    ]}
+                    statusBadge={<span className="inline-flex gap-1"><MxBadge tone={tone}>{label}</MxBadge>{r.under_warranty && <MxBadge tone="success">Garantie</MxBadge>}</span>}
+                    due={<span>{r.status === 'returned' ? `Revenu le ${fmt(r.returned_on!)}${r.cost !== null ? ` · ${chf(r.cost)}` : ''}` : r.status === 'sent' && r.expected_on ? `Retour prévu le ${fmt(r.expected_on)}` : `Envoyé le ${fmt(r.sent_on)}`}</span>}
+                    menuLabel={`Actions pour ${itemName(r.equipment_id)}`}
+                    menuActions={r.status === 'sent' && canAct ? [{ id: 'back', label: 'Revenu', icon: CheckCircle2, onSelect: close }] : []}
+                    onOpen={() => { if (r.status === 'sent' && canAct) close(); }}
+                  />
+                );
+              }}
+            />
+          )}
         </div>
       )}
 
       {tab === 'warranty' && (
-        <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
-          {warranties.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune date de garantie saisie (fiche de l'outil → Achat, garantie).</li>}
-          {warranties.map(e => {
-            const expired = e.warrantyUntil! < today;
-            const soon = !expired && e.warrantyUntil! <= in30;
-            return (
-              <li key={e.id} className="p-3 flex flex-wrap items-center gap-2 text-sm">
-                <ShieldCheck size={16} aria-hidden="true" className={expired ? 'text-gray-400' : soon ? 'text-tone-warning' : 'text-tone-success'} />
-                <span className={`flex-1 min-w-[12rem] ${expired ? 'text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{e.name}{e.articleNumber ? <span className="font-mono text-xs text-gray-500"> · {e.articleNumber}</span> : null}</span>
-                <span className={`text-xs ${soon ? 'font-semibold text-tone-warning' : 'text-gray-600 dark:text-gray-400'}`}>
-                  {expired ? 'expirée le' : 'jusqu\'au'} {fmt(e.warrantyUntil!)}
-                </span>
-                {!expired && canAct && <Button size="sm" variant="outline" onClick={() => startSend(e.id)}>Faire réparer</Button>}
-              </li>
-            );
-          })}
-        </ul>
+        warranties.length === 0 ? <MxEmpty icon={ShieldCheck} title="Aucune garantie saisie" description="Renseigne la date dans la fiche de l'outil (Achat, garantie)." /> : (
+          <MxCardGrid
+            items={warranties}
+            getItemKey={e => e.id}
+            renderItem={e => {
+              const expired = e.warrantyUntil! < today;
+              const soon = !expired && e.warrantyUntil! <= in30;
+              return (
+                <MxEntityCard
+                  avatarSrc={e.imageUrl || null}
+                  avatarName={e.name}
+                  title={e.name}
+                  infoParts={[{ content: e.articleNumber || '\u00A0' }]}
+                  statusBadge={<MxBadge tone={expired ? 'neutral' : soon ? 'warning' : 'success'}>{expired ? 'Expirée' : soon ? 'Bientôt expirée' : 'Sous garantie'}</MxBadge>}
+                  due={<span>{`${expired ? 'Expirée le' : 'Jusqu\'au'} ${fmt(e.warrantyUntil!)}`}</span>}
+                  menuLabel={`Actions pour ${e.name}`}
+                  menuActions={!expired && canAct ? [{ id: 'repair', label: 'Faire réparer', icon: Send, onSelect: () => startSend(e.id) }] : []}
+                  onOpen={() => { if (!expired && canAct) startSend(e.id); }}
+                />
+              );
+            }}
+          />
+        )
       )}
 
       {tab === 'batteries' && (
-        <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
-          {batteries.length === 0 && <li className="p-4 text-sm text-gray-600 dark:text-gray-400">Aucune batterie suivie (fiche de l'article → cocher « Batterie »).</li>}
-          {batteries.map(b => (
-            <li key={`${b.equipment_id}:${b.instance_id ?? ''}`} className="p-3 flex flex-wrap items-center gap-2 text-sm">
-              <BatteryWarning size={16} aria-hidden="true" className={b.state === 'end' ? 'text-tone-danger' : b.state === 'soon' ? 'text-tone-warning' : 'text-tone-success'} />
-              <span className="flex-1 min-w-[12rem] text-gray-900 dark:text-gray-100">{b.name}{b.code ? <span className="font-mono text-xs text-gray-500"> · {b.code}</span> : null}</span>
-              <span className="text-xs text-gray-600 dark:text-gray-400 font-mono">
-                {b.age_months}{b.battery_life_months ? `/${b.battery_life_months}` : ''} mois · {b.uses}{b.battery_max_uses ? `/${b.battery_max_uses}` : ''} sorties
-              </span>
-              <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${b.state === 'end' ? 'mx-tint-badge-danger' : b.state === 'soon' ? 'mx-tint-badge-warning' : 'mx-tint-badge-success'}`}>
-                {b.state === 'end' ? 'fin de vie' : b.state === 'soon' ? 'bientôt' : 'ok'}
-              </span>
-            </li>
-          ))}
-        </ul>
+        batteries.length === 0 ? <MxEmpty icon={BatteryWarning} title="Aucune batterie suivie" description="Dans la fiche de l'article, coche « Batterie »." /> : (
+          <MxCardGrid
+            items={batteries}
+            getItemKey={b => `${b.equipment_id}:${b.instance_id ?? ''}`}
+            renderItem={b => (
+              <MxEntityCard
+                avatarSrc={equipment.find(e => e.id === b.equipment_id)?.imageUrl || null}
+                avatarName={b.name}
+                title={b.name}
+                infoParts={[
+                  { content: b.code || '\u00A0' },
+                  { content: `${b.age_months}${b.battery_life_months ? `/${b.battery_life_months}` : ''} mois · ${b.uses}${b.battery_max_uses ? `/${b.battery_max_uses}` : ''} sorties` },
+                ]}
+                statusBadge={<MxBadge tone={b.state === 'end' ? 'danger' : b.state === 'soon' ? 'warning' : 'success'}>{b.state === 'end' ? 'Fin de vie' : b.state === 'soon' ? 'Bientôt' : 'OK'}</MxBadge>}
+                onOpen={() => undefined}
+              />
+            )}
+          />
+        )
       )}
 
       <Modal isOpen={sending} onClose={() => setSending(false)} title="Envoyer en réparation" size="lg">
