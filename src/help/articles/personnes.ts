@@ -156,7 +156,7 @@ export const PERSONNES: HelpArticle[] = [
         id: 'renouveler',
         title: 'Renouveler un EPI arrivé à échéance',
         steps: [
-          { text: 'La liste du haut montre ce qui est à renouveler. Clique sur « Renouveler » sur la ligne.' },
+          { text: 'La liste du haut montre ce qui est à renouveler. Sur la carte, ouvre le menu « ⋮ » puis « Renouveler » (ou clique sur la carte).' },
         ],
       },
       {

@@ -58,6 +58,13 @@ const SHOTS = [
       const input = p.getByPlaceholder(/Scanne ou saisis un code/i);
       for (const code of ['HT30-01', 'GOMAT-0042']) { await input.fill(code); await input.press('Enter'); await p.waitForTimeout(900); }
     }, marks: p => [p.getByRole('radiogroup', { name: 'Mode de scan' }), byRole(p, 'button', /^Valider$/)] },
+  { name: 'shop-1', path: '/shop', role: 'user', marks: p => [p.getByRole('button', { name: /^Ajouter au panier :/ }).first(), p.getByRole('button', { name: /^Panier/ }).first()] },
+  { name: 'shop-2', path: '/shop', role: 'user', act: async p => {
+      const add = p.getByRole('button', { name: /^Ajouter au panier :/ });
+      await add.nth(0).click(); await add.nth(1).click(); await p.waitForTimeout(400);
+      await p.getByRole('button', { name: /^Panier/ }).first().click(); await p.waitForTimeout(1100);
+    } },
+  { name: 'shop-3', path: '/shop?vue=commandes', role: 'user' },
   { name: 'demandes-1', path: '/demandes', marks: p => [byRole(p, 'button', /Nouvelle demande/)] },
   { name: 'demandes-2', path: '/demandes', act: async p => { await byRole(p, 'button', /Nouvelle demande/).first().click(); await p.waitForTimeout(900); } },
   { name: 'demandes-3', path: '/demandes', act: async p => { await p.getByText('DEM2610-0002').first().click(); await p.waitForTimeout(1200); } },
@@ -76,12 +83,12 @@ const SHOTS = [
   { name: 'atelier-1', path: '/atelier' },
   { name: 'pertes-1', path: '/incidents' },
   { name: 'consommables-1', path: '/consommables' },
-  { name: 'consommables-2', path: '/consommables', act: async p => { await byRole(p, 'button', /^Sortir$/).first().click(); await p.waitForTimeout(900); } },
+  { name: 'consommables-2', path: '/consommables', act: async p => { await p.locator('main button[aria-haspopup="menu"]').first().click(); await p.locator('[role=\"menu\"]').getByText('Sortir', { exact: true }).click(); await p.waitForTimeout(900); } },
   { name: 'commande-1', path: '/commande' },
   { name: 'vehicules-1', path: '/vehicules' },
-  { name: 'vehicules-2', path: '/vehicules', act: async p => { await byRole(p, 'button', /Carnet/).first().click(); await p.waitForTimeout(1000); } },
-  { name: 'locations-1', path: '/locations', marks: p => [byRole(p, 'button', /Nouvelle location/), byRole(p, 'button', /^Réception$/)] },
-  { name: 'locations-2', path: '/locations', act: async p => { await byRole(p, 'button', /^Réception$/).first().click(); await p.waitForTimeout(1200); } },
+  { name: 'vehicules-2', path: '/vehicules', act: async p => { await p.locator('main button[aria-haspopup="menu"]').first().click(); await p.locator('[role=\"menu\"]').getByText('Carnet', { exact: true }).click(); await p.waitForTimeout(1000); } },
+  { name: 'locations-1', path: '/locations', marks: p => [byRole(p, 'button', /Nouvelle location/), p.locator('main button[aria-haspopup="menu"]').first()] },
+  { name: 'locations-2', path: '/locations', act: async p => { await p.locator('main button[aria-haspopup="menu"]').first().click(); await p.locator('[role=\"menu\"]').getByText('Réception', { exact: true }).click(); await p.waitForTimeout(1200); } },
   { name: 'location-engin-1', path: '/locations', act: async p => {
       await byRole(p, 'button', /Nouvelle location/).first().click();
       await p.waitForTimeout(900);

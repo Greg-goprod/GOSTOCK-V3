@@ -137,7 +137,7 @@ export default function Checkouts() {
     return {
       id: id,
       // Utiliser la propriété delivery_note_number si disponible, sinon générer un numéro
-      number: firstCheckout.delivery_note_number || `Bon-${id.substring(0, 6)}`,
+      number: (deliveryNotes ?? []).find(n => n.id === id)?.number || firstCheckout.delivery_note_number || `Bon-${id.substring(0, 6)}`,
       status: status,
       userId: firstCheckout.user_id,
       createdAt: firstCheckout.delivery_note_date || firstCheckout.checkout_date,

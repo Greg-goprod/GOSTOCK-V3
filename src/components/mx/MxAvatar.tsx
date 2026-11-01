@@ -219,7 +219,8 @@ export function MxAvatar({ src, name, alt, size = 'md', className, style, queued
           aria-hidden={showImage ? undefined : true}
           loading="lazy"
           decoding={queued ? 'async' : undefined}
-          fetchPriority={queued ? queuedImage.priority : undefined}
+          // React 18 ne connaît que l'attribut en minuscules (fetchPriority provoque un avertissement)
+          {...((queued ? { fetchpriority: queuedImage.priority } : {}) as Record<string, string>)}
           onLoad={handleLoad}
           onError={handleError}
           style={{

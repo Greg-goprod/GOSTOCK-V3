@@ -5,6 +5,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { ROLE_LABELS } from '../lib/roles';
+import { REQUEST_STATUS, VEHICLE_STATUS } from '../lib/requests';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -55,10 +56,28 @@ const FIELD_LABELS: Record<string, string> = {
   min_quantity: 'seuil', total_quantity: 'quantité totale', purchase_price: 'prix d\'achat', daily_rate: 'tarif / jour',
   decision: 'décision', cost: 'coût', decided_by: 'décidé par', due_date: 'retour prévu', return_date: 'rendu le',
   first_name: 'prénom', last_name: 'nom de famille', value: 'valeur', license_categories: 'permis', article_series: 'série',
+  decided_at: 'décidée le', start_at: 'début', end_at: 'fin', destination: 'chantier ou service', notes: 'remarque', needs_approval: 'validation requise',
+  approval_reason: 'motif de validation', picked_up_by: 'retiré par', issued_at: 'sortie le', closed_at: 'clôturée le', number: 'numéro',
+  quantity: 'quantité', description: 'description', image_url: 'image', requires_approval: 'validation requise', requires_signature: 'signature requise',
+  decision_note: 'note de décision', sent_at: 'envoyé le', received: 'reçu', returned_on: 'rendu le', expected_on: 'retour prévu', repairer: 'réparateur',
+  plate: 'plaque', current_km: 'kilomètrage', budget: 'budget', client: 'client', address: 'adresse', start_on: 'début', end_on: 'fin',
+  access_until: 'accès jusqu\'au', department: 'service', phone: 'téléphone', last_login_at: 'dernière connexion', title: 'titre', reason: 'motif',
 };
+// Champs techniques sans intérêt pour le lecteur
+const HIDDEN_FIELDS = new Set(['id', 'organization_id', 'created_at', 'updated_at', 'search_text', 'delivery_note_id']);
+// Valeurs d'état lisibles (demandes, véhicules) au lieu des mots techniques
+const STATUS_LABELS: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(REQUEST_STATUS).map(([k, v]) => [k, v.label])),
+  ...Object.fromEntries(Object.entries(VEHICLE_STATUS).map(([k, v]) => [k, v.label])),
+  active: 'actif', overdue: 'en retard', returned: 'rendu', in_transit: 'en route', received: 'réceptionné', open: 'ouvert', draft: 'brouillon', sent: 'envoyée',
+  pending: 'à décider', replaced: 'remplacé', lost: 'perdu', found: 'retrouvé',
+};
+const humanize = (key: string) => FIELD_LABELS[key] ?? key.replace(/_/g, ' ');
 
 const show = (value: unknown) => {
   if (value === null || value === undefined || value === '') return '∅';
+  if (typeof value === 'boolean') return value ? 'oui' : 'non';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00`).toLocaleDateString('fr-CH');
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) return new Date(value).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' });
   if (Array.isArray(value)) return value.length ? value.join(', ') : '∅';
   if (typeof value === 'object') return JSON.stringify(value);
@@ -105,11 +124,15 @@ const AuditLog: React.FC = () => {
         .filter(Boolean).map(String).slice(0, 2).join(' · ');
     }
     return Object.entries(e.changes as Record<string, [unknown, unknown]>)
+      .filter(([key]) => !HIDDEN_FIELDS.has(key))
       .map(([key, [before, after]]) => {
-        const label = (v: unknown) => (key === 'role' ? ROLE_LABELS[v as keyof typeof ROLE_LABELS] ?? show(v) : show(v));
-        return `${FIELD_LABELS[key] ?? key} : ${label(before)} → ${label(after)}`;
+        // Référence à une autre fiche (dépôt, personne…) : un identifiant ne se lit pas
+        if (key.endsWith('_id')) return `${humanize(key.slice(0, -3))} modifié`;
+        const label = (v: unknown) => (key === 'role' ? ROLE_LABELS[v as keyof typeof ROLE_LABELS] ?? show(v)
+          : (key === 'status' || key === 'decision') && typeof v === 'string' ? STATUS_LABELS[v] ?? show(v) : show(v));
+        return `${humanize(key)} : ${label(before)} → ${label(after)}`;
       })
-      .join(' · ');
+      .join(' · ') || 'Mise à jour technique';
   };
 
   const inputClass = 'rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';

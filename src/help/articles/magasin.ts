@@ -128,12 +128,12 @@ export const MAGASIN: HelpArticle[] = [
         id: 'commander',
         title: 'Commander du matériel',
         steps: [
-          { text: 'Ouvre « Shop ». Cherche par nom ou référence, ou choisis un rayon à gauche et le type (Outils, Consommables).' },
+          { text: 'Ouvre « Shop ». Cherche par nom ou référence, ou choisis un rayon à gauche et le type (Outils, Consommables, Véhicules, Lots).', shot: 'shop-1' },
           { text: 'Pour voir ce qui sera libre à tes dates, coche « Voir la disponibilité pour mes dates » et choisis le retrait et le retour : chaque carte affiche combien d\'outils sont libres sur cette période.' },
           { text: 'Clique sur un article pour voir sa fiche : photos, description, caractéristiques, ce qui est livré avec, et « Souvent pris avec » (les articles que les autres commandent en même temps).' },
           { text: 'Les « Lots prêts à commander » mettent d\'un coup tous les articles d\'un kit dans le panier. Choisis « Véhicules » pour réserver un véhicule (un seul par commande).' },
           { text: 'Clique sur « Ajouter » (ou choisis la quantité puis « Ajouter au panier »). Le panier est gardé même si tu fermes la page.' },
-          { text: 'Clique sur « Panier » en haut à droite. Vérifie les quantités : pour chaque outil, GO-Mat dit combien sont libres sur ta période.' },
+          { text: 'Clique sur « Panier » en haut à droite. Vérifie les quantités : pour chaque outil, GO-Mat dit combien sont libres sur ta période.', shot: 'shop-2' },
           { text: 'Magasinier ou responsable : choisis dans « Pour qui » la personne pour qui tu commandes (sinon c\'est pour toi).' },
           { text: 'Remplis « Retrait le », « Retour le », le chantier et le dépôt. Choisis « Retrait au dépôt » ou « Livraison sur chantier » (avec l\'adresse si besoin).' },
           { text: 'Clique sur « Commander ».' },
@@ -164,7 +164,7 @@ export const MAGASIN: HelpArticle[] = [
         id: 'suivre',
         title: 'Suivre ma commande',
         steps: [
-          { text: 'Dans « Shop », choisis « Mes commandes ».' },
+          { text: 'Dans « Shop », choisis « Mes commandes ».', shot: 'shop-3' },
           { text: 'Chaque commande montre ses articles et où elle en est : Envoyée, Validée, Prête, Retirée, Rendue (pas de « Rendue » pour des consommables).' },
           { text: 'Les avis « validée », « refusée » et « prête » s\'affichent en haut de « Mes commandes » ; la cloche en haut de l\'écran y mène directement.' },
           { text: 'Magasinier ou responsable : « Passées pour d\'autres » liste les commandes que tu as faites pour quelqu\'un d\'autre.' },

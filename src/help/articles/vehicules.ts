@@ -54,7 +54,7 @@ export const VEHICULES: HelpArticle[] = [
         id: 'retour',
         title: 'Enregistrer le retour du véhicule',
         steps: [
-          { text: 'Sur la page « Véhicules », clique sur « Retour » sur la ligne du véhicule.' },
+          { text: 'Sur la page « Véhicules », ouvre le menu « ⋮ » de la carte du véhicule puis « Retour ».' },
           { text: 'Compare avec « Photos au départ : compare avec l\'état actuel ».' },
           { text: 'Tape le « Kilométrage au retour », le carburant, et note les nouveaux dégâts avec photo.' },
           { text: 'Clique sur « Valider le retour ».' },
@@ -65,7 +65,7 @@ export const VEHICULES: HelpArticle[] = [
         id: 'carnet',
         title: 'Tenir le carnet de bord (pleins)',
         steps: [
-          { text: 'Clique sur « Carnet » sur la ligne du véhicule : le « Carnet de bord » s\'ouvre.', shot: 'vehicules-2' },
+          { text: 'Sur la carte du véhicule, ouvre le menu « ⋮ » puis « Carnet » : le « Carnet de bord » s\'ouvre.', shot: 'vehicules-2' },
           { text: 'Tu vois les « Trajets », la « Consommation moyenne » et le « Carburant ce mois ».' },
           { text: 'Pour un plein : « Ajouter un plein », remplis « Date », « Kilométrage », « Litres », photo du « Ticket », puis « Enregistrer ».' },
         ],
@@ -99,7 +99,7 @@ export const VEHICULES: HelpArticle[] = [
         id: 'reception',
         title: 'Faire la réception chez le loueur',
         steps: [
-          { text: 'Sur place, ouvre « Locations » sur ton téléphone et clique sur « Réception » sur la ligne.', shot: 'locations-2' },
+          { text: 'Sur place, ouvre « Locations » sur ton téléphone, puis le menu « ⋮ » de la carte et « Réception ».', shot: 'locations-2' },
           { text: '« Relevés » : kilométrage et carburant (véhicule) ou compteur d\'heures (engin).' },
           { text: '« Photos » : prends chaque vue demandée (Avant, Arrière, Côté gauche, Côté droit, Compteur pour un véhicule ; Vue d\'ensemble et Plaque signalétique pour un engin).' },
           { text: '« Dégâts déjà présents » : pour chaque dégât, « Ajouter un dégât », choisis la « Zone », décris-le et prends une photo.' },
@@ -114,7 +114,7 @@ export const VEHICULES: HelpArticle[] = [
         id: 'prolonger',
         title: 'Prolonger une location',
         steps: [
-          { text: 'Sur la ligne, clique sur « + 7 jours » (autant de fois que nécessaire), ou ouvre la location avec le crayon et change « À rendre le ».' },
+          { text: 'Sur la carte de la location, ouvre le menu « ⋮ » puis « + 7 jours » (autant de fois que nécessaire), ou « Modifier » et change « À rendre le ».' },
         ],
         result: 'La date limite suit sur le véhicule ou l\'outil.',
       },
@@ -123,7 +123,7 @@ export const VEHICULES: HelpArticle[] = [
         title: 'Rendre au loueur (restitution)',
         steps: [
           { text: 'Vérifie que l\'objet est rentré au dépôt (retour enregistré au comptoir ou sur la page Véhicules).' },
-          { text: 'Chez le loueur, clique sur « Restitution » sur la ligne.' },
+          { text: 'Chez le loueur, ouvre le menu « ⋮ » de la carte puis « Restitution ».' },
           { text: 'Refais les mêmes relevés et les mêmes photos ; les dégâts notés à la réception sont rappelés. Ajoute seulement les « Nouveaux dégâts ».' },
           { text: 'Signatures, puis « Enregistrer la restitution ».' },
           { text: 'Clique sur « PV réception et restitution » pour imprimer ou enregistrer le PV en PDF.' },

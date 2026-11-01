@@ -25,7 +25,7 @@ export const STOCK: HelpArticle[] = [
         title: 'Sortir un consommable sans passer par le comptoir',
         steps: [
           { text: 'Choisis le dépôt dans la barre du haut (sélecteur de dépôt).' },
-          { text: 'Sur la ligne de l\'article, clique sur « Sortir ». Le volet « Sortie de consommable » rappelle le stock du dépôt et le seuil.', shot: 'consommables-2' },
+          { text: 'Sur la carte de l\'article, ouvre le menu « ⋮ » puis « Sortir ». Le volet « Sortie de consommable » rappelle le stock du dépôt et le seuil.', shot: 'consommables-2' },
           { text: 'Vérifie le « Dépôt » et tape la « Quantité ».' },
           { text: 'Remplis « Pour qui » et/ou « Chantier ou service » (au moins l\'un des deux), une « Note (facultatif) », puis « Enregistrer ».' },
         ],
@@ -35,7 +35,7 @@ export const STOCK: HelpArticle[] = [
         id: 'reception',
         title: 'Rentrer une livraison (réception de stock)',
         steps: [
-          { text: 'Sur la ligne de l\'article, clique sur « Réception ».' },
+          { text: 'Sur la carte de l\'article, ouvre le menu « ⋮ » puis « Réception ».' },
           { text: 'Tape la quantité reçue (et le prix si demandé), puis « Enregistrer ».' },
         ],
         problems: [{ if: 'La livraison correspond à une commande fournisseur.', then: 'Réceptionne-la plutôt dans « Commandes fournisseurs » : la commande et le stock sont mis à jour ensemble.' }],
@@ -44,7 +44,7 @@ export const STOCK: HelpArticle[] = [
         id: 'corriger',
         title: 'Corriger le stock après un comptage',
         steps: [
-          { text: 'Sur la ligne, clique sur « Inventaire ».' },
+          { text: 'Sur la carte, ouvre le menu « ⋮ » puis « Inventaire ».' },
           { text: 'Tape la quantité réellement comptée, puis « Enregistrer ».' },
         ],
         result: '« Inventaire enregistré » ; l\'écart est gardé dans l\'historique.',
@@ -53,7 +53,7 @@ export const STOCK: HelpArticle[] = [
         id: 'transfert',
         title: 'Déplacer du stock vers un autre dépôt',
         steps: [
-          { text: 'Sur la ligne, clique sur « Transfert ».' },
+          { text: 'Sur la carte, ouvre le menu « ⋮ » puis « Transfert ».' },
           { text: 'Choisis « Depuis le dépôt », « Vers le dépôt » et la quantité, puis « Enregistrer ».' },
         ],
         result: '« Transfert enregistré ».',
@@ -62,7 +62,7 @@ export const STOCK: HelpArticle[] = [
         id: 'seuil',
         title: 'Régler les seuils d\'alerte',
         steps: [
-          { text: 'Un seul article : « Seuil minimum » sur sa ligne, tape la valeur, « Enregistrer ».' },
+          { text: 'Un seul article : menu « ⋮ » de sa carte puis « Seuil minimum », tape la valeur, « Enregistrer ».' },
           { text: 'Tous d\'un coup : clique sur « Seuils proposés ». GO-Mat calcule un seuil d\'après la consommation réelle ; vérifie et clique sur « Appliquer ».' },
         ],
       },

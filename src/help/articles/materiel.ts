@@ -160,7 +160,7 @@ export const MATERIEL: HelpArticle[] = [
         id: 'fait',
         title: 'Enregistrer un entretien fait',
         steps: [
-          { text: 'Sur la ligne du plan, clique sur « Fait ».' },
+          { text: 'Sur la carte du plan, ouvre le menu « ⋮ » puis « Fait » (ou clique sur la carte).' },
           { text: 'Indique la « Date », le « Technicien / entreprise » et le résultat (« Conforme » ou « Non conforme »), une « Remarque » si besoin.' },
           { text: 'Clique sur « Enregistrer ».' },
         ],
@@ -193,7 +193,7 @@ export const MATERIEL: HelpArticle[] = [
         id: 'retour',
         title: 'Enregistrer le retour de réparation',
         steps: [
-          { text: 'Sur la ligne, clique sur « Revenu ».' },
+          { text: 'Sur la carte de la réparation, ouvre le menu « ⋮ » puis « Revenu » (ou clique sur la carte).' },
           { text: 'Indique la date « Revenu le », le coût et une « Remarque ».' },
           { text: 'Clique sur « Remettre en service ».' },
         ],
@@ -233,7 +233,7 @@ export const MATERIEL: HelpArticle[] = [
         id: 'decider',
         title: 'Décider de la suite (responsable)',
         steps: [
-          { text: 'Sur la ligne de l\'incident, clique sur « Décider ».' },
+          { text: 'Sur la carte de l\'incident, ouvre le menu « ⋮ » puis « Décider » (ou clique sur la carte).' },
           { text: 'Choisis la « Suite à donner » : Remplacé par l\'entreprise, Retenue sur salaire, Pris en charge par l\'assurance, Passé en perte, ou Retrouvé.' },
           { text: 'Ajoute une « Remarque », puis « Enregistrer ».' },
         ],

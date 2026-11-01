@@ -10,6 +10,7 @@ import { AlertTriangle, Clock, CheckCircle, Bell, Calendar, Package, User, Trash
 import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -318,7 +319,16 @@ const Notifications: React.FC = () => {
           </p>
           <div className="mt-2"><PushToggle /></div>
       </div>
-      <PageCommands primary={<div className="flex flex-wrap gap-2">
+      <PageCommands
+        filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)} options={[
+          { value: 'all', label: `Toutes (${notifications.length})` },
+          { value: 'unread', label: `Non lues (${unreadCount})` },
+          { value: 'read', label: `Lues (${readCount})` },
+          { value: 'checkout', label: `Sorties (${notifications.filter(n => n.type === 'checkout').length})` },
+          { value: 'overdue', label: `En retard (${notifications.filter(n => n.type === 'overdue').length})` },
+          { value: 'maintenance', label: `Maintenances (${notifications.filter(n => n.type === 'maintenance').length})` },
+        ]} />}
+        primary={<div className="flex flex-wrap gap-2">
         <Button variant="outline" icon={<CheckCircle size={16} />} onClick={markAllAsRead} disabled={unreadCount === 0}>Tout marquer comme lu</Button>
         <Button icon={<Bell size={16} />} onClick={generateNotifications}>Actualiser</Button>
       </div>} />
@@ -350,67 +360,13 @@ const Notifications: React.FC = () => {
         </Card>
       )}
 
-      {/* Filtres */}
-      <Card>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={filter === 'all' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('all')}
-            className="font-bold"
-          >
-            Toutes ({notifications.length})
-          </Button>
-          <Button
-            variant={filter === 'unread' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('unread')}
-            className="font-bold"
-          >
-            Non lues ({unreadCount})
-          </Button>
-          <Button
-            variant={filter === 'read' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('read')}
-            className="font-bold"
-          >
-            Lues ({readCount})
-          </Button>
-          <Button
-            variant={filter === 'checkout' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('checkout')}
-            className="font-bold"
-          >
-            Sorties ({notifications.filter(n => n.type === 'checkout').length})
-          </Button>
-          <Button
-            variant={filter === 'overdue' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('overdue')}
-            className="font-bold"
-          >
-            En retard ({notifications.filter(n => n.type === 'overdue').length})
-          </Button>
-          <Button
-            variant={filter === 'maintenance' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('maintenance')}
-            className="font-bold"
-          >
-            Maintenances ({notifications.filter(n => n.type === 'maintenance').length})
-          </Button>
-        </div>
-      </Card>
-
       {/* Liste des notifications */}
       <div className="space-y-3">
         {filteredNotifications.length === 0 ? (
           <Card>
             <div className="text-center py-12">
               <Bell size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
-              <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Aucune notification
               </h3>
               <p className="text-gray-500 dark:text-gray-400 font-medium">
@@ -449,11 +405,11 @@ const Notifications: React.FC = () => {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-black ${
+                      <h3 className={`font-semibold ${
                         notification.read 
                           ? 'text-gray-600 dark:text-gray-400' 
                           : 'text-gray-900 dark:text-white'
-                      } uppercase tracking-wide`}>
+                      }`}>
                         {notification.title}
                       </h3>
                       
@@ -470,7 +426,7 @@ const Notifications: React.FC = () => {
                       {notification.read ? (
                         <div className="flex items-center gap-1">
                           <CheckCircle size={16} className="text-success-500" />
-                          <span className="text-xs text-tone-success font-black uppercase">Lue</span>
+                          <span className="text-xs text-tone-success font-semibold">Lue</span>
                         </div>
                       ) : (
                         <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
@@ -516,7 +472,7 @@ const Notifications: React.FC = () => {
                       
                       {notification.relatedData?.equipment_count && (
                         <div className="flex items-center gap-1">
-                          <span className="text-primary-600 dark:text-primary-400 font-black">
+                          <span className="text-primary-600 dark:text-primary-400 font-semibold">
                             {notification.relatedData.equipment_count} équipement{notification.relatedData.equipment_count > 1 ? 's' : ''}
                           </span>
                         </div>
@@ -525,7 +481,7 @@ const Notifications: React.FC = () => {
                       {notification.relatedData?.daysOverdue && (
                         <div className="flex items-center gap-1">
                           <AlertTriangle size={12} />
-                          <span className="text-tone-danger font-black">
+                          <span className="text-tone-danger font-semibold">
                             {notification.relatedData.daysOverdue} jour(s) de retard
                           </span>
                         </div>
@@ -576,55 +532,55 @@ const Notifications: React.FC = () => {
         <Card>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-black text-gray-900 dark:text-white">
+              <div className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {notifications.length}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
+              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
                 Total notifications
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-primary-600 dark:text-primary-400">
+              <div className="text-2xl font-semibold text-primary-600 dark:text-primary-400">
                 {unreadCount}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
+              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
                 Non lues
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-tone-success">
+              <div className="text-2xl font-semibold text-tone-success">
                 {readCount}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
+              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
                 Lues
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-tone-success">
+              <div className="text-2xl font-semibold text-tone-success">
                 {notifications.filter(n => n.type === 'checkout').length}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
+              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
                 Sorties
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-tone-danger">
+              <div className="text-2xl font-semibold text-tone-danger">
                 {notifications.filter(n => n.type === 'overdue').length}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
+              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
                 Retards
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-black text-tone-warning">
+              <div className="text-2xl font-semibold text-tone-warning">
                 {notifications.filter(n => n.type === 'due_soon').length}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
+              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
                 Échéances
               </div>
             </div>
