@@ -2803,5 +2803,10 @@
 "Administrateur de la plateforme": "Plattformadministrator",
 "Afficher les articles retirés": "Ausgemusterte Artikel anzeigen",
 "Définir un seuil (Seuils proposés) →": "Schwellenwert festlegen (Vorgeschlagene Schwellen) →",
-"{0} article(s) épuisé(s) n'ont pas de seuil, donc la feuille ne peut pas les proposer : {1}.": "{0} erschöpfte(r) Artikel haben keinen Schwellenwert, daher kann das Blatt sie nicht vorschlagen: {1}."
+"{0} article(s) épuisé(s) n'ont pas de seuil, donc la feuille ne peut pas les proposer : {1}.": "{0} erschöpfte(r) Artikel haben keinen Schwellenwert, daher kann das Blatt sie nicht vorschlagen: {1}.",
+"Notification": "Benachrichtigung",
+"Action": "Aktion",
+"Notifications par page": "Benachrichtigungen pro Seite",
+"{0} notification(s)": "{0} Benachrichtigung(en)",
+"Affichage des notifications": "Anzeige der Benachrichtigungen"
 }

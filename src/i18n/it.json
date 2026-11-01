@@ -2803,5 +2803,10 @@
 "Administrateur de la plateforme": "Amministratore della piattaforma",
 "Afficher les articles retirés": "Mostra gli articoli ritirati",
 "Définir un seuil (Seuils proposés) →": "Definisci una soglia (Soglie proposte) →",
-"{0} article(s) épuisé(s) n'ont pas de seuil, donc la feuille ne peut pas les proposer : {1}.": "{0} articolo/i esaurito/i non hanno una soglia, quindi il foglio non può proporli: {1}."
+"{0} article(s) épuisé(s) n'ont pas de seuil, donc la feuille ne peut pas les proposer : {1}.": "{0} articolo/i esaurito/i non hanno una soglia, quindi il foglio non può proporli: {1}.",
+"Notification": "Notifica",
+"Action": "Azione",
+"Notifications par page": "Notifiche per pagina",
+"{0} notification(s)": "{0} notifica/e",
+"Affichage des notifications": "Visualizzazione delle notifiche"
 }
