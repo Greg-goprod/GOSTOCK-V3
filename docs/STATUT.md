@@ -16,10 +16,11 @@
 - Planning de chantier (module 1) : démarre après l'étape 1 des droits.
 
 ## À FAIRE ENSUITE (dans cet ordre, une chose à la fois)
-1. Diagnostic de démarrage (ci-dessous), puis décision sur les 36 KO.
-2. Notifications en vue Cartes : refaire la carte (message en entier, date relative, point « non lue », bouton « Marquer comme lue » sur la carte). La carte actuelle est faite pour des personnes ou des outils : le message est coupé et les initiales n'ont aucun sens.
-3. Relancer les trois batteries, puis `e2e-coherence`.
-4. Migration 40 (droits compatibles Mannyx).
+1. **Lenteur de la base après le module 0 (cause trouvée, à corriger avant de relancer les tests)** : 144 règles de sécurité sur 227 appellent `app_has()` / `app_user_id()` une fois par ligne lue. Depuis le module 0, chaque appel coûte plus cher (il cherche l'entreprise active). Mesure sur GO-MAT (compte collaborateur, 161 notifications) : compter les non lues = 1 405 ms ; le même parcours avec les appels calculés une seule fois par requête (`(SELECT app_has(...))`) = 10 ms. Essai fait dans une transaction annulée : rien n'est modifié en base. Correctif prévu : une migration qui réécrit ces règles, vérifiée par les batteries SQL locales.
+2. Ensuite seulement : décision sur les 36 KO (la plupart sont des lenteurs, donc à relancer après le correctif).
+3. Notifications en vue Cartes : refaire la carte (message en entier, date relative, point « non lue », bouton « Marquer comme lue » sur la carte). La carte actuelle est faite pour des personnes ou des outils : le message est coupé et les initiales n'ont aucun sens.
+4. Relancer les trois batteries, puis `e2e-coherence`.
+5. Migration 40 (droits compatibles Mannyx).
 
 ## BLOQUANT ACTUEL (une seule chose)
 Les tests lancés par ton Claude local après le module multi-entreprise ont donné **36 KO** (242 OK sur 281 au test complet, etc.).
