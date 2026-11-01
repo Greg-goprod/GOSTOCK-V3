@@ -1,15 +1,15 @@
 # Rapport des tests poussés
 
-Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-01 13:16
-Commit testé : à renseigner (`git log --oneline -1`).
+Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-01 15:51
+Commit testé : 4c90442 (Script e2e : le test du double clic ne compte que les commandes créées par ce clic)
 
-**Synthèse : 264 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 14 INFO (observations)**
+**Synthèse : 265 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 14 INFO (observations)**
 
 Nettoyage : 10 commande(s) annulée(s), 8 article(s) retiré(s) du service, stock de test remis à zéro dans 2 dépôt(s), rien de bloqué.
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** G6-double-clic — Double clic sur « Commander » : une seule commande : 2 commandes créées ([capture](captures-complet/G6-double-clic.png))
+Aucun.
 
 
 ## G1 Droits par rôle
@@ -219,7 +219,7 @@ Nettoyage : 10 commande(s) annulée(s), 8 article(s) retiré(s) du service, stoc
 | G6-xss — Nom d'article avec <img onerror> : affiché comme texte, rien d'exécuté | OK |  |
 | G6-nom-long — Nom de 200 caractères : pas de débordement (bureau et téléphone) | OK |  |
 | G6-panier-qte — Panier : − à 1 retire l'article, + augmente, rechargement conserve | OK |  |
-| G6-double-clic — Double clic sur « Commander » : une seule commande | KO | 2 commandes créées |
+| G6-double-clic — Double clic sur « Commander » : une seule commande | OK |  |
 | G6-hors-ligne — Hors ligne : message clair, panier conservé | OK |  |
 | G6-article-retire — Article retiré pendant qu'il est au panier : retiré avec un avis | OK |  |
 | G6-session-expiree — Session supprimée : retour à la page de connexion | OK |  |
@@ -229,93 +229,93 @@ Nettoyage : 10 commande(s) annulée(s), 8 article(s) retiré(s) du service, stoc
 
 | Point | Verdict | Détail |
 |---|---|---|
-| G7-_-bureau — / (bureau) | OK | 1525 ms |
-| G7-_-tablette — / (tablette) | OK | 1508 ms |
-| G7-_-téléphone — / (téléphone) | OK | 1485 ms |
-| G7-_shop-bureau — /shop (bureau) | OK | 1487 ms |
-| G7-_shop-tablette — /shop (tablette) | OK | 1521 ms |
-| G7-_shop-téléphone — /shop (téléphone) | OK | 1507 ms |
-| G7-_shop_vue_commandes-bureau — /shop?vue=commandes (bureau) | OK | 1522 ms |
-| G7-_shop_vue_commandes-tablette — /shop?vue=commandes (tablette) | OK | 1508 ms |
-| G7-_shop_vue_commandes-téléphone — /shop?vue=commandes (téléphone) | OK | 1529 ms |
-| G7-_demandes-bureau — /demandes (bureau) | OK | 1523 ms |
-| G7-_demandes-tablette — /demandes (tablette) | OK | 1533 ms |
-| G7-_demandes-téléphone — /demandes (téléphone) | OK | 1502 ms |
-| G7-_consommables-bureau — /consommables (bureau) | OK | 1530 ms |
-| G7-_consommables-tablette — /consommables (tablette) | OK | 1519 ms |
-| G7-_consommables-téléphone — /consommables (téléphone) | OK | 1515 ms |
-| G7-_commande-bureau — /commande (bureau) | OK | 1514 ms |
-| G7-_commande-tablette — /commande (tablette) | OK | 1556 ms |
-| G7-_commande-téléphone — /commande (téléphone) | OK | 1526 ms |
-| G7-_commandes-bureau — /commandes (bureau) | OK | 1499 ms |
-| G7-_commandes-tablette — /commandes (tablette) | OK | 1522 ms |
-| G7-_commandes-téléphone — /commandes (téléphone) | OK | 1522 ms |
-| G7-_equipment-bureau — /equipment (bureau) | OK | 1520 ms |
-| G7-_equipment-tablette — /equipment (tablette) | OK | 1495 ms |
-| G7-_equipment-téléphone — /equipment (téléphone) | OK | 1534 ms |
-| G7-_kits-bureau — /kits (bureau) | OK | 1527 ms |
-| G7-_kits-tablette — /kits (tablette) | OK | 1504 ms |
-| G7-_kits-téléphone — /kits (téléphone) | OK | 1538 ms |
-| G7-_entretien-bureau — /entretien (bureau) | OK | 1520 ms |
-| G7-_entretien-tablette — /entretien (tablette) | OK | 1520 ms |
-| G7-_entretien-téléphone — /entretien (téléphone) | OK | 1505 ms |
-| G7-_atelier-bureau — /atelier (bureau) | OK | 1520 ms |
-| G7-_atelier-tablette — /atelier (tablette) | OK | 1521 ms |
-| G7-_atelier-téléphone — /atelier (téléphone) | OK | 1538 ms |
-| G7-_incidents-bureau — /incidents (bureau) | OK | 1521 ms |
-| G7-_incidents-tablette — /incidents (tablette) | OK | 1536 ms |
-| G7-_incidents-téléphone — /incidents (téléphone) | OK | 1522 ms |
-| G7-_etiquettes-bureau — /etiquettes (bureau) | OK | 1503 ms |
-| G7-_etiquettes-tablette — /etiquettes (tablette) | OK | 1519 ms |
-| G7-_etiquettes-téléphone — /etiquettes (téléphone) | OK | 1507 ms |
-| G7-_vehicules-bureau — /vehicules (bureau) | OK | 1489 ms |
-| G7-_vehicules-tablette — /vehicules (tablette) | OK | 1521 ms |
-| G7-_vehicules-téléphone — /vehicules (téléphone) | OK | 1550 ms |
-| G7-_chantiers-bureau — /chantiers (bureau) | OK | 1520 ms |
-| G7-_chantiers-tablette — /chantiers (tablette) | OK | 1518 ms |
-| G7-_chantiers-téléphone — /chantiers (téléphone) | OK | 1523 ms |
-| G7-_locations-bureau — /locations (bureau) | OK | 1517 ms |
-| G7-_locations-tablette — /locations (tablette) | OK | 1508 ms |
-| G7-_locations-téléphone — /locations (téléphone) | OK | 1498 ms |
-| G7-_planning-bureau — /planning (bureau) | OK | 1540 ms |
-| G7-_planning-tablette — /planning (tablette) | OK | 1530 ms |
-| G7-_planning-téléphone — /planning (téléphone) | OK | 1512 ms |
-| G7-_users-bureau — /users (bureau) | OK | 1512 ms |
-| G7-_users-tablette — /users (tablette) | OK | 1524 ms |
-| G7-_users-téléphone — /users (téléphone) | OK | 1516 ms |
-| G7-_formations-bureau — /formations (bureau) | OK | 1513 ms |
-| G7-_formations-tablette — /formations (tablette) | OK | 1533 ms |
-| G7-_formations-téléphone — /formations (téléphone) | OK | 1520 ms |
-| G7-_epi-bureau — /epi (bureau) | OK | 1517 ms |
-| G7-_epi-tablette — /epi (tablette) | OK | 1501 ms |
-| G7-_epi-téléphone — /epi (téléphone) | OK | 1505 ms |
-| G7-_transferts-bureau — /transferts (bureau) | OK | 1503 ms |
-| G7-_transferts-tablette — /transferts (tablette) | OK | 1486 ms |
-| G7-_transferts-téléphone — /transferts (téléphone) | OK | 1523 ms |
-| G7-_emplacements-bureau — /emplacements (bureau) | OK | 1566 ms |
-| G7-_emplacements-tablette — /emplacements (tablette) | OK | 1534 ms |
-| G7-_emplacements-téléphone — /emplacements (téléphone) | OK | 1528 ms |
-| G7-_inventaire-bureau — /inventaire (bureau) | OK | 1542 ms |
-| G7-_inventaire-tablette — /inventaire (tablette) | OK | 1539 ms |
-| G7-_inventaire-téléphone — /inventaire (téléphone) | OK | 1488 ms |
-| G7-_checkouts-bureau — /checkouts (bureau) | OK | 1520 ms |
-| G7-_checkouts-tablette — /checkouts (tablette) | OK | 1538 ms |
-| G7-_checkouts-téléphone — /checkouts (téléphone) | OK | 1530 ms |
-| G7-_journal-bureau — /journal (bureau) | OK | 1516 ms |
-| G7-_journal-tablette — /journal (tablette) | OK | 1496 ms |
-| G7-_journal-téléphone — /journal (téléphone) | OK | 1518 ms |
-| G7-_couts-bureau — /couts (bureau) | OK | 1508 ms |
-| G7-_couts-tablette — /couts (tablette) | OK | 1518 ms |
-| G7-_couts-téléphone — /couts (téléphone) | OK | 1504 ms |
-| G7-_pilotage-bureau — /pilotage (bureau) | OK | 1503 ms |
-| G7-_pilotage-tablette — /pilotage (tablette) | OK | 1545 ms |
-| G7-_pilotage-téléphone — /pilotage (téléphone) | OK | 1515 ms |
-| G7-_notifications-bureau — /notifications (bureau) | OK | 1520 ms |
-| G7-_notifications-tablette — /notifications (tablette) | OK | 1523 ms |
-| G7-_notifications-téléphone — /notifications (téléphone) | OK | 1487 ms |
-| G7-_aide-bureau — /aide (bureau) | OK | 1519 ms |
-| G7-_aide-tablette — /aide (tablette) | OK | 1513 ms |
-| G7-_aide-téléphone — /aide (téléphone) | OK | 1516 ms |
+| G7-_-bureau — / (bureau) | OK | 1561 ms |
+| G7-_-tablette — / (tablette) | OK | 1529 ms |
+| G7-_-téléphone — / (téléphone) | OK | 1547 ms |
+| G7-_shop-bureau — /shop (bureau) | OK | 1575 ms |
+| G7-_shop-tablette — /shop (tablette) | OK | 1551 ms |
+| G7-_shop-téléphone — /shop (téléphone) | OK | 1562 ms |
+| G7-_shop_vue_commandes-bureau — /shop?vue=commandes (bureau) | OK | 1569 ms |
+| G7-_shop_vue_commandes-tablette — /shop?vue=commandes (tablette) | OK | 1577 ms |
+| G7-_shop_vue_commandes-téléphone — /shop?vue=commandes (téléphone) | OK | 1564 ms |
+| G7-_demandes-bureau — /demandes (bureau) | OK | 1591 ms |
+| G7-_demandes-tablette — /demandes (tablette) | OK | 1600 ms |
+| G7-_demandes-téléphone — /demandes (téléphone) | OK | 1574 ms |
+| G7-_consommables-bureau — /consommables (bureau) | OK | 1608 ms |
+| G7-_consommables-tablette — /consommables (tablette) | OK | 1570 ms |
+| G7-_consommables-téléphone — /consommables (téléphone) | OK | 1530 ms |
+| G7-_commande-bureau — /commande (bureau) | OK | 1557 ms |
+| G7-_commande-tablette — /commande (tablette) | OK | 1529 ms |
+| G7-_commande-téléphone — /commande (téléphone) | OK | 1581 ms |
+| G7-_commandes-bureau — /commandes (bureau) | OK | 1564 ms |
+| G7-_commandes-tablette — /commandes (tablette) | OK | 1563 ms |
+| G7-_commandes-téléphone — /commandes (téléphone) | OK | 1549 ms |
+| G7-_equipment-bureau — /equipment (bureau) | OK | 1546 ms |
+| G7-_equipment-tablette — /equipment (tablette) | OK | 1557 ms |
+| G7-_equipment-téléphone — /equipment (téléphone) | OK | 1598 ms |
+| G7-_kits-bureau — /kits (bureau) | OK | 1582 ms |
+| G7-_kits-tablette — /kits (tablette) | OK | 1522 ms |
+| G7-_kits-téléphone — /kits (téléphone) | OK | 1520 ms |
+| G7-_entretien-bureau — /entretien (bureau) | OK | 1554 ms |
+| G7-_entretien-tablette — /entretien (tablette) | OK | 1544 ms |
+| G7-_entretien-téléphone — /entretien (téléphone) | OK | 1510 ms |
+| G7-_atelier-bureau — /atelier (bureau) | OK | 1518 ms |
+| G7-_atelier-tablette — /atelier (tablette) | OK | 1575 ms |
+| G7-_atelier-téléphone — /atelier (téléphone) | OK | 1553 ms |
+| G7-_incidents-bureau — /incidents (bureau) | OK | 1534 ms |
+| G7-_incidents-tablette — /incidents (tablette) | OK | 1551 ms |
+| G7-_incidents-téléphone — /incidents (téléphone) | OK | 1536 ms |
+| G7-_etiquettes-bureau — /etiquettes (bureau) | OK | 1535 ms |
+| G7-_etiquettes-tablette — /etiquettes (tablette) | OK | 1539 ms |
+| G7-_etiquettes-téléphone — /etiquettes (téléphone) | OK | 1547 ms |
+| G7-_vehicules-bureau — /vehicules (bureau) | OK | 1587 ms |
+| G7-_vehicules-tablette — /vehicules (tablette) | OK | 1566 ms |
+| G7-_vehicules-téléphone — /vehicules (téléphone) | OK | 1567 ms |
+| G7-_chantiers-bureau — /chantiers (bureau) | OK | 1567 ms |
+| G7-_chantiers-tablette — /chantiers (tablette) | OK | 1566 ms |
+| G7-_chantiers-téléphone — /chantiers (téléphone) | OK | 1550 ms |
+| G7-_locations-bureau — /locations (bureau) | OK | 1550 ms |
+| G7-_locations-tablette — /locations (tablette) | OK | 1552 ms |
+| G7-_locations-téléphone — /locations (téléphone) | OK | 1547 ms |
+| G7-_planning-bureau — /planning (bureau) | OK | 1531 ms |
+| G7-_planning-tablette — /planning (tablette) | OK | 1552 ms |
+| G7-_planning-téléphone — /planning (téléphone) | OK | 1543 ms |
+| G7-_users-bureau — /users (bureau) | OK | 1566 ms |
+| G7-_users-tablette — /users (tablette) | OK | 1535 ms |
+| G7-_users-téléphone — /users (téléphone) | OK | 1561 ms |
+| G7-_formations-bureau — /formations (bureau) | OK | 1543 ms |
+| G7-_formations-tablette — /formations (tablette) | OK | 1538 ms |
+| G7-_formations-téléphone — /formations (téléphone) | OK | 1552 ms |
+| G7-_epi-bureau — /epi (bureau) | OK | 1577 ms |
+| G7-_epi-tablette — /epi (tablette) | OK | 1547 ms |
+| G7-_epi-téléphone — /epi (téléphone) | OK | 1598 ms |
+| G7-_transferts-bureau — /transferts (bureau) | OK | 1570 ms |
+| G7-_transferts-tablette — /transferts (tablette) | OK | 1561 ms |
+| G7-_transferts-téléphone — /transferts (téléphone) | OK | 1552 ms |
+| G7-_emplacements-bureau — /emplacements (bureau) | OK | 1552 ms |
+| G7-_emplacements-tablette — /emplacements (tablette) | OK | 1546 ms |
+| G7-_emplacements-téléphone — /emplacements (téléphone) | OK | 1531 ms |
+| G7-_inventaire-bureau — /inventaire (bureau) | OK | 1578 ms |
+| G7-_inventaire-tablette — /inventaire (tablette) | OK | 1586 ms |
+| G7-_inventaire-téléphone — /inventaire (téléphone) | OK | 1552 ms |
+| G7-_checkouts-bureau — /checkouts (bureau) | OK | 1531 ms |
+| G7-_checkouts-tablette — /checkouts (tablette) | OK | 1564 ms |
+| G7-_checkouts-téléphone — /checkouts (téléphone) | OK | 1533 ms |
+| G7-_journal-bureau — /journal (bureau) | OK | 1549 ms |
+| G7-_journal-tablette — /journal (tablette) | OK | 1535 ms |
+| G7-_journal-téléphone — /journal (téléphone) | OK | 1550 ms |
+| G7-_couts-bureau — /couts (bureau) | OK | 1586 ms |
+| G7-_couts-tablette — /couts (tablette) | OK | 1546 ms |
+| G7-_couts-téléphone — /couts (téléphone) | OK | 1538 ms |
+| G7-_pilotage-bureau — /pilotage (bureau) | OK | 1575 ms |
+| G7-_pilotage-tablette — /pilotage (tablette) | OK | 1572 ms |
+| G7-_pilotage-téléphone — /pilotage (téléphone) | OK | 1539 ms |
+| G7-_notifications-bureau — /notifications (bureau) | OK | 1545 ms |
+| G7-_notifications-tablette — /notifications (tablette) | OK | 1552 ms |
+| G7-_notifications-téléphone — /notifications (téléphone) | OK | 1547 ms |
+| G7-_aide-bureau — /aide (bureau) | OK | 1531 ms |
+| G7-_aide-tablette — /aide (tablette) | OK | 1594 ms |
+| G7-_aide-téléphone — /aide (téléphone) | OK | 1579 ms |
 | G7-ouverture-cartes — Une carte ouvre un panneau qui se ferme avec Échap (6 pages) | INFO | 6 pages vérifiées |
 | G7-clavier — Clavier : Tab atteint les boutons du Shop, focus visible | OK | 25 éléments, focus visible 25/25 |
 
