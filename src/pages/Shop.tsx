@@ -295,8 +295,16 @@ const Shop: React.FC = () => {
           <aside className={`space-y-5 ${filtersOpen ? '' : 'hidden'} lg:block`} aria-label="Filtres du catalogue">
             <div>
               <p className="mx-section-label mb-2">Type</p>
-              <MxSegmented aria-label="Type d'article" value={kind} onChange={v => setKind(v as typeof kind)}
-                options={[{ value: 'all', label: 'Tout' }, { value: 'tool', label: 'Outils' }, { value: 'consumable', label: 'Consommables' }, { value: 'vehicle', label: 'Véhicules' }, ...(kits.length ? [{ value: 'kit', label: 'Lots' }] : [])]} />
+<ul className="flex flex-wrap gap-1.5 lg:flex-col lg:gap-0.5" aria-label="Type d'article">
+                {([['all', 'Tout'], ['tool', 'Outils'], ['consumable', 'Consommables'], ['vehicle', 'Véhicules'], ...(kits.length ? [['kit', 'Lots']] : [])] as [typeof kind, string][]).map(([value, label]) => (
+                  <li key={value}>
+                    <button type="button" aria-pressed={kind === value} onClick={() => setKind(value)}
+                      className={`w-full text-left rounded-md px-3 py-2 min-h-[40px] lg:min-h-0 lg:px-2.5 lg:py-1.5 text-sm ${kind === value ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-800 dark:text-primary-200 font-semibold' : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                      {label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 min-h-[40px] lg:min-h-0 text-sm text-gray-800 dark:text-gray-200">
