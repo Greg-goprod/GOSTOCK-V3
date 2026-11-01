@@ -28,6 +28,7 @@ import { MX_TONE_LINE, type MxTone } from '../components/mx/tokens';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
+import ExtendModal from '../components/checkout/ExtendModal';
 
 // Objet loué : disponible seulement jusqu'à la fin du contrat
 const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
@@ -105,6 +106,7 @@ export const MyEquipment: React.FC = () => {
   const { checkouts, equipment, equipmentInstances } = useApp();
   const { profile } = useAuth();
   const [reporting, setReporting] = useState<{ checkoutId: string; equipmentId: string } | null>(null);
+  const [extending, setExtending] = useState<{ id: string; name: string; due: string } | null>(null);
   const mine = checkouts
     .filter(c => c.userId === profile?.id && (c.status === 'active' || c.status === 'overdue'))
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
@@ -134,12 +136,14 @@ export const MyEquipment: React.FC = () => {
                     {daysLate} j de retard
                   </span>
                 )}
+                <Button size="sm" variant="outline" onClick={() => setExtending({ id: c.id, name: item?.name ?? 'Article', due: c.dueDate })}>Prolonger</Button>
                 <Button size="sm" variant="outline" onClick={() => setReporting({ checkoutId: c.id, equipmentId: c.equipmentId })}>Signaler</Button>
               </div>
             </li>
           );
         })}
       </ul>
+      {extending && <ExtendModal mode="collab" lines={[extending]} onClose={() => setExtending(null)} />}
       {reporting && (
         <DeclareIncidentModal
           checkoutId={reporting.checkoutId}
@@ -653,6 +657,7 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
   const [decisionNote, setDecisionNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [issuing, setIssuing] = useState(false);
+  const [extendingRequest, setExtendingRequest] = useState(false);
   // Quantités qui sortent de l'ordinaire : à lire avant de valider (le stock n'est contrôlé qu'à la sortie)
   const quantityWarnings = items.flatMap(i => {
     const e = equipment.find(x => x.id === i.equipment_id);
@@ -995,6 +1000,16 @@ const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => vo
 
         {request.status === 'out' && vehicleItem && (
           <p className="text-sm text-gray-700 dark:text-gray-300">Le retour du véhicule se fait depuis la page Véhicules (état des lieux de retour).</p>
+        )}
+        {/* Prolonger ce qui est encore dehors (outils non rendus, véhicule) */}
+        {request.status === 'out' && (can('scan') || can('approve')) && (
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setExtendingRequest(true)}>Prolonger ce qui reste dehors</Button>
+          </div>
+        )}
+        {extendingRequest && (
+          <ExtendModal mode="staff" requestId={request.id} title={`Prolonger ${request.number}`} lines={[{ id: request.id, name: request.number, due: request.end_at }]}
+            onClose={() => setExtendingRequest(false)} onDone={onChanged} />
         )}
       </div>
     </Modal>

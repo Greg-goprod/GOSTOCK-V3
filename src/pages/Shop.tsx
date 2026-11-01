@@ -23,6 +23,7 @@ import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib
 import type { Equipment, RequestOverview, Vehicle } from '../types';
 import { MyEquipment, MyNotices } from './Requests';
 import { confirmAction } from '../lib/confirm';
+import ExtendModal from '../components/checkout/ExtendModal';
 
 // Shop matériel : le collaborateur choisit dans un catalogue en images, remplit son panier
 // et passe commande. La commande est une demande ordinaire (create_request) : le magasin la
@@ -799,6 +800,7 @@ const MyOrders: React.FC<{ staff: boolean; onReorder: (lines: { id: string; kind
   const [lines, setLines] = useState<Record<string, OrderLine[]>>({});
   const [showDone, setShowDone] = useState(false);
   const [scope, setScope] = useState<'mine' | 'others'>('mine');
+  const [extendOrder, setExtendOrder] = useState<RequestOverview | null>(null);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -881,6 +883,9 @@ const MyOrders: React.FC<{ staff: boolean; onReorder: (lines: { id: string; kind
                   {items.length > 0 && <Button size="sm" variant="outline" icon={<RotateCcw size={14} />} onClick={() => onReorder(items.map(i => (i.vehicle_id
                     ? { id: i.vehicle_id, kind: 'vehicle' as Kind, quantity: 1 }
                     : { id: i.equipment_id ?? '', kind: (i.item_kind === 'consumable' ? 'consumable' : 'tool') as Kind, quantity: Number(i.quantity) })).filter(l => l.id))}>Commander à nouveau</Button>}
+                  {o.status === 'out' && o.requester_id === profile?.id && (
+                    <Button size="sm" variant="outline" onClick={() => setExtendOrder(o)}>Demander une prolongation</Button>
+                  )}
                   {(staff ? ['requested', 'approved', 'ready'] : ['requested', 'approved']).includes(o.status) && o.requester_id === profile?.id && (
                     <Button size="sm" variant="outline" onClick={() => cancel(o)}>Annuler la commande</Button>
                   )}
@@ -889,6 +894,10 @@ const MyOrders: React.FC<{ staff: boolean; onReorder: (lines: { id: string; kind
             );
           })}
         </ul>
+      )}
+      {extendOrder && (
+        <ExtendModal mode="collab" requestId={extendOrder.id} title={`Prolonger ${extendOrder.number}`}
+          lines={[{ id: extendOrder.id, name: extendOrder.number, due: extendOrder.end_at }]} onClose={() => setExtendOrder(null)} />
       )}
       {staff && <p className="text-sm text-gray-600 dark:text-gray-400">Valider, préparer ou sortir : <Link to="/demandes" className="text-primary-600 hover:underline">Demandes</Link>.</p>}
     </div>

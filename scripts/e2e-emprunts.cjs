@@ -253,23 +253,45 @@ async function step(id, title, fn, page) {
 
   /* ============ E7 — prolongation ============ */
   group = 'E7 Prolongation';
-  await step('E7-modif-date-collab', 'Collaborateur : ne peut pas repousser lui-même la date de retour', async () => {
-    S.K = await make('Outil K'); const r = await out(S.K, 1, day(1)); const l = await lines(r.body.id);
-    const p = await api(collab, 'PATCH', `/rest/v1/checkouts?id=eq.${l[0].id}`, { due_date: day(10) }, { Prefer: 'return=representation' }); ok(rows(p).length === 0, 'le collaborateur a modifié la date de retour');
+  const dueOf = async (id) => (rows(await api(staff, 'GET', `/rest/v1/checkouts?id=eq.${id}&select=due_date`))[0] || {}).due_date;
+  const extend = (ids, due, note = M, c = staff) => rpc(c, 'extend_checkouts', { p_checkout_ids: ids, p_new_due: due, p_note: note });
+  await step('E7-collab-modif-directe', 'Collaborateur : ne peut pas repousser lui-même la date de retour (accès direct)', async () => {
+    S.K = await make('Outil K'); const r = await out(S.K, 1, day(1)); S.kId = (await lines(r.body.id))[0].id;
+    const p = await api(collab, 'PATCH', `/rest/v1/checkouts?id=eq.${S.kId}`, { due_date: day(10) }, { Prefer: 'return=representation' }); ok(rows(p).length === 0, 'le collaborateur a modifié la date de retour');
   });
-  await step('E7-prolongation-existe', 'Une fonction de prolongation d\'emprunt existe-t-elle ?', async () => {
-    const r = await rpc(staff, 'extend_checkout', { p_checkout_id: S.K ? (await lines(made.notes[made.notes.length - 1]))[0].id : null, p_due_date: day(5) });
-    return INFO(r.status === 404 || /could not find|n'existe|not exist/i.test(msg(r)) ? 'NON IMPLÉMENTÉE : aucune fonction de prolongation (contournement : retour + nouvelle sortie)' : `fonction présente : ${refused(r) ? msg(r) : 'appel accepté'}`);
+  await step('E7-collab-extend-refuse', 'Collaborateur : ne peut pas prolonger via la fonction du magasin', async () => { ok(refused(await extend([S.kId], day(5), M, collab)), 'prolongation acceptée'); });
+  await step('E7-prolonger', 'Magasin : prolonge une sortie ; la date change, la note le dit, le collaborateur est prévenu', async () => {
+    const r = await extend([S.kId], day(5)); ok(!refused(r), msg(r)); const due = new Date(await dueOf(S.kId)).getTime(); ok(due > Date.now() + 3.5 * 86400e3, `date de retour : ${await dueOf(S.kId)}`);
+    const co = rows(await api(staff, 'GET', `/rest/v1/checkouts?id=eq.${S.kId}&select=notes`))[0]; ok(/Prolongé jusqu/.test(co.notes || ''), 'pas de trace « Prolongé » dans la sortie');
+    const n = rows(await api(collab, 'GET', '/rest/v1/notifications?kind=eq.loan_extended&select=message&order=created_at.desc&limit=5')); ok(n.length > 0, 'aucun avis « emprunt prolongé » pour le collaborateur');
   });
-  await step('E7-modif-date-magasin', 'Magasin : modification directe de la date de retour via l\'API', async () => {
-    const l = await lines(made.notes[made.notes.length - 1]); const p = await api(staff, 'PATCH', `/rest/v1/checkouts?id=eq.${l[0].id}`, { due_date: day(5) }, { Prefer: 'return=representation' });
-    return INFO(rows(p).length ? 'possible par l\'API (sans bouton dans l\'interface)' : 'refusée ou sans effet');
+  await step('E7-date-invalide', 'Date antérieure au retour prévu, passée ou à plus d\'un an : refusées', async () => {
+    ok(refused(await extend([S.kId], day(2))), 'date antérieure acceptée'); ok(refused(await extend([S.kId], day(-1))), 'date passée acceptée'); ok(refused(await extend([S.kId], day(400))), 'plus d\'un an accepté');
   });
-  await step('E7-reservation-bloque', 'Une réservation à venir sur le même outil bloque une prolongation éventuelle', async () => {
-    const t = S.K; const dep = (rows(await api(staff, 'GET', '/rest/v1/depots?select=id&limit=1'))[0] || {}).id;
-    const r = await rpc(collab, 'create_request', { p_requester_id: S.collabId, p_depot_id: dep, p_start: day(2, 8), p_end: day(3, 17), p_items: [{ kind: 'tool', id: t.id, quantity: 1 }], p_destination: M, p_notes: M });
-    if (!refused(r) && r.body && r.body.id) made.requests.push(r.body.id);
-    return INFO(refused(r) ? `la sortie en cours (retour prévu demain, ou après modification) empêche la réservation : ${msg(r)}` : 'réservation acceptée pour après le retour prévu : une prolongation devra la vérifier');
+  await step('E7-prolonger-apres-partiel', 'Après un retour partiel : seules les sorties restantes sont prolongées', async () => {
+    S.K2 = await make('Outil K2', 3); const r = await out(S.K2, 3, day(1)); const l = await lines(r.body.id); ok(l.length === 3, `${l.length} sortie(s)`);
+    ok(!refused(await ret(l[0].id)), 'retour refusé'); const before = await dueOf(l[0].id);
+    const e = await extend([l[1].id, l[2].id], day(6)); ok(!refused(e), msg(e));
+    ok((await dueOf(l[0].id)) === before, 'la sortie déjà rendue a été modifiée'); ok(new Date(await dueOf(l[1].id)).getTime() > Date.now() + 4.5 * 86400e3 && new Date(await dueOf(l[2].id)).getTime() > Date.now() + 4.5 * 86400e3, 'les sorties restantes ne sont pas prolongées');
+    ok(refused(await extend([l[0].id], day(8))), 'une sortie déjà rendue peut être prolongée');
+    S.k2Lines = l;
+  });
+  await step('E7-conflit-reservation', 'Une réservation à venir sur le même outil empêche la prolongation', async () => {
+    S.K3 = await make('Outil K3'); const r = await out(S.K3, 1, day(1)); S.k3 = (await lines(r.body.id))[0].id; const dep = (rows(await api(staff, 'GET', '/rest/v1/depots?select=id&limit=1'))[0] || {}).id;
+    const q = await rpc(resp, 'create_request', { p_requester_id: S.respId, p_depot_id: dep, p_start: day(3, 8), p_end: day(4, 17), p_items: [{ kind: 'tool', id: S.K3.id, quantity: 1 }], p_destination: M, p_notes: M }); ok(!refused(q), `réservation : ${msg(q)}`); made.requests.push(q.body.id);
+    const e = await extend([S.k3], day(5)); ok(refused(e), 'prolongation acceptée malgré la réservation'); ok(/réservé/i.test(msg(e)), `message : ${msg(e)}`);
+    const ok2 = await extend([S.k3], day(2)); ok(!refused(ok2), `prolongation avant la réservation refusée : ${msg(ok2)}`);
+  });
+  await step('E7-prolonger-retard', 'Une sortie en retard prolongée redevient « active »', async () => {
+    if (!S.lateOk) return SKIP('pas de sortie échue (E5)'); const t = await make('Outil K4', 2); const r = await out(t, 1, day(-1, 12)); const id = (await lines(r.body.id))[0].id; await rpc(staff, 'update_overdue_checkouts', {});
+    ok(!refused(await extend([id], day(3))), 'prolongation refusée'); const st = await coStatus(id); ok(st === 'active', `statut ${st} après prolongation`);
+  });
+  await step('E7-demande-collab', 'Collaborateur : demande une prolongation (avis au magasin, pas de doublon) ; pas pour l\'outil d\'un autre', async () => {
+    const a = await rpc(collab, 'request_extension', { p_new_due: day(4), p_reason: `${M} chantier retardé`, p_checkout_id: S.kId, p_request_id: null }); ok(!refused(a), msg(a));
+    const b = await rpc(collab, 'request_extension', { p_new_due: day(4), p_reason: `${M} chantier retardé`, p_checkout_id: S.kId, p_request_id: null });
+    const n = rows(await api(staff, 'GET', '/rest/v1/notifications?kind=eq.extension_request&select=id,message&order=created_at.desc&limit=10')).filter(x => /TEST-EMPRUNT|Outil K/.test(x.message)); ok(n.length >= 1, 'le magasin ne reçoit aucun avis'); ok(n.length === 1, `${n.length} avis pour la même demande (doublon)`);
+    const other = await out(S.K, 1, day(1), S.respId); const oid = (await lines(other.body.id))[0]; const x = await rpc(collab, 'request_extension', { p_new_due: day(4), p_reason: M, p_checkout_id: oid ? oid.id : null, p_request_id: null }); ok(refused(x), 'demande acceptée pour l\'outil d\'un autre');
+    return INFO(refused(b) ? `2e demande identique refusée : ${msg(b)}` : '2e demande identique absorbée (un seul avis)');
   });
 
   /* ============ E8 — via une demande ============ */
@@ -284,6 +306,13 @@ async function step(id, title, fn, page) {
   await step('E8-demande-partielle', 'Un seul des 2 outils rendu : la demande reste « sortie »', async () => {
     const l = (await lines(S.reqRow.delivery_note_id)); ok(l.length === 2, `${l.length} sortie(s)`); ok(!refused(await ret(l[0].id)), 'retour refusé');
     const st = (rows(await api(staff, 'GET', `/rest/v1/requests?id=eq.${S.req.id}&select=status`))[0] || {}).status; ok(st === 'out', `demande : ${st} (attendu out)`);
+  });
+  await step('E8-prolonger-demande', 'Demande partiellement rendue : « Prolonger » ne touche que l\'outil resté dehors, la demande est prolongée', async () => {
+    const l = (await lines(S.reqRow.delivery_note_id)); const rest = l.filter(x => x.status === 'active'); const done = l.filter(x => x.status === 'returned'); ok(rest.length === 1 && done.length === 1, `${rest.length} dehors, ${done.length} rendu`);
+    const doneDue = await dueOf(done[0].id); const e = await rpc(staff, 'extend_request', { p_request_id: S.req.id, p_new_end: day(6), p_note: M }); ok(!refused(e), msg(e));
+    ok(new Date(await dueOf(rest[0].id)).getTime() > Date.now() + 4.5 * 86400e3, 'l\'outil resté dehors n\'est pas prolongé'); ok((await dueOf(done[0].id)) === doneDue, 'l\'outil rendu a été modifié');
+    const rq = rows(await api(staff, 'GET', `/rest/v1/requests?id=eq.${S.req.id}&select=end_at,status`))[0]; ok(new Date(rq.end_at).getTime() > Date.now() + 4.5 * 86400e3, 'la fin de la demande n\'a pas été repoussée'); ok(rq.status === 'out', `statut ${rq.status}`);
+    ok(refused(await rpc(collab, 'extend_request', { p_request_id: S.req.id, p_new_end: day(9), p_note: M })), 'un collaborateur a prolongé une demande');
   });
   await step('E8-demande-close', 'Le second outil rendu : la demande est clôturée automatiquement', async () => {
     const l = (await lines(S.reqRow.delivery_note_id)).filter(x => x.status === 'active'); ok(l.length === 1, `${l.length} restante(s)`); ok(!refused(await ret(l[0].id)), 'retour refusé');
