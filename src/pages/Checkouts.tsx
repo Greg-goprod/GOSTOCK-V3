@@ -6,10 +6,14 @@ import ReturnModal from "../components/checkout/ReturnModal";
 import StatusBadge from "../components/common/StatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Plus, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft } from "lucide-react";
+import { Plus, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft, ClipboardList } from "lucide-react";
 import { CheckoutWithCalculatedStatus, DeliveryNote } from "../types";
 import toast from "react-hot-toast";
 import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -40,7 +44,8 @@ export default function Checkouts() {
   const [calculatedCheckouts, setCalculatedCheckouts] = useState<CheckoutWithCalculatedStatus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   // Sur téléphone, les cartes plutôt que le tableau (trop large)
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'equipment'>(() => (window.innerWidth < 768 ? 'grid' : 'list'));
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'equipment'>(() => readMxViewMode('gomat-view-sorties', ['grid', 'list', 'equipment'] as const, 'grid'));
+  const changeView = (mode: 'grid' | 'list' | 'equipment') => { setViewMode(mode); writeMxViewMode('gomat-view-sorties', mode); };
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -215,73 +220,33 @@ export default function Checkouts() {
 
   // Rendu de la vue en grille
   const renderGridView = () => {
+    if (deliveryNotesWithStatus.length === 0) {
+      return <MxEmpty icon={ClipboardList} title="Aucun bon de sortie trouvé" />;
+    }
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {deliveryNotesWithStatus.length > 0 ? (
-          deliveryNotesWithStatus.map((deliveryNote) => {
-            const checkoutsForNote = groupedByDeliveryNote[deliveryNote.id] || [];
-            
-            return (
-              <div
-                key={deliveryNote.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
-              >
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <div>
-                    <h3 className="font-bold text-lg">Bon #{deliveryNote.number}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {deliveryNote.createdAt ? 
-                        format(new Date(deliveryNote.createdAt), "dd MMMM yyyy", { locale: fr }) : 
-                        "Date inconnue"}
-                    </p>
-                  </div>
-                  <StatusBadge status={deliveryNote.status || 'unknown'} />
-                </div>
-                <div className="p-4">
-                  <p className="text-sm font-medium mb-2">
-                    <span className="text-gray-500 dark:text-gray-400">Utilisateur: </span>
-                    {deliveryNote.userName || "Utilisateur inconnu"}
-                  </p>
-                  <p className="text-sm mb-4">
-                    <span className="text-gray-500 dark:text-gray-400">Équipements: </span>
-                    {checkoutsForNote.length}
-                  </p>
-                  <div className="space-y-2 mb-4">
-                    {checkoutsForNote.slice(0, 3).map((checkout) => {
-                      return (
-                        <div
-                          key={checkout.id}
-                          className="flex justify-between items-center text-sm"
-                        >
-                          <span>{checkout.equipment_name}</span>
-                          <StatusBadge status={checkout.status || 'unknown'} />
-                        </div>
-                      );
-                    })}
-                    {checkoutsForNote.length > 3 && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                        ... et {checkoutsForNote.length - 3} autre(s)
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => handleOpenReturnModal(deliveryNote)}
-                    icon={<Eye size={16} />}
-                  >
-                    Détails / retour
-                  </Button>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="col-span-3 text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <p className="text-gray-500 dark:text-gray-400">Aucun bon de sortie trouvé.</p>
-          </div>
-        )}
-      </div>
+      <MxCardGrid
+        items={deliveryNotesWithStatus}
+        getItemKey={note => note.id}
+        renderItem={deliveryNote => {
+          const checkoutsForNote = groupedByDeliveryNote[deliveryNote.id] || [];
+          const names = checkoutsForNote.map(c => c.equipment_name).filter(Boolean);
+          return (
+            <MxEntityCard
+              avatarName={deliveryNote.userName || 'Bon'}
+              title={deliveryNote.userName || 'Utilisateur inconnu'}
+              infoParts={[
+                { content: `Bon #${deliveryNote.number}` },
+                { content: `${checkoutsForNote.length} équipement${checkoutsForNote.length > 1 ? 's' : ''} · ${deliveryNote.createdAt ? format(new Date(deliveryNote.createdAt), 'dd.MM.yyyy', { locale: fr }) : 'date inconnue'}` },
+              ]}
+              statusBadge={<StatusBadge status={deliveryNote.status || 'unknown'} />}
+              due={names.length ? <span>{names.slice(0, 2).join(', ')}{names.length > 2 ? ` … +${names.length - 2}` : ''}</span> : undefined}
+              menuLabel={`Actions pour le bon ${deliveryNote.number}`}
+              menuActions={[{ id: 'open', label: 'Détails / retour', icon: Eye, onSelect: () => handleOpenReturnModal(deliveryNote) }]}
+              onOpen={() => handleOpenReturnModal(deliveryNote)}
+            />
+          );
+        }}
+      />
     );
   };
 
@@ -552,7 +517,7 @@ export default function Checkouts() {
         }
         view={
           // Vue « Équipements » en plus des cartes et de la liste ; icônes seules, comme la bascule de Mannyx
-          <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => setViewMode(v as typeof viewMode)} iconOnly
+          <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => changeView(v as typeof viewMode)} iconOnly
             options={[{ value: 'grid', label: 'Cartes', icon: Grid3X3 }, { value: 'list', label: 'Liste', icon: List }, { value: 'equipment', label: 'Par équipement', icon: CornerDownLeft }]} />
         }
         primary={

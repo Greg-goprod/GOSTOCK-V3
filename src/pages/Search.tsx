@@ -6,6 +6,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Equipment, User } from '../types';
 import PageTitle from '../components/common/PageTitle';
+import Modal from '../components/common/Modal';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 
 interface ResultBlock {
   title: string;
@@ -69,6 +73,7 @@ const Search: React.FC = () => {
   useEffect(() => {
     setText(query);
   }, [query]);
+  const [detail, setDetail] = useState<ResultBlock | null>(null);
   const [sites, setSites] = useState<{ id: string; name: string; status: string }[]>([]);
   const [siteItems, setSiteItems] = useState<SiteItem[]>([]);
 
@@ -192,7 +197,7 @@ const Search: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 ">
       <div>
         <PageTitle>Recherche</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Pose la question comme tu la dirais au magasin.</p>
@@ -213,23 +218,40 @@ const Search: React.FC = () => {
       </div>
 
       {query && results.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-400">Rien trouvé pour « {query} ». Essaie avec moins de mots, ou le numéro d'article.</p>}
-      <div className="space-y-3">
-        {results.map((block, i) => (
-          <section key={`${block.title}-${i}`} className="rounded-lg bg-white dark:bg-gray-800 shadow p-4">
-            <h2 className="font-bold text-gray-900 dark:text-white">{block.title}</h2>
-            {block.lines.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Rien en cours.</p> : (
-              <ul className="mt-1 divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                {block.lines.map((line, j) => (
-                  <li key={j} className="py-1.5">
-                    <p className={line.alert ? 'font-semibold text-tone-danger' : 'text-gray-900 dark:text-gray-100'}>{line.main}</p>
-                    {line.sub && <p className="text-xs text-gray-600 dark:text-gray-400">{line.sub}</p>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ))}
-      </div>
+      <MxCardGrid
+        items={results.map((block, i) => ({ ...block, key: `${block.title}-${i}` }))}
+        getItemKey={b => b.key}
+        renderItem={block => {
+          const late = block.lines.some(l => l.alert);
+          return (
+            <MxEntityCard
+              avatarName={block.title}
+              title={block.title}
+              infoParts={[
+                { content: block.lines[0]?.main ?? 'Rien en cours' },
+                { content: block.lines[0]?.sub || (block.lines.length > 1 ? `+ ${block.lines.length - 1} autre${block.lines.length > 2 ? 's' : ''} ligne${block.lines.length > 2 ? 's' : ''}` : '\u00A0') },
+              ]}
+              statusBadge={late ? <MxBadge tone="danger">En retard</MxBadge> : <MxBadge tone="neutral">{`${block.lines.length} ligne${block.lines.length > 1 ? 's' : ''}`}</MxBadge>}
+              onOpen={() => setDetail(block)}
+            />
+          );
+        }}
+      />
+
+      {detail && (
+        <Modal isOpen onClose={() => setDetail(null)} title={detail.title} size="md">
+          {detail.lines.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Rien en cours.</p> : (
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+              {detail.lines.map((line, j) => (
+                <li key={j} className="py-1.5">
+                  <p className={line.alert ? 'font-semibold text-tone-danger' : 'text-gray-900 dark:text-gray-100'}>{line.main}</p>
+                  {line.sub && <p className="text-xs text-gray-600 dark:text-gray-400">{line.sub}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };

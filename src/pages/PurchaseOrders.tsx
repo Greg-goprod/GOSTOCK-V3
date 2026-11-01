@@ -8,6 +8,11 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { confirmAction } from '../lib/confirm';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
+import { MxSegmented } from '../components/mx/MxSegmented';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 import PageTitle from '../components/common/PageTitle';
 
 type OrderStatus = 'draft' | 'sent' | 'partial' | 'received' | 'cancelled';
@@ -76,15 +81,13 @@ const PurchaseOrders: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
-        <div>
-          <PageTitle>Commandes fournisseurs</PageTitle>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Créées depuis la feuille de commande, envoyées par e-mail, réceptionnées ligne à ligne.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant={filter === 'open' ? 'primary' : 'outline'} onClick={() => setFilter('open')}>En cours</Button>
-          <Button size="sm" variant={filter === 'all' ? 'primary' : 'outline'} onClick={() => setFilter('all')}>Toutes</Button>
-        </div>
+      <div className="print:hidden">
+        <PageTitle>Commandes fournisseurs</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Créées depuis la feuille de commande, envoyées par e-mail, réceptionnées ligne à ligne.</p>
+      </div>
+      <div className="print:hidden">
+        <PageCommands filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
+          options={[{ value: 'open', label: 'En cours' }, { value: 'all', label: 'Toutes' }]} />} />
       </div>
 
       {shown.length === 0 ? (
@@ -92,21 +95,30 @@ const PurchaseOrders: React.FC = () => {
           <MxEmpty icon={ShoppingCart} title="Aucune commande" description="Crée-les depuis la feuille de commande (« Créer les bons de commande »)." />
         </div>
       ) : (
-        <ul className="space-y-2 print:hidden">
-          {shown.map(o => (
-            <li key={o.id}>
-              <button type="button" onClick={() => setOpened(o.id)} className="w-full text-left rounded-lg bg-white dark:bg-gray-800 shadow p-4 hover:ring-2 hover:ring-primary-400 flex flex-wrap justify-between gap-2">
-                <span>
-                  <span className="font-mono text-sm text-gray-700 dark:text-gray-300">{o.number}</span>{' '}
-                  <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${STATUS[o.status].className}`}>{STATUS[o.status].label}</span>
-                  <span className="block font-bold text-gray-900 dark:text-white">{supplierName(o.supplier_id)}</span>
-                  <span className="block text-xs text-gray-600 dark:text-gray-400">{depotName(o.depot_id)} · {o.purchase_order_lines.length} ligne{o.purchase_order_lines.length > 1 ? 's' : ''} · créée le {new Date(o.created_at).toLocaleDateString('fr-CH')}</span>
-                </span>
-                <span className="font-mono text-sm text-gray-900 dark:text-gray-100 self-center">{chf(total(o))}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="print:hidden">
+          <MxCardGrid
+            items={shown}
+            getItemKey={o => o.id}
+            renderItem={o => {
+              const received = o.purchase_order_lines.filter(l => l.received >= l.quantity).length;
+              return (
+                <MxEntityCard
+                  avatarName={supplierName(o.supplier_id)}
+                  title={supplierName(o.supplier_id)}
+                  infoParts={[
+                    { content: `${o.number} · ${depotName(o.depot_id)}` },
+                    { content: `${o.purchase_order_lines.length} ligne${o.purchase_order_lines.length > 1 ? 's' : ''} · ${new Date(o.created_at).toLocaleDateString('fr-CH')}` },
+                  ]}
+                  statusBadge={<MxBadge tone={({ draft: 'neutral', sent: 'info', partial: 'warning', received: 'success', cancelled: 'neutral' } as const)[o.status]}>{STATUS[o.status].label}</MxBadge>}
+                  due={<span>{`${chf(total(o))}${o.status === 'partial' || o.status === 'sent' ? ` · ${received}/${o.purchase_order_lines.length} reçue(s)` : ''}`}</span>}
+                  menuLabel={`Actions pour la commande ${o.number}`}
+                  menuActions={[{ id: 'open', label: 'Ouvrir', icon: ShoppingCart, onSelect: () => setOpened(o.id) }]}
+                  onOpen={() => setOpened(o.id)}
+                />
+              );
+            }}
+          />
+        </div>
       )}
 
       {current && <OrderModal order={current} onClose={() => setOpened(null)} onChanged={load} />}

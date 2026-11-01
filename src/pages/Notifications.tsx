@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import { supabase } from '../lib/supabase';
 import PushToggle from '../components/common/PushToggle';
-import { AlertTriangle, Clock, CheckCircle, Bell, Calendar, Package, User, Trash2, BookMarked as MarkAsRead } from 'lucide-react';
+import { CheckCircle, Bell, Trash2, BookMarked as MarkAsRead } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -271,33 +273,6 @@ const Notifications: React.FC = () => {
     }
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'overdue':
-        return <AlertTriangle size={20} className="text-danger-500" />;
-      case 'due_soon':
-        return <Clock size={20} className="text-warning-500" />;
-      case 'maintenance':
-        return <Package size={20} className="text-primary-500" />;
-      case 'checkout':
-        return <Package size={20} className="text-success-500" />;
-      default:
-        return <Bell size={20} className="text-gray-500" />;
-    }
-  };
-
-  const getPriorityColor = (priority: string, isRead: boolean) => {
-    const opacity = isRead ? 'opacity-60' : '';
-    switch (priority) {
-      case 'high':
-        return `border-l-danger-500 bg-danger-50 dark:bg-danger-900/10 ${opacity}`;
-      case 'medium':
-        return `border-l-warning-500 bg-warning-50 dark:bg-warning-900/10 ${opacity}`;
-      default:
-        return `border-l-primary-500 bg-primary-50 dark:bg-primary-900/10 ${opacity}`;
-    }
-  };
-
   const filteredNotifications = getFilteredNotifications();
   const unreadCount = notifications.filter(n => !n.read).length;
   const readCount = notifications.filter(n => n.read).length;
@@ -386,144 +361,36 @@ const Notifications: React.FC = () => {
             </div>
           </Card>
         ) : (
-          filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`border-l-4 rounded-lg p-4 transition-all duration-200 hover:shadow-md ${
-                getPriorityColor(notification.priority, notification.read)
-              } ${
-                notification.read 
-                  ? 'bg-opacity-50 dark:bg-opacity-30' 
-                  : 'shadow-sm'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="flex-shrink-0 mt-1">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-semibold ${
-                        notification.read 
-                          ? 'text-gray-600 dark:text-gray-400' 
-                          : 'text-gray-900 dark:text-white'
-                      }`}>
-                        {notification.title}
-                      </h3>
-                      
-                      <Badge
-                        variant={
-                          notification.priority === 'high' ? 'danger' :
-                          notification.priority === 'medium' ? 'warning' : 'info'
-                        }
-                      >
-                        {notification.priority === 'high' ? 'Urgent' :
-                         notification.priority === 'medium' ? 'Important' : 'Info'}
-                      </Badge>
-                      
-                      {notification.read ? (
-                        <div className="flex items-center gap-1">
-                          <CheckCircle size={16} className="text-success-500" />
-                          <span className="text-xs text-tone-success font-semibold">Lue</span>
-                        </div>
-                      ) : (
-                        <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                      )}
-                    </div>
-                    
-                    <p className={`text-sm font-medium ${
-                      notification.read 
-                        ? 'text-gray-500 dark:text-gray-500' 
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}>
-                      {notification.message}
-                    </p>
-                    
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Calendar size={12} />
-                        <span className="font-medium">
-                          {format(new Date(notification.date), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                        </span>
-                      </div>
-                      
-                      {notification.relatedData?.equipmentName && (
-                        <div className="flex items-center gap-1">
-                          <Package size={12} />
-                          <span className="font-medium">{notification.relatedData.equipmentName}</span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.userName && (
-                        <div className="flex items-center gap-1">
-                          <User size={12} />
-                          <span className="font-medium">{notification.relatedData.userName}</span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.note_number && (
-                        <div className="flex items-center gap-1">
-                          <Package size={12} />
-                          <span className="font-mono font-bold">{notification.relatedData.note_number}</span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.equipment_count && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-primary-600 dark:text-primary-400 font-semibold">
-                            {notification.relatedData.equipment_count} équipement{notification.relatedData.equipment_count > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.daysOverdue && (
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle size={12} />
-                          <span className="text-tone-danger font-semibold">
-                            {notification.relatedData.daysOverdue} jour(s) de retard
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 ml-4">
-                  {notification.read ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      icon={<MarkAsRead size={14} />}
-                      onClick={() => markAsUnread(notification.id)}
-                      className=""
-                    >
-                      Marquer non lue
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      icon={<CheckCircle size={14} />}
-                      onClick={() => markAsRead(notification.id)}
-                      className=""
-                    >
-                      Marquer comme lue
-                    </Button>
-                  )}
-                  
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    icon={<Trash2 size={14} />}
-                    onClick={() => deleteNotification(notification.id)}
-                    ariaLabel="Supprimer"
-                  />
-                </div>
-              </div>
-            </div>
-          ))
+          <MxCardGrid
+            items={filteredNotifications}
+            getItemKey={n => n.id}
+            renderItem={n => {
+              const rd = n.relatedData ?? {};
+              const info = [rd.equipmentName, rd.userName, rd.note_number, rd.equipment_count ? `${rd.equipment_count} équipement${rd.equipment_count > 1 ? 's' : ''}` : '', rd.daysOverdue ? `${rd.daysOverdue} jour(s) de retard` : ''].filter(Boolean).join(' · ');
+              return (
+                <MxEntityCard
+                  avatarName={n.title}
+                  title={n.title}
+                  infoParts={[
+                    { content: n.message },
+                    { content: `${format(new Date(n.date), 'dd.MM.yyyy HH:mm', { locale: fr })}${info ? ` · ${info}` : ''}` },
+                  ]}
+                  statusBadge={<span className="inline-flex gap-1">
+                    <MxBadge tone={n.priority === 'high' ? 'danger' : n.priority === 'medium' ? 'warning' : 'info'}>{n.priority === 'high' ? 'Urgent' : n.priority === 'medium' ? 'Important' : 'Info'}</MxBadge>
+                    {n.read ? <MxBadge tone="neutral">Lue</MxBadge> : <MxBadge tone="accent">Non lue</MxBadge>}
+                  </span>}
+                  menuLabel={`Actions pour ${n.title}`}
+                  menuActions={[
+                    n.read
+                      ? { id: 'unread', label: 'Marquer non lue', icon: MarkAsRead, onSelect: () => markAsUnread(n.id) }
+                      : { id: 'read', label: 'Marquer comme lue', icon: CheckCircle, onSelect: () => markAsRead(n.id) },
+                    { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => deleteNotification(n.id) },
+                  ]}
+                  onOpen={() => (n.read ? markAsUnread(n.id) : markAsRead(n.id))}
+                />
+              );
+            }}
+          />
         )}
       </div>
 
