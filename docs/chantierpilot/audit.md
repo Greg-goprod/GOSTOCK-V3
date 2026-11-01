@@ -183,17 +183,39 @@ Un portail = une vue limitée, accessible par lien/compte, pour un prestataire o
 
 ---
 
-## 10. Décisions à valider avant de commencer
+## 10. Décisions validées (réponses de Greg, 1er novembre 2026)
 
-1. **Module 0 d'abord** (fondation multi-entreprise) puis **module 1** (planning) : d'accord avec cet ordre ? (Alternative : planning d'abord en mono-entreprise, multi-entreprise après — plus rapide à voir, mais refonte coûteuse ensuite. Je déconseille.)
-2. **Une entreprise par utilisateur** (comme Mannyx), ou un utilisateur pouvant appartenir à plusieurs entreprises (consultants) ?
-3. **Entreprise existante** : toutes les données actuelles de GO-Mat appartiennent à une seule entreprise (la tienne) ? Quel nom ?
-4. **Qui crée les entreprises** : seulement toi (super-admin), ou inscription libre ?
-5. **Planning** : frise par **zone**, par **prestataire**, ou les deux vues dès le départ ?
-6. **Pas de planification** : 5 min (comme Mannyx) ou 15 min plus lisible ?
-7. **Traiteur et allergies** : le traiteur reçoit-il des **effectifs par régime** uniquement, ou aussi les **noms** pour les cas graves ?
-8. **Facturation** : tes factures actuelles sont émises avec quel outil, et ton comptable valide-t-il la numérotation/TVA/QR-bill avant mise en service ?
-9. **Volumes** (à titre d'ordre de grandeur) : nombre d'entreprises clientes visées dans 12 mois, nombre d'utilisateurs par entreprise.
-10. **Mannyx** : tu confirmes qu'aucune donnée n'est partagée entre les deux produits pour l'instant ?
+| # | Question | Décision |
+|---|---|---|
+| 1 | Ordre | **Module 0 (fondation multi-entreprise) puis module 1 (planning)** |
+| 2 | Utilisateur et entreprises | **Un utilisateur peut appartenir à plusieurs entreprises** (consultants, intérimaires de plusieurs sociétés) |
+| 3 | Entreprise existante | Les données actuelles passent dans **« ENTREPRISE TEST »** |
+| 4 | Qui crée les entreprises | **Greg uniquement** (super-administrateur) |
+| 5 | Planning | **Les deux vues** : par zone et par prestataire |
+| 6 | Pas de planification | **15 minutes** |
+| 7 | Traiteur et allergies | **Noms communiqués pour les cas graves**, effectifs par régime pour le reste |
+| 8 | Outil de facturation actuel | **Inconnu** : à clarifier avant le module 7 (aucun impact sur les modules 0 à 6) |
+| 9 | Volumes à 12 mois | **15 à 20 entreprises**, nombre d'utilisateurs inconnu |
+| 10 | Données partagées avec Mannyx | **Aucune, à sa connaissance** |
 
-Dès que tu valides (ou corriges) ces 10 points, je commence par le module 0 : migration réversible, politiques RLS, tests d'isolation en base locale, **sans toucher à tes données réelles avant ton feu vert**.
+### Conséquences sur la conception
+- **Plusieurs entreprises par utilisateur** : une personne de GO-Mat (`users`) devient « la fiche d'une personne dans une entreprise ». Un même compte de connexion peut avoir une fiche par entreprise, chacune avec ses propres rôles et droits. Une table `account_context` retient l'entreprise **active** du compte ; un changement d'entreprise passe par une fonction qui vérifie l'appartenance.
+- **Cas graves (allergies)** : le traiteur voit les noms uniquement pour les personnes marquées « allergie grave », avec journal de lecture ; le reste est agrégé.
+- **15 à 20 entreprises** : pas de contrainte de performance particulière, mais l'isolation doit être prouvée par des tests avant toute mise en ligne.
+- **Facturation** : la question de l'outil actuel reste ouverte ; elle ne bloque rien avant le module 7.
+
+---
+
+## 11. Module 0 : découpage technique
+
+| Étape | Contenu | Touche la vraie base ? |
+|---|---|---|
+| 0.1 | Fondation : entreprises, `account_context`, `app_org_id()`, fiches par entreprise | Après feu vert |
+| 0.2 | `organization_id` sur toutes les tables, reprise de l'existant dans « ENTREPRISE TEST », valeur par défaut = entreprise active | Après feu vert |
+| 0.3 | Politiques RESTRICTIVES d'isolation sur toutes les tables (s'ajoutent aux règles existantes) | Après feu vert |
+| 0.4 | Relecture des fonctions SECURITY DEFINER (elles ignorent les règles de table) | Après feu vert |
+| 0.5 | Stockage (photos, fichiers, sauvegardes) rangé par entreprise | Après feu vert |
+| 0.6 | Interface : sélecteur d'entreprise, console de création des entreprises (Greg), activation des modules | — |
+| 0.7 | Batterie d'isolation + rejeu complet des tests existants | Base locale d'abord |
+
+Tout est d'abord développé et testé **sur une base locale**. La vraie base GO-MAT n'est touchée qu'après ton feu vert explicite, avec une sauvegarde et un script de retour arrière.
