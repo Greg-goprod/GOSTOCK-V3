@@ -394,8 +394,10 @@ const PAGES = ['/', '/shop', '/shop?vue=commandes', '/demandes', '/consommables'
     await step('G6-double-clic', 'Double clic sur « Commander » : une seule commande', async () => {
       await cartClear(); await shop('TEST-E2E Consommable'); await p.getByRole('button', { name: /^Ajouter au panier : TEST-E2E Consommable/ }).first().click(); await p.waitForTimeout(500);
       await p.getByRole('button', { name: /^Panier/ }).first().click(); await p.waitForTimeout(1200); await p.getByLabel('Remarque (facultatif)').fill(`${M} DBL`);
+      const t0 = new Date(Date.now() - 2000).toISOString();
       await p.getByRole('button', { name: 'Commander', exact: true }).dblclick(); await p.waitForTimeout(4000);
-      const n = rows(await api(c, 'GET', `/rest/v1/requests?notes=ilike.*${M}%20DBL*&select=id`)); n.forEach(x => created.requests.push(x.id)); ok(n.length === 1, `${n.length} commandes créées`);
+      // Seulement les commandes créées par CE double clic (les exécutions précédentes laissent des commandes annulées avec la même remarque)
+      const n = rows(await api(c, 'GET', `/rest/v1/requests?notes=ilike.*${M}%20DBL*&created_at=gte.${encodeURIComponent(t0)}&select=id`)); n.forEach(x => created.requests.push(x.id)); ok(n.length === 1, `${n.length} commandes créées`);
     }, p);
     await step('G6-hors-ligne', 'Hors ligne : message clair, panier conservé', async () => {
       await cartClear(); await shop('TEST-E2E Consommable'); await p.getByRole('button', { name: /^Ajouter au panier : TEST-E2E Consommable/ }).first().click(); await p.waitForTimeout(500);
