@@ -875,7 +875,7 @@ const MyOrders: React.FC<{ staff: boolean; onReorder: (lines: { id: string; kind
                   {items.length > 0 && <Button size="sm" variant="outline" icon={<RotateCcw size={14} />} onClick={() => onReorder(items.map(i => (i.vehicle_id
                     ? { id: i.vehicle_id, kind: 'vehicle' as Kind, quantity: 1 }
                     : { id: i.equipment_id ?? '', kind: (i.item_kind === 'consumable' ? 'consumable' : 'tool') as Kind, quantity: Number(i.quantity) })).filter(l => l.id))}>Commander à nouveau</Button>}
-                  {['requested', 'approved', 'ready'].includes(o.status) && o.requester_id === profile?.id && (
+                  {(staff ? ['requested', 'approved', 'ready'] : ['requested', 'approved']).includes(o.status) && o.requester_id === profile?.id && (
                     <Button size="sm" variant="outline" onClick={() => cancel(o)}>Annuler la commande</Button>
                   )}
                 </div>

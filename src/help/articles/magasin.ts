@@ -157,7 +157,7 @@ export const MAGASIN: HelpArticle[] = [
         id: 'annuler',
         title: 'Annuler ma commande',
         steps: [
-          { text: 'Dans « Mes commandes », clique sur « Annuler la commande » tant qu\'elle n\'est pas sortie. Le matériel réservé redevient disponible.' },
+          { text: 'Dans « Mes commandes », clique sur « Annuler la commande » tant qu\'elle n\'est pas préparée (« Envoyée » ou « Validée »). Une fois « Prête », demande l\'annulation au magasin. Le matériel réservé redevient disponible.' },
         ],
       },
       {
