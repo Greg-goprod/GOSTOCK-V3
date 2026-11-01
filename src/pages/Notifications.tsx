@@ -12,6 +12,10 @@ import { MxCardGrid } from '../components/mx/MxCardGrid';
 import { MxEntityCard } from '../components/mx/MxEntityCard';
 import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
+import { EntityTable } from '../components/common/EntityTable';
+import { MxEntityViewToggle } from '../components/mx/MxEntityViewToggle';
+import { MxPagination } from '../components/mx/MxPagination';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 import type { StockNotification } from '../types';
 
@@ -53,6 +57,11 @@ const Notifications: React.FC = () => {
   const [status, setStatus] = useState<'all' | 'unread' | 'read'>('all');
   const [group, setGroup] = useState<'all' | Group>('all');
   const [refreshing, setRefreshing] = useState(false);
+  // Vue Liste (par défaut : on lit beaucoup de lignes) ou Cartes, mémorisée ; pagination comme les autres listes
+  const [viewMode, setViewModeState] = useState<'cards' | 'list'>(() => readMxViewMode('gomat-view-notifications', ['cards', 'list'] as const, 'list'));
+  const [pageSize, setPageSize] = useState(() => Number(readMxViewMode('gomat-pagesize-notifications', ['24', '48', '96'] as const, '48')));
+  const [page, setPage] = useState(1);
+  const setViewMode = (mode: 'cards' | 'list') => { setViewModeState(mode); writeMxViewMode('gomat-view-notifications', mode); };
 
   const readCount = userNotifications.length - userNotifications.filter(n => !n.read).length;
   const unreadCount = userNotifications.length - readCount;
@@ -60,6 +69,10 @@ const Notifications: React.FC = () => {
   const visible = useMemo(() => userNotifications.filter(n =>
     (status === 'all' || (status === 'unread' ? !n.read : n.read)) && (group === 'all' || groupOf(n) === group)
   ), [userNotifications, status, group]);
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paged = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const groupCounts = useMemo(() => {
     const base = userNotifications.filter(n => status === 'all' || (status === 'unread' ? !n.read : n.read));
@@ -107,6 +120,14 @@ const Notifications: React.FC = () => {
           { value: 'unread', label: `Non lues (${unreadCount})` },
           { value: 'read', label: `Lues (${readCount})` },
         ]} />}
+        pagination={totalPages > 1 || visible.length > 24 ? (
+          <MxPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage}
+            previousLabel="Page précédente" nextLabel="Page suivante" totalLabel={`${visible.length} notification(s)`}
+            pageSize={pageSize} pageSizeOptions={[{ value: '24', label: '24' }, { value: '48', label: '48' }, { value: '96', label: '96' }]}
+            onPageSizeChange={size => { setPageSize(size); setPage(1); writeMxViewMode('gomat-pagesize-notifications', String(size)); }}
+            pageSizeLabel="Notifications par page" />
+        ) : undefined}
+        view={<MxEntityViewToggle value={viewMode} onChange={setViewMode} aria-label="Affichage des notifications" />}
         primary={<div className="flex flex-wrap gap-2">
           <Button variant="outline" icon={<CheckCircle size={16} />} onClick={() => void markAllNotificationsRead()} disabled={unreadNotificationCount === 0}>Tout marquer comme lu</Button>
           <Button icon={<Bell size={16} />} onClick={() => void refresh()} disabled={refreshing}>{refreshing ? 'Actualisation…' : 'Actualiser'}</Button>
@@ -147,9 +168,37 @@ const Notifications: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400 font-medium">{emptyText}</p>
             </div>
           </Card>
+        ) : viewMode === 'list' ? (
+          <EntityTable
+            items={paged}
+            getKey={n => n.id}
+            caption="Notifications"
+            onOpen={open}
+            rowClassName={n => (n.read ? 'opacity-75' : 'font-medium')}
+            columns={[
+              { id: 'state', label: 'État', render: n => (n.read ? <MxBadge tone="neutral">Lue</MxBadge> : <MxBadge tone="accent">Non lue</MxBadge>) },
+              { id: 'what', label: 'Notification', render: n => (
+                <div>
+                  <p className="text-gray-900 dark:text-white">{n.title}</p>
+                  <p className="text-xs font-normal text-gray-600 dark:text-gray-400">{n.message}</p>
+                </div>
+              ) },
+              { id: 'group', label: 'Famille', hideOnMobile: true, render: n => <MxBadge tone={TONE[n.kind] ?? 'info'}>{GROUPS.find(g => g.id === groupOf(n))?.label ?? 'Autres'}</MxBadge> },
+              { id: 'date', label: 'Date', hideOnMobile: true, render: n => <span className="whitespace-nowrap text-xs font-normal">{format(new Date(n.createdAt), 'dd.MM.yyyy HH:mm', { locale: fr })}</span> },
+              { id: 'action', label: 'Action', render: n => (
+                // Le bouton ne doit pas déclencher l'ouverture de la ligne
+                <span onClick={e => e.stopPropagation()}>
+                  <Button size="sm" variant="outline" icon={n.read ? <MarkAsUnread size={14} /> : <CheckCircle size={14} />}
+                    onClick={() => { void (n.read ? markNotificationUnread(n.id) : markNotificationsRead([n.id])); }}>
+                    {n.read ? 'Marquer non lue' : 'Marquer comme lue'}
+                  </Button>
+                </span>
+              ) },
+            ]}
+          />
         ) : (
           <MxCardGrid
-            items={visible}
+            items={paged}
             getItemKey={n => n.id}
             renderItem={n => (
               <MxEntityCard

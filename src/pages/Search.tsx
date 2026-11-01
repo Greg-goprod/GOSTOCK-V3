@@ -150,7 +150,7 @@ const Search: React.FC = () => {
     // « stock gants », « combien de disques »
     const stockMatch = q.match(/^(stock|combien|reste)\s+(.+)/);
     if (stockMatch) {
-      const items = findItems(words(stockMatch[2])).filter(e => e.itemType === 'consumable');
+      const items = findItems(words(stockMatch[2])).filter(e => e.itemType === 'consumable' && e.status !== 'retired');
       return items.map(e => ({
         title: e.name,
         lines: depots.map(d => {

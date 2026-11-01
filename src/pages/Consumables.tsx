@@ -16,6 +16,7 @@ import { useApp } from '../contexts/AppContext';
 import { supabase } from '../lib/supabase';
 import { useSiteSuggestions } from '../lib/sites';
 import { Equipment } from '../types';
+import { liveConsumables } from '../lib/stock';
 import PageTitle from '../components/common/PageTitle';
 import { useCurrentDepot } from '../lib/useCurrentDepot';
 import { PageCommands } from '../components/Layout/ModuleHeader';
@@ -43,7 +44,10 @@ const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
 const errorMessage = (error: unknown) =>
   (error as { message?: string })?.message || 'Une erreur est survenue';
 
-const StatePill: React.FC<{ quantity: number; isLow: boolean; lowDepots: string[]; showDepots: boolean }> = ({ quantity, isLow, lowDepots, showDepots }) => {
+const StatePill: React.FC<{ quantity: number; isLow: boolean; lowDepots: string[]; showDepots: boolean; retired?: boolean }> = ({ quantity, isLow, lowDepots, showDepots, retired }) => {
+  if (retired) {
+    return <span className="inline-flex rounded mx-tint-badge-neutral px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">Retiré</span>;
+  }
   if (quantity === 0) {
     return <span className="inline-flex rounded mx-tint-badge-danger px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">Épuisé</span>;
   }
@@ -64,6 +68,8 @@ const Consumables: React.FC = () => {
   const depotFilter = currentDepot || 'all';
   const [search, setSearch] = useState('');
   const [onlyLow, setOnlyLow] = useState(false);
+  // Les articles retirés du service ne sont plus des consommables à suivre : masqués, sauf demande
+  const [showRetired, setShowRetired] = useState(false);
   const [action, setAction] = useState<{ type: StockAction; item: Equipment } | null>(null);
   // Fiche du consommable : nom, image du shop, validation, description
   const [editing, setEditing] = useState<Equipment | null>(null);
@@ -73,8 +79,8 @@ const Consumables: React.FC = () => {
   const [showSelfService, setShowSelfService] = useState(false);
 
   const consumables = useMemo(
-    () => equipment.filter(eq => eq.itemType === 'consumable'),
-    [equipment]
+    () => (showRetired ? equipment.filter(eq => eq.itemType === 'consumable') : liveConsumables(equipment)),
+    [equipment, showRetired]
   );
 
   const rows = useMemo(() => {
@@ -91,11 +97,12 @@ const Consumables: React.FC = () => {
           .filter(s => s.minQuantity > 0 && s.quantity < s.minQuantity)
           .map(s => depots.find(d => d.id === s.depotId)?.name)
           .filter(Boolean) as string[];
-        const isLow = lowDepots.length > 0;
+        const retired = item.status === 'retired';
+        const isLow = !retired && lowDepots.length > 0;
         const supplier = suppliers.find(sp => sp.id === item.supplier);
-        return { item, quantity, minQuantity, isLow, lowDepots, supplierName: supplier?.name };
+        return { item, quantity, minQuantity, isLow, lowDepots, retired, supplierName: supplier?.name };
       })
-      .filter(r => !onlyLow || r.isLow || r.quantity === 0)
+      .filter(r => !onlyLow || (!r.retired && (r.isLow || r.quantity === 0)))
       .filter(r =>
         !term ||
         r.item.name.toLowerCase().includes(term) ||
@@ -114,7 +121,7 @@ const Consumables: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pagedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const lowCount = rows.filter(r => r.isLow || r.quantity === 0).length;
+  const lowCount = rows.filter(r => !r.retired && (r.isLow || r.quantity === 0)).length;
 
   if (depots.length === 0) {
     return (
@@ -143,10 +150,16 @@ const Consumables: React.FC = () => {
           </div>
         }
         filters={
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 min-h-[44px] lg:min-h-0">
-            <input type="checkbox" checked={onlyLow} onChange={e => setOnlyLow(e.target.checked)} />
-            Stock bas seulement {lowCount > 0 && `(${lowCount})`}
-          </label>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 min-h-[44px] lg:min-h-0">
+              <input type="checkbox" checked={onlyLow} onChange={e => setOnlyLow(e.target.checked)} />
+              Stock bas seulement {lowCount > 0 && `(${lowCount})`}
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 min-h-[44px] lg:min-h-0">
+              <input type="checkbox" checked={showRetired} onChange={e => setShowRetired(e.target.checked)} />
+              Afficher les articles retirés
+            </label>
+          </span>
         }
         pagination={totalPages > 1 || rows.length > 24 ? (
           <MxPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage}
@@ -178,7 +191,7 @@ const Consumables: React.FC = () => {
           <MxCardGrid
             items={pagedRows}
             getItemKey={r => r.item.id}
-            renderItem={({ item, quantity, minQuantity, isLow, lowDepots, supplierName }) => (
+            renderItem={({ item, quantity, minQuantity, isLow, lowDepots, retired, supplierName }) => (
               <MxEntityCard
                 avatarSrc={item.imageUrl || null}
                 avatarName={item.name}
@@ -187,7 +200,7 @@ const Consumables: React.FC = () => {
                   { content: [supplierName, item.supplierReference].filter(Boolean).join(' · ') || '\u00A0' },
                   { content: `${formatQty(quantity)} ${item.unit ?? ''}${minQuantity > 0 ? ` · seuil ${formatQty(minQuantity)}` : ''}` },
                 ]}
-                statusBadge={<StatePill quantity={quantity} isLow={isLow} lowDepots={lowDepots} showDepots={depotFilter === 'all'} />}
+                statusBadge={<StatePill quantity={quantity} isLow={isLow} lowDepots={lowDepots} showDepots={depotFilter === 'all'} retired={retired} />}
                 menuLabel={`Actions pour ${item.name}`}
                 menuActions={[
                   { id: 'consume', label: 'Sortir', icon: Minus, onSelect: () => setAction({ type: 'consume', item }) },
@@ -216,7 +229,7 @@ const Consumables: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {pagedRows.map(({ item, quantity, minQuantity, isLow, lowDepots, supplierName }) => (
+                {pagedRows.map(({ item, quantity, minQuantity, isLow, lowDepots, retired, supplierName }) => (
                   <tr key={item.id} className="text-gray-900 dark:text-gray-100">
                     <td className="px-4 py-3">
                       <div className="font-medium">{item.name}</div>
@@ -232,7 +245,7 @@ const Consumables: React.FC = () => {
                       {minQuantity > 0 ? formatQty(minQuantity) : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <StatePill quantity={quantity} isLow={isLow} lowDepots={lowDepots} showDepots={depotFilter === 'all'} />
+                      <StatePill quantity={quantity} isLow={isLow} lowDepots={lowDepots} showDepots={depotFilter === 'all'} retired={retired} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap justify-end gap-1">

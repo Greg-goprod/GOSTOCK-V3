@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { LowStockItem } from '../types';
 import PageTitle from '../components/common/PageTitle';
 import { useCurrentDepot } from '../lib/useCurrentDepot';
+import { exhaustedWithoutThreshold, liveConsumables } from '../lib/stock';
 
 const formatQty = (value: number) =>
   Number.isInteger(value) ? String(value) : value.toLocaleString('fr-CH', { maximumFractionDigits: 2 });
@@ -19,7 +20,9 @@ const formatChf = (value: number) =>
 
 // Feuille de commande : consommables sous leur seuil, regroupés par fournisseur, imprimable à tout moment
 const OrderSheet: React.FC = () => {
-  const { depots } = useApp();
+  const { depots, equipment, consumableStock } = useApp();
+  // Épuisés sans seuil : la feuille ne peut pas les proposer (pas de quantité cible)
+  const exhausted = useMemo(() => exhaustedWithoutThreshold(consumableStock, liveConsumables(equipment)), [equipment, consumableStock]);
   const [items, setItems] = useState<LowStockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { depotId: currentDepot, setDepotId: setCurrentDepot } = useCurrentDepot();
@@ -101,6 +104,12 @@ const OrderSheet: React.FC = () => {
 
   return (
     <div className="order-sheet space-y-6">
+      {exhausted.length > 0 && (
+        <div className="rounded-lg border border-warning-300 bg-warning-50 dark:bg-warning-900/20 dark:border-warning-700 p-3 text-sm text-gray-900 dark:text-gray-100 print:hidden" role="status">
+          {`${exhausted.length} article(s) épuisé(s) n'ont pas de seuil, donc la feuille ne peut pas les proposer : ${exhausted.slice(0, 4).map(e => e.name).join(', ')}${exhausted.length > 4 ? '…' : ''}. `}
+          <Link to="/consommables" className="font-medium text-primary-700 dark:text-primary-300 hover:underline">Définir un seuil (Seuils proposés) →</Link>
+        </div>
+      )}
       <div className="flex flex-wrap justify-between items-center gap-3 print:hidden">
         <div>
           <PageTitle>Feuille de commande</PageTitle>
