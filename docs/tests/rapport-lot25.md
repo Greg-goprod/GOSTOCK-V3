@@ -7,7 +7,6 @@
 **build** : ✓ OK (2599 modules, 32.73s, avertissement chunks normal)  
 **Base** : GO-MAT (Supabase xxzcaxizqndvhnzchqkp), préfixe TEST-SHOP  
 **Comptes** : test.collaborateur@example.com (connecté), test.responsable@example.com, test.magasinier@example.com  
-**Mot de passe** : 12345678  
 **Serveurs** : gomat-essai (5190), gomat-roles (5191 - collaborateur pré-connecté)
 
 ---
