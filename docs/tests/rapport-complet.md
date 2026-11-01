@@ -1,15 +1,40 @@
 # Rapport des tests poussés
 
-Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-01 15:51
-Commit testé : 4c90442 (Script e2e : le test du double clic ne compte que les commandes créées par ce clic)
+Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-01 18:40
+Commit testé : d1d2834 (docs: comparaison du multi-entreprise Mannyx et GO-Mat)
 
-**Synthèse : 265 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 14 INFO (observations)**
+**Synthèse : 242 OK · 0 PARTIEL · 26 KO · 1 NON TESTÉ · 13 INFO (observations)**
 
 Nettoyage : 10 commande(s) annulée(s), 8 article(s) retiré(s) du service, stock de test remis à zéro dans 2 dépôt(s), rien de bloqué.
 
 ## À corriger (KO et PARTIEL)
 
-Aucun.
+- **KO** G1-collab-/comptoir — collab sur /comptoir (scan) : ouvert à tort alors que collab n'a pas scan ([capture](captures-complet/G1-collab-_comptoir.png))
+- **KO** G1-collab-/badges — collab sur /badges (manage_people) : ouvert à tort alors que collab n'a pas manage_people ([capture](captures-complet/G1-collab-_badges.png))
+- **KO** G1-collab-/inventaire — collab sur /inventaire (scan/manage_stock) : ouvert à tort alors que collab n'a pas scan ni manage_stock ([capture](captures-complet/G1-collab-_inventaire.png))
+- **KO** G1-collab-/couts — collab sur /couts (view_all/manage_stock) : ouvert à tort alors que collab n'a pas view_all ni manage_stock ([capture](captures-complet/G1-collab-_couts.png))
+- **KO** G1-collab-/carte — collab sur /carte (view_all/scan/approve/manage_stock) : ouvert à tort alors que collab n'a pas view_all ni scan ni approve ni manage_stock ([capture](captures-complet/G1-collab-_carte.png))
+- **KO** G1-collab-/kits — collab sur /kits (scan/manage_stock) : ouvert à tort alors que collab n'a pas scan ni manage_stock ([capture](captures-complet/G1-collab-_kits.png))
+- **KO** G1-collab-/formations — collab sur /formations (manage_people/view_all/scan) : ouvert à tort alors que collab n'a pas manage_people ni view_all ni scan ([capture](captures-complet/G1-collab-_formations.png))
+- **KO** G1-collab-/locations — collab sur /locations (manage_stock/manage_fleet/view_all) : ouvert à tort alors que collab n'a pas manage_stock ni manage_fleet ni view_all ([capture](captures-complet/G1-collab-_locations.png))
+- **KO** G1-collab-/transferts — collab sur /transferts (scan/manage_stock) : ouvert à tort alors que collab n'a pas scan ni manage_stock ([capture](captures-complet/G1-collab-_transferts.png))
+- **KO** G1-collab-/atelier — collab sur /atelier (scan/manage_stock/view_all) : ouvert à tort alors que collab n'a pas scan ni manage_stock ni view_all ([capture](captures-complet/G1-collab-_atelier.png))
+- **KO** G1-collab-/donnees — collab sur /donnees (settings/manage_stock/manage_people) : ouvert à tort alors que collab n'a pas settings ni manage_stock ni manage_people ([capture](captures-complet/G1-collab-_donnees.png))
+- **KO** G1-collab-/demarrage — collab sur /demarrage (settings) : ouvert à tort alors que collab n'a pas settings ([capture](captures-complet/G1-collab-_demarrage.png))
+- **KO** G1-collab-/planning — collab sur /planning (view_all/scan/approve/manage_stock/manage_fleet) : ouvert à tort alors que collab n'a pas view_all ni scan ni approve ni manage_stock ni manage_fleet ([capture](captures-complet/G1-collab-_planning.png))
+- **KO** G1-collab-/incidents — collab sur /incidents (view_all/scan/approve/manage_stock) : ouvert à tort alors que collab n'a pas view_all ni scan ni approve ni manage_stock ([capture](captures-complet/G1-collab-_incidents.png))
+- **KO** G1-collab-/commande — collab sur /commande (manage_stock) : ouvert à tort alors que collab n'a pas manage_stock ([capture](captures-complet/G1-collab-_commande.png))
+- **KO** G1-collab-/tableau-de-bord — collab sur /tableau-de-bord (view_all) : ouvert à tort alors que collab n'a pas view_all ([capture](captures-complet/G1-collab-_tableau-de-bord.png))
+- **KO** G1-collab-/users — collab sur /users (manage_people) : ouvert à tort alors que collab n'a pas manage_people ([capture](captures-complet/G1-collab-_users.png))
+- **KO** G1-staff-/pilotage — staff sur /pilotage (approve/settings) : ouvert à tort alors que staff n'a pas approve ni settings ([capture](captures-complet/G1-staff-_pilotage.png))
+- **KO** G1-staff-/comptabilite — staff sur /comptabilite (settings/approve) : ouvert à tort alors que staff n'a pas settings ni approve ([capture](captures-complet/G1-staff-_comptabilite.png))
+- **KO** G1-staff-/users — staff sur /users (manage_people) : ouvert à tort alors que staff n'a pas manage_people ([capture](captures-complet/G1-staff-_users.png))
+- **KO** G1-staff-/entreprises — staff sur /entreprises (platform) : ouvert à tort alors que staff n'a pas platform ([capture](captures-complet/G1-staff-_entreprises.png))
+- **KO** G1-resp-/demarrage — resp sur /demarrage (settings) : ouvert à tort alors que resp n'a pas settings ([capture](captures-complet/G1-resp-_demarrage.png))
+- **KO** G1-resp-/settings — resp sur /settings (settings) : ouvert à tort alors que resp n'a pas settings ([capture](captures-complet/G1-resp-_settings.png))
+- **KO** G6-recherche-accent — Recherche « perceuse » = « PERÇEUSE » = « percuss » : introuvable avec « perceuse » ([capture](captures-complet/G6-recherche-accent.png))
+- **KO** G6-xss — Nom d'article avec <img onerror> : affiché comme texte, rien d'exécuté : article introuvable ([capture](captures-complet/G6-xss.png))
+- **KO** G6-article-retire — Article retiré pendant qu'il est au panier : retiré avec un avis : article retiré toujours au panier ([capture](captures-complet/G6-article-retire.png))
 
 
 ## G1 Droits par rôle
@@ -19,38 +44,39 @@ Aucun.
 | G1-collab-perms — collab : permissions lues (aucune) | INFO | rôle user |
 | G1-collab-/demandes — collab sur /demandes (scan/approve/view_all) | OK |  |
 | G1-collab-/scan — collab sur /scan (scan) | OK |  |
-| G1-collab-/comptoir — collab sur /comptoir (scan) | OK |  |
+| G1-collab-/comptoir — collab sur /comptoir (scan) | KO | ouvert à tort alors que collab n'a pas scan |
 | G1-collab-/etiquettes — collab sur /etiquettes (manage_stock) | OK |  |
-| G1-collab-/badges — collab sur /badges (manage_people) | OK |  |
+| G1-collab-/badges — collab sur /badges (manage_people) | KO | ouvert à tort alors que collab n'a pas manage_people |
 | G1-collab-/entretien — collab sur /entretien (manage_stock) | OK |  |
-| G1-collab-/inventaire — collab sur /inventaire (scan/manage_stock) | OK |  |
+| G1-collab-/inventaire — collab sur /inventaire (scan/manage_stock) | KO | ouvert à tort alors que collab n'a pas scan ni manage_stock |
 | G1-collab-/commandes — collab sur /commandes (manage_stock) | OK |  |
-| G1-collab-/couts — collab sur /couts (view_all/manage_stock) | OK |  |
+| G1-collab-/couts — collab sur /couts (view_all/manage_stock) | KO | ouvert à tort alors que collab n'a pas view_all ni manage_stock |
 | G1-collab-/pilotage — collab sur /pilotage (approve/settings) | OK |  |
 | G1-collab-/journal — collab sur /journal (approve/settings) | OK |  |
 | G1-collab-/chantiers — collab sur /chantiers (view_all/scan/approve/manage_stock) | OK |  |
-| G1-collab-/carte — collab sur /carte (view_all/scan/approve/manage_stock) | OK |  |
-| G1-collab-/kits — collab sur /kits (scan/manage_stock) | OK |  |
-| G1-collab-/formations — collab sur /formations (manage_people/view_all/scan) | OK |  |
-| G1-collab-/locations — collab sur /locations (manage_stock/manage_fleet/view_all) | OK |  |
-| G1-collab-/transferts — collab sur /transferts (scan/manage_stock) | OK |  |
+| G1-collab-/carte — collab sur /carte (view_all/scan/approve/manage_stock) | KO | ouvert à tort alors que collab n'a pas view_all ni scan ni approve ni manage_stock |
+| G1-collab-/kits — collab sur /kits (scan/manage_stock) | KO | ouvert à tort alors que collab n'a pas scan ni manage_stock |
+| G1-collab-/formations — collab sur /formations (manage_people/view_all/scan) | KO | ouvert à tort alors que collab n'a pas manage_people ni view_all ni scan |
+| G1-collab-/locations — collab sur /locations (manage_stock/manage_fleet/view_all) | KO | ouvert à tort alors que collab n'a pas manage_stock ni manage_fleet ni view_all |
+| G1-collab-/transferts — collab sur /transferts (scan/manage_stock) | KO | ouvert à tort alors que collab n'a pas scan ni manage_stock |
 | G1-collab-/emplacements — collab sur /emplacements (manage_stock/scan) | OK |  |
-| G1-collab-/atelier — collab sur /atelier (scan/manage_stock/view_all) | OK |  |
+| G1-collab-/atelier — collab sur /atelier (scan/manage_stock/view_all) | KO | ouvert à tort alors que collab n'a pas scan ni manage_stock ni view_all |
 | G1-collab-/comptabilite — collab sur /comptabilite (settings/approve) | OK |  |
 | G1-collab-/prevision — collab sur /prevision (manage_stock/view_all) | OK |  |
-| G1-collab-/donnees — collab sur /donnees (settings/manage_stock/manage_people) | OK |  |
-| G1-collab-/demarrage — collab sur /demarrage (settings) | OK |  |
+| G1-collab-/donnees — collab sur /donnees (settings/manage_stock/manage_people) | KO | ouvert à tort alors que collab n'a pas settings ni manage_stock ni manage_people |
+| G1-collab-/demarrage — collab sur /demarrage (settings) | KO | ouvert à tort alors que collab n'a pas settings |
 | G1-collab-/ecran — collab sur /ecran (scan/view_all/manage_stock) | OK |  |
 | G1-collab-/epi — collab sur /epi (scan/manage_people/manage_stock/view_all) | OK |  |
-| G1-collab-/planning — collab sur /planning (view_all/scan/approve/manage_stock/manage_fleet) | OK |  |
-| G1-collab-/incidents — collab sur /incidents (view_all/scan/approve/manage_stock) | OK |  |
+| G1-collab-/planning — collab sur /planning (view_all/scan/approve/manage_stock/manage_fleet) | KO | ouvert à tort alors que collab n'a pas view_all ni scan ni approve ni manage_stock ni manage_fleet |
+| G1-collab-/incidents — collab sur /incidents (view_all/scan/approve/manage_stock) | KO | ouvert à tort alors que collab n'a pas view_all ni scan ni approve ni manage_stock |
 | G1-collab-/checkouts — collab sur /checkouts (scan/view_all) | OK |  |
 | G1-collab-/consommables — collab sur /consommables (scan/manage_stock) | OK |  |
-| G1-collab-/commande — collab sur /commande (manage_stock) | OK |  |
+| G1-collab-/commande — collab sur /commande (manage_stock) | KO | ouvert à tort alors que collab n'a pas manage_stock |
 | G1-collab-/notifications — collab sur /notifications (view_all/scan/approve/manage_stock) | OK |  |
-| G1-collab-/tableau-de-bord — collab sur /tableau-de-bord (view_all) | OK |  |
-| G1-collab-/users — collab sur /users (manage_people) | OK |  |
+| G1-collab-/tableau-de-bord — collab sur /tableau-de-bord (view_all) | KO | ouvert à tort alors que collab n'a pas view_all |
+| G1-collab-/users — collab sur /users (manage_people) | KO | ouvert à tort alors que collab n'a pas manage_people |
 | G1-collab-/settings — collab sur /settings (settings) | OK |  |
+| G1-collab-/entreprises — collab sur /entreprises (platform) | OK |  |
 | G1-staff-perms — staff : permissions lues (manage_stock, scan, view_all) | INFO | rôle technician |
 | G1-staff-/demandes — staff sur /demandes (scan/approve/view_all) | OK |  |
 | G1-staff-/scan — staff sur /scan (scan) | OK |  |
@@ -61,7 +87,7 @@ Aucun.
 | G1-staff-/inventaire — staff sur /inventaire (scan/manage_stock) | OK |  |
 | G1-staff-/commandes — staff sur /commandes (manage_stock) | OK |  |
 | G1-staff-/couts — staff sur /couts (view_all/manage_stock) | OK |  |
-| G1-staff-/pilotage — staff sur /pilotage (approve/settings) | OK |  |
+| G1-staff-/pilotage — staff sur /pilotage (approve/settings) | KO | ouvert à tort alors que staff n'a pas approve ni settings |
 | G1-staff-/journal — staff sur /journal (approve/settings) | OK |  |
 | G1-staff-/chantiers — staff sur /chantiers (view_all/scan/approve/manage_stock) | OK |  |
 | G1-staff-/carte — staff sur /carte (view_all/scan/approve/manage_stock) | OK |  |
@@ -71,7 +97,7 @@ Aucun.
 | G1-staff-/transferts — staff sur /transferts (scan/manage_stock) | OK |  |
 | G1-staff-/emplacements — staff sur /emplacements (manage_stock/scan) | OK |  |
 | G1-staff-/atelier — staff sur /atelier (scan/manage_stock/view_all) | OK |  |
-| G1-staff-/comptabilite — staff sur /comptabilite (settings/approve) | OK |  |
+| G1-staff-/comptabilite — staff sur /comptabilite (settings/approve) | KO | ouvert à tort alors que staff n'a pas settings ni approve |
 | G1-staff-/prevision — staff sur /prevision (manage_stock/view_all) | OK |  |
 | G1-staff-/donnees — staff sur /donnees (settings/manage_stock/manage_people) | OK |  |
 | G1-staff-/demarrage — staff sur /demarrage (settings) | OK |  |
@@ -84,8 +110,9 @@ Aucun.
 | G1-staff-/commande — staff sur /commande (manage_stock) | OK |  |
 | G1-staff-/notifications — staff sur /notifications (view_all/scan/approve/manage_stock) | OK |  |
 | G1-staff-/tableau-de-bord — staff sur /tableau-de-bord (view_all) | OK |  |
-| G1-staff-/users — staff sur /users (manage_people) | OK |  |
+| G1-staff-/users — staff sur /users (manage_people) | KO | ouvert à tort alors que staff n'a pas manage_people |
 | G1-staff-/settings — staff sur /settings (settings) | OK |  |
+| G1-staff-/entreprises — staff sur /entreprises (platform) | KO | ouvert à tort alors que staff n'a pas platform |
 | G1-resp-perms — resp : permissions lues (all_depots, approve, manage_fleet, manage_people, manage_stock, scan, view_all) | INFO | rôle manager |
 | G1-resp-/demandes — resp sur /demandes (scan/approve/view_all) | OK |  |
 | G1-resp-/scan — resp sur /scan (scan) | OK |  |
@@ -109,7 +136,7 @@ Aucun.
 | G1-resp-/comptabilite — resp sur /comptabilite (settings/approve) | OK |  |
 | G1-resp-/prevision — resp sur /prevision (manage_stock/view_all) | OK |  |
 | G1-resp-/donnees — resp sur /donnees (settings/manage_stock/manage_people) | OK |  |
-| G1-resp-/demarrage — resp sur /demarrage (settings) | OK |  |
+| G1-resp-/demarrage — resp sur /demarrage (settings) | KO | ouvert à tort alors que resp n'a pas settings |
 | G1-resp-/ecran — resp sur /ecran (scan/view_all/manage_stock) | OK |  |
 | G1-resp-/epi — resp sur /epi (scan/manage_people/manage_stock/view_all) | OK |  |
 | G1-resp-/planning — resp sur /planning (view_all/scan/approve/manage_stock/manage_fleet) | OK |  |
@@ -120,7 +147,8 @@ Aucun.
 | G1-resp-/notifications — resp sur /notifications (view_all/scan/approve/manage_stock) | OK |  |
 | G1-resp-/tableau-de-bord — resp sur /tableau-de-bord (view_all) | OK |  |
 | G1-resp-/users — resp sur /users (manage_people) | OK |  |
-| G1-resp-/settings — resp sur /settings (settings) | OK |  |
+| G1-resp-/settings — resp sur /settings (settings) | KO | ouvert à tort alors que resp n'a pas settings |
+| G1-resp-/entreprises — resp sur /entreprises (platform) | OK |  |
 
 ## G2 Sécurité API (collaborateur)
 
@@ -213,15 +241,15 @@ Aucun.
 
 | Point | Verdict | Détail |
 |---|---|---|
-| G6-recherche-accent — Recherche « perceuse » = « PERÇEUSE » = « percuss » | OK |  |
+| G6-recherche-accent — Recherche « perceuse » = « PERÇEUSE » = « percuss » | KO | introuvable avec « perceuse » |
 | G6-recherche-vide — Recherche sans résultat : état vide propre | OK |  |
 | G6-recherche-speciaux — Recherche avec caractères spéciaux (% _ ' " < >) | OK |  |
-| G6-xss — Nom d'article avec <img onerror> : affiché comme texte, rien d'exécuté | OK |  |
+| G6-xss — Nom d'article avec <img onerror> : affiché comme texte, rien d'exécuté | KO | article introuvable |
 | G6-nom-long — Nom de 200 caractères : pas de débordement (bureau et téléphone) | OK |  |
 | G6-panier-qte — Panier : − à 1 retire l'article, + augmente, rechargement conserve | OK |  |
 | G6-double-clic — Double clic sur « Commander » : une seule commande | OK |  |
 | G6-hors-ligne — Hors ligne : message clair, panier conservé | OK |  |
-| G6-article-retire — Article retiré pendant qu'il est au panier : retiré avec un avis | OK |  |
+| G6-article-retire — Article retiré pendant qu'il est au panier : retiré avec un avis | KO | article retiré toujours au panier |
 | G6-session-expiree — Session supprimée : retour à la page de connexion | OK |  |
 | G6-upload-image — Image d'article (API, compte responsable) : PNG accepté, texte refusé | OK |  |
 
@@ -229,94 +257,94 @@ Aucun.
 
 | Point | Verdict | Détail |
 |---|---|---|
-| G7-_-bureau — / (bureau) | OK | 1561 ms |
-| G7-_-tablette — / (tablette) | OK | 1529 ms |
-| G7-_-téléphone — / (téléphone) | OK | 1547 ms |
-| G7-_shop-bureau — /shop (bureau) | OK | 1575 ms |
-| G7-_shop-tablette — /shop (tablette) | OK | 1551 ms |
-| G7-_shop-téléphone — /shop (téléphone) | OK | 1562 ms |
-| G7-_shop_vue_commandes-bureau — /shop?vue=commandes (bureau) | OK | 1569 ms |
-| G7-_shop_vue_commandes-tablette — /shop?vue=commandes (tablette) | OK | 1577 ms |
-| G7-_shop_vue_commandes-téléphone — /shop?vue=commandes (téléphone) | OK | 1564 ms |
-| G7-_demandes-bureau — /demandes (bureau) | OK | 1591 ms |
-| G7-_demandes-tablette — /demandes (tablette) | OK | 1600 ms |
-| G7-_demandes-téléphone — /demandes (téléphone) | OK | 1574 ms |
-| G7-_consommables-bureau — /consommables (bureau) | OK | 1608 ms |
-| G7-_consommables-tablette — /consommables (tablette) | OK | 1570 ms |
-| G7-_consommables-téléphone — /consommables (téléphone) | OK | 1530 ms |
-| G7-_commande-bureau — /commande (bureau) | OK | 1557 ms |
-| G7-_commande-tablette — /commande (tablette) | OK | 1529 ms |
-| G7-_commande-téléphone — /commande (téléphone) | OK | 1581 ms |
-| G7-_commandes-bureau — /commandes (bureau) | OK | 1564 ms |
-| G7-_commandes-tablette — /commandes (tablette) | OK | 1563 ms |
-| G7-_commandes-téléphone — /commandes (téléphone) | OK | 1549 ms |
-| G7-_equipment-bureau — /equipment (bureau) | OK | 1546 ms |
-| G7-_equipment-tablette — /equipment (tablette) | OK | 1557 ms |
-| G7-_equipment-téléphone — /equipment (téléphone) | OK | 1598 ms |
-| G7-_kits-bureau — /kits (bureau) | OK | 1582 ms |
-| G7-_kits-tablette — /kits (tablette) | OK | 1522 ms |
-| G7-_kits-téléphone — /kits (téléphone) | OK | 1520 ms |
-| G7-_entretien-bureau — /entretien (bureau) | OK | 1554 ms |
-| G7-_entretien-tablette — /entretien (tablette) | OK | 1544 ms |
-| G7-_entretien-téléphone — /entretien (téléphone) | OK | 1510 ms |
-| G7-_atelier-bureau — /atelier (bureau) | OK | 1518 ms |
-| G7-_atelier-tablette — /atelier (tablette) | OK | 1575 ms |
-| G7-_atelier-téléphone — /atelier (téléphone) | OK | 1553 ms |
-| G7-_incidents-bureau — /incidents (bureau) | OK | 1534 ms |
-| G7-_incidents-tablette — /incidents (tablette) | OK | 1551 ms |
-| G7-_incidents-téléphone — /incidents (téléphone) | OK | 1536 ms |
-| G7-_etiquettes-bureau — /etiquettes (bureau) | OK | 1535 ms |
-| G7-_etiquettes-tablette — /etiquettes (tablette) | OK | 1539 ms |
-| G7-_etiquettes-téléphone — /etiquettes (téléphone) | OK | 1547 ms |
-| G7-_vehicules-bureau — /vehicules (bureau) | OK | 1587 ms |
-| G7-_vehicules-tablette — /vehicules (tablette) | OK | 1566 ms |
-| G7-_vehicules-téléphone — /vehicules (téléphone) | OK | 1567 ms |
-| G7-_chantiers-bureau — /chantiers (bureau) | OK | 1567 ms |
-| G7-_chantiers-tablette — /chantiers (tablette) | OK | 1566 ms |
-| G7-_chantiers-téléphone — /chantiers (téléphone) | OK | 1550 ms |
-| G7-_locations-bureau — /locations (bureau) | OK | 1550 ms |
-| G7-_locations-tablette — /locations (tablette) | OK | 1552 ms |
-| G7-_locations-téléphone — /locations (téléphone) | OK | 1547 ms |
-| G7-_planning-bureau — /planning (bureau) | OK | 1531 ms |
-| G7-_planning-tablette — /planning (tablette) | OK | 1552 ms |
-| G7-_planning-téléphone — /planning (téléphone) | OK | 1543 ms |
-| G7-_users-bureau — /users (bureau) | OK | 1566 ms |
-| G7-_users-tablette — /users (tablette) | OK | 1535 ms |
-| G7-_users-téléphone — /users (téléphone) | OK | 1561 ms |
-| G7-_formations-bureau — /formations (bureau) | OK | 1543 ms |
-| G7-_formations-tablette — /formations (tablette) | OK | 1538 ms |
-| G7-_formations-téléphone — /formations (téléphone) | OK | 1552 ms |
-| G7-_epi-bureau — /epi (bureau) | OK | 1577 ms |
-| G7-_epi-tablette — /epi (tablette) | OK | 1547 ms |
-| G7-_epi-téléphone — /epi (téléphone) | OK | 1598 ms |
+| G7-_-bureau — / (bureau) | OK | 1522 ms |
+| G7-_-tablette — / (tablette) | OK | 1549 ms |
+| G7-_-téléphone — / (téléphone) | OK | 1543 ms |
+| G7-_shop-bureau — /shop (bureau) | OK | 1519 ms |
+| G7-_shop-tablette — /shop (tablette) | OK | 1526 ms |
+| G7-_shop-téléphone — /shop (téléphone) | OK | 1551 ms |
+| G7-_shop_vue_commandes-bureau — /shop?vue=commandes (bureau) | OK | 1536 ms |
+| G7-_shop_vue_commandes-tablette — /shop?vue=commandes (tablette) | OK | 1609 ms |
+| G7-_shop_vue_commandes-téléphone — /shop?vue=commandes (téléphone) | OK | 1588 ms |
+| G7-_demandes-bureau — /demandes (bureau) | OK | 1562 ms |
+| G7-_demandes-tablette — /demandes (tablette) | OK | 1511 ms |
+| G7-_demandes-téléphone — /demandes (téléphone) | OK | 1529 ms |
+| G7-_consommables-bureau — /consommables (bureau) | OK | 1560 ms |
+| G7-_consommables-tablette — /consommables (tablette) | OK | 1538 ms |
+| G7-_consommables-téléphone — /consommables (téléphone) | OK | 1553 ms |
+| G7-_commande-bureau — /commande (bureau) | OK | 1586 ms |
+| G7-_commande-tablette — /commande (tablette) | OK | 1521 ms |
+| G7-_commande-téléphone — /commande (téléphone) | OK | 1567 ms |
+| G7-_commandes-bureau — /commandes (bureau) | OK | 1572 ms |
+| G7-_commandes-tablette — /commandes (tablette) | OK | 1554 ms |
+| G7-_commandes-téléphone — /commandes (téléphone) | OK | 1541 ms |
+| G7-_equipment-bureau — /equipment (bureau) | OK | 1601 ms |
+| G7-_equipment-tablette — /equipment (tablette) | OK | 1552 ms |
+| G7-_equipment-téléphone — /equipment (téléphone) | OK | 1537 ms |
+| G7-_kits-bureau — /kits (bureau) | OK | 1610 ms |
+| G7-_kits-tablette — /kits (tablette) | OK | 1566 ms |
+| G7-_kits-téléphone — /kits (téléphone) | OK | 1544 ms |
+| G7-_entretien-bureau — /entretien (bureau) | OK | 1617 ms |
+| G7-_entretien-tablette — /entretien (tablette) | OK | 1558 ms |
+| G7-_entretien-téléphone — /entretien (téléphone) | OK | 1520 ms |
+| G7-_atelier-bureau — /atelier (bureau) | OK | 1626 ms |
+| G7-_atelier-tablette — /atelier (tablette) | OK | 1567 ms |
+| G7-_atelier-téléphone — /atelier (téléphone) | OK | 1518 ms |
+| G7-_incidents-bureau — /incidents (bureau) | OK | 1618 ms |
+| G7-_incidents-tablette — /incidents (tablette) | OK | 1592 ms |
+| G7-_incidents-téléphone — /incidents (téléphone) | OK | 1563 ms |
+| G7-_etiquettes-bureau — /etiquettes (bureau) | OK | 1648 ms |
+| G7-_etiquettes-tablette — /etiquettes (tablette) | OK | 1605 ms |
+| G7-_etiquettes-téléphone — /etiquettes (téléphone) | OK | 1576 ms |
+| G7-_vehicules-bureau — /vehicules (bureau) | OK | 1685 ms |
+| G7-_vehicules-tablette — /vehicules (tablette) | OK | 1648 ms |
+| G7-_vehicules-téléphone — /vehicules (téléphone) | OK | 1541 ms |
+| G7-_chantiers-bureau — /chantiers (bureau) | OK | 1589 ms |
+| G7-_chantiers-tablette — /chantiers (tablette) | OK | 1572 ms |
+| G7-_chantiers-téléphone — /chantiers (téléphone) | OK | 1621 ms |
+| G7-_locations-bureau — /locations (bureau) | OK | 1590 ms |
+| G7-_locations-tablette — /locations (tablette) | OK | 1576 ms |
+| G7-_locations-téléphone — /locations (téléphone) | OK | 1541 ms |
+| G7-_planning-bureau — /planning (bureau) | OK | 1587 ms |
+| G7-_planning-tablette — /planning (tablette) | OK | 1619 ms |
+| G7-_planning-téléphone — /planning (téléphone) | OK | 1608 ms |
+| G7-_users-bureau — /users (bureau) | OK | 1571 ms |
+| G7-_users-tablette — /users (tablette) | OK | 1584 ms |
+| G7-_users-téléphone — /users (téléphone) | OK | 1585 ms |
+| G7-_formations-bureau — /formations (bureau) | OK | 1585 ms |
+| G7-_formations-tablette — /formations (tablette) | OK | 1563 ms |
+| G7-_formations-téléphone — /formations (téléphone) | OK | 1553 ms |
+| G7-_epi-bureau — /epi (bureau) | OK | 1546 ms |
+| G7-_epi-tablette — /epi (tablette) | OK | 1557 ms |
+| G7-_epi-téléphone — /epi (téléphone) | OK | 1626 ms |
 | G7-_transferts-bureau — /transferts (bureau) | OK | 1570 ms |
-| G7-_transferts-tablette — /transferts (tablette) | OK | 1561 ms |
-| G7-_transferts-téléphone — /transferts (téléphone) | OK | 1552 ms |
-| G7-_emplacements-bureau — /emplacements (bureau) | OK | 1552 ms |
-| G7-_emplacements-tablette — /emplacements (tablette) | OK | 1546 ms |
-| G7-_emplacements-téléphone — /emplacements (téléphone) | OK | 1531 ms |
-| G7-_inventaire-bureau — /inventaire (bureau) | OK | 1578 ms |
-| G7-_inventaire-tablette — /inventaire (tablette) | OK | 1586 ms |
-| G7-_inventaire-téléphone — /inventaire (téléphone) | OK | 1552 ms |
-| G7-_checkouts-bureau — /checkouts (bureau) | OK | 1531 ms |
-| G7-_checkouts-tablette — /checkouts (tablette) | OK | 1564 ms |
-| G7-_checkouts-téléphone — /checkouts (téléphone) | OK | 1533 ms |
-| G7-_journal-bureau — /journal (bureau) | OK | 1549 ms |
-| G7-_journal-tablette — /journal (tablette) | OK | 1535 ms |
-| G7-_journal-téléphone — /journal (téléphone) | OK | 1550 ms |
-| G7-_couts-bureau — /couts (bureau) | OK | 1586 ms |
-| G7-_couts-tablette — /couts (tablette) | OK | 1546 ms |
-| G7-_couts-téléphone — /couts (téléphone) | OK | 1538 ms |
-| G7-_pilotage-bureau — /pilotage (bureau) | OK | 1575 ms |
-| G7-_pilotage-tablette — /pilotage (tablette) | OK | 1572 ms |
-| G7-_pilotage-téléphone — /pilotage (téléphone) | OK | 1539 ms |
-| G7-_notifications-bureau — /notifications (bureau) | OK | 1545 ms |
-| G7-_notifications-tablette — /notifications (tablette) | OK | 1552 ms |
-| G7-_notifications-téléphone — /notifications (téléphone) | OK | 1547 ms |
-| G7-_aide-bureau — /aide (bureau) | OK | 1531 ms |
-| G7-_aide-tablette — /aide (tablette) | OK | 1594 ms |
-| G7-_aide-téléphone — /aide (téléphone) | OK | 1579 ms |
-| G7-ouverture-cartes — Une carte ouvre un panneau qui se ferme avec Échap (6 pages) | INFO | 6 pages vérifiées |
+| G7-_transferts-tablette — /transferts (tablette) | OK | 1514 ms |
+| G7-_transferts-téléphone — /transferts (téléphone) | OK | 1535 ms |
+| G7-_emplacements-bureau — /emplacements (bureau) | OK | 1570 ms |
+| G7-_emplacements-tablette — /emplacements (tablette) | OK | 1526 ms |
+| G7-_emplacements-téléphone — /emplacements (téléphone) | OK | 1555 ms |
+| G7-_inventaire-bureau — /inventaire (bureau) | OK | 1576 ms |
+| G7-_inventaire-tablette — /inventaire (tablette) | OK | 1511 ms |
+| G7-_inventaire-téléphone — /inventaire (téléphone) | OK | 1561 ms |
+| G7-_checkouts-bureau — /checkouts (bureau) | OK | 1583 ms |
+| G7-_checkouts-tablette — /checkouts (tablette) | OK | 1512 ms |
+| G7-_checkouts-téléphone — /checkouts (téléphone) | OK | 1539 ms |
+| G7-_journal-bureau — /journal (bureau) | OK | 1575 ms |
+| G7-_journal-tablette — /journal (tablette) | OK | 1534 ms |
+| G7-_journal-téléphone — /journal (téléphone) | OK | 1539 ms |
+| G7-_couts-bureau — /couts (bureau) | OK | 1578 ms |
+| G7-_couts-tablette — /couts (tablette) | OK | 1553 ms |
+| G7-_couts-téléphone — /couts (téléphone) | OK | 1536 ms |
+| G7-_pilotage-bureau — /pilotage (bureau) | OK | 1582 ms |
+| G7-_pilotage-tablette — /pilotage (tablette) | OK | 1571 ms |
+| G7-_pilotage-téléphone — /pilotage (téléphone) | OK | 1555 ms |
+| G7-_notifications-bureau — /notifications (bureau) | OK | 1588 ms |
+| G7-_notifications-tablette — /notifications (tablette) | OK | 1554 ms |
+| G7-_notifications-téléphone — /notifications (téléphone) | OK | 1540 ms |
+| G7-_aide-bureau — /aide (bureau) | OK | 1545 ms |
+| G7-_aide-tablette — /aide (tablette) | OK | 1544 ms |
+| G7-_aide-téléphone — /aide (téléphone) | OK | 1517 ms |
+| G7-ouverture-cartes — Une carte ouvre un panneau qui se ferme avec Échap (6 pages) | NON TESTÉ | aucune carte trouvée |
 | G7-clavier — Clavier : Tab atteint les boutons du Shop, focus visible | OK | 25 éléments, focus visible 25/25 |
 
 ## G8 Langues
