@@ -17,6 +17,9 @@ import DateInput from '../components/common/DateInput';
 import RentalBadge from '../components/common/RentalBadge';
 import { LICENSE_CATEGORIES } from '../lib/licenses';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
 
@@ -56,6 +59,7 @@ const Vehicles: React.FC = () => {
   // Fiches et maintenance : gestion de flotte ; retour d'un véhicule : le magasin
   const canManage = can('manage_fleet');
   const canReturn = can('scan') || canManage;
+  const [detail, setDetail] = useState<Vehicle | null>(null);
   const [logbookOf, setLogbookOf] = useState<Vehicle | null>(null);
   const [bookings, setBookings] = useState<RequestOverview[]>([]);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -181,42 +185,64 @@ const Vehicles: React.FC = () => {
       </section>
 
       {/* Flotte */}
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {vehicles.map(v => (
-          <li key={v.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
-            <div className="flex justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">{v.name}<RentalBadge until={v.rentalUntil} /></div>
-                <div className="font-mono text-sm text-gray-600 dark:text-gray-300">{v.plate} · permis {v.licenseCategory}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">{depots.find(d => d.id === v.depotId)?.name ?? 'Sans dépôt'}</div>
+      <MxCardGrid
+        items={vehicles}
+        getItemKey={v => v.id}
+        renderItem={v => (
+          <MxEntityCard
+            avatarName={v.name}
+            title={v.name}
+            infoParts={[
+              { content: `${v.plate} · permis ${v.licenseCategory}` },
+              { content: depots.find(d => d.id === v.depotId)?.name ?? 'Sans dépôt' },
+            ]}
+            statusBadge={<MxBadge tone={({ available: 'success', in_use: 'info', maintenance: 'warning', retired: 'neutral' } as const)[v.status]}>{VEHICLE_STATUS[v.status].label}</MxBadge>}
+            due={v.rentalUntil ? <RentalBadge until={v.rentalUntil} /> : <span>{`${v.currentKm.toLocaleString('fr-CH')} km`}</span>}
+            menuLabel={`Actions pour ${v.name}`}
+            menuActions={[
+              ...(canReturn && v.status === 'in_use' ? [{ id: 'return', label: 'Retour', icon: Undo2, onSelect: () => setReturning(v) }] : []),
+              { id: 'logbook', label: 'Carnet', icon: BookOpen, onSelect: () => setLogbookOf(v) },
+              ...(canManage ? [{ id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => setEditing(v) }] : []),
+              ...(canManage && (v.status === 'available' || v.status === 'maintenance')
+                ? [{ id: 'maintenance', label: v.status === 'maintenance' ? 'Fin de maintenance' : 'Maintenance', icon: Wrench, onSelect: () => toggleMaintenance(v) }]
+                : []),
+            ]}
+            onOpen={() => setDetail(v)}
+          />
+        )}
+      />
+
+      {detail && (() => {
+        const v = vehicles.find(x => x.id === detail.id) ?? detail;
+        return (
+          <Modal isOpen onClose={() => setDetail(null)} title={v.name} size="md">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-sm text-gray-700 dark:text-gray-300">{v.plate} · permis {v.licenseCategory}</span>
+                <RentalBadge until={v.rentalUntil} />
               </div>
-              <span className={`self-start inline-flex rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${VEHICLE_STATUS[v.status].className}`}>{VEHICLE_STATUS[v.status].label}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 items-end">
-              <div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">Kilométrage</div>
-                <div className="font-mono text-gray-900 dark:text-gray-100">{v.currentKm.toLocaleString('fr-CH')} km</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">{depots.find(d => d.id === v.depotId)?.name ?? 'Sans dépôt'}</div>
+              <div className="grid grid-cols-2 gap-3 items-end">
+                <div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Kilométrage</div>
+                  <div className="font-mono text-gray-900 dark:text-gray-100">{v.currentKm.toLocaleString('fr-CH')} km</div>
+                </div>
+                <FuelInput value={v.fuelLevel} />
               </div>
-              <FuelInput value={v.fuelLevel} />
+              <div className="flex flex-wrap gap-1">
+                <Deadline label="Service" date={v.nextServiceDate} />
+                <Deadline label="Pneus" date={v.tiresDate} />
+                <Deadline label="Expertise" date={v.inspectionDate} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {canReturn && v.status === 'in_use' && <Button size="sm" icon={<Undo2 size={14} />} onClick={() => { setDetail(null); setReturning(v); }}>Retour</Button>}
+                <Button size="sm" variant="outline" icon={<BookOpen size={14} />} onClick={() => { setDetail(null); setLogbookOf(v); }}>Carnet</Button>
+                {canManage && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => { setDetail(null); setEditing(v); }}>Modifier</Button>}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1">
-              <Deadline label="Service" date={v.nextServiceDate} />
-              <Deadline label="Pneus" date={v.tiresDate} />
-              <Deadline label="Expertise" date={v.inspectionDate} />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {canReturn && v.status === 'in_use' && <Button size="sm" icon={<Undo2 size={14} />} onClick={() => setReturning(v)}>Retour</Button>}
-              <Button size="sm" variant="outline" icon={<BookOpen size={14} />} onClick={() => setLogbookOf(v)}>Carnet</Button>
-              {canManage && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setEditing(v)}>Modifier</Button>}
-              {canManage && (v.status === 'available' || v.status === 'maintenance') && (
-                <Button size="sm" variant="outline" icon={<Wrench size={14} />} onClick={() => toggleMaintenance(v)}>
-                  {v.status === 'maintenance' ? 'Fin de maintenance' : 'Maintenance'}
-                </Button>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+          </Modal>
+        );
+      })()}
 
       {editing && (
         <VehicleFormModal

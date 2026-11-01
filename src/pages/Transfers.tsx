@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeftRight, ArrowRight, PackageCheck, Plus, Send, Trash2, X } from 'lucide-react';
+import { ArrowLeftRight, PackageCheck, Plus, Send, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -10,6 +10,9 @@ import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { findEquipmentByCode } from '../lib/scan';
 import { confirmAction, promptAction } from '../lib/confirm';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PageTitle from '../components/common/PageTitle';
@@ -59,6 +62,7 @@ const Transfers: React.FC = () => {
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [receiving, setReceiving] = useState<Transfer | null>(null);
+  const [detail, setDetail] = useState<Transfer | null>(null);
 
   const load = async () => {
     const { data, error } = await supabase.from('transfers').select('*, transfer_lines(*)').order('sent_at', { ascending: false }).limit(200);
@@ -171,43 +175,50 @@ const Transfers: React.FC = () => {
       <PageCommands filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)}
         options={[{ value: 'open', label: 'En route' }, { value: 'all', label: 'Historique' }]} />} primary={depots.length > 1 ? <Button icon={<Plus size={16} />} onClick={openCreate}>Nouveau transfert</Button> : undefined} />
 
-      <ul className="rounded-lg bg-white dark:bg-gray-800 shadow divide-y divide-gray-200 dark:divide-gray-700">
-        {shown.length === 0 && (
-          <li className="p-2">
-            <MxEmpty icon={ArrowLeftRight} title={depots.length > 1 ? 'Aucun transfert' : 'Un seul dépôt'}
-              description={depots.length > 1 ? undefined : 'Crées-en un autre dans Paramètres pour transférer du matériel.'} />
-          </li>
-        )}
-        {shown.map(t => {
+      {shown.length === 0 && (
+        <MxEmpty icon={ArrowLeftRight} title={depots.length > 1 ? 'Aucun transfert' : 'Un seul dépôt'}
+          description={depots.length > 1 ? undefined : 'Crées-en un autre dans Paramètres pour transférer du matériel.'} />
+      )}
+      <MxCardGrid
+        items={shown}
+        getItemKey={t => t.id}
+        renderItem={t => {
           const done = t.transfer_lines.filter(l => l.received >= l.quantity).length;
           const canReceive = t.status === 'in_transit' && myDepotIds.includes(t.to_depot_id);
           return (
-            <li key={t.id} className="p-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
-                  <span className="font-mono">{t.number}</span>
-                  <span className="inline-flex items-center gap-1">{depotName(t.from_depot_id)} <ArrowRight size={14} aria-hidden="true" /> {depotName(t.to_depot_id)}</span>
-                  <span className={`rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold ${t.status === 'in_transit' ? 'mx-tint-badge-info' : t.status === 'received' ? 'mx-tint-badge-success' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>{STATUS[t.status]}</span>
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Envoyé le {new Date(t.sent_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}{t.sent_by ? ` par ${userName(t.sent_by)}` : ''}
-                  {' · '}{t.transfer_lines.map(l => `${item(l.equipment_id)?.itemType === 'consumable' ? `${l.quantity} ` : ''}${item(l.equipment_id)?.name ?? 'Article'}`).join(', ')}
-                </p>
-                {t.status === 'in_transit' && <p className="text-xs text-gray-600 dark:text-gray-400">{done} / {t.transfer_lines.length} ligne(s) reçue(s)</p>}
-                {t.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{t.notes}</p>}
-              </div>
-              {t.status === 'in_transit' && (
-                <div className="flex flex-wrap gap-2 shrink-0">
-                  {canReceive && <Button size="sm" icon={<PackageCheck size={14} />} onClick={() => setReceiving(t)}>Réceptionner</Button>}
-                  {myDepotIds.includes(t.from_depot_id) && done === 0 && (
-                    <Button size="sm" variant="outline" icon={<X size={14} />} onClick={() => close(t, true)}>Annuler</Button>
-                  )}
-                </div>
-              )}
-            </li>
+            <MxEntityCard
+              avatarName={`${depotName(t.from_depot_id)} ${depotName(t.to_depot_id)}`}
+              title={`${depotName(t.from_depot_id)} → ${depotName(t.to_depot_id)}`}
+              infoParts={[
+                { content: t.number },
+                { content: `Envoyé le ${new Date(t.sent_at).toLocaleDateString('fr-CH')}${t.sent_by ? ` · ${userName(t.sent_by)}` : ''}` },
+              ]}
+              statusBadge={<MxBadge tone={t.status === 'in_transit' ? 'info' : t.status === 'received' ? 'success' : 'neutral'}>{STATUS[t.status]}</MxBadge>}
+              due={<span>{t.status === 'in_transit' ? `${done} / ${t.transfer_lines.length} ligne(s) reçue(s)` : `${t.transfer_lines.length} ligne(s)`}</span>}
+              menuLabel={`Actions pour le transfert ${t.number}`}
+              menuActions={[
+                ...(canReceive ? [{ id: 'receive', label: 'Réceptionner', icon: PackageCheck, onSelect: () => setReceiving(t) }] : []),
+                ...(t.status === 'in_transit' && myDepotIds.includes(t.from_depot_id) && done === 0 ? [{ id: 'cancel', label: 'Annuler', icon: X, tone: 'danger' as const, onSelect: () => close(t, true) }] : []),
+              ]}
+              onOpen={() => (canReceive ? setReceiving(t) : setDetail(t))}
+            />
           );
-        })}
-      </ul>
+        }}
+      />
+
+      {detail && (
+        <Modal isOpen onClose={() => setDetail(null)} title={`Transfert ${detail.number}`} size="md">
+          <div className="space-y-3 text-sm text-gray-800 dark:text-gray-200">
+            <p>{depotName(detail.from_depot_id)} → {depotName(detail.to_depot_id)} · {STATUS[detail.status]}</p>
+            <ul className="list-disc pl-5">
+              {detail.transfer_lines.map(l => (
+                <li key={l.id ?? l.equipment_id}>{item(l.equipment_id)?.itemType === 'consumable' ? `${l.quantity} ` : ''}{item(l.equipment_id)?.name ?? 'Article'}{l.received >= l.quantity ? ' · reçu' : ''}</li>
+              ))}
+            </ul>
+            {detail.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{detail.notes}</p>}
+          </div>
+        </Modal>
+      )}
 
       <Modal isOpen={creating} onClose={() => setCreating(false)} title="Nouveau transfert" size="lg">
         <div className="space-y-4">

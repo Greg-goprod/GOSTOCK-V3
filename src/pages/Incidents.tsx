@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Plus , ShieldCheck } from 'lucide-react';
+import { Gavel, Image, Plus, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -10,6 +10,9 @@ import { supabase } from '../lib/supabase';
 import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
 import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { PageCommands } from '../components/Layout/ModuleHeader';
@@ -124,30 +127,29 @@ const Incidents: React.FC = () => {
       {shown.length === 0 ? (
         <MxEmpty icon={ShieldCheck} title="Aucun incident" />
       ) : (
-        <ul className="space-y-2">
-          {shown.map(i => (
-            <li key={i.id} className="rounded-lg bg-white dark:bg-gray-800 shadow p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  <AlertTriangle size={16} className="text-tone-danger" aria-hidden="true" />
-                  {INCIDENT_KINDS[i.kind]} · {itemName(i.equipment_id)}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {new Date(i.occurred_at).toLocaleDateString('fr-CH')} · responsable : {name(i.responsible_id)} · valeur {chf(valueOf(i))}
-                  {i.description ? ` · ${i.description}` : ''}
-                </p>
-                <p className="text-xs mt-1">
-                  <span className={i.decision === 'pending' ? 'text-tone-warning font-semibold' : 'text-gray-700 dark:text-gray-300'}>{DECISIONS[i.decision]}</span>
-                  {i.decided_by ? <span className="text-gray-500"> · {i.decided_by}{i.decision_note ? ` : ${i.decision_note}` : ''}</span> : null}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
-                {i.photos.map((p, n) => <Button key={p} size="sm" variant="outline" onClick={() => openPhoto(p)}>Photo {n + 1}</Button>)}
-                {can('approve') && <Button size="sm" onClick={() => setDeciding(i)}>{i.decision === 'pending' ? 'Décider' : 'Modifier'}</Button>}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <MxCardGrid
+          items={shown}
+          getItemKey={i => i.id}
+          renderItem={i => (
+            <MxEntityCard
+              avatarSrc={equipment.find(e => e.id === i.equipment_id)?.imageUrl || null}
+              avatarName={itemName(i.equipment_id)}
+              title={itemName(i.equipment_id)}
+              infoParts={[
+                { content: `${INCIDENT_KINDS[i.kind]} · ${new Date(i.occurred_at).toLocaleDateString('fr-CH')}` },
+                { content: `${name(i.responsible_id)} · ${chf(valueOf(i))}` },
+              ]}
+              statusBadge={<MxBadge tone={i.decision === 'pending' ? 'warning' : i.decision === 'found' ? 'success' : 'neutral'}>{DECISIONS[i.decision]}</MxBadge>}
+              due={i.description || i.decision_note ? <span>{i.decision_note ? `${i.decided_by ?? ''} : ${i.decision_note}` : i.description}</span> : undefined}
+              menuLabel={`Actions pour ${itemName(i.equipment_id)}`}
+              menuActions={[
+                ...(can('approve') ? [{ id: 'decide', label: i.decision === 'pending' ? 'Décider' : 'Modifier la décision', icon: Gavel, onSelect: () => setDeciding(i) }] : []),
+                ...i.photos.map((p, n) => ({ id: `photo-${n}`, label: `Photo ${n + 1}`, icon: Image, onSelect: () => openPhoto(p) })),
+              ]}
+              onOpen={() => { if (can('approve')) setDeciding(i); else if (i.photos[0]) openPhoto(i.photos[0]); }}
+            />
+          )}
+        />
       )}
 
       {declaring && <DeclareIncidentModal onClose={() => setDeclaring(false)} onDone={async () => { setDeclaring(false); await load(); }} />}

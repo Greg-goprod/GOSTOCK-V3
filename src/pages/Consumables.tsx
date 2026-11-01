@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowDownToLine, ArrowLeftRight, ClipboardList, Hand, Minus, Pencil, Plus, Search, Settings2, Warehouse } from 'lucide-react';
 import ImageField from '../components/equipment/ImageField';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxEntityViewToggle } from '../components/mx/MxEntityViewToggle';
+import { MxPagination } from '../components/mx/MxPagination';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
 import toast from 'react-hot-toast';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
@@ -101,6 +106,14 @@ const Consumables: React.FC = () => {
       .sort((a, b) => Number(b.isLow) - Number(a.isLow) || a.item.name.localeCompare(b.item.name));
   }, [consumables, consumableStock, depotFilter, search, onlyLow, suppliers, depots]);
 
+  // Affichage (cartes ou liste) et pagination mémorisés, comme la liste des outils
+  const [viewMode, setViewModeState] = useState<'cards' | 'list'>(() => readMxViewMode('gomat-view-consommables', ['cards', 'list'] as const, 'cards'));
+  const [pageSize, setPageSize] = useState(() => Number(readMxViewMode('gomat-pagesize-consommables', ['24', '48', '96'] as const, '48')));
+  const [page, setPage] = useState(1);
+  const setViewMode = (mode: 'cards' | 'list') => { setViewModeState(mode); writeMxViewMode('gomat-view-consommables', mode); };
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const lowCount = rows.filter(r => r.isLow || r.quantity === 0).length;
 
   if (depots.length === 0) {
@@ -135,6 +148,14 @@ const Consumables: React.FC = () => {
             Stock bas seulement {lowCount > 0 && `(${lowCount})`}
           </label>
         }
+        pagination={totalPages > 1 || rows.length > 24 ? (
+          <MxPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage}
+            previousLabel="Page précédente" nextLabel="Page suivante" totalLabel={`${rows.length} article(s)`}
+            pageSize={pageSize} pageSizeOptions={[{ value: '24', label: '24' }, { value: '48', label: '48' }, { value: '96', label: '96' }]}
+            onPageSizeChange={size => { setPageSize(size); setPage(1); writeMxViewMode('gomat-pagesize-consommables', String(size)); }}
+            pageSizeLabel="Articles par page" />
+        ) : undefined}
+        view={<MxEntityViewToggle value={viewMode} onChange={setViewMode} aria-label="Affichage des consommables" />}
         primary={
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" icon={<Warehouse size={16} />} onClick={() => setShowDepots(true)}>Dépôts</Button>
@@ -153,34 +174,35 @@ const Consumables: React.FC = () => {
         </div>
       ) : (
         <>
-        <ul className="md:hidden space-y-3">
-          {rows.map(({ item, quantity, minQuantity, isLow, lowDepots, supplierName }) => (
-            <li key={item.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
-              <div className="flex justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
-                  <div className="font-mono text-xs text-gray-500 dark:text-gray-400">{[supplierName, item.supplierReference].filter(Boolean).join(' · ') || '—'}</div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="font-mono text-lg text-gray-900 dark:text-gray-100">{formatQty(quantity)} <span className="text-sm text-gray-500 dark:text-gray-400">{item.unit}</span></div>
-                  {minQuantity > 0 && <div className="text-xs text-gray-600 dark:text-gray-400">seuil {formatQty(minQuantity)}</div>}
-                </div>
-              </div>
-              <StatePill quantity={quantity} isLow={isLow} lowDepots={lowDepots} showDepots={depotFilter === 'all'} />
-              <div className="grid grid-cols-2 gap-2">
-                <Button icon={<Minus size={14} />} onClick={() => setAction({ type: 'consume', item })}>Sortir</Button>
-                <Button variant="outline" icon={<ArrowDownToLine size={14} />} onClick={() => setAction({ type: 'receive', item })}>Réception</Button>
-                <Button variant="outline" icon={<ClipboardList size={14} />} onClick={() => setAction({ type: 'count', item })}>Inventaire</Button>
-                <Button variant="outline" icon={<ArrowLeftRight size={14} />} onClick={() => setAction({ type: 'transfer', item })}>Transfert</Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" icon={<Settings2 size={14} />} onClick={() => setAction({ type: 'threshold', item })}>Seuil minimum</Button>
-                <Button variant="outline" icon={<Pencil size={14} />} onClick={() => setEditing(item)}>Modifier</Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className={viewMode === 'list' ? 'md:hidden' : ''}>
+          <MxCardGrid
+            items={pagedRows}
+            getItemKey={r => r.item.id}
+            renderItem={({ item, quantity, minQuantity, isLow, lowDepots, supplierName }) => (
+              <MxEntityCard
+                avatarSrc={item.imageUrl || null}
+                avatarName={item.name}
+                title={item.name}
+                infoParts={[
+                  { content: [supplierName, item.supplierReference].filter(Boolean).join(' · ') || '\u00A0' },
+                  { content: `${formatQty(quantity)} ${item.unit ?? ''}${minQuantity > 0 ? ` · seuil ${formatQty(minQuantity)}` : ''}` },
+                ]}
+                statusBadge={<StatePill quantity={quantity} isLow={isLow} lowDepots={lowDepots} showDepots={depotFilter === 'all'} />}
+                menuLabel={`Actions pour ${item.name}`}
+                menuActions={[
+                  { id: 'consume', label: 'Sortir', icon: Minus, onSelect: () => setAction({ type: 'consume', item }) },
+                  { id: 'receive', label: 'Réception', icon: ArrowDownToLine, onSelect: () => setAction({ type: 'receive', item }) },
+                  { id: 'count', label: 'Inventaire', icon: ClipboardList, onSelect: () => setAction({ type: 'count', item }) },
+                  { id: 'transfer', label: 'Transfert', icon: ArrowLeftRight, onSelect: () => setAction({ type: 'transfer', item }) },
+                  { id: 'threshold', label: 'Seuil minimum', icon: Settings2, onSelect: () => setAction({ type: 'threshold', item }) },
+                  { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => setEditing(item) },
+                ]}
+                onOpen={() => setAction({ type: 'consume', item })}
+              />
+            )}
+          />
+        </div>
+        <div className={`${viewMode === 'list' ? 'hidden md:block' : 'hidden'} bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -194,7 +216,7 @@ const Consumables: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {rows.map(({ item, quantity, minQuantity, isLow, lowDepots, supplierName }) => (
+                {pagedRows.map(({ item, quantity, minQuantity, isLow, lowDepots, supplierName }) => (
                   <tr key={item.id} className="text-gray-900 dark:text-gray-100">
                     <td className="px-4 py-3">
                       <div className="font-medium">{item.name}</div>
