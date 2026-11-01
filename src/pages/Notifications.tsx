@@ -1,460 +1,180 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { supabase } from '../lib/supabase';
 import PushToggle from '../components/common/PushToggle';
-import { CheckCircle, Bell, Trash2, BookMarked as MarkAsRead } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { CheckCircle, Bell, BookMarked as MarkAsUnread } from 'lucide-react';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import toast from 'react-hot-toast';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxCardGrid } from '../components/mx/MxCardGrid';
 import { MxEntityCard } from '../components/mx/MxEntityCard';
 import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { PageCommands } from '../components/Layout/ModuleHeader';
+import type { StockNotification } from '../types';
 
-interface NotificationItem {
-  id: string;
-  type: 'overdue' | 'due_soon' | 'maintenance' | 'system' | 'checkout';
-  title: string;
-  message: string;
-  date: string;
-  priority: 'high' | 'medium' | 'low';
-  read: boolean;
-  relatedData?: {
-    equipmentId?: string;
-    equipmentName?: string;
-    userId?: string;
-    userName?: string;
-    checkoutId?: string;
-    dueDate?: string;
-    daysOverdue?: number;
-    delivery_note_id?: string;
-    note_number?: string;
-    user_department?: string;
-    equipment_count?: number;
-  };
-}
+type Group = 'requests' | 'returns' | 'stock' | 'upkeep' | 'incidents' | 'other';
+
+const GROUPS: { id: Group; label: string; empty: string; to: string }[] = [
+  { id: 'requests', label: 'Demandes', empty: 'Aucune notification de demande.', to: '/demandes' },
+  { id: 'returns', label: 'Retours', empty: 'Aucune notification de retour ou de prolongation.', to: '/checkouts' },
+  { id: 'stock', label: 'Stock', empty: 'Aucune notification de stock.', to: '/commande' },
+  { id: 'upkeep', label: 'Entretien et échéances', empty: 'Aucune notification d\'entretien ou d\'échéance.', to: '/entretien' },
+  { id: 'incidents', label: 'Pertes et casse', empty: 'Aucune notification de perte ou de casse.', to: '/incidents' },
+  { id: 'other', label: 'Autres', empty: 'Aucune autre notification.', to: '/notifications' },
+];
+
+// Famille d'une notification d'après son type (les types inconnus tombent dans « Autres »)
+const GROUP_OF: Record<string, Group> = {
+  request_to_approve: 'requests', request_approved: 'requests', request_rejected: 'requests', request_ready: 'requests',
+  return_reminder: 'returns', return_overdue: 'returns', return_escalation: 'returns', loan_extended: 'returns',
+  extension_request: 'returns', drop_box: 'returns', tool_found: 'returns',
+  low_stock: 'stock', transfer: 'stock',
+  maintenance_due: 'upkeep', vehicle_deadline: 'upkeep', warranty_end: 'upkeep', repair_late: 'upkeep', battery_end: 'upkeep',
+  training_expiry: 'upkeep', rental_due: 'upkeep', ppe_renewal: 'upkeep', mission_end: 'upkeep',
+  incident: 'incidents', tool_damaged: 'incidents',
+};
+
+const groupOf = (n: StockNotification): Group => GROUP_OF[n.kind] ?? 'other';
+
+const TONE: Record<string, 'danger' | 'warning' | 'success' | 'info'> = {
+  request_rejected: 'danger', return_overdue: 'danger', return_escalation: 'danger', incident: 'danger', tool_damaged: 'danger', repair_late: 'danger',
+  request_to_approve: 'warning', extension_request: 'warning', low_stock: 'warning', maintenance_due: 'warning', vehicle_deadline: 'warning',
+  warranty_end: 'warning', battery_end: 'warning', training_expiry: 'warning', rental_due: 'warning', ppe_renewal: 'warning', mission_end: 'warning',
+  backup_due: 'warning', return_reminder: 'warning',
+  request_approved: 'success', request_ready: 'success', loan_extended: 'success',
+};
 
 const Notifications: React.FC = () => {
-  const { stockNotifications, markStockNotificationRead } = useApp();
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'read' | 'overdue' | 'maintenance' | 'checkout'>('all');
+  const { userNotifications, unreadNotificationCount, markNotificationsRead, markNotificationUnread, markAllNotificationsRead, refreshNotifications, checkouts, loadingAppData } = useApp();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<'all' | 'unread' | 'read'>('all');
+  const [group, setGroup] = useState<'all' | Group>('all');
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Nettoyer les notifications stockées dans localStorage
-    localStorage.removeItem('checkout_notifications');
-    localStorage.removeItem('return_notifications');
-    
-    generateNotifications();
-    
-    // Écouter les nouvelles notifications de sortie
-    const checkForNewCheckoutNotifications = () => {
-      const checkoutNotifications = JSON.parse(localStorage.getItem('checkout_notifications') || '[]');
-      if (checkoutNotifications.length > 0) {
-        // Intégrer les notifications de sortie
-        setNotifications(prev => {
-          const existingIds = new Set(prev.map(n => n.id));
-          const newNotifications = checkoutNotifications.filter((n: any) => !existingIds.has(n.id));
-          return [...newNotifications, ...prev];
-        });
-      }
-    };
+  const readCount = userNotifications.length - userNotifications.filter(n => !n.read).length;
+  const unreadCount = userNotifications.length - readCount;
 
-    // Vérifier périodiquement les nouvelles notifications
-    const interval = setInterval(checkForNewCheckoutNotifications, 2000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  const visible = useMemo(() => userNotifications.filter(n =>
+    (status === 'all' || (status === 'unread' ? !n.read : n.read)) && (group === 'all' || groupOf(n) === group)
+  ), [userNotifications, status, group]);
 
-  const generateNotifications = async () => {
-    try {
-      setLoading(true);
-      const generatedNotifications: NotificationItem[] = [];
+  const groupCounts = useMemo(() => {
+    const base = userNotifications.filter(n => status === 'all' || (status === 'unread' ? !n.read : n.read));
+    const counts: Record<string, number> = { all: base.length };
+    for (const g of GROUPS) counts[g.id] = base.filter(n => groupOf(n) === g.id).length;
+    return counts;
+  }, [userNotifications, status]);
 
-      // 1. Récupérer les emprunts en retard
-      const { data: overdueCheckouts, error: overdueError } = await supabase
-        .from('checkouts')
-        .select(`
-          *,
-          equipment(name, serial_number),
-          users(first_name, last_name)
-        `)
-        .in('status', ['active', 'overdue'])
-        .lt('due_date', new Date().toISOString());
+  // Situation du moment : un état calculé à l'instant, pas des notifications (il n'a pas de « lu »)
+  const situation = useMemo(() => {
+    const limit = Date.now() + 3 * 24 * 60 * 60 * 1000;
+    const overdue = checkouts.filter(c => c.status === 'overdue').length;
+    const soon = checkouts.filter(c => c.status === 'active' && c.dueDate && new Date(c.dueDate).getTime() <= limit).length;
+    return { overdue, soon };
+  }, [checkouts]);
 
-      if (overdueError) throw overdueError;
-
-      // Créer des notifications pour les retards
-      overdueCheckouts?.forEach(checkout => {
-        const daysOverdue = differenceInDays(new Date(), new Date(checkout.due_date));
-        generatedNotifications.push({
-          id: `overdue-${checkout.id}`,
-          type: 'overdue',
-          title: 'Matériel en retard',
-          message: `${checkout.equipment?.name || 'Équipement inconnu'} emprunté par ${checkout.users?.first_name} ${checkout.users?.last_name} est en retard de ${daysOverdue} jour(s)`,
-          date: new Date().toISOString(),
-          priority: daysOverdue > 7 ? 'high' : daysOverdue > 3 ? 'medium' : 'low',
-          read: false,
-          relatedData: {
-            equipmentId: checkout.equipment_id,
-            equipmentName: checkout.equipment?.name,
-            userId: checkout.user_id,
-            userName: `${checkout.users?.first_name} ${checkout.users?.last_name}`,
-            checkoutId: checkout.id,
-            dueDate: checkout.due_date,
-            daysOverdue
-          }
-        });
-      });
-
-      // 2. Récupérer les emprunts qui arrivent à échéance dans les 3 prochains jours
-      const threeDaysFromNow = new Date();
-      threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-
-      const { data: dueSoonCheckouts, error: dueSoonError } = await supabase
-        .from('checkouts')
-        .select(`
-          *,
-          equipment(name, serial_number),
-          users(first_name, last_name)
-        `)
-        .eq('status', 'active')
-        .gte('due_date', new Date().toISOString())
-        .lte('due_date', threeDaysFromNow.toISOString());
-
-      if (dueSoonError) throw dueSoonError;
-
-      // Créer des notifications pour les échéances proches
-      dueSoonCheckouts?.forEach(checkout => {
-        const daysUntilDue = differenceInDays(new Date(checkout.due_date), new Date());
-        generatedNotifications.push({
-          id: `due-soon-${checkout.id}`,
-          type: 'due_soon',
-          title: 'Retour prévu bientôt',
-          message: `${checkout.equipment?.name || 'Équipement inconnu'} emprunté par ${checkout.users?.first_name} ${checkout.users?.last_name} doit être retourné dans ${daysUntilDue} jour(s)`,
-          date: new Date().toISOString(),
-          priority: daysUntilDue <= 1 ? 'high' : 'medium',
-          read: false,
-          relatedData: {
-            equipmentId: checkout.equipment_id,
-            equipmentName: checkout.equipment?.name,
-            userId: checkout.user_id,
-            userName: `${checkout.users?.first_name} ${checkout.users?.last_name}`,
-            checkoutId: checkout.id,
-            dueDate: checkout.due_date
-          }
-        });
-      });
-
-      // 3. Récupérer les équipements en maintenance depuis plus de 30 jours
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const { data: maintenanceEquipment, error: maintenanceError } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('status', 'maintenance')
-        .lt('created_at', thirtyDaysAgo.toISOString());
-
-      if (maintenanceError) throw maintenanceError;
-
-      // Créer des notifications pour les maintenances prolongées
-      maintenanceEquipment?.forEach(equipment => {
-        const daysInMaintenance = differenceInDays(new Date(), new Date(equipment.created_at));
-        generatedNotifications.push({
-          id: `maintenance-${equipment.id}`,
-          type: 'maintenance',
-          title: 'Maintenance prolongée',
-          message: `${equipment.name} est en maintenance depuis ${daysInMaintenance} jours`,
-          date: new Date().toISOString(),
-          priority: daysInMaintenance > 60 ? 'high' : 'medium',
-          read: false,
-          relatedData: {
-            equipmentId: equipment.id,
-            equipmentName: equipment.name
-          }
-        });
-      });
-
-      // 4. Récupérer les notifications de sortie depuis localStorage
-      const checkoutNotifications = JSON.parse(localStorage.getItem('checkout_notifications') ||'[]');
-      generatedNotifications.push(...checkoutNotifications);
-
-      // 5. Ajouter notification système si aucune notification
-      if (generatedNotifications.length === 0) {
-        generatedNotifications.push({
-          id: 'system-welcome',
-          type: 'system',
-          title: 'Système de notifications actif',
-          message: 'Le système de notifications surveille automatiquement les retards, les maintenances prolongées et les mouvements de sortie.',
-          date: new Date().toISOString(),
-          priority: 'low',
-          read: false
-        });
-      }
-
-      // Trier par priorité et date
-      generatedNotifications.sort((a, b) => {
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
-        if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-          return priorityOrder[b.priority] - priorityOrder[a.priority];
-        }
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-      });
-
-      setNotifications(generatedNotifications);
-    } catch (error: any) {
-      console.error('Error generating notifications:', error);
-      toast.error('Erreur lors du chargement des notifications');
-    } finally {
-      setLoading(false);
-    }
+  const refresh = async () => {
+    setRefreshing(true);
+    try { await refreshNotifications(); } finally { setRefreshing(false); }
   };
 
-  const markAsRead = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-    toast.success('Notification marquée comme lue');
+  const open = (n: StockNotification) => {
+    if (!n.read) void markNotificationsRead([n.id]);
+    const target = GROUPS.find(g => g.id === groupOf(n))?.to;
+    if (target && target !== '/notifications') navigate(target);
   };
 
-  const markAsUnread = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId ? { ...notif, read: false } : notif
-      )
-    );
-    toast.success('Notification marquée comme non lue');
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notif => ({ ...notif, read: true }))
-    );
-    toast.success('Toutes les notifications ont été marquées comme lues');
-  };
-
-  const deleteNotification = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.filter(notif => notif.id !== notificationId)
-    );
-    
-    // Si c'est une notification de sortie, la supprimer aussi du localStorage
-    if (notificationId.startsWith('checkout-')) {
-      const checkoutNotifications = JSON.parse(localStorage.getItem('checkout_notifications') || '[]');
-      const updatedNotifications = checkoutNotifications.filter((n: any) => n.id !== notificationId);
-      localStorage.setItem('checkout_notifications', JSON.stringify(updatedNotifications));
-    }
-    
-    toast.success('Notification supprimée');
-  };
-
-  const getFilteredNotifications = () => {
-    switch (filter) {
-      case 'unread':
-        return notifications.filter(n => !n.read);
-      case 'read':
-        return notifications.filter(n => n.read);
-      case 'overdue':
-        return notifications.filter(n => n.type === 'overdue');
-      case 'maintenance':
-        return notifications.filter(n => n.type === 'maintenance');
-      case 'checkout':
-        return notifications.filter(n => n.type === 'checkout');
-      default:
-        return notifications;
-    }
-  };
-
-  const filteredNotifications = getFilteredNotifications();
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const readCount = notifications.filter(n => n.read).length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500 dark:text-gray-400 font-medium">Chargement des notifications...</div>
-      </div>
-    );
-  }
+  const emptyText = status === 'unread' ? 'Aucune notification non lue.'
+    : status === 'read' ? 'Aucune notification lue.'
+    : group === 'all' ? 'Aucune notification pour le moment.'
+    : GROUPS.find(g => g.id === group)?.empty ?? 'Aucune notification.';
 
   return (
     <div className="space-y-6">
       <div>
-          <PageTitle>Notifications</PageTitle>
-          <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
-            Événements spéciaux, rappels de retard et mouvements de matériel
-          </p>
-          <div className="mt-2"><PushToggle /></div>
+        <PageTitle>Notifications</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
+          Les événements du magasin et les avis qui te concernent. Ton état « lu » est personnel : il ne change rien pour les autres.
+        </p>
+        <div className="mt-2"><PushToggle /></div>
       </div>
       <PageCommands
-        filters={<MxSegmented aria-label="Filtre" value={filter} onChange={v => setFilter(v as typeof filter)} options={[
-          { value: 'all', label: `Toutes (${notifications.length})` },
+        filters={<MxSegmented aria-label="Statut" value={status} onChange={v => setStatus(v as typeof status)} options={[
+          { value: 'all', label: `Toutes (${userNotifications.length})` },
           { value: 'unread', label: `Non lues (${unreadCount})` },
           { value: 'read', label: `Lues (${readCount})` },
-          { value: 'checkout', label: `Sorties (${notifications.filter(n => n.type === 'checkout').length})` },
-          { value: 'overdue', label: `En retard (${notifications.filter(n => n.type === 'overdue').length})` },
-          { value: 'maintenance', label: `Maintenances (${notifications.filter(n => n.type === 'maintenance').length})` },
         ]} />}
         primary={<div className="flex flex-wrap gap-2">
-        <Button variant="outline" icon={<CheckCircle size={16} />} onClick={markAllAsRead} disabled={unreadCount === 0}>Tout marquer comme lu</Button>
-        <Button icon={<Bell size={16} />} onClick={generateNotifications}>Actualiser</Button>
-      </div>} />
+          <Button variant="outline" icon={<CheckCircle size={16} />} onClick={() => void markAllNotificationsRead()} disabled={unreadNotificationCount === 0}>Tout marquer comme lu</Button>
+          <Button icon={<Bell size={16} />} onClick={() => void refresh()} disabled={refreshing}>{refreshing ? 'Actualisation…' : 'Actualiser'}</Button>
+        </div>} />
 
-      {/* Alertes créées par la base : stock bas, demandes à valider, échéances de véhicules */}
-      {stockNotifications.length > 0 && (
+      {(situation.overdue > 0 || situation.soon > 0) && (
         <Card>
-          <div className="space-y-3">
-            <div className="flex flex-wrap justify-between items-center gap-2">
-              <h2 className="font-bold text-gray-900 dark:text-white">Alertes ({stockNotifications.length})</h2>
-              <div className="flex flex-wrap gap-3 text-sm font-medium">
-                <Link to="/commande" className="text-primary-700 dark:text-primary-300 hover:underline">Feuille de commande</Link>
-                <Link to="/checkouts" className="text-primary-700 dark:text-primary-300 hover:underline">Sorties</Link>
-                <Link to="/demandes" className="text-primary-700 dark:text-primary-300 hover:underline">Demandes</Link>
-                <Link to="/vehicules" className="text-primary-700 dark:text-primary-300 hover:underline">Véhicules</Link>
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-gray-900 dark:text-white">Situation du moment</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {situation.overdue > 0 && <span className="text-tone-danger font-semibold">{situation.overdue > 1 ? `${situation.overdue} sorties en retard` : `${situation.overdue} sortie en retard`}</span>}
+                {situation.overdue > 0 && situation.soon > 0 && ' · '}
+                {situation.soon > 0 && <span className="text-tone-warning font-semibold">{`${situation.soon} à rendre d'ici 3 jours`}</span>}
+                {'. Ce n\'est pas une notification : le chiffre se met à jour tout seul quand le matériel revient.'}
+              </p>
             </div>
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {stockNotifications.map(n => (
-                <li key={n.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-                  <div>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">{n.message}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{format(new Date(n.createdAt), "d MMM yyyy 'à' HH:mm", { locale: fr })}</p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => markStockNotificationRead(n.id)}>Marquer comme lu</Button>
-                </li>
-              ))}
-            </ul>
+            <Link to="/checkouts" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline">Voir les sorties</Link>
           </div>
         </Card>
       )}
 
-      {/* Liste des notifications */}
+      <MxSegmented aria-label="Famille" value={group} onChange={v => setGroup(v as typeof group)} options={[
+        { value: 'all', label: `Toutes (${groupCounts.all})` },
+        ...GROUPS.filter(g => groupCounts[g.id] > 0 || group === g.id).map(g => ({ value: g.id, label: `${g.label} (${groupCounts[g.id]})` })),
+      ]} />
+
       <div className="space-y-3">
-        {filteredNotifications.length === 0 ? (
+        {loadingAppData && userNotifications.length === 0 ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="text-gray-500 dark:text-gray-400 font-medium">Chargement des notifications...</div>
+          </div>
+        ) : visible.length === 0 ? (
           <Card>
             <div className="text-center py-12">
               <Bell size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Aucune notification
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 font-medium">
-                {filter === 'all' 
-                  ? 'Aucune notification pour le moment.'
-                  : filter === 'unread' 
-                  ? 'Aucune notification non lue.'
-                  : filter === 'read'
-                  ? 'Aucune notification lue.'
-                  : filter === 'checkout'
-                  ? 'Aucune notification de sortie.'
-                  : filter === 'overdue' 
-                  ? 'Aucune notification de retard.' 
-                  : 'Aucune notification de maintenance.'
-                }
-              </p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Aucune notification</h3>
+              <p className="text-gray-500 dark:text-gray-400 font-medium">{emptyText}</p>
             </div>
           </Card>
         ) : (
           <MxCardGrid
-            items={filteredNotifications}
+            items={visible}
             getItemKey={n => n.id}
-            renderItem={n => {
-              const rd = n.relatedData ?? {};
-              const info = [rd.equipmentName, rd.userName, rd.note_number, rd.equipment_count ? `${rd.equipment_count} équipement${rd.equipment_count > 1 ? 's' : ''}` : '', rd.daysOverdue ? `${rd.daysOverdue} jour(s) de retard` : ''].filter(Boolean).join(' · ');
-              return (
-                <MxEntityCard
-                  avatarName={n.title}
-                  title={n.title}
-                  infoParts={[
-                    { content: n.message },
-                    { content: `${format(new Date(n.date), 'dd.MM.yyyy HH:mm', { locale: fr })}${info ? ` · ${info}` : ''}` },
-                  ]}
-                  statusBadge={<span className="inline-flex gap-1">
-                    <MxBadge tone={n.priority === 'high' ? 'danger' : n.priority === 'medium' ? 'warning' : 'info'}>{n.priority === 'high' ? 'Urgent' : n.priority === 'medium' ? 'Important' : 'Info'}</MxBadge>
-                    {n.read ? <MxBadge tone="neutral">Lue</MxBadge> : <MxBadge tone="accent">Non lue</MxBadge>}
-                  </span>}
-                  menuLabel={`Actions pour ${n.title}`}
-                  menuActions={[
-                    n.read
-                      ? { id: 'unread', label: 'Marquer non lue', icon: MarkAsRead, onSelect: () => markAsUnread(n.id) }
-                      : { id: 'read', label: 'Marquer comme lue', icon: CheckCircle, onSelect: () => markAsRead(n.id) },
-                    { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => deleteNotification(n.id) },
-                  ]}
-                  onOpen={() => (n.read ? markAsUnread(n.id) : markAsRead(n.id))}
-                />
-              );
-            }}
+            renderItem={n => (
+              <MxEntityCard
+                avatarName={n.title}
+                title={n.title}
+                infoParts={[
+                  { content: n.message },
+                  { content: format(new Date(n.createdAt), 'dd.MM.yyyy HH:mm', { locale: fr }) },
+                ]}
+                statusBadge={<span className="inline-flex gap-1">
+                  <MxBadge tone={TONE[n.kind] ?? 'info'}>{GROUPS.find(g => g.id === groupOf(n))?.label ?? 'Autres'}</MxBadge>
+                  {n.read ? <MxBadge tone="neutral">Lue</MxBadge> : <MxBadge tone="accent">Non lue</MxBadge>}
+                </span>}
+                menuLabel={`Actions pour ${n.title}`}
+                menuActions={[
+                  n.read
+                    ? { id: 'unread', label: 'Marquer non lue', icon: MarkAsUnread, onSelect: () => void markNotificationUnread(n.id) }
+                    : { id: 'read', label: 'Marquer comme lue', icon: CheckCircle, onSelect: () => void markNotificationsRead([n.id]) },
+                ]}
+                onOpen={() => open(n)}
+              />
+            )}
           />
         )}
       </div>
-
-      {/* Statistiques */}
-      {notifications.length > 0 && (
-        <Card>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {notifications.length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
-                Total notifications
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-primary-600 dark:text-primary-400">
-                {unreadCount}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
-                Non lues
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-tone-success">
-                {readCount}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
-                Lues
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-tone-success">
-                {notifications.filter(n => n.type === 'checkout').length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
-                Sorties
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-tone-danger">
-                {notifications.filter(n => n.type === 'overdue').length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
-                Retards
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-tone-warning">
-                {notifications.filter(n => n.type === 'due_soon').length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold">
-                Échéances
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 };

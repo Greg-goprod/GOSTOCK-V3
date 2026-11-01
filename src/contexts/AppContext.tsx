@@ -93,9 +93,6 @@ async function withDirectory(list: ReturnType<typeof mapUserRow>[]) {
   return [...list, ...others];
 }
 
-// Nombre de jours avant l'échéance à partir duquel un retour est signalé
-const DUE_SOON_DAYS = 3;
-
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const useApp = () => {
@@ -129,7 +126,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [depots, setDepots] = useState<Depot[]>([]);
   const [consumableStock, setConsumableStock] = useState<ConsumableStock[]>([]);
-  const [stockNotifications, setStockNotifications] = useState<StockNotification[]>([]);
+  // Notifications de la personne connectée (lues et non lues, état propre à chacun) et nombre de non lues
+  const [userNotifications, setUserNotifications] = useState<StockNotification[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
 
@@ -170,7 +169,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         deliveryNotesResult,
         depotsResult,
         consumableStockResult,
-        notificationsResult,
         vehiclesResult
       ] = await Promise.all([
         supabase.from('equipment').select('*').order('created_at', { ascending: false }),
@@ -185,7 +183,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.from('delivery_notes').select('*').order('created_at', { ascending: false }),
         supabase.from('depots').select('*').order('name'),
         supabase.from('consumable_stock').select('*'),
-        supabase.from('notifications').select('*').is('read_at', null).order('created_at', { ascending: false }),
         supabase.from('vehicles').select('*').order('name')
       ]);
 
@@ -201,7 +198,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (deliveryNotesResult.error) throw deliveryNotesResult.error;
       if (depotsResult.error) throw depotsResult.error;
       if (consumableStockResult.error) throw consumableStockResult.error;
-      if (notificationsResult.error) throw notificationsResult.error;
       if (vehiclesResult.error) throw vehiclesResult.error;
 
       setVehicles((vehiclesResult.data || []).map((v: Record<string, any>) => ({
@@ -236,20 +232,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         quantity: Number(s.quantity),
         minQuantity: Number(s.min_quantity)
       })));
-      setStockNotifications((notificationsResult.data || []).map((n: Record<string, any>) => ({
-        id: n.id,
-        kind: n.kind,
-        title: n.title,
-        message: n.message,
-        equipmentId: n.equipment_id,
-        depotId: n.depot_id,
-        requestId: n.request_id,
-        recipientUserId: n.recipient_user_id,
-        createdAt: n.created_at
-      }))
-        // Les avis personnels des autres (le magasin peut les lire) n'encombrent pas ses alertes
-        .filter(n => !n.recipientUserId || n.recipientUserId === profileRef.current?.id));
-
       // Transformer les données du snake_case vers le camelCase
       const transformedEquipment = equipmentResult.data?.map(mapEquipmentRow) || [];
 
@@ -373,6 +355,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       toast.error('Erreur lors du chargement des données');
     } finally {
       setLoadingAppData(false);
+      // Les échéances viennent d'être contrôlées : les alertes créées sont à jour dans la pastille
+      void refreshNotifications();
     }
   };
 
@@ -738,27 +722,78 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     fetchAppData();
   }, []);
 
-  // Pastille : emprunts en retard ou à rendre dans les prochains jours, et alertes de stock non lues
-  const alertCount = useMemo(() => {
-    const dueSoonLimit = Date.now() + DUE_SOON_DAYS * 24 * 60 * 60 * 1000;
-    const loanAlerts = checkouts.filter(c => {
-      if (c.status === 'overdue') return true;
-      if (c.status !== 'active') return false;
-      const due = c.dueDate ? new Date(c.dueDate).getTime() : NaN;
-      return !Number.isNaN(due) && due <= dueSoonLimit;
-    }).length;
-    return loanAlerts + stockNotifications.length;
-  }, [checkouts, stockNotifications]);
-
-  const markStockNotificationRead = async (id: string) => {
+  // Notifications : la base est la seule source. L'état « lu » est propre à chaque personne.
+  const refreshNotifications = async () => {
     if (!supabase) return;
-    const { error } = await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id);
-    if (error) {
-      toast.error('Impossible de marquer l\'alerte comme lue');
+    const [list, count] = await Promise.all([
+      supabase.rpc('my_notifications', { p_limit: 200 }),
+      supabase.rpc('unread_notification_count')
+    ]);
+    if (list.error || count.error) return; // on garde l'affichage précédent plutôt que de le vider sur une panne réseau
+    setUserNotifications(((list.data || []) as Record<string, any>[]).map(n => ({
+      id: n.id,
+      kind: n.kind,
+      title: n.title,
+      message: n.message,
+      equipmentId: n.equipment_id ?? undefined,
+      depotId: n.depot_id ?? undefined,
+      requestId: n.request_id ?? undefined,
+      recipientUserId: n.recipient_user_id ?? undefined,
+      createdAt: n.created_at,
+      read: Boolean(n.is_read)
+    })));
+    setUnreadNotificationCount(Number(count.data) || 0);
+  };
+
+  // Au chargement, puis toutes les minutes et au retour sur l'onglet : une nouvelle alerte apparaît sans recharger la page
+  useEffect(() => {
+    if (!profile?.id) {
+      setUserNotifications([]);
+      setUnreadNotificationCount(0);
       return;
     }
-    setStockNotifications(prev => prev.filter(n => n.id !== id));
+    void refreshNotifications();
+    const timer = window.setInterval(() => { if (!document.hidden) void refreshNotifications(); }, 60_000);
+    const onVisible = () => { if (!document.hidden) void refreshNotifications(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
+  // Un changement d'état « lu » est appliqué tout de suite à l'écran, puis confirmé par la base
+  const changeReadState = async (ids: string[], read: boolean, call: () => PromiseLike<{ error: { message: string } | null }>) => {
+    if (!supabase || ids.length === 0) return;
+    const before = userNotifications;
+    const idSet = new Set(ids);
+    setUserNotifications(prev => prev.map(n => (idSet.has(n.id) ? { ...n, read } : n)));
+    setUnreadNotificationCount(prev => Math.max(0, prev + before.filter(n => idSet.has(n.id) && n.read !== read).length * (read ? -1 : 1)));
+    const { error } = await call();
+    if (error) {
+      toast.error(read ? 'Impossible de marquer comme lu' : 'Impossible de marquer comme non lu');
+    }
+    await refreshNotifications();
   };
+
+  const markNotificationsRead = (ids: string[]) =>
+    changeReadState(ids, true, () => supabase!.rpc('mark_notifications_read', { p_ids: ids }));
+  const markStockNotificationRead = (id: string) => markNotificationsRead([id]);
+  const markNotificationUnread = (id: string) =>
+    changeReadState([id], false, () => supabase!.rpc('mark_notification_unread', { p_id: id }));
+  const markAllNotificationsRead = async () => {
+    if (!supabase) return;
+    const ids = userNotifications.filter(n => !n.read).map(n => n.id);
+    await changeReadState(ids, true, () => supabase!.rpc('mark_all_notifications_read'));
+  };
+
+  // Alertes non lues (avis personnels et alertes du magasin) ; les affichages existants gardent ce nom
+  const stockNotifications = useMemo(() => userNotifications.filter(n => !n.read), [userNotifications]);
+  // Pastille du menu : uniquement les notifications non lues de la personne (même nombre que la page Notifications)
+  const alertCount = unreadNotificationCount;
 
   return (
     <AppContext.Provider
@@ -769,6 +804,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         consumableStock,
         stockNotifications,
         markStockNotificationRead,
+        userNotifications,
+        unreadNotificationCount,
+        markNotificationsRead,
+        markNotificationUnread,
+        markAllNotificationsRead,
+        refreshNotifications,
         vehicles,
         
         // Equipment data

@@ -147,6 +147,8 @@ export interface StockNotification {
   // Avis personnel (sa demande est validée, prête…) ; vide pour les alertes du magasin
   recipientUserId?: string;
   createdAt: string;
+  // État « lu » de la personne connectée
+  read: boolean;
 }
 
 export interface EquipmentInstance {
@@ -314,7 +316,7 @@ export interface EquipmentMaintenance {
 
 export interface AppContextType {
   statusConfigs: StatusConfig[];
-  // Emprunts en retard ou à rendre sous 3 jours + alertes de stock non lues (pastille du menu)
+  // Notifications non lues de la personne connectée (pastille du menu)
   alertCount: number;
   loadingAppData: boolean;
   depots: Depot[];
@@ -322,6 +324,13 @@ export interface AppContextType {
   stockNotifications: StockNotification[];
   vehicles: Vehicle[];
   markStockNotificationRead: (id: string) => Promise<void>;
+  // Toutes les notifications de la personne (lues et non lues) et leur état
+  userNotifications: StockNotification[];
+  unreadNotificationCount: number;
+  markNotificationsRead: (ids: string[]) => Promise<void>;
+  markNotificationUnread: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  refreshNotifications: () => Promise<void>;
   equipment: Equipment[];
   categories: Category[];
   suppliers: Supplier[];

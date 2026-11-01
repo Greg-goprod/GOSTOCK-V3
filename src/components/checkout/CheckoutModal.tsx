@@ -515,26 +515,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
       if (checkoutError) throw checkoutError;
 
-      // Add notification to localStorage
-      const notification = {
-        id: `checkout-${Date.now()}`,
-        type: 'checkout',
-        title: 'Nouvelle sortie de matériel',
-        message: `Bon N° ${deliveryNote.note_number} créé pour ${selectedUser.first_name} ${selectedUser.last_name} (${checkoutItems.length} équipement${checkoutItems.length > 1 ? 's' : ''})`,
-        date: new Date().toISOString(),
-        priority: 'medium',
-        read: false,
-        relatedData: {
-          note_number: deliveryNote.note_number,
-          userName: `${selectedUser.first_name} ${selectedUser.last_name}`,
-          user_department: selectedUser.department,
-          equipment_count: checkoutItems.reduce((sum, item) => sum + item.quantity, 0)
-        }
-      };
-
-      const existingNotifications = JSON.parse(localStorage.getItem('checkout_notifications') || '[]');
-      localStorage.setItem('checkout_notifications', JSON.stringify([notification, ...existingNotifications]));
-
       toast.success(`Sortie créée avec succès! Bon N° ${deliveryNote.note_number}`);
       
       // Generate and open PDF

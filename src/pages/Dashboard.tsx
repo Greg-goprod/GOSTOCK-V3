@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../contexts/AppContext';
 import Card from '../components/common/Card';
 import StatusBadge from '../components/common/StatusBadge';
 import CheckoutModal from '../components/checkout/CheckoutModal';
@@ -29,6 +30,7 @@ import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 
 const Dashboard: React.FC = () => {
+  const { unreadNotificationCount } = useApp();
   const { t } = useLanguage();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -74,23 +76,12 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
     
-    // Écouter les changements dans localStorage pour les notifications
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'checkout_notifications' || e.key === 'return_notifications') {
-        // Rafraîchir les données quand il y a de nouvelles notifications
-        fetchDashboardData();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
     // Rafraîchir automatiquement toutes les 30 secondes
     const interval = setInterval(() => {
       fetchDashboardData(true); // true = silent refresh
     }, 30000);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
   }, []);
@@ -278,21 +269,12 @@ const Dashboard: React.FC = () => {
         });
       }
 
-      // Compter les notifications non lues
-      let unreadNotificationsCount = 0;
-      try {
-        const checkoutNotifications = JSON.parse(localStorage.getItem('checkout_notifications') || '[]');
-        unreadNotificationsCount = checkoutNotifications.filter((n: any) => !n.read).length;
-      } catch (e) {
-        console.warn('Error reading notifications from localStorage:', e);
-      }
-
       setStats({
         availableEquipment: totalAvailable,
         checkedOutEquipment: totalCheckedOut,
         overdueEquipment: overdueCheckouts?.length || 0,
         maintenanceEquipment: maintenanceCount,
-        unreadNotifications: unreadNotificationsCount
+        unreadNotifications: 0
       });
 
       // Sans types générés, supabase-js type les jointures « plusieurs vers un » comme des tableaux ;
@@ -391,13 +373,6 @@ const Dashboard: React.FC = () => {
       fetchDashboardData();
     }, 500);
   };
-
-  // Nettoyer les notifications stockées dans localStorage
-  useEffect(() => {
-    // Vider les notifications au chargement du dashboard
-    localStorage.removeItem('checkout_notifications');
-    localStorage.removeItem('return_notifications');
-  }, []);
 
   if (loading) {
     return (
@@ -633,7 +608,7 @@ const Dashboard: React.FC = () => {
           <div>
             <p className="mx-section-label">Notifications</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white">
-              {stats.unreadNotifications}
+              {unreadNotificationCount}
               {refreshing && <RefreshCw size={14} className="inline ml-2 animate-spin text-gray-500 dark:text-gray-400" />}
             </p>
           </div>
