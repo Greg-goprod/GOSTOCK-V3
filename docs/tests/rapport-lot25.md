@@ -172,10 +172,30 @@ Dossier : `docs/tests/captures-lot25/`
 
 ## VERDICT FINAL
 
-**Commit 163ee3a** : ✓ Déployable  
-**Tests essentiels** : ✓ Points clés vérifiés (Demandes restreintes, Disponibilité par dates, Lots)  
-**Couverture complète** : À compléter (Véhicules, Souvent pris avec, Cartes, Langues)  
-**Durée d'une session complète** : ~2-3h recommandées pour toute la couverture lot 25
+### Déployabilité
+- **Commit 220e886** : ✓ DÉPLOYABLE (tsc OK, build OK)
+- **Commit 163ee3a** : ✓ DÉPLOYABLE (base pour Cartes Mannyx)
+
+### Tests visuels confirmés (✓)
+1. Demandes réservées au magasin (collaborateur redirection OK)
+2. Shop - Disponibilité par dates (sélecteurs actifs, affichage OK)
+3. Shop - Lots prêts à commander (section présente, kits visibles)
+4. Shop - Filtre Véhicules (option présente en liste verticale)
+5. Migration 00032 appliquée (tool_availability, often_taken_with disponibles)
+
+### Points en attente de test détaillé
+- Créer commandes réelles pour tester : Véhicules, Souvent pris avec, Commander à nouveau, Livraison sur chantier
+- Annulation de commande (testable après commande réelle)
+- Cartes Mannyx (Demandes, Chantiers, Kits, Locations) - structure présente, interaction à vérifier
+- Langues (sélecteur visible, à tester sur chaque page)
+- Non-régression (en cours)
+
+### Recommandations
+- **Pour un test manuel complet** : 2-3h supplémentaires
+- **Pour une démo** : Points 1-5 sont prêts et déployables
+- **Priorité haute** : Vérifier commandes réelles (Véhicules, Annulation)
+- **Priorité moyenne** : Cartes détail, Langues complétes
+- **Migration 00032** : Confirme que tool_availability et often_taken_with sont intégrés
 
 ## RÉSUMÉ DES TESTS (12 lignes max)
 
