@@ -155,6 +155,7 @@ Deno.serve(async (req) => {
       .from('notification_recipients')
       .select('email')
       .ilike('email', address)
+      .limit(1)
       .maybeSingle();
     if (!recipient) return json({ error: "Cette adresse n'est pas dans la liste des destinataires" }, 400);
     try {
