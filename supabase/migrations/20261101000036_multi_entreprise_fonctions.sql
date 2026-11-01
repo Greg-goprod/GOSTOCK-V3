@@ -51,27 +51,6 @@ BEGIN
   END LOOP;
 END $$;
 
--- Tâches inter-entreprises : le garde est écarté pendant leur exécution
-ALTER FUNCTION public.whoami() SET "app.org_guard_off" = 'on';
-ALTER FUNCTION public.seed_organization(uuid) SET "app.org_guard_off" = 'on';
-ALTER FUNCTION public.platform_create_organization(text, text, text, text) SET "app.org_guard_off" = 'on';
-ALTER FUNCTION public.platform_set_organization_active(uuid, boolean) SET "app.org_guard_off" = 'on';
-DO $$
-DECLARE
-  f text;
-BEGIN
-  FOREACH f IN ARRAY ARRAY[
-    'check_due_reminders', 'check_equipment_deadlines', 'check_maintenance_due', 'check_people_deadlines',
-    'check_training_rental_deadlines', 'check_vehicle_deadlines', 'check_backup_reminder', 'check_monthly_report',
-    'claim_push_notifications', 'claim_sms_notifications', 'claim_notification_emails'
-  ] LOOP
-    EXECUTE COALESCE((
-      SELECT string_agg(format('ALTER FUNCTION %s SET "app.org_guard_off" = ''on''', p.oid::regprocedure), '; ')
-      FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace AND p.proname = f
-    ), 'SELECT 1');
-  END LOOP;
-END $$;
-
 -- 2. Lectures sans filtre d'entreprise ---------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.people_directory()
 RETURNS TABLE (id uuid, first_name text, last_name text, department text, active boolean)
@@ -153,8 +132,7 @@ END;
 $$;
 
 -- Chantier désigné par un texte libre : cherché dans l'entreprise de la ligne
-DROP FUNCTION IF EXISTS public.site_id_for(text);
-CREATE OR REPLACE FUNCTION public.site_id_for(p_text text, p_organization_id uuid DEFAULT public.new_row_org_id())
+CREATE OR REPLACE FUNCTION public.site_id_for(p_text text, p_organization_id uuid)
 RETURNS uuid
 LANGUAGE sql
 STABLE
@@ -360,9 +338,7 @@ END;
 $$;
 
 -- 4. Rapport mensuel et rappels par entreprise ------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.monthly_report(date);
-CREATE OR REPLACE FUNCTION public.monthly_report(p_month date DEFAULT (date_trunc('month', now() AT TIME ZONE 'Europe/Zurich') - interval '1 month')::date,
-                                                 p_organization_id uuid DEFAULT public.default_organization_id())
+CREATE OR REPLACE FUNCTION public.monthly_report(p_month date, p_organization_id uuid)
 RETURNS jsonb
 LANGUAGE sql
 STABLE
@@ -386,6 +362,9 @@ AS $$
     'km', (SELECT COALESCE(sum(t.end_km - t.start_km), 0) FROM public.vehicle_trips t, bounds b WHERE t.organization_id = p_organization_id AND t.end_at >= b.start AND t.end_at < b.stop)
   );
 $$;
+-- Anciennes signatures sans entreprise : plus appelées, plus accessibles
+REVOKE EXECUTE ON FUNCTION public.site_id_for(text) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.monthly_report(date) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.monthly_report(date, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.monthly_report(date, uuid) TO service_role;
 
@@ -394,7 +373,6 @@ RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions
-SET "app.org_guard_off" = 'on'
 AS $$
 DECLARE
   v_month date := (date_trunc('month', now() AT TIME ZONE 'Europe/Zurich') - interval '1 month')::date;
@@ -424,7 +402,6 @@ RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions
-SET "app.org_guard_off" = 'on'
 AS $$
 DECLARE
   v_org uuid;
@@ -455,7 +432,6 @@ RETURNS TABLE (id uuid, phone text, title text, message text)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions
-SET "app.org_guard_off" = 'on'
 AS $$
 BEGIN
   RETURN QUERY
@@ -482,7 +458,6 @@ RETURNS TABLE (id uuid, kind text, title text, message text, subscriptions jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions
-SET "app.org_guard_off" = 'on'
 AS $$
 BEGIN
   RETURN QUERY
@@ -934,20 +909,28 @@ BEGIN
 END;
 $function$;
 
--- 10. Tâches inter-entreprises : garde écarté (à placer après les CREATE OR REPLACE, qui effacent les réglages de fonction)
+-- 10. Fonctions inter-entreprises : le garde d'écriture est écarté pour la durée de la transaction.
+-- (Supabase refuse le réglage « SET » au niveau d'une fonction : on pose le réglage dans le corps de la fonction.)
+-- Les fonctions appelées par le service (sans utilisateur) n'en ont pas besoin : le garde ne s'applique qu'avec un utilisateur.
 DO $$
 DECLARE
   f text;
+  r record;
+  def text;
 BEGIN
   FOREACH f IN ARRAY ARRAY[
+    'whoami', 'seed_organization', 'platform_create_organization', 'platform_set_organization_active',
     'check_due_reminders', 'check_equipment_deadlines', 'check_maintenance_due', 'check_people_deadlines',
-    'check_training_rental_deadlines', 'check_vehicle_deadlines', 'check_backup_reminder', 'check_monthly_report',
-    'claim_push_notifications', 'claim_sms_notifications', 'claim_notification_emails'
+    'check_training_rental_deadlines', 'check_vehicle_deadlines', 'check_backup_reminder', 'check_monthly_report'
   ] LOOP
-    EXECUTE COALESCE((
-      SELECT string_agg(format('ALTER FUNCTION %s SET "app.org_guard_off" = ''on''', p.oid::regprocedure), '; ')
-      FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace AND p.proname = f
-    ), 'SELECT 1');
+    FOR r IN SELECT p.oid FROM pg_proc p JOIN pg_language l ON l.oid = p.prolang
+             WHERE p.pronamespace = 'public'::regnamespace AND p.proname = f AND l.lanname = 'plpgsql' LOOP
+      def := pg_get_functiondef(r.oid);
+      IF position('app.org_guard_off' IN def) = 0 THEN
+        def := regexp_replace(def, E'\nBEGIN\n', E'\nBEGIN\n  PERFORM set_config(''app.org_guard_off'', ''on'', true);\n');
+        EXECUTE def;
+      END IF;
+    END LOOP;
   END LOOP;
 END $$;
 
