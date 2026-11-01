@@ -143,8 +143,12 @@ const PAGES = ['/', '/shop', '/shop?vue=commandes', '/demandes', '/consommables'
       for (const { route, perms: need_ } of routeMatrix()) {
         await step(`G1-${who}-${route}`, `${who} sur ${route} (${need_.join('/')})`, async () => {
           const allowed = MOCK ? undefined : need_.some(p => perms.includes(p));
-          await c.page.goto(BASE + route); await c.page.waitForTimeout(900);
-          const at = new URL(c.page.url()).pathname;
+          await c.page.goto(BASE + route);
+          // La redirection d'une page refusée n'arrive qu'une fois le profil chargé : on attend qu'elle ait eu lieu (jusqu'à 6 s) au lieu de 900 ms fixes
+          const waitUntil = Date.now() + 6000; let at = new URL(c.page.url()).pathname;
+          await c.page.waitForTimeout(900);
+          while (Date.now() < waitUntil) { at = new URL(c.page.url()).pathname; if (allowed ? at === route : at !== route) break; await c.page.waitForTimeout(400); }
+          at = new URL(c.page.url()).pathname;
           if (allowed === undefined) return INFO(`ouvert sur ${at}`);
           ok(allowed ? at === route : at !== route, allowed ? `refusé à tort (redirigé vers ${at})` : `ouvert à tort alors que ${who} n'a pas ${need_.join(' ni ')}`);
         }, c.page);

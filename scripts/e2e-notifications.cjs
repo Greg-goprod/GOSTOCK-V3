@@ -196,7 +196,7 @@ async function step(id, title, fn, page) {
   }, staff.page);
   await step('N4-page', 'La page affiche « Non lues (n) » avec le même n', async () => {
     const n = await count(staff);
-    const t = await staff.page.locator('main').innerText();
+    const t = await staff.page.locator('body').innerText();   // les filtres sont dans l'en-tête du module, pas dans <main>
     const m = t.match(/Non lues \((\d+)\)/); ok(m, '« Non lues (n) » introuvable');
     ok(Number(m[1]) === n, `page ${m[1]} ≠ base ${n}`);
   }, staff.page);
