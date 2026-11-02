@@ -19,6 +19,8 @@ const TABLES = [
   'transfers', 'transfer_lines', 'rental_inspections',
   // Planning de chantier (module 1) : dans l'ordre des dépendances (chantiers → zones / équipes → interventions → besoins)
   'cp_contractors', 'cp_site_config', 'cp_site_blocked_days', 'cp_site_zones', 'cp_site_phases', 'cp_site_teams', 'cp_site_interventions', 'cp_site_intervention_needs',
+  // Projets PILOTE (R2b) : états et programmes d'abord, puis projets, puis responsables
+  'cp_statuses', 'cp_programs', 'cp_projects', 'cp_project_members',
   'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const PAGE = 1000;
