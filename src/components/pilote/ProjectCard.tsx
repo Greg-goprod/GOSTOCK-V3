@@ -30,10 +30,10 @@ export function ProjectCard({ name, typeLabel, color, statusName, statusTone, pr
         <MxBadge tone={statusTone}>{statusName}</MxBadge>
       </div>
       <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 4, fontSize: 'calc(13px * var(--mx-scale, 1))' }}>
-        <li style={{ display: 'flex', gap: 6, alignItems: 'center' }}><FolderKanban size={14} aria-hidden /> <span>{typeLabel}</span>{program && <> · <span>{program}</span></>}{priority && <> · <span>Priorité :</span> <span>{priority}</span></>}</li>
+        <li style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><FolderKanban size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} /> <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span>{typeLabel}</span>{program && <> · <span>{program}</span></>}{priority && <> · <span>Priorité :</span> <span>{priority}</span></>}</span></li>
         <li style={{ display: 'flex', gap: 6, alignItems: 'center' }}><CalendarRange size={14} aria-hidden /> <span>{period}</span></li>
         <li style={{ display: 'flex', gap: 6, alignItems: 'center' }}><Users size={14} aria-hidden /> <span>{members}</span></li>
-        {site && <li style={{ display: 'flex', gap: 6, alignItems: 'center' }}><Link2 size={14} aria-hidden /> <span>Chantier :</span> <span>{site}</span></li>}
+        {site && <li style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><Link2 size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} /> <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span>Chantier :</span> <span>{site}</span></span></li>}
       </ul>
       {description && <p style={{ margin: 0, fontSize: 'calc(12px * var(--mx-scale, 1))', color: 'var(--mx-text3)', whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{description}</p>}
       {(onEdit || onDelete) && (

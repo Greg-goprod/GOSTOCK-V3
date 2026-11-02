@@ -183,7 +183,8 @@ async function step(id, title, fn, page) {
   await step('P4-ouverture', 'Responsable : PILOTE › Projets s\'ouvre, les projets de test s\'affichent, compteurs par état', async () => {
     await open(resp, '/pilote/projets');
     ok(await resp.page.getByRole('radio', { name: /^Projets/ }).count(), 'écran des projets inaccessible');
-    ok(await resp.page.getByText(`${M} Festival`).first().isVisible(), 'projet de test absent');
+    // Le titre d'une carte (h3) : un simple getByText tomberait d'abord sur l'option « TEST-PROJ Festivals » (invisible) du filtre Programme
+    ok(await resp.page.locator('h3', { hasText: `${M} Festival` }).first().isVisible(), 'projet de test absent');
     ok(await resp.page.locator('[aria-label="Projets par état"] button').count() === 4, 'compteurs par famille absents');
   }, resp.page);
   await step('P4-liste', 'Bascule cartes / liste', async () => {
