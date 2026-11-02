@@ -1,0 +1,70 @@
+# Rapport des tests des projets PILOTE
+
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 15:35
+Commit testé : 3b62ee0 (R2b-2 : écran PILOTE › Projets)
+
+**Synthèse : 24 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 0 INFO**
+
+Nettoyage : {"cp_projects":"8 supprimé(s)","cp_programs":"1 supprimé(s)","cp_statuses":"0 supprimé(s)","sites":"2 supprimé(s)","restants":0}
+
+## À corriger (KO et PARTIEL)
+
+- **KO** P4-ouverture — Responsable : PILOTE › Projets s'ouvre, les projets de test s'affichent, compteurs par état : projet de test absent ([capture](captures-projets/P4-ouverture.png))
+
+## Observations (INFO / NON TESTÉ)
+
+
+
+## P0 Prérequis
+
+| Point | Verdict | Détail |
+|---|---|---|
+| P0-module — Le module « Plan annuel et projets » (cp.projects) est activé pour l'entreprise des comptes de test | OK |  |
+| P0-droits — Droits : le responsable écrit ; magasinier et collaborateur lisent seulement | OK |  |
+| P0-etats — Les 4 états de base existent, une fois par famille | OK |  |
+
+## P1 Données
+
+| Point | Verdict | Détail |
+|---|---|---|
+| P1-prepa — Programme, chantier de test, projets de plusieurs types, responsables | OK |  |
+| P1-defaut — Sans état précisé, un projet est « Pas commencé » | OK |  |
+
+## P2 Contrôles de la base
+
+| Point | Verdict | Détail |
+|---|---|---|
+| P2-type-site — type-site : projet R&D relié à un chantier refusé | OK |  |
+| P2-doublon-chantier — doublon-chantier : deux projets sur le même chantier refusé | OK |  |
+| P2-dates — dates : fin avant début refusée | OK |  |
+| P2-type-inconnu — type-inconnu : type inconnu refusé | OK |  |
+| P2-programme-doublon — programme-doublon : programme de même nom refusé | OK |  |
+| P2-responsable-doublon — responsable-doublon : même responsable deux fois refusé | OK |  |
+| P2-etat-base — Un état de base ne se supprime pas et ne change pas de famille | OK |  |
+| P2-etat-ajoute — État ajouté : créé dans une famille, utilisé par un projet (suppression refusée), puis supprimé une fois libre | OK |  |
+| P2-programme-supprime — Supprimer un programme garde ses projets, sans programme | OK |  |
+
+## P3 Droits par rôle
+
+| Point | Verdict | Détail |
+|---|---|---|
+| P3-staff-lecture — staff : lit programmes, projets, états et responsables | OK |  |
+| P3-staff-ecriture — staff : ne crée, ne modifie, ne supprime rien | OK |  |
+| P3-collab-lecture — collab : lit programmes, projets, états et responsables | OK |  |
+| P3-collab-ecriture — collab : ne crée, ne modifie, ne supprime rien | OK |  |
+
+## P4 Écran
+
+| Point | Verdict | Détail |
+|---|---|---|
+| P4-ouverture — Responsable : PILOTE › Projets s'ouvre, les projets de test s'affichent, compteurs par état | KO | projet de test absent |
+| P4-liste — Bascule cartes / liste | OK |  |
+| P4-creation — Création d'un projet par le formulaire (type, programme, responsable) | OK |  |
+| P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet | OK |  |
+| P4-programmes-etats — Onglets Programmes et États : lignes visibles, états de base non supprimables | OK |  |
+| P4-staff-ecran — staff : l'écran s'ouvre en lecture seule | OK |  |
+| P4-collab-ecran — collab : l'écran s'ouvre en lecture seule | OK |  |
+
+## Erreurs JavaScript
+
+Aucune.
