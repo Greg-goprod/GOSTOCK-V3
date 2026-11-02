@@ -9,7 +9,7 @@ Décisions de Greg (audit, § 10) : les deux vues (par zone et par prestataire) 
 | 1.1 | **Base de données** : prestataires, équipes, zones, phases, interventions, configuration du chantier, jours bloqués ; droits `chantiers.planning:*` ; contrôles faits par la base ; batterie SQL locale | Écrite, testée en local (50 contrôles) et **appliquée sur GO-MAT le 2 novembre** |
 | 1.2 | Écran « Planning » du chantier : configuration (heures, 24 h/24, pas, jours bloqués), zones, équipes, prestataires, phases ; liste des interventions en cartes et en tableau ; création et modification | **Faite** (route `/planning-chantier`, module `chantiers_planning` exigé ; droits fins lus via `rbac_has_any_permission`) |
 | 1.3 | Frise horaire glisser-déposer, vue par zone et vue par prestataire, vue jour et semaine | **Faite** (`Timeline.tsx` ; calculs en heures murales de Suisse dans `timelineMath.ts`, vérifiés y compris au changement d'heure) |
-| 1.4 | Récurrence (`series_id`), copie d'un jour, matériel nécessaire avec avertissement de disponibilité (formation non valide : module 2, quand des personnes seront rattachées aux interventions) | Écrite et testée en local (36 contrôles) ; **migration 45 à appliquer sur GO-MAT** |
+| 1.4 | Récurrence (`series_id`), copie d'un jour, matériel nécessaire avec avertissement de disponibilité (formation non valide : module 2, quand des personnes seront rattachées aux interventions) | Écrite et testée en local (36 contrôles) ; **migration 45 appliquée sur GO-MAT le 2 novembre** |
 | 1.5 | Aide intégrée, traductions FR/DE/IT/EN, sauvegarde des nouvelles tables (liste de BackupPanel et fonction de bord), parcours e2e | À faire |
 
 ## Étape 1.1 : ce que la base garantit
