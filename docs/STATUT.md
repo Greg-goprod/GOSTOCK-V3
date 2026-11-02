@@ -10,7 +10,7 @@
 - Vue Liste sur Notifications.
 
 ## ÉCRIT, TESTÉ EN LOCAL, PAS ENCORE APPLIQUÉ
-- **Console plateforme C1, version allégée : migration 43 APPLIQUÉE sur GO-MAT le 2 novembre** (collée par Greg ; structure, droits et refus vérifiés). Un défaut trouvé à l'essai réel : la lecture du journal (`platform_audit`) échouait car `auth.users.email` est un varchar sur Supabase. **Correctif = migration 44, à coller** (une seule fonction). Cadrage de la fusion : `docs/chantierpilot/fusion-mannyx.md`. Ensuite : écran de la console (C2).
+- **Console plateforme C1, version allégée : migration 43 APPLIQUÉE sur GO-MAT le 2 novembre** (collée par Greg ; structure, droits et refus vérifiés). Un défaut trouvé à l'essai réel : la lecture du journal (`platform_audit`) échouait car `auth.users.email` est un varchar sur Supabase. **Correctif = migration 44, appliquée et vérifiée** (lecture du journal OK pour le propriétaire). Cadrage de la fusion : `docs/chantierpilot/fusion-mannyx.md`. Prochaine étape : écran de la console (C2), puis écran du planning (1.2).
 
 ## MIS DE CÔTÉ (ne pas toucher pour l'instant)
 - Alignements Mannyx (journal de la plateforme, plan, entreprise active par onglet) : branche locale `wip/alignements-mannyx`.
