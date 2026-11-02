@@ -53,4 +53,45 @@ export const PILOTE: HelpArticle[] = [
       },
     ],
   },
+  {
+    id: 'gantt-pilote',
+    category: 'pilote',
+    title: 'Le Gantt',
+    summary: 'Tous tes projets, phases, tâches et jalons sur une même échelle de temps. Module payant, activé par la plateforme.',
+    route: '/pilote/gantt',
+    routes: ['/pilote/gantt'],
+    where: 'PILOTE › Projets › Gantt.',
+    tasks: [
+      {
+        id: 'lire',
+        title: 'Lire le Gantt',
+        steps: [
+          { text: 'Ouvre « PILOTE », « Projets », puis l\'onglet « Gantt ». La liste est à gauche, les barres à droite ; la ligne rouge verticale est aujourd\'hui et les week-ends sont grisés.' },
+          { text: 'Les projets sont rangés par « Programme » (par défaut) ; choisis « État » ou « Type » pour regrouper autrement. Un groupe se plie et se déplie avec sa flèche.' },
+          { text: 'Au départ, seuls les groupes et les projets sont visibles. Clique sur la flèche d\'un projet pour voir ses phases et tâches, ou sur « Tout déplier ». « Replier » revient à l\'ouverture de départ.' },
+          { text: 'Choisis le zoom « Semaine », « Mois », « Trimestre » ou « Année » (le plan annuel). Les flèches et « Aujourd\'hui » déplacent la fenêtre.' },
+          { text: 'Un losange est un jalon. La partie pleine d\'une barre est l\'avancement : la part d\'éléments terminés en dessous (un élément annulé ne compte pas). Une phase ou un projet sans dates propres prend celles de ses éléments.' },
+        ],
+        problems: [
+          { if: 'Je ne vois aucune barre.', then: 'Les barres sont peut-être hors de l\'écran : clique sur « Aujourd\'hui », ou fais défiler vers la date du projet. Un élément sans date apparaît dans « Sans date » sous le Gantt.' },
+        ],
+      },
+      {
+        id: 'elements',
+        title: 'Créer et modifier des phases, tâches, jalons et sous-tâches',
+        who: 'Administrateur et responsable (les autres consultent les fiches).',
+        steps: [
+          { text: 'Clique sur « Nouvel élément », ou sur le « + » qui apparaît quand tu survoles un projet, une phase ou une tâche : le nouvel élément se range alors directement dessous.' },
+          { text: 'Choisis le « Type » : une phase se range sous le projet ; une tâche ou un jalon sous une phase ou directement sous le projet ; une sous-tâche sous une tâche.' },
+          { text: 'Remplis le nom, l\'état, la priorité, les dates (un jalon n\'a qu\'une date), les responsables (plusieurs possibles) et la description.' },
+          { text: 'Dans « Liste à cocher », ajoute des mini-étapes sans date ni responsable et coche-les au fur et à mesure.' },
+          { text: 'Clique sur « Enregistrer ». Pour modifier, clique sur la ligne ou la barre. « Supprimer » indique combien d\'éléments en dessous disparaîtront avec lui.' },
+        ],
+        problems: [
+          { if: 'Un élément n\'a pas de date.', then: 'Il apparaît dans « Sans date » : « Placer aujourd\'hui » lui donne une semaine à partir d\'aujourd\'hui (un jour pour un jalon), ou ouvre sa fiche pour choisir les dates.' },
+          { if: 'Le type ou le projet d\'un élément ne se change pas.', then: 'C\'est voulu : supprime-le et recrée-le. Son parent, lui, peut changer.' },
+        ],
+      },
+    ],
+  },
 ];

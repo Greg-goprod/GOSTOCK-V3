@@ -12,6 +12,29 @@ export interface CpProject {
   status_id: string; priority: ProjectPriority | null; color: string; starts_on: string | null; ends_on: string | null;
 }
 export interface CpMember { project_id: string; user_id: string }
+
+// Éléments d'un projet (niveaux 3 à 5) : phase, tâche, jalon, sous-tâche
+export type ItemKind = 'phase' | 'task' | 'milestone' | 'subtask';
+export interface CpItem {
+  id: string; project_id: string; parent_id: string | null; kind: ItemKind; name: string; description: string | null;
+  status_id: string; priority: ProjectPriority | null; starts_on: string | null; ends_on: string | null; position: number;
+}
+export interface CpItemMember { item_id: string; user_id: string }
+export interface CpItemCheck { id: string; item_id: string; label: string; done: boolean; position: number }
+
+export const ITEM_KIND_LABEL: Record<ItemKind, string> = { phase: 'Phase', task: 'Tâche', milestone: 'Jalon', subtask: 'Sous-tâche' };
+
+// Nombre d'éléments qui disparaîtront avec celui-ci (ses enfants, petits-enfants…)
+export const descendantsOf = (items: CpItem[], id: string): number => {
+  const kids = items.filter(i => i.parent_id === id);
+  return kids.reduce((n, k) => n + 1 + descendantsOf(items, k.id), 0);
+};
+
+// Ce que la base accepte (migration 49) : types possibles selon le parent (null = directement sous le projet)
+export const allowedKinds = (parentKind: ItemKind | null): ItemKind[] =>
+  parentKind === null ? ['phase', 'task', 'milestone'] : parentKind === 'phase' ? ['task', 'milestone'] : parentKind === 'task' ? ['subtask'] : [];
+// Parents possibles pour un type : phase → aucun (sous le projet) ; tâche ou jalon → aucun ou une phase ; sous-tâche → une tâche
+export const parentKindsFor = (kind: ItemKind): (ItemKind | null)[] => (kind === 'phase' ? [null] : kind === 'subtask' ? ['task'] : [null, 'phase']);
 export interface CpSite { id: string; name: string; status: 'open' | 'closed' }
 
 export const FAMILY_LABEL: Record<StatusFamily, string> = {
@@ -32,6 +55,12 @@ export interface PiloteData {
   sites: CpSite[];
 }
 
+// Données du Gantt : tout PiloteData, plus les éléments et leurs responsables (la liste à cocher se lit à l'ouverture d'une fiche)
+export interface GanttData extends PiloteData {
+  items: CpItem[];
+  itemMembers: CpItemMember[];
+}
+
 export async function loadPilote(): Promise<PiloteData> {
   const [statuses, programs, projects, members, sites] = await Promise.all([
     supabase.from('cp_statuses').select('*').order('position').order('name'),
@@ -49,6 +78,17 @@ export async function loadPilote(): Promise<PiloteData> {
     members: (members.data || []) as CpMember[],
     sites: (sites.data || []) as CpSite[],
   };
+}
+
+export async function loadGantt(): Promise<GanttData> {
+  const [base, items, itemMembers] = await Promise.all([
+    loadPilote(),
+    supabase.from('cp_items').select('*').order('position').order('starts_on', { nullsFirst: false }).order('name'),
+    supabase.from('cp_item_members').select('item_id, user_id'),
+  ]);
+  const error = [items, itemMembers].map(r => r.error).find(Boolean);
+  if (error) throw error;
+  return { ...base, items: (items.data || []) as CpItem[], itemMembers: (itemMembers.data || []) as CpItemMember[] };
 }
 
 export interface PiloteRights { create: boolean; update: boolean; delete: boolean }
@@ -76,6 +116,15 @@ export async function saveMembers(projectId: string, userIds: string[]): Promise
   if (del.error) throw del.error;
   if (userIds.length === 0) return;
   const ins = await supabase.from('cp_project_members').insert(userIds.map(user_id => ({ project_id: projectId, user_id })));
+  if (ins.error) throw ins.error;
+}
+
+// Remplace les responsables d'un élément
+export async function saveItemMembers(itemId: string, userIds: string[]): Promise<void> {
+  const del = await supabase.from('cp_item_members').delete().eq('item_id', itemId);
+  if (del.error) throw del.error;
+  if (userIds.length === 0) return;
+  const ins = await supabase.from('cp_item_members').insert(userIds.map(user_id => ({ item_id: itemId, user_id })));
   if (ins.error) throw ins.error;
 }
 
