@@ -1,6 +1,6 @@
 // Contrôles du modèle du Gantt (sans affichage). Lancer :
 //   npx esbuild scripts/tests/gantt-model.test.ts --bundle --platform=node --format=cjs --outfile=/tmp/gantt-model.test.cjs --define:import.meta.env.VITE_SUPABASE_URL='"http://x.test"' --define:import.meta.env.VITE_SUPABASE_ANON_KEY='"k"' --log-level=error && node /tmp/gantt-model.test.cjs
-import { buildGantt, visibleRows, defaultExpanded, undatedRows, progressOf, makeScale, barBox, clipBar, makeHeader, weekendBoxes, xOfDay } from '../../src/lib/ganttModel';
+import { buildGantt, visibleRows, defaultExpanded, undatedRows, withAddRows, progressOf, makeScale, barBox, clipBar, makeHeader, weekendBoxes, xOfDay } from '../../src/lib/ganttModel';
 import type { GanttData } from '../../src/lib/pilote';
 
 let fails = 0;
@@ -65,6 +65,19 @@ exp.add('i:a'); exp.add('i:c');
 eq('tout déplier', visibleRows(m, exp).length, 13);
 exp.delete('p:p1');
 eq('replier un projet cache toute sa descendance', visibleRows(m, exp).map(x => x.key), ['g:g1', 'p:p1', 'p:p3', 'g:none', 'p:p2']);
+
+// Dates propres (gestes) et lignes « + Nouveau »
+eq('dates propres : phase sans dates (calculées), tâche avec dates', [r('i:a').ownStart, r('i:a').ownEnd, r('i:c').ownStart, r('i:c').ownEnd], [null, null, '2027-06-04', '2027-06-12'.replace('2027-06-12', '2027-06-10')]);
+eq('dates propres : un jalon a la même date des deux côtés', [r('i:f').ownStart, r('i:f').ownEnd], ['2027-06-20', '2027-06-20']);
+eq('dates propres : projet sans dates, projet avec dates', [r('p:p1').ownStart, r('p:p1').ownEnd, r('p:p2').ownStart, r('p:p2').ownEnd], [null, null, '2027-02-01', '2027-03-31']);
+const expAll = new Set(m.expandable);
+const withAdd = withAddRows(visibleRows(m, expAll), expAll);
+eq('« + Nouveau » : une ligne après le dernier enfant de chaque projet, phase et tâche dépliés (les parents sans enfant n\'en ont pas)', withAdd.filter(x => x.kind === 'add').map(x => x.key), ['add:i:c', 'add:i:a', 'add:p:p1']);
+eq('« + Nouveau » : placée juste après les enfants (sous-tâches de « Éclairage » puis la ligne)', withAdd.map(x => x.key).slice(withAdd.findIndex(x => x.key === 'i:d'), withAdd.findIndex(x => x.key === 'i:d') + 3), ['i:d', 'i:e', 'add:i:c']);
+eq('« + Nouveau » : parent et type', [withAdd.find(x => x.key === 'add:i:a')!.parentId, withAdd.find(x => x.key === 'add:i:a')!.addTo, withAdd.find(x => x.key === 'add:p:p1')!.parentId, withAdd.find(x => x.key === 'add:p:p1')!.addTo], ['a', 'phase', null, 'project']);
+eq('« + Nouveau » : niveau = parent + 1', withAdd.find(x => x.key === 'add:i:c')!.level, r('i:c').level + 1);
+eq('« + Nouveau » : rien pour un parent replié', withAddRows(visibleRows(m, defaultExpanded(m)), defaultExpanded(m)).filter(x => x.kind === 'add').length, 0);
+eq('« + Nouveau » : jamais dans le bac « Sans date »', undatedRows(m).some(x => x.kind === 'add'), false);
 
 eq('regroupement par état : un groupe par état utilisé', buildGantt(data, 'status').rows.filter(x => x.kind === 'group').map(x => x.name), ['Pas commencé', 'En cours', 'Terminé']);
 eq('regroupement par type', buildGantt(data, 'type').rows.filter(x => x.kind === 'group').map(x => x.name), ['Chantier', 'R&D', 'Administratif']);

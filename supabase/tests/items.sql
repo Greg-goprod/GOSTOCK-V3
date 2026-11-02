@@ -94,10 +94,36 @@ SELECT zz.check('ligne à cocher vide refusée', zz.raises($$INSERT INTO public.
 SELECT zz.affected($$UPDATE public.cp_item_checks SET done = true WHERE label = 'Rédiger le plan'$$) AS n_coche \gset
 SELECT zz.check('cocher une ligne', :n_coche = 1 AND (SELECT count(*) FROM public.cp_item_checks WHERE done) = 2);
 
+-- Décalage en bloc (migration 50)
+SELECT public.cp_shift_item((SELECT id FROM public.cp_items WHERE name = 'Étude'), 3) AS n_shift \gset
+SELECT zz.check('décaler une phase décale la phase et ses 3 descendants (4 lignes)', :n_shift = 4);
+SELECT zz.check('dates après décalage de +3 jours : phase, tâche, sous-tâche, jalon', (SELECT array_agg(name || ':' || starts_on || ':' || ends_on ORDER BY name) FROM public.cp_items WHERE name IN ('Étude', 'Cahier des charges', 'Relecture', 'Validation étude'))
+  = ARRAY['Cahier des charges:2027-02-04:2027-02-18', 'Relecture:2027-02-13:2027-02-15', 'Validation étude:2027-04-03:2027-04-03', 'Étude:2027-02-04:2027-04-03']);
+SELECT zz.check('ce qui est hors de la phase ne bouge pas', (SELECT starts_on = '2027-04-01' AND ends_on = '2027-04-05' FROM public.cp_items WHERE name = 'Tâche libre') AND (SELECT starts_on = '2027-05-01' FROM public.cp_items WHERE name = 'Lancement'));
+SELECT public.cp_shift_item((SELECT id FROM public.cp_items WHERE name = 'Étude'), -3) AS n_back \gset
+SELECT zz.check('décaler de -3 jours remet les dates d''origine', :n_back = 4 AND (SELECT starts_on = '2027-02-01' AND ends_on = '2027-03-31' FROM public.cp_items WHERE name = 'Étude')
+  AND (SELECT starts_on = '2027-03-31' AND ends_on = '2027-03-31' FROM public.cp_items WHERE name = 'Validation étude'));
+SELECT zz.check('un jalon décalé reste sur un seul jour', (SELECT bool_and(starts_on = ends_on) FROM public.cp_items WHERE kind = 'milestone' AND starts_on IS NOT NULL));
+SELECT public.cp_shift_item((SELECT id FROM public.cp_items WHERE name = 'Relecture'), 1) AS n_leaf \gset
+SELECT zz.check('décaler une sous-tâche ne décale qu''elle (1 ligne)', :n_leaf = 1 AND (SELECT starts_on = '2027-02-11' FROM public.cp_items WHERE name = 'Relecture') AND (SELECT starts_on = '2027-02-01' FROM public.cp_items WHERE name = 'Cahier des charges'));
+SELECT public.cp_shift_item((SELECT id FROM public.cp_items WHERE name = 'Relecture'), -1) AS n_leaf2 \gset
+SELECT public.cp_shift_project((SELECT id FROM public.cp_projects WHERE name = 'Projet X'), 10) AS n_proj \gset
+SELECT zz.check('décaler un projet décale le projet et ses 8 éléments, 9 lignes (le projet sans dates reste sans dates)', :n_proj = 9 AND (SELECT starts_on IS NULL AND ends_on IS NULL FROM public.cp_projects WHERE name = 'Projet X')
+  AND (SELECT starts_on = '2027-02-11' AND ends_on = '2027-04-10' FROM public.cp_items WHERE name = 'Étude'));
+SELECT zz.check('les éléments sans date restent sans date après décalage', (SELECT bool_and(starts_on IS NULL AND ends_on IS NULL) FROM public.cp_items WHERE name IN ('Jalon à dater', 'Tâche à dater')));
+SELECT public.cp_shift_project((SELECT id FROM public.cp_projects WHERE name = 'Projet X'), -10) AS n_proj2 \gset
+SELECT zz.check('décalage 0 refusé', zz.raises($$SELECT public.cp_shift_item((SELECT id FROM public.cp_items WHERE name = 'Étude'), 0)$$) LIKE '%décalage%');
+SELECT zz.check('décalage de plus de 10 ans refusé', zz.raises($$SELECT public.cp_shift_item((SELECT id FROM public.cp_items WHERE name = 'Étude'), 4000)$$) LIKE '%trop grand%');
+SELECT zz.check('élément ou projet inconnu refusé', zz.raises($$SELECT public.cp_shift_item(gen_random_uuid(), 1)$$) LIKE '%introuvable%' AND zz.raises($$SELECT public.cp_shift_project(gen_random_uuid(), 1)$$) LIKE '%introuvable%');
+SELECT zz.check('le journal d''audit garde les décalages', (SELECT count(*) FROM public.audit_log WHERE table_name = 'cp_items' AND action = 'update') >= 4);
+
 -- Collaborateur (rôle système « user ») : lit, n'écrit pas
 RESET ROLE;
+SELECT id AS free_id FROM public.cp_items WHERE name = 'Tâche libre' \gset
+SELECT id AS proj_a FROM public.cp_projects WHERE name = 'Projet X' \gset
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
 SELECT zz.check('U lit éléments, responsables et liste à cocher', (SELECT count(*) FROM public.cp_items) = 8 AND (SELECT count(*) FROM public.cp_item_members) = 2 AND (SELECT count(*) FROM public.cp_item_checks) = 2);
+SELECT zz.check('U ne décale rien (lecture seule)', zz.raises(format('SELECT public.cp_shift_item(%L, 2)', :'free_id')) LIKE '%non autorisée%' AND zz.raises(format('SELECT public.cp_shift_project(%L, 2)', :'proj_a')) LIKE '%non autorisée%');
 SELECT zz.check('U ne crée pas d''élément', pg_temp.item('Projet X', NULL, 'task', 'Piraté') IS NOT NULL);
 SELECT zz.check('U ne crée ni responsable ni ligne à cocher', zz.raises(format('INSERT INTO public.cp_item_members (item_id, user_id) SELECT id, %L FROM public.cp_items WHERE name = ''Tâche libre''', :'uu')) IS NOT NULL
   AND zz.raises($$INSERT INTO public.cp_item_checks (item_id, label) SELECT id, 'Piraté' FROM public.cp_items WHERE name = 'Tâche libre'$$) IS NOT NULL);
@@ -107,6 +133,7 @@ RESET ROLE;
 
 -- Isolation : l'entreprise B
 SELECT id AS item_a FROM public.cp_items WHERE name = 'Étude' \gset
+SELECT id AS free_id FROM public.cp_items WHERE name = 'Tâche libre' \gset
 SELECT id AS task_a FROM public.cp_items WHERE name = 'Cahier des charges' \gset
 SELECT id AS proj_a FROM public.cp_projects WHERE name = 'Projet X' \gset
 SELECT id AS status_a FROM public.cp_statuses WHERE is_system AND family = 'done' AND organization_id = :ORG1::uuid \gset
@@ -121,6 +148,7 @@ SELECT zz.check('B crée ses éléments, état par défaut de B', (SELECT count(
 SELECT zz.check('B ne désigne pas un responsable de A', zz.raises(format('INSERT INTO public.cp_item_members (item_id, user_id) SELECT id, %L FROM public.cp_items', :'uu')) IS NOT NULL);
 SELECT zz.check('B n''ajoute pas de responsable ni de ligne à cocher à un élément de A', zz.raises(format('INSERT INTO public.cp_item_members (item_id, user_id) VALUES (%L, %L)', :'task_a', :'ub')) IS NOT NULL
   AND zz.raises(format('INSERT INTO public.cp_item_checks (item_id, label) VALUES (%L, ''Volé'')', :'task_a')) IS NOT NULL);
+SELECT zz.check('B ne décale rien chez A (élément et projet introuvables pour lui)', zz.raises(format('SELECT public.cp_shift_item(%L, 2)', :'free_id')) LIKE '%introuvable%' AND zz.raises(format('SELECT public.cp_shift_project(%L, 2)', :'proj_a')) LIKE '%introuvable%');
 SELECT zz.check('B ne modifie ni ne supprime rien chez A', zz.affected($$UPDATE public.cp_items SET name = 'Piraté' WHERE name <> 'Phase de B'$$) = 0 AND zz.affected($$DELETE FROM public.cp_items WHERE name <> 'Phase de B'$$) = 0);
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;

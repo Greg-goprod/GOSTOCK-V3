@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarCheck, ChevronsDownUp, ChevronsUpDown, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { getLanguage } from '../i18n/translator';
-import { buildGantt, defaultExpanded, undatedRows, visibleRows, type Grouping, type GanttRow } from '../lib/ganttModel';
+import { buildGantt, defaultExpanded, undatedRows, visibleRows, withAddRows, type Grouping, type GanttRow } from '../lib/ganttModel';
 import { isPreset, makePeriod, type ViewPeriod } from '../lib/viewPeriod';
-import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, TYPE_LABEL, type GanttData, type ItemKind, type PiloteRights } from '../lib/pilote';
+import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, TYPE_LABEL, type GanttData, type ItemKind, type PiloteRights } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import PageTitle from '../components/common/PageTitle';
 import Button from '../components/common/Button';
@@ -56,7 +56,7 @@ const PiloteGantt: React.FC = () => {
 
   // Jour montré à l'ouverture : aujourd'hui s'il est dans le plan, sinon le bord le plus proche du plan (pour voir des barres tout de suite)
   const startDay = model.range ? (today < model.range.min ? model.range.min : today > model.range.max ? model.range.max : today) : today;
-  const rows = useMemo(() => visibleRows(model, expanded), [model, expanded]);
+  const rows = useMemo(() => (rights.create ? withAddRows(visibleRows(model, expanded), expanded) : visibleRows(model, expanded)), [model, expanded, rights.create]);
   const undated = useMemo(() => undatedRows(model), [model]);
   const projectName = useMemo(() => new Map((data?.projects ?? []).map(p => [p.id, p.name])), [data]);
 
@@ -68,6 +68,31 @@ const PiloteGantt: React.FC = () => {
   const addIn = (row: GanttRow) => {
     if (row.kind === 'project') setItemTarget({ mode: 'new', projectId: row.id ?? undefined, parentId: null });
     else if (row.id) setItemTarget({ mode: 'new', parentId: row.id });
+  };
+
+  // Gestes du Gantt : un seul enregistrement à la fois (une touche maintenue ne doit pas empiler des requêtes)
+  const busy = useRef(false);
+  const run = async (action: () => Promise<void>, done: string) => {
+    if (busy.current) return;
+    busy.current = true;
+    try { await action(); toast.success(done); await reload(); } catch (e) { toast.error(piloteError(e)); await reload(); } finally { busy.current = false; }
+  };
+  const moveRow = (row: GanttRow, days: number) => run(
+    () => (row.kind === 'project' ? shiftProject(row.id as string, days) : shiftItem(row.id as string, days)),
+    days > 0 ? `Décalé de ${days} jour${days > 1 ? 's' : ''}` : `Avancé de ${-days} jour${days < -1 ? 's' : ''}`,
+  );
+  const resizeRow = (row: GanttRow, start: string, end: string) => run(() => setDates(row.kind === 'project' ? 'project' : 'item', row.id as string, start, end), 'Dates modifiées');
+
+  // « + Nouveau » dans la liste : crée l'élément sous son parent, avec une semaine à partir du début du parent (ou d'aujourd'hui) pour qu'il apparaisse tout de suite
+  const createInline = async (row: GanttRow, name: string, kind: ItemKind): Promise<boolean> => {
+    const start = row.start ?? today;
+    const rawEnd = dayFromNumber(dayNumberOf(start) + 6);
+    const end = kind === 'milestone' ? start : row.end && row.end >= start && row.end < rawEnd ? row.end : rawEnd;
+    const { error } = await supabase.from('cp_items').insert({ project_id: row.projectId, parent_id: row.parentId, kind, name, starts_on: start, ends_on: end });
+    if (error) { toast.error(piloteError(error)); return false; }
+    toast.success('Élément créé');
+    await reload();
+    return true;
   };
 
   // « Placer » : donne une date à un élément ou à un projet sans date (aujourd'hui ; une semaine pour tout sauf un jalon)
@@ -109,7 +134,7 @@ const PiloteGantt: React.FC = () => {
         <MxEmpty icon={CalendarCheck} title="Rien à afficher" description="Crée d'abord un projet dans PILOTE › Projets : il apparaîtra ici avec ses phases, tâches et jalons." />
       ) : (
         <GanttChart rows={rows} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
-          onToggle={toggle} onOpen={openRow} onAdd={addIn} />
+          onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline} />
       )}
 
       {undated.length > 0 && (

@@ -77,6 +77,21 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'gestes',
+        title: 'Déplacer et ajuster à la souris ou au clavier',
+        who: 'Administrateur et responsable.',
+        steps: [
+          { text: 'Glisse une barre vers la gauche ou la droite pour la déplacer, au jour près : l\'élément ET tout ce qu\'il contient (une phase avec ses tâches et sous-tâches, un projet avec tous ses éléments) se décalent du même nombre de jours. Les éléments sans date restent sans date.' },
+          { text: 'Tire le bord gauche ou droit d\'une barre pour changer son début ou sa fin : seul cet élément change (pas les éléments en dessous). Un jalon, lui, ne se déplace que d\'un bloc ; une phase ou un projet dont les dates viennent de ses éléments se déplace mais ne se redimensionne pas.' },
+          { text: 'Au clavier : place-toi sur une barre, flèche gauche ou droite = décaler d\'un jour (avec ce qu\'elle contient), Maj + flèche = avancer ou reculer la fin d\'un jour, Entrée = ouvrir la fiche.' },
+          { text: 'Un clic sans bouger ouvre toujours la fiche. Si le décalage est refusé, un message l\'explique et la barre revient à sa place.' },
+          { text: 'Dans la liste, « + Nouveau » (sous le dernier élément d\'un projet, d\'une phase ou d\'une tâche déplié) : tape un nom, choisis le type si on te le propose, puis Entrée. L\'élément est créé tout de suite avec une semaine de durée ; la saisie reste ouverte pour en ajouter d\'autres, Échap la ferme.' },
+        ],
+        problems: [
+          { if: 'Je ne peux pas déplacer les barres.', then: 'Tu as la lecture seule : seuls l\'administrateur et le responsable modifient.' },
+        ],
+      },
+      {
         id: 'elements',
         title: 'Créer et modifier des phases, tâches, jalons et sous-tâches',
         who: 'Administrateur et responsable (les autres consultent les fiches).',

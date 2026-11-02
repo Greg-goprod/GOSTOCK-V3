@@ -4,7 +4,7 @@ import { TYPE_LABEL, TYPE_ORDER, type CpItem, type GanttData, type ItemKind, typ
 // Modèle du Gantt (sans affichage) : arbre programme → projet → phase → tâche → sous-tâche, regroupement, dates des parents
 // calculées à partir de leurs enfants, avancement (éléments terminés / éléments comptés), éléments sans date.
 export type Grouping = 'program' | 'status' | 'type';
-export type RowKind = 'group' | 'program' | 'project' | ItemKind;
+export type RowKind = 'group' | 'program' | 'project' | ItemKind | 'add';
 
 export interface GanttRow {
   key: string;
@@ -17,6 +17,9 @@ export interface GanttRow {
   color: string;
   start: string | null;         // dates effectives : propres, sinon calculées sur les enfants
   end: string | null;
+  ownStart: string | null;      // dates propres à la ligne (vides pour une phase ou un projet dont les dates viennent de ses éléments)
+  ownEnd: string | null;
+  addTo?: 'project' | 'phase' | 'task';   // ligne « + Nouveau » : type du parent auquel elle ajoute
   partial: boolean;             // une seule des deux dates est connue : repère d'un jour
   family: StatusFamily | null;
   done: number;                 // éléments terminés / éléments comptés (les annulés ne comptent pas)
@@ -66,12 +69,13 @@ export function buildGantt(data: GanttData, grouping: Grouping): GanttModel {
     pool.filter(i => i.parent_id === parentId).sort(orderItems).map(it => {
       const key = `i:${it.id}`;
       const node: Node = { row: {
-        key, kind: it.kind, id: it.id, projectId, parentId: it.parent_id, level, name: it.name, color, start: null, end: null, partial: false,
+        key, kind: it.kind, id: it.id, projectId, parentId: it.parent_id, level, name: it.name, color, start: null, end: null, ownStart: null, ownEnd: null, partial: false,
         family: family.get(it.status_id) ?? 'not_started', done: 0, total: 0, hasChildren: false, parentKey,
       }, children: [] };
       node.children = itemNodes(projectId, color, it.id, level + 1, key, pool);
       node.row.hasChildren = node.children.length > 0;
       const milestoneDay = it.kind === 'milestone' ? it.ends_on ?? it.starts_on : null;
+      node.row.ownStart = milestoneDay ?? it.starts_on; node.row.ownEnd = milestoneDay ?? it.ends_on;
       resolve(node, milestoneDay ?? it.starts_on, milestoneDay ?? it.ends_on);
       if (node.children.length) sum(node); else Object.assign(node.row, leafCount(node.row.family));
       return node;
@@ -81,7 +85,7 @@ export function buildGantt(data: GanttData, grouping: Grouping): GanttModel {
     const key = `p:${p.id}`;
     const pool = itemsByProject.get(p.id) ?? [];
     const node: Node = { row: {
-      key, kind: 'project', id: p.id, projectId: p.id, parentId: null, level, name: p.name, color: p.color, start: null, end: null, partial: false,
+      key, kind: 'project', id: p.id, projectId: p.id, parentId: null, level, name: p.name, color: p.color, start: null, end: null, ownStart: p.starts_on, ownEnd: p.ends_on, partial: false,
       family: family.get(p.status_id) ?? 'not_started', done: 0, total: 0, hasChildren: false, parentKey,
     }, children: itemNodes(p.id, p.color, null, level + 1, key, pool) };
     node.row.hasChildren = node.children.length > 0;
@@ -92,7 +96,7 @@ export function buildGantt(data: GanttData, grouping: Grouping): GanttModel {
 
   const group = (key: string, kind: 'group' | 'program', id: string | null, name: string, color: string, ownStart: string | null, ownEnd: string | null, children: Node[]): Node => {
     const node: Node = { row: {
-      key, kind, id, projectId: null, parentId: null, level: 0, name, color, start: null, end: null, partial: false, family: null, done: 0, total: 0,
+      key, kind, id, projectId: null, parentId: null, level: 0, name, color, start: null, end: null, ownStart: ownStart, ownEnd: ownEnd, partial: false, family: null, done: 0, total: 0,
       hasChildren: children.length > 0, parentKey: null,
     }, children };
     resolve(node, ownStart, ownEnd);
@@ -141,11 +145,33 @@ export function visibleRows(model: GanttModel, expanded: ReadonlySet<string>): G
   return model.rows.filter(shown);
 }
 
+// Lignes « + Nouveau » : une après le dernier enfant visible de chaque projet, phase ou tâche déplié (création directe dans la liste)
+export function withAddRows(visible: GanttRow[], expanded: ReadonlySet<string>): GanttRow[] {
+  const kids = new Map<string | null, GanttRow[]>();
+  for (const r of visible) { const l = kids.get(r.parentKey) ?? []; l.push(r); kids.set(r.parentKey, l); }
+  const out: GanttRow[] = [];
+  const emit = (parentKey: string | null) => {
+    for (const r of kids.get(parentKey) ?? []) {
+      out.push(r);
+      if (!expanded.has(r.key)) continue;
+      emit(r.key);
+      if (r.kind === 'project' || r.kind === 'phase' || r.kind === 'task') {
+        out.push({
+          key: `add:${r.key}`, kind: 'add', id: null, projectId: r.projectId, parentId: r.kind === 'project' ? null : r.id, level: r.level + 1, name: '', color: r.color,
+          start: r.start, end: r.end, ownStart: null, ownEnd: null, partial: false, family: null, done: 0, total: 0, hasChildren: false, parentKey: r.key, addTo: r.kind,
+        });
+      }
+    }
+  };
+  emit(null);
+  return out;
+}
+
 // Ouverture sur 2 niveaux : les groupes (et programmes) sont dépliés, les projets repliés
 export const defaultExpanded = (model: GanttModel): Set<string> => new Set(model.rows.filter(r => r.kind === 'group' || r.kind === 'program').map(r => r.key));
 
 // Éléments et projets sans aucune date (bac « Sans date »)
-export const undatedRows = (model: GanttModel): GanttRow[] => model.rows.filter(r => (r.kind !== 'group' && r.kind !== 'program') && r.start === null);
+export const undatedRows = (model: GanttModel): GanttRow[] => model.rows.filter(r => (r.kind !== 'group' && r.kind !== 'program' && r.kind !== 'add') && r.start === null);
 
 export const progressOf = (r: Pick<GanttRow, 'done' | 'total'>): number | null => (r.total > 0 ? r.done / r.total : null);
 

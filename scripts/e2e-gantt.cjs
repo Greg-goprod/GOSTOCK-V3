@@ -213,6 +213,83 @@ async function step(id, title, fn, page) {
     ok(left === 0, `éléments enfants restants = ${left}`);
   }, resp.page);
 
+  /* ============ P3b Gestes (glisser, bords, clavier, « + Nouveau ») ============ */
+  group = 'P3b Gestes';
+  const zurichToday = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
+  const addDays = (day, n) => { const [y, m, d] = day.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+  const dates = async id => rows(await api(resp, 'GET', `/rest/v1/cp_items?select=starts_on,ends_on&id=eq.${id}`))[0];
+  await step('P3b-prepa', 'Projet « Gestes » : phase, tâche et sous-tâche datées à partir d\'aujourd\'hui (donc visibles à l\'ouverture)', async () => {
+    const t = zurichToday();
+    S.gp = await create(resp, 'cp_projects', { name: `${M} Gestes`, type: 'admin' });
+    S.gPhase = await create(resp, 'cp_items', { project_id: S.gp, kind: 'phase', name: `${M} G-Phase`, starts_on: t, ends_on: addDays(t, 8) });
+    S.gTask = await create(resp, 'cp_items', { project_id: S.gp, parent_id: S.gPhase, kind: 'task', name: `${M} G-Tâche`, starts_on: t, ends_on: addDays(t, 5) });
+    S.gSub = await create(resp, 'cp_items', { project_id: S.gp, parent_id: S.gTask, kind: 'subtask', name: `${M} G-Sous`, starts_on: addDays(t, 1), ends_on: addDays(t, 3) });
+    await open(resp, '/pilote/gantt'); await expandAll(resp);
+    S.bar = n => resp.page.locator(`[role="button"][aria-label*="${M} ${n}"]`).first();
+    ok(await S.bar('G-Tâche').count(), 'barre de la tâche absente de la fenêtre affichée');
+  }, resp.page);
+  await step('P3b-clavier-deplacer', 'Flèche droite sur la tâche : elle ET sa sous-tâche se décalent d\'un jour (la phase ne bouge pas)', async () => {
+    const before = { task: await dates(S.gTask), sub: await dates(S.gSub), phase: await dates(S.gPhase) };
+    await S.bar('G-Tâche').focus(); await resp.page.keyboard.press('ArrowRight'); await resp.page.waitForTimeout(2200);
+    const after = { task: await dates(S.gTask), sub: await dates(S.gSub), phase: await dates(S.gPhase) };
+    ok(after.task.starts_on === addDays(before.task.starts_on, 1) && after.task.ends_on === addDays(before.task.ends_on, 1), `tâche : ${JSON.stringify(before.task)} → ${JSON.stringify(after.task)}`);
+    ok(after.sub.starts_on === addDays(before.sub.starts_on, 1), `sous-tâche non décalée : ${JSON.stringify(after.sub)}`);
+    ok(JSON.stringify(after.phase) === JSON.stringify(before.phase), 'la phase ne devait pas bouger');
+  }, resp.page);
+  await step('P3b-clavier-bord', 'Maj + flèche droite sur la sous-tâche : sa fin avance d\'un jour, son début ne bouge pas', async () => {
+    const before = await dates(S.gSub);
+    await S.bar('G-Sous').focus(); await resp.page.keyboard.press('Shift+ArrowRight'); await resp.page.waitForTimeout(2200);
+    const after = await dates(S.gSub);
+    ok(after.starts_on === before.starts_on && after.ends_on === addDays(before.ends_on, 1), `${JSON.stringify(before)} → ${JSON.stringify(after)}`);
+  }, resp.page);
+  await step('P3b-souris-deplacer', 'Glisser la phase de +2 jours à la souris : la phase, la tâche et la sous-tâche se décalent de 2 jours', async () => {
+    const before = { phase: await dates(S.gPhase), task: await dates(S.gTask), sub: await dates(S.gSub) };
+    const taskBox = await S.bar('G-Tâche').boundingBox();
+    const nDays = (new Date(before.task.ends_on) - new Date(before.task.starts_on)) / 86400000 + 1;
+    const dayPx = taskBox.width / nDays;
+    const box = await S.bar('G-Phase').boundingBox();
+    const x = box.x + box.width / 2, y = box.y + box.height / 2;
+    await resp.page.mouse.move(x, y); await resp.page.mouse.down();
+    await resp.page.mouse.move(x + dayPx, y, { steps: 4 }); await resp.page.mouse.move(x + dayPx * 2, y, { steps: 4 });
+    await resp.page.mouse.up(); await resp.page.waitForTimeout(2500);
+    const after = { phase: await dates(S.gPhase), task: await dates(S.gTask), sub: await dates(S.gSub) };
+    for (const k of ['phase', 'task', 'sub']) ok(after[k].starts_on === addDays(before[k].starts_on, 2) && after[k].ends_on === addDays(before[k].ends_on, 2), `${k} : ${JSON.stringify(before[k])} → ${JSON.stringify(after[k])}`);
+  }, resp.page);
+  await step('P3b-souris-bord', 'Tirer le bord droit de la tâche de +2 jours : seule sa fin change', async () => {
+    const before = { task: await dates(S.gTask), sub: await dates(S.gSub) };
+    const nDays = (new Date(before.task.ends_on) - new Date(before.task.starts_on)) / 86400000 + 1;
+    const taskBox = await S.bar('G-Tâche').boundingBox();
+    const dayPx = taskBox.width / nDays;
+    const handle = await resp.page.locator(`[role="button"][aria-label*="${M} G-Tâche"] [data-handle="end"]`).boundingBox();
+    const x = handle.x + handle.width / 2, y = handle.y + handle.height / 2;
+    await resp.page.mouse.move(x, y); await resp.page.mouse.down(); await resp.page.mouse.move(x + dayPx * 2, y, { steps: 5 }); await resp.page.mouse.up(); await resp.page.waitForTimeout(2200);
+    const after = { task: await dates(S.gTask), sub: await dates(S.gSub) };
+    ok(after.task.starts_on === before.task.starts_on && after.task.ends_on === addDays(before.task.ends_on, 2), `tâche : ${JSON.stringify(before.task)} → ${JSON.stringify(after.task)}`);
+    ok(JSON.stringify(after.sub) === JSON.stringify(before.sub), 'la sous-tâche ne devait pas bouger');
+  }, resp.page);
+  await step('P3b-clic-fiche', 'Un clic sans mouvement ouvre toujours la fiche', async () => {
+    await S.bar('G-Tâche').click(); await resp.page.waitForTimeout(1200);
+    ok(await resp.page.locator('#itm-name').inputValue() === `${M} G-Tâche`, 'fiche de la tâche non ouverte');
+    await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(400);
+  }, resp.page);
+  await step('P3b-nouveau', '« + Nouveau » dans la liste : une tâche créée sous la phase, avec des dates, et la saisie reste ouverte', async () => {
+    ok((await resp.page.getByRole('button', { name: 'Nouveau', exact: true }).count()) >= 1, 'aucune ligne « + Nouveau »');
+    // La ligne « + Nouveau » de la phase de test : on repère celle qui suit « G-Tâche » (un seul niveau sous la phase)
+    const target = resp.page.getByRole('button', { name: 'Nouveau', exact: true });
+    const n = await target.count(); let clicked = false;
+    for (let i = 0; i < n && !clicked; i++) {
+      await target.nth(i).click(); await resp.page.waitForTimeout(300);
+      const kinds = await resp.page.locator('select[aria-label="Type du nouvel élément"] option').allInnerTexts();
+      if (kinds.join('/') === 'Tâche/Jalon') { clicked = true; } else { await resp.page.keyboard.press('Escape'); }
+    }
+    ok(clicked, 'ligne « + Nouveau » d\'une phase introuvable');
+    await resp.page.getByLabel('Nom du nouvel élément').fill(`${M} G-Rapide`); await resp.page.keyboard.press('Enter'); await resp.page.waitForTimeout(2000);
+    const made = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=id,kind,parent_id,starts_on,ends_on,project_id&name=eq.${encodeURIComponent(M + ' G-Rapide')}`));
+    ok(made.length === 1, `éléments créés = ${made.length}`);
+    ok(made[0].kind === 'task' && made[0].starts_on && made[0].ends_on, `élément = ${JSON.stringify(made[0])}`);
+    ok(await resp.page.getByLabel('Nom du nouvel élément').count() >= 1, 'la saisie ne reste pas ouverte');
+  }, resp.page);
+
   /* ============ P4 Lecteurs ============ */
   group = 'P4 Lecteurs';
   for (const c of readers) {
@@ -224,6 +301,7 @@ async function step(id, title, fn, page) {
       await expandAll(c);
       await c.page.locator('.group\\/row button', { hasText: `${M} Projet` }).first().click().catch(() => {});
       ok((await c.page.getByRole('button', { name: "Placer aujourd'hui" }).count()) === 0, 'bouton « Placer » présent');
+      ok((await c.page.locator('[data-handle]').count()) === 0 && (await c.page.getByRole('button', { name: 'Nouveau', exact: true }).count()) === 0, 'poignées ou lignes « + Nouveau » présentes pour un lecteur');
     }, c.page);
     await step(`P4-${c.who}-ecriture`, `${c.who} : la base refuse toute écriture sur les éléments`, async () => {
       ok(refused(await api(c, 'POST', '/rest/v1/cp_items', { project_id: S.proj, kind: 'task', name: `${M} Piraté` })), 'création acceptée');

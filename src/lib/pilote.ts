@@ -119,6 +119,22 @@ export async function saveMembers(projectId: string, userIds: string[]): Promise
   if (ins.error) throw ins.error;
 }
 
+// Décale un élément ET tout ce qu'il contient du même nombre de jours (en une seule opération de la base, tout ou rien)
+export async function shiftItem(itemId: string, days: number): Promise<void> {
+  const { error } = await supabase.rpc('cp_shift_item', { p_item_id: itemId, p_days: days });
+  if (error) throw error;
+}
+// Décale un projet (ses dates) et tous ses éléments
+export async function shiftProject(projectId: string, days: number): Promise<void> {
+  const { error } = await supabase.rpc('cp_shift_project', { p_project_id: projectId, p_days: days });
+  if (error) throw error;
+}
+// Change seulement les dates de cet élément ou de ce projet (bords tirés à la souris ou au clavier)
+export async function setDates(kind: 'project' | 'item', id: string, start: string, end: string): Promise<void> {
+  const { error } = await supabase.from(kind === 'project' ? 'cp_projects' : 'cp_items').update({ starts_on: start, ends_on: end }).eq('id', id);
+  if (error) throw error;
+}
+
 // Remplace les responsables d'un élément
 export async function saveItemMembers(itemId: string, userIds: string[]): Promise<void> {
   const del = await supabase.from('cp_item_members').delete().eq('item_id', itemId);

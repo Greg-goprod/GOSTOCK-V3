@@ -3123,5 +3123,16 @@
 "Période (début et retour)": "Zeitraum (Anfang und Rückgabe)",
 "Copier sur la période (début et fin incluses)": "Auf den Zeitraum kopieren (Anfang und Ende inklusive)",
 "Choisir le premier et le dernier jour": "Ersten und letzten Tag wählen",
-"Période longue : clique sur une intervention pour ouvrir sa fiche. Choisis une période plus courte (1 semaine ou moins) pour déplacer à la souris.": "Langer Zeitraum: Klicke auf einen Einsatz, um sein Blatt zu öffnen. Wähle einen kürzeren Zeitraum (1 Woche oder weniger), um mit der Maus zu verschieben."
+"Période longue : clique sur une intervention pour ouvrir sa fiche. Choisis une période plus courte (1 semaine ou moins) pour déplacer à la souris.": "Langer Zeitraum: Klicke auf einen Einsatz, um sein Blatt zu öffnen. Wähle einen kürzeren Zeitraum (1 Woche oder weniger), um mit der Maus zu verschieben.",
+"Nouveau": "Neu",
+"Nom du nouvel élément": "Name des neuen Elements",
+"Type du nouvel élément": "Typ des neuen Elements",
+"Nom, puis Entrée": "Name, dann Eingabe",
+"Dates modifiées": "Daten geändert",
+"Décalé de {0} jours": "Um {0} Tage verschoben",
+"Décalé de {0} jour": "Um {0} Tag verschoben",
+"Avancé de {0} jours": "Um {0} Tage vorverlegt",
+"Avancé de {0} jour": "Um {0} Tag vorverlegt",
+"Modification non autorisée": "Änderung nicht erlaubt",
+"Indique un décalage en jours (différent de 0)": "Gib eine Verschiebung in Tagen an (nicht 0)"
 }
