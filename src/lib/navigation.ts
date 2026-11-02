@@ -4,7 +4,7 @@ import {
   BarChart3, ScanBarcode, Contact, Tags, Wrench, AlertTriangle, ListChecks, ShoppingCart, Coins, Gauge, History,
   HardHat, Map as MapIcon, Briefcase, GraduationCap, KeyRound, ArrowLeftRight, MapPin, CalendarRange, ShieldCheck,
   Hammer, Calculator, Hand, MonitorPlay, Search, TrendingUp, Stethoscope, Rocket, Home, Warehouse, LifeBuoy, ShoppingBag, Building2,
-  Boxes, Compass, FolderKanban,
+  Boxes, Compass, FolderKanban, GanttChartSquare,
 } from 'lucide-react';
 
 export interface NavLinkItem {
@@ -100,6 +100,7 @@ export const NAV_SPACES: NavSpace[] = [
   // PILOTE : planification et gestion de projets (module payant, visible seulement s'il est activé pour l'entreprise)
   { id: 'pilote-projects', product: 'pilote', label: 'Projets', short: 'Projets', icon: FolderKanban, links: [
     { to: '/pilote/projets', label: 'Projets', icon: FolderKanban },
+    { to: '/pilote/gantt', label: 'Gantt', icon: GanttChartSquare },
   ] },
   { id: 'pilote-planning', product: 'pilote', label: 'Planification', short: 'Planning', icon: CalendarClock, links: [
     { to: '/pilote/planning', label: 'Planning', icon: CalendarClock },
