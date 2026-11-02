@@ -32,7 +32,7 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   '/epi': ['scan', 'manage_people', 'manage_stock', 'view_all'],
   '/planning': ['view_all', 'scan', 'approve', 'manage_stock', 'manage_fleet'],
   // PILOTE : module payant activé pour l'entreprise (les droits fins sont vérifiés par la base)
-  '/pilote/planning': ['module:chantiers_planning'],
+  '/pilote/planning': ['module:cp.planning'],
   '/incidents': ['view_all', 'scan', 'approve', 'manage_stock'],
   '/checkouts': ['scan', 'view_all'],
   '/consommables': ['scan', 'manage_stock'],

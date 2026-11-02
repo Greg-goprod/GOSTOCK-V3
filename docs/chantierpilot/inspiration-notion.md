@@ -50,7 +50,7 @@ Propriétés personnalisées, formules, pages libres, intégrations Drive / Figm
 Notre frise actuelle est faite pour des heures dans une journée. Le Gantt demande une **nouvelle échelle en jours** : je réutilise les maths de temps existantes quand c'est possible mais le composant est nouveau, avec son propre test. Rendu visé : sobre, mêmes tokens et composants Mx que le reste.
 
 ## 5. Décisions de Greg (2 novembre)
-1. **Profondeur** : 3 niveaux proposés (projet → phase → tâche/jalon) — en attente de confirmation de Greg. Les étapes d'une tâche se font par liste à cocher, pas par un niveau de plus.
+1. **Profondeur** : **5 niveaux validés** — Programme → Projet → Phase → Tâche (ou jalon) → Sous-tâche. Tous facultatifs sauf le projet (on peut sauter un niveau). Le Gantt s'ouvre sur 2 niveaux et se déplie. Le programme est une table à part (regroupe des projets, sans dates ni état propres) ; les niveaux 3 à 5 sont une seule table d'éléments avec parent et type, la base refusant un 6ᵉ niveau et les parentés absurdes. Les mini-étapes sans date ni responsable restent en liste à cocher. Noms des niveaux modifiables dans les Paramètres : proposé, à confirmer (libellés seulement).
 2. **États** : 4 états de base fixes (Pas commencé / En cours / Terminé / Annulé) **et** possibilité d'en ajouter dans les Paramètres. Un état ajouté se range dans l'une des 4 familles (comme les groupes de Notion), pour que l'avancement et les filtres restent calculables.
 3. **Dépendances** : juste après le Gantt.
 4. **Responsables** : **plusieurs** personnes par élément (table de liaison élément ↔ personne).

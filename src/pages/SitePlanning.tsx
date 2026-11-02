@@ -100,7 +100,7 @@ const SitePlanning: React.FC = () => {
               {section === 'interventions' && <InterventionsSection site={site} data={data} rights={rights} locked={!!locked} onChanged={reload} />}
               {section === 'zones' && (
                 <CrudSection<PlanZone>
-                  title="Zones" addLabel="Nouvelle zone" table="site_zones" baseValues={{ site_id: site.id }} rights={rights} locked={locked} onChanged={reload}
+                  title="Zones" addLabel="Nouvelle zone" table="cp_site_zones" baseValues={{ site_id: site.id }} rights={rights} locked={locked} onChanged={reload}
                   rows={data.zones} emptyIcon={MapPin} emptyTitle="Aucune zone" emptyText="Une zone est un lieu du chantier (scène, parking, accueil…)."
                   deleteMessage={r => `Supprimer la zone « ${r.name} » ?`}
                   fields={[{ key: 'name', label: 'Nom de la zone', type: 'text', required: true }, { key: 'color', label: 'Couleur', type: 'color' }]}
@@ -109,7 +109,7 @@ const SitePlanning: React.FC = () => {
               )}
               {section === 'teams' && (
                 <CrudSection<PlanTeam>
-                  title="Équipes" addLabel="Nouvelle équipe" table="site_teams" baseValues={{ site_id: site.id }} rights={rights} locked={locked} onChanged={reload}
+                  title="Équipes" addLabel="Nouvelle équipe" table="cp_site_teams" baseValues={{ site_id: site.id }} rights={rights} locked={locked} onChanged={reload}
                   rows={data.teams} emptyIcon={Users} emptyTitle="Aucune équipe" emptyText="Une équipe est un groupe qui intervient ensemble, interne ou rattaché à un prestataire."
                   deleteMessage={r => `Supprimer l'équipe « ${r.name} » ?`}
                   fields={[
@@ -125,7 +125,7 @@ const SitePlanning: React.FC = () => {
               )}
               {section === 'contractors' && (
                 <CrudSection<PlanContractor>
-                  title="Prestataires" addLabel="Nouveau prestataire" table="contractors" rights={rights} locked={locked} onChanged={reload}
+                  title="Prestataires" addLabel="Nouveau prestataire" table="cp_contractors" rights={rights} locked={locked} onChanged={reload}
                   rows={data.contractors} emptyIcon={Truck} emptyTitle="Aucun prestataire" emptyText="Les sociétés externes qui interviennent (scène, son, lumière, traiteur…). Ils servent pour tous tes chantiers."
                   deleteMessage={r => `Supprimer le prestataire « ${r.name} » ? Ses équipes deviennent des équipes internes.`}
                   fields={[
@@ -145,7 +145,7 @@ const SitePlanning: React.FC = () => {
               )}
               {section === 'phases' && (
                 <CrudSection<PlanPhase>
-                  title="Phases" addLabel="Nouvelle phase" table="site_phases" baseValues={{ site_id: site.id }} rights={rights} locked={locked} onChanged={reload}
+                  title="Phases" addLabel="Nouvelle phase" table="cp_site_phases" baseValues={{ site_id: site.id }} rights={rights} locked={locked} onChanged={reload}
                   rows={data.phases} emptyIcon={Layers} emptyTitle="Aucune phase" emptyText="Les grandes étapes du chantier (montage, exploitation, démontage)."
                   deleteMessage={r => `Supprimer la phase « ${r.name} » ? Ses interventions n'ont plus de phase.`}
                   fields={[

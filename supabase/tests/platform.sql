@@ -31,7 +31,7 @@ SELECT count(*) AS n_org1 FROM public.users WHERE organization_id = :ORG1::uuid 
 SELECT set_config('request.jwt.claim.sub', :P, false); SET ROLE authenticated;
 SELECT zz.check('P : connexion, is_owner_admin et is_platform_admin concordent', public.whoami() IS NOT NULL AND public.is_owner_admin() AND public.is_platform_admin() AND (public.whoami() ->> 'platform_admin') = 'true');
 SELECT zz.check('liste des entreprises avec leurs modules', (SELECT count(*) FROM public.platform_organizations()) >= 2
-  AND (SELECT 'chantiers_planning' = ANY (modules) FROM public.platform_organizations() WHERE id = :ORG1::uuid));
+  AND (SELECT 'cp.planning' = ANY (modules) FROM public.platform_organizations() WHERE id = :ORG1::uuid));
 SELECT zz.check('usage : une ligne par entreprise, chiffres cohérents', (SELECT count(*) FROM public.platform_organization_usage()) = :nb_orgs
   AND (SELECT people_active FROM public.platform_organization_usage() WHERE organization_id = :ORG1::uuid) = :n_org1
   AND (SELECT last_sign_in IS NOT NULL FROM public.platform_organization_usage() WHERE organization_id = :ORG1::uuid));
@@ -43,12 +43,12 @@ SELECT zz.check('nom déjà pris : refusé', zz.raises($$SELECT public.platform_
 SELECT zz.check('adresse invalide : refusée', zz.raises($$SELECT public.platform_create_organization('Autre', 'pasunmail', 'X', 'Y')$$) LIKE '%invalide%');
 SELECT zz.check('une nouvelle entreprise part sans module', (SELECT cardinality(modules) FROM public.platform_organizations() WHERE name = 'Société Été & Co') = 0);
 SELECT id AS org3 FROM public.platform_organizations() WHERE name = 'Société Été & Co' \gset
-SELECT coalesce(zz.raises(format('SELECT public.platform_set_module(%L, ''chantiers_planning'', true)', :'org3')), 'ok') AS r \gset
+SELECT coalesce(zz.raises(format('SELECT public.platform_set_module(%L, ''cp.planning'', true)', :'org3')), 'ok') AS r \gset
 SELECT zz.check('P active un module, journalisé', :'r' = 'ok'
-  AND (SELECT 'chantiers_planning' = ANY (modules) FROM public.platform_organizations() WHERE id = :'org3'::uuid)
-  AND (SELECT count(*) FROM public.platform_audit(50) WHERE action = 'enable_module' AND metadata ->> 'module' = 'chantiers_planning') = 1, :'r');
+  AND (SELECT 'cp.planning' = ANY (modules) FROM public.platform_organizations() WHERE id = :'org3'::uuid)
+  AND (SELECT count(*) FROM public.platform_audit(50) WHERE action = 'enable_module' AND metadata ->> 'module' = 'cp.planning') = 1, :'r');
 SELECT zz.check('module inconnu : refusé', zz.raises(format('SELECT public.platform_set_module(%L, ''nimportequoi'', true)', :'org3')) LIKE '%Module inconnu%');
-SELECT coalesce(zz.raises(format('SELECT public.platform_set_module(%L, ''chantiers_planning'', false)', :'org3')), 'ok') AS r \gset
+SELECT coalesce(zz.raises(format('SELECT public.platform_set_module(%L, ''cp.planning'', false)', :'org3')), 'ok') AS r \gset
 SELECT zz.check('P retire le module, journalisé', :'r' = 'ok' AND (SELECT cardinality(modules) FROM public.platform_organizations() WHERE id = :'org3'::uuid) = 0
   AND (SELECT count(*) FROM public.platform_audit(50) WHERE action = 'disable_module') = 1, :'r');
 SELECT coalesce(zz.raises(format('SELECT public.platform_set_organization_active(%L, false)', :'org3')), 'ok') AS r \gset
@@ -73,7 +73,7 @@ SELECT zz.check('A ne lit ni le journal ni owner_admins, et ne s''y inscrit pas'
   AND zz.raises($$INSERT INTO public.owner_admins (user_id) VALUES ('a0000000-0000-0000-0000-00000000000a')$$) IS NOT NULL);
 SELECT zz.check('A ne s''active aucun module', zz.raises($$INSERT INTO public.organization_modules (module_key) VALUES ('repas')$$) IS NOT NULL
   AND zz.affected($$UPDATE public.organization_modules SET enabled = true$$) = 0 AND zz.affected($$DELETE FROM public.organization_modules$$) = 0);
-SELECT zz.check('A voit ses modules seulement (my_modules)', public.my_modules() = ARRAY['chantiers_planning'] AND (SELECT count(*) FROM public.organization_modules) = 1);
+SELECT zz.check('A voit ses modules seulement (my_modules)', public.my_modules() = ARRAY['cp.planning'] AND (SELECT count(*) FROM public.organization_modules) = 1);
 RESET ROLE;
 
 -- Journal en ajout seul ----------------------------------------------------------------------------------------------------
@@ -83,12 +83,12 @@ SELECT zz.check('journal : chaque action de la console y est', (SELECT count(DIS
 
 -- Modules : le planning exige d'être activé ---------------------------------------------------------------------------------
 SELECT set_config('request.jwt.claim.sub', :B, false); SET ROLE authenticated;
-SELECT zz.check('B (module planning activé pour les tests de planning) : lit son planning', zz.raises($$SELECT count(*) FROM public.site_zones$$) IS NULL AND (SELECT count(*) FROM public.site_interventions) >= 1);
+SELECT zz.check('B (module planning activé pour les tests de planning) : lit son planning', zz.raises($$SELECT count(*) FROM public.cp_site_zones$$) IS NULL AND (SELECT count(*) FROM public.cp_site_interventions) >= 1);
 RESET ROLE;
-DELETE FROM public.organization_modules WHERE organization_id = :ORG2::uuid AND module_key = 'chantiers_planning';
+DELETE FROM public.organization_modules WHERE organization_id = :ORG2::uuid AND module_key = 'cp.planning';
 SELECT set_config('request.jwt.claim.sub', :B, false); SET ROLE authenticated;
-SELECT zz.check('module retiré : B ne voit plus son planning et n''y écrit plus', (SELECT count(*) FROM public.site_interventions) = 0 AND (SELECT count(*) FROM public.site_zones) = 0 AND (SELECT count(*) FROM public.contractors) = 0
-  AND zz.raises($$INSERT INTO public.contractors (name) VALUES ('Refusé SA')$$) IS NOT NULL AND public.my_modules() = ARRAY[]::text[]);
+SELECT zz.check('module retiré : B ne voit plus son planning et n''y écrit plus', (SELECT count(*) FROM public.cp_site_interventions) = 0 AND (SELECT count(*) FROM public.cp_site_zones) = 0 AND (SELECT count(*) FROM public.cp_contractors) = 0
+  AND zz.raises($$INSERT INTO public.cp_contractors (name) VALUES ('Refusé SA')$$) IS NOT NULL AND public.my_modules() = ARRAY[]::text[]);
 RESET ROLE;
 
 SELECT (CASE WHEN ok THEN 'OK     ' ELSE 'ECHEC  ' END) || name AS resultat FROM zz.results ORDER BY n;

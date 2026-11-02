@@ -38,15 +38,15 @@ export async function loadOpenSites(): Promise<PlanSite[]> {
 
 export async function loadSitePlanning(siteId: string): Promise<SitePlanningData> {
   const [config, zones, teams, phases, contractors, blocked, interventions, needs, issues] = await Promise.all([
-    supabase.from('site_config').select('*').eq('site_id', siteId).maybeSingle(),
-    supabase.from('site_zones').select('*').eq('site_id', siteId).order('position').order('name'),
-    supabase.from('site_teams').select('*').eq('site_id', siteId).order('name'),
-    supabase.from('site_phases').select('*').eq('site_id', siteId).order('position').order('name'),
-    supabase.from('contractors').select('*').order('name'),
-    supabase.from('site_blocked_days').select('*').eq('site_id', siteId).order('day'),
-    supabase.from('site_interventions').select('*').eq('site_id', siteId).order('starts_at'),
-    supabase.from('site_intervention_needs').select('id, intervention_id, equipment_id, quantity, site_interventions!inner(site_id)').eq('site_interventions.site_id', siteId),
-    supabase.rpc('site_material_issues', { p_site_id: siteId }),
+    supabase.from('cp_site_config').select('*').eq('site_id', siteId).maybeSingle(),
+    supabase.from('cp_site_zones').select('*').eq('site_id', siteId).order('position').order('name'),
+    supabase.from('cp_site_teams').select('*').eq('site_id', siteId).order('name'),
+    supabase.from('cp_site_phases').select('*').eq('site_id', siteId).order('position').order('name'),
+    supabase.from('cp_contractors').select('*').order('name'),
+    supabase.from('cp_site_blocked_days').select('*').eq('site_id', siteId).order('day'),
+    supabase.from('cp_site_interventions').select('*').eq('site_id', siteId).order('starts_at'),
+    supabase.from('cp_site_intervention_needs').select('id, intervention_id, equipment_id, quantity, cp_site_interventions!inner(site_id)').eq('cp_site_interventions.site_id', siteId),
+    supabase.rpc('cp_site_material_issues', { p_site_id: siteId }),
   ]);
   // Les avertissements de matériel ne bloquent jamais l'affichage du planning
   const error = [config, zones, teams, phases, contractors, blocked, interventions, needs].map(r => r.error).find(Boolean);
@@ -59,17 +59,17 @@ export async function loadSitePlanning(siteId: string): Promise<SitePlanningData
     contractors: (contractors.data || []) as PlanContractor[],
     blockedDays: (blocked.data || []) as PlanBlockedDay[],
     interventions: (interventions.data || []) as PlanIntervention[],
-    needs: ((needs.data || []) as (PlanNeed & { site_interventions?: unknown })[]).map(n => ({ id: n.id, intervention_id: n.intervention_id, equipment_id: n.equipment_id, quantity: Number(n.quantity) })),
+    needs: ((needs.data || []) as (PlanNeed & { cp_site_interventions?: unknown })[]).map(n => ({ id: n.id, intervention_id: n.intervention_id, equipment_id: n.equipment_id, quantity: Number(n.quantity) })),
     issues: issues.error ? [] : ((issues.data || []) as MaterialIssue[]).map(i => ({ ...i, needed: Number(i.needed), available: Number(i.available), shortage: Number(i.shortage) })),
   };
 }
 
 export interface PlanningRights { create: boolean; update: boolean; delete: boolean }
 
-// Droits fins du module (clés « chantiers.planning:… », comme Mannyx) : la base répond, l'écran ne fait que masquer ce qui serait refusé
+// Droits fins du module (clés « cp.planning:… », comme Mannyx) : la base répond, l'écran ne fait que masquer ce qui serait refusé
 export async function loadPlanningRights(): Promise<PlanningRights> {
   const ask = async (action: 'create' | 'update' | 'delete') => {
-    const { data, error } = await supabase.rpc('rbac_has_any_permission', { p_keys: [`chantiers.planning:${action}`] });
+    const { data, error } = await supabase.rpc('rbac_has_any_permission', { p_keys: [`cp.planning:${action}`] });
     return !error && data === true;
   };
   const [create, update, del] = await Promise.all([ask('create'), ask('update'), ask('delete')]);
@@ -97,10 +97,10 @@ export interface NeedInput { equipment_id: string; quantity: number }
 
 // Remplace le matériel nécessaire d'une intervention
 export async function saveNeeds(interventionId: string, needs: NeedInput[]): Promise<void> {
-  const del = await supabase.from('site_intervention_needs').delete().eq('intervention_id', interventionId);
+  const del = await supabase.from('cp_site_intervention_needs').delete().eq('intervention_id', interventionId);
   if (del.error) throw del.error;
   if (needs.length === 0) return;
-  const ins = await supabase.from('site_intervention_needs').insert(needs.map(n => ({ intervention_id: interventionId, equipment_id: n.equipment_id, quantity: n.quantity })));
+  const ins = await supabase.from('cp_site_intervention_needs').insert(needs.map(n => ({ intervention_id: interventionId, equipment_id: n.equipment_id, quantity: n.quantity })));
   if (ins.error) throw ins.error;
 }
 
@@ -111,7 +111,7 @@ export interface SeriesInput {
 
 // Tout ou rien : la base crée toute la série ou rien, et nomme la date refusée
 export async function createSeries(input: SeriesInput): Promise<{ created: number; skipped_blocked: number }> {
-  const { data, error } = await supabase.rpc('create_intervention_series', {
+  const { data, error } = await supabase.rpc('cp_create_intervention_series', {
     p_site_id: input.site_id, p_zone_id: input.zone_id, p_team_id: input.team_id, p_phase_id: input.phase_id, p_title: input.title, p_notes: input.notes,
     p_first_day: input.first_day, p_last_day: input.last_day, p_weekdays: input.weekdays, p_start: input.start, p_end: input.end,
     p_end_day_offset: input.end_day_offset, p_needs: input.needs,
@@ -122,7 +122,7 @@ export async function createSeries(input: SeriesInput): Promise<{ created: numbe
 }
 
 export async function copyDay(siteId: string, fromDay: string, toDays: string[]): Promise<{ created: number; skipped_blocked: number }> {
-  const { data, error } = await supabase.rpc('copy_interventions_day', { p_site_id: siteId, p_from_day: fromDay, p_to_days: toDays });
+  const { data, error } = await supabase.rpc('cp_copy_interventions_day', { p_site_id: siteId, p_from_day: fromDay, p_to_days: toDays });
   if (error) throw error;
   const row = (Array.isArray(data) ? data[0] : data) as { created: number; skipped_blocked: number };
   return { created: Number(row.created), skipped_blocked: Number(row.skipped_blocked) };

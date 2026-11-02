@@ -11,7 +11,7 @@ export type Permission =
   | 'all_depots'
   // Administrateur de la plateforme (création des entreprises) : ne s'attribue pas, il vient de la base
   | 'platform'
-  // Module payant activé pour l'entreprise (ex. « module:chantiers_planning ») : vient de la base, activé par la plateforme
+  // Module payant activé pour l'entreprise (ex. « module:cp.planning ») : vient de la base, activé par la plateforme
   | `module:${string}`;
 
 export interface Profile {

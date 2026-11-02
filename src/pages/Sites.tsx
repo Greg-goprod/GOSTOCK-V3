@@ -65,7 +65,7 @@ const Sites: React.FC = () => {
   const navigate = useNavigate();
   const { can } = useAuth();
   const canEdit = can('manage_stock') || can('approve');
-  const hasPlanning = can('module:chantiers_planning');
+  const hasPlanning = can('module:cp.planning');
   const [sites, setSites] = useState<Site[]>([]);
   const [openItems, setOpenItems] = useState<OpenItem[]>([]);
   const [filter, setFilter] = useState<'open' | 'closed' | 'all'>('open');

@@ -68,7 +68,7 @@ const InterventionsSection: React.FC<Props> = ({ site, data, rights, locked, onC
 
   const remove = async (row: PlanIntervention) => {
     if (!(await confirmAction(`Supprimer l'intervention « ${row.title} » ?`))) return;
-    const { error } = await supabase.from('site_interventions').delete().eq('id', row.id);
+    const { error } = await supabase.from('cp_site_interventions').delete().eq('id', row.id);
     if (error) return void toast.error(planningError(error));
     toast.success('Intervention supprimée');
     await onChanged();

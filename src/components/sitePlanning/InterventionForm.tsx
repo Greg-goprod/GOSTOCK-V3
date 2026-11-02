@@ -79,12 +79,12 @@ const InterventionForm: React.FC<Props> = ({ site, data, target, onClose, onSave
         });
         toast.success(result.skipped_blocked > 0 ? `${result.created} interventions créées (${result.skipped_blocked} jour(s) bloqué(s) sauté(s))` : `${result.created} interventions créées`);
       } else if (target.mode === 'new') {
-        const { data: row, error } = await supabase.from('site_interventions').insert({ ...base, site_id: site.id, starts_at: wallToIso(form.day, form.start), ends_at: wallToIso(endDay, form.end) }).select('id').single();
+        const { data: row, error } = await supabase.from('cp_site_interventions').insert({ ...base, site_id: site.id, starts_at: wallToIso(form.day, form.start), ends_at: wallToIso(endDay, form.end) }).select('id').single();
         if (error) throw error;
         if (wanted.length) await saveNeeds((row as { id: string }).id, wanted);
         toast.success('Intervention ajoutée');
       } else {
-        const { error } = await supabase.from('site_interventions').update({ ...base, starts_at: wallToIso(form.day, form.start), ends_at: wallToIso(endDay, form.end) }).eq('id', target.row.id);
+        const { error } = await supabase.from('cp_site_interventions').update({ ...base, starts_at: wallToIso(form.day, form.start), ends_at: wallToIso(endDay, form.end) }).eq('id', target.row.id);
         if (error) throw error;
         await saveNeeds(target.row.id, wanted);
         toast.success('Intervention modifiée');
@@ -101,7 +101,7 @@ const InterventionForm: React.FC<Props> = ({ site, data, target, onClose, onSave
   const removeSeries = async () => {
     if (!editedRow?.series_id) return;
     if (!(await confirmAction(`Supprimer les ${seriesSize} interventions de cette série ?`))) return;
-    const { error } = await supabase.from('site_interventions').delete().eq('series_id', editedRow.series_id);
+    const { error } = await supabase.from('cp_site_interventions').delete().eq('series_id', editedRow.series_id);
     if (error) return void toast.error(planningError(error));
     toast.success('Série supprimée');
     onClose();

@@ -114,7 +114,7 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
 
   const commit = async (item: PlanIntervention, patch: Partial<PlanIntervention>) => {
     setOverrides(prev => new Map(prev).set(item.id, { ...item, ...patch }));
-    const { error } = await supabase.from('site_interventions').update(patch).eq('id', item.id);
+    const { error } = await supabase.from('cp_site_interventions').update(patch).eq('id', item.id);
     if (error) toast.error(planningError(error));
     await onChanged();
     setOverrides(prev => { const next = new Map(prev); next.delete(item.id); return next; });

@@ -39,8 +39,8 @@ const ConfigSection: React.FC<Props> = ({ site, data, rights, locked, onChanged 
     const payload = { day_start: form.day_start, day_end: form.day_end, all_day: form.all_day, step_minutes: Number(form.step_minutes) };
     setSaving(true);
     const { error } = data.config
-      ? await supabase.from('site_config').update(payload).eq('site_id', site.id)
-      : await supabase.from('site_config').insert({ ...payload, site_id: site.id });
+      ? await supabase.from('cp_site_config').update(payload).eq('site_id', site.id)
+      : await supabase.from('cp_site_config').insert({ ...payload, site_id: site.id });
     setSaving(false);
     if (error) return void toast.error(planningError(error));
     toast.success('Réglages enregistrés');
@@ -50,7 +50,7 @@ const ConfigSection: React.FC<Props> = ({ site, data, rights, locked, onChanged 
   const addBlocked = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!blocked.day) return;
-    const { error } = await supabase.from('site_blocked_days').insert({ site_id: site.id, day: blocked.day, reason: blocked.reason.trim() || null });
+    const { error } = await supabase.from('cp_site_blocked_days').insert({ site_id: site.id, day: blocked.day, reason: blocked.reason.trim() || null });
     if (error) return void toast.error(planningError(error));
     toast.success('Jour bloqué');
     setBlocked({ day: '', reason: '' });
@@ -59,7 +59,7 @@ const ConfigSection: React.FC<Props> = ({ site, data, rights, locked, onChanged 
 
   const removeBlocked = async (id: string, day: string) => {
     if (!(await confirmAction(`Débloquer le ${formatDay(day)} ?`))) return;
-    const { error } = await supabase.from('site_blocked_days').delete().eq('id', id);
+    const { error } = await supabase.from('cp_site_blocked_days').delete().eq('id', id);
     if (error) return void toast.error(planningError(error));
     await onChanged();
   };

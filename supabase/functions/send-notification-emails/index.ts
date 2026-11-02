@@ -295,7 +295,7 @@ const BACKUP_TABLES = [
   'repair_orders', 'incidents', 'inventory_counts', 'inventory_count_lines', 'purchase_orders', 'purchase_order_lines',
   'transfers', 'transfer_lines', 'rental_inspections',
   // Planning de chantier (module 1) : dans l'ordre des dépendances (chantiers → zones / équipes → interventions → besoins)
-  'contractors', 'site_config', 'site_blocked_days', 'site_zones', 'site_phases', 'site_teams', 'site_interventions', 'site_intervention_needs',
+  'cp_contractors', 'cp_site_config', 'cp_site_blocked_days', 'cp_site_zones', 'cp_site_phases', 'cp_site_teams', 'cp_site_interventions', 'cp_site_intervention_needs',
   'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const KEEP_BACKUPS = 12;
