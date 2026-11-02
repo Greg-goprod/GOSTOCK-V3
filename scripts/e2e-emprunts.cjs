@@ -287,9 +287,10 @@ async function step(id, title, fn, page) {
     ok(!refused(await extend([id], day(3))), 'prolongation refusée'); const st = await coStatus(id); ok(st === 'active', `statut ${st} après prolongation`);
   });
   await step('E7-demande-collab', 'Collaborateur : demande une prolongation (avis au magasin, pas de doublon) ; pas pour l\'outil d\'un autre', async () => {
+    const depuis = encodeURIComponent(new Date(Date.now() - 120e3).toISOString()); // seuls les avis de CE passage comptent (ceux des passages précédents restent en base)
     const a = await rpc(collab, 'request_extension', { p_new_due: day(8), p_reason: `${M} chantier retardé`, p_checkout_id: S.kId, p_request_id: null }); ok(!refused(a), msg(a));
     const b = await rpc(collab, 'request_extension', { p_new_due: day(8), p_reason: `${M} chantier retardé`, p_checkout_id: S.kId, p_request_id: null });
-    const n = rows(await api(staff, 'GET', '/rest/v1/notifications?kind=eq.extension_request&select=id,message&order=created_at.desc&limit=10')).filter(x => /TEST-EMPRUNT|Outil K/.test(x.message)); ok(n.length >= 1, 'le magasin ne reçoit aucun avis'); ok(n.length === 1, `${n.length} avis pour la même demande (doublon)`);
+    const n = rows(await api(staff, 'GET', `/rest/v1/notifications?kind=eq.extension_request&created_at=gte.${depuis}&select=id,message&order=created_at.desc&limit=10`)).filter(x => /TEST-EMPRUNT|Outil K/.test(x.message)); ok(n.length >= 1, 'le magasin ne reçoit aucun avis'); ok(n.length === 1, `${n.length} avis pour la même demande (doublon)`);
     const other = await out(S.K, 1, day(1), S.respId); const oid = (await lines(other.body.id))[0]; const x = await rpc(collab, 'request_extension', { p_new_due: day(8), p_reason: M, p_checkout_id: oid ? oid.id : null, p_request_id: null }); ok(refused(x), 'demande acceptée pour l\'outil d\'un autre');
     return INFO(refused(b) ? `2e demande identique refusée : ${msg(b)}` : '2e demande identique absorbée (un seul avis)');
   });

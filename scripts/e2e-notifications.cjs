@@ -165,7 +165,7 @@ async function step(id, title, fn, page) {
     const a = await rpc(collab, 'mark_notifications_read', { p_ids: [S.n1, S.nStaff] });
     ok(!refused(a) ? Number(a.body) === 0 : true, `${a.body} ligne(s) modifiée(s)`);
     const b = await rpc(collab, 'mark_notification_unread', { p_id: S.n1 }); ok(refused(b) || Number(b.body) === 0, 'remise en non lue acceptée');
-    const direct = await api(collab, 'GET', `/rest/v1/notification_reads?select=*`); ok(refused(direct) || rows(direct).length === 0, 'il lit des lignes de lecture');
+    const direct = await api(collab, 'GET', `/rest/v1/notification_reads?select=*`); ok(refused(direct) || rows(direct).every(x => x.user_id === S.collabId), 'il lit les lignes de lecture d\'un autre');
   });
   await step('N3-lignes-privees', 'Chacun ne lit que ses propres lignes de lecture', async () => {
     await rpc(resp, 'mark_notifications_read', { p_ids: [S.n1] });
