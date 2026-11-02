@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { errorMessage } from '../lib/requests';
 import { currentPosition, formatCoordinates, geocodeAddress } from '../lib/geo';
-import DateInput from '../components/common/DateInput';
+import { DateRangeInput } from '../components/common/DateInput';
 import { confirmAction } from '../lib/confirm';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxEmpty } from '../components/mx/MxEmpty';
@@ -330,12 +330,8 @@ const Sites: React.FC = () => {
             </div>
           </div>
           <div>
-            <label htmlFor="site-start" className={labelClass}>Début</label>
-            <DateInput id="site-start" value={form.start_on} onChange={e => setForm({ ...form, start_on: e.target.value })} className={inputClass} />
-          </div>
-          <div>
-            <label htmlFor="site-end" className={labelClass}>Fin prévue</label>
-            <DateInput id="site-end" value={form.end_on} min={form.start_on || undefined} onChange={e => setForm({ ...form, end_on: e.target.value })} className={inputClass} />
+            <label htmlFor="site-period" className={labelClass}>Période (début et fin prévue)</label>
+            <DateRangeInput id="site-period" start={form.start_on} end={form.end_on} onChange={(a, b) => setForm({ ...form, start_on: a, end_on: b })} className={inputClass} placeholder="Choisir le début et la fin" />
           </div>
           <div>
             <label htmlFor="site-budget" className={labelClass}>Budget matériel (CHF)</label>

@@ -1,6 +1,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import { MxDatePicker } from '../mx/MxDatePicker';
+import { MxDateRangePicker } from '../mx/MxDateRangePicker';
 import { MxTimePicker } from '../mx/MxTimePicker';
 import { MxDateTimePicker } from '../mx/MxDateTimePicker';
 
@@ -91,6 +92,26 @@ const DateInput: React.FC<FieldProps> = ({ id, value, onChange, min, max, requir
       disabled={disabled}
     />
     <Anchor id={id} value={value} required={required} />
+  </div>
+);
+
+interface RangeProps {
+  id?: string;
+  start: string;
+  end: string;
+  onChange: (start: string, end: string) => void;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
+  placeholder?: string;
+}
+
+// Un seul sélecteur pour une date de début ET une date de fin (même calendrier que les autres dates de la charte) :
+// 1er clic = début, 2e clic = fin. Valeurs « AAAA-MM-JJ » ou vides.
+export const DateRangeInput: React.FC<RangeProps> = ({ id, start, end, onChange, required, disabled, className, placeholder }) => (
+  <div className={`relative ${className?.includes('w-auto') ? '' : 'w-full'}`}>
+    <MxDateRangePicker startDate={start || null} endDate={end || null} onChange={(a, b) => onChange(a ?? '', b ?? '')} disabled={disabled} placeholder={placeholder} />
+    <Anchor id={id} value={start && end ? start : ''} required={required} />
   </div>
 );
 

@@ -3106,5 +3106,22 @@
 "Déplier {0}": "Expand {0}",
 "Ajouter dans {0}": "Add to {0}",
 "Projet : {0}": "Project: {0}",
-"Supprimer « {0} » ?": "Delete « {0} »?"
+"Supprimer « {0} » ?": "Delete « {0} »?",
+"1 jour": "1 day",
+"1 semaine": "1 week",
+"2 semaines": "2 weeks",
+"1 mois": "1 month",
+"3 mois": "3 months",
+"6 mois": "6 months",
+"1 année": "1 year",
+"Période affichée": "Displayed period",
+"Choisir une période": "Choose a period",
+"Période (début et fin)": "Period (start and end)",
+"Choisir le début et la fin": "Choose start and end",
+"Choisir le début et le retour": "Choose start and return",
+"Période (début et fin prévue)": "Period (start and planned end)",
+"Période (début et retour)": "Period (start and return)",
+"Copier sur la période (début et fin incluses)": "Copy over the period (start and end included)",
+"Choisir le premier et le dernier jour": "Choose the first and last day",
+"Période longue : clique sur une intervention pour ouvrir sa fiche. Choisis une période plus courte (1 semaine ou moins) pour déplacer à la souris.": "Long period: click an intervention to open its sheet. Choose a shorter period (1 week or less) to move it with the mouse."
 }

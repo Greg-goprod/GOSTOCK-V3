@@ -69,7 +69,7 @@ export const PILOTE: HelpArticle[] = [
           { text: 'Ouvre « PILOTE », « Projets », puis l\'onglet « Gantt ». La liste est à gauche, les barres à droite ; la ligne rouge verticale est aujourd\'hui et les week-ends sont grisés.' },
           { text: 'Les projets sont rangés par « Programme » (par défaut) ; choisis « État » ou « Type » pour regrouper autrement. Un groupe se plie et se déplie avec sa flèche.' },
           { text: 'Au départ, seuls les groupes et les projets sont visibles. Clique sur la flèche d\'un projet pour voir ses phases et tâches, ou sur « Tout déplier ». « Replier » revient à l\'ouverture de départ.' },
-          { text: 'Choisis le zoom « Semaine », « Mois », « Trimestre » ou « Année » (le plan annuel). Les flèches et « Aujourd\'hui » déplacent la fenêtre.' },
+          { text: 'Choisis la période affichée : « 1 jour », « 1 semaine », « 2 semaines », « 1 mois », « 3 mois », « 6 mois » ou « 1 année » (le plan annuel), ou une période libre avec le sélecteur de dates (1er clic = début, 2e clic = fin). Les flèches et « Aujourd\'hui » déplacent la fenêtre.' },
           { text: 'Un losange est un jalon. La partie pleine d\'une barre est l\'avancement : la part d\'éléments terminés en dessous (un élément annulé ne compte pas). Une phase ou un projet sans dates propres prend celles de ses éléments.' },
         ],
         problems: [

@@ -1,15 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarCheck, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Plus } from 'lucide-react';
+import { CalendarCheck, ChevronsDownUp, ChevronsUpDown, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { getLanguage } from '../i18n/translator';
-import { buildGantt, defaultExpanded, makeScale, undatedRows, visibleRows, type Grouping, type GanttRow, type Zoom } from '../lib/ganttModel';
+import { buildGantt, defaultExpanded, undatedRows, visibleRows, type Grouping, type GanttRow } from '../lib/ganttModel';
+import { isPreset, makePeriod, type ViewPeriod } from '../lib/viewPeriod';
 import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, TYPE_LABEL, type GanttData, type ItemKind, type PiloteRights } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import PageTitle from '../components/common/PageTitle';
 import Button from '../components/common/Button';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import { MxSegmented } from '../components/mx/MxSegmented';
+import PeriodControls from '../components/common/PeriodControls';
 import GanttChart from '../components/pilote/GanttChart';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
@@ -24,12 +26,10 @@ const PiloteGantt: React.FC = () => {
   const [data, setData] = useState<GanttData | null>(null);
   const [rights, setRights] = useState<PiloteRights>(NO_RIGHTS);
   const [grouping, setGrouping] = useState<Grouping>('program');
-  const [zoom, setZoom] = useState<Zoom>('quarter');
+  const [period, setPeriod] = useState<ViewPeriod | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [itemTarget, setItemTarget] = useState<ItemTarget | null>(null);
   const [projectTarget, setProjectTarget] = useState<ProjectTarget | null>(null);
-  const [scrollTo, setScrollTo] = useState<{ day: string; nonce: number } | null>(null);
-  const [scrollBy, setScrollBy] = useState<{ dir: -1 | 1; nonce: number } | null>(null);
   const today = todayZurich();
 
   const reload = useCallback(async () => {
@@ -42,12 +42,21 @@ const PiloteGantt: React.FC = () => {
   useEffect(() => { setExpanded(defaultExpanded(model)); }, [grouping]); // eslint-disable-line react-hooks/exhaustive-deps
   // Première arrivée des données : même ouverture
   const loaded = data !== null;
-  useEffect(() => { if (loaded) { setExpanded(defaultExpanded(model)); setScrollTo({ day: startDay, nonce: Date.now() }); } }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!loaded) return;
+    setExpanded(defaultExpanded(model));
+    let stored: string | null = null;
+    try { stored = localStorage.getItem('gomat-gantt-period'); } catch { /* préférence facultative */ }
+    setPeriod(makePeriod(isPreset(stored) ? stored : '3m', startDay));
+  }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  const changePeriod = (p: ViewPeriod) => {
+    setPeriod(p);
+    if (p.preset !== 'custom') { try { localStorage.setItem('gomat-gantt-period', p.preset); } catch { /* préférence facultative */ } }
+  };
 
   // Jour montré à l'ouverture : aujourd'hui s'il est dans le plan, sinon le bord le plus proche du plan (pour voir des barres tout de suite)
   const startDay = model.range ? (today < model.range.min ? model.range.min : today > model.range.max ? model.range.max : today) : today;
   const rows = useMemo(() => visibleRows(model, expanded), [model, expanded]);
-  const scale = useMemo(() => makeScale(model.range, today, zoom), [model.range, today, zoom]);
   const undated = useMemo(() => undatedRows(model), [model]);
   const projectName = useMemo(() => new Map((data?.projects ?? []).map(p => [p.id, p.name])), [data]);
 
@@ -89,24 +98,17 @@ const PiloteGantt: React.FC = () => {
           <MxSegmented aria-label="Regroupement" value={grouping} onChange={v => setGrouping(v as Grouping)} options={[
             { value: 'program', label: 'Programme' }, { value: 'status', label: 'État' }, { value: 'type', label: 'Type' },
           ]} />
-          <MxSegmented aria-label="Zoom" value={zoom} onChange={v => setZoom(v as Zoom)} options={[
-            { value: 'week', label: 'Semaine' }, { value: 'month', label: 'Mois' }, { value: 'quarter', label: 'Trimestre' }, { value: 'year', label: 'Année' },
-          ]} />
-          <div className="flex items-center gap-1">
-            <Button size="sm" variant="outline" aria-label="Période précédente" icon={<ChevronLeft size={14} />} onClick={() => setScrollBy({ dir: -1, nonce: Date.now() })} />
-            <Button size="sm" variant="outline" icon={<CalendarCheck size={14} />} onClick={() => setScrollTo({ day: today, nonce: Date.now() })}>Aujourd'hui</Button>
-            <Button size="sm" variant="outline" aria-label="Période suivante" icon={<ChevronRight size={14} />} onClick={() => setScrollBy({ dir: 1, nonce: Date.now() })} />
-          </div>
+          {period && <PeriodControls value={period} today={today} onChange={changePeriod} />}
           <Button size="sm" variant="outline" icon={<ChevronsUpDown size={14} />} onClick={() => setExpanded(new Set(model.expandable))}>Tout déplier</Button>
           <Button size="sm" variant="outline" icon={<ChevronsDownUp size={14} />} onClick={() => setExpanded(defaultExpanded(model))}>Replier</Button>
         </div>
         {rights.create && <Button icon={<Plus size={16} />} onClick={() => setItemTarget({ mode: 'new' })} disabled={data.projects.length === 0}>Nouvel élément</Button>}
       </div>
 
-      {rows.length === 0 ? (
+      {!period ? null : rows.length === 0 ? (
         <MxEmpty icon={CalendarCheck} title="Rien à afficher" description="Crée d'abord un projet dans PILOTE › Projets : il apparaîtra ici avec ses phases, tâches et jalons." />
       ) : (
-        <GanttChart rows={rows} scale={scale} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create} scrollTo={scrollTo} scrollBy={scrollBy}
+        <GanttChart rows={rows} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
           onToggle={toggle} onOpen={openRow} onAdd={addIn} />
       )}
 

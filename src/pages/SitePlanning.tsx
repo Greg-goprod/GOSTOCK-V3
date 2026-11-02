@@ -150,8 +150,7 @@ const SitePlanning: React.FC = () => {
                   deleteMessage={r => `Supprimer la phase « ${r.name} » ? Ses interventions n'ont plus de phase.`}
                   fields={[
                     { key: 'name', label: 'Nom de la phase', type: 'text', required: true },
-                    { key: 'start_on', label: 'Début', type: 'date' },
-                    { key: 'end_on', label: 'Fin', type: 'date' },
+                    { key: 'start_on', endKey: 'end_on', label: 'Période (début et fin)', type: 'daterange' },
                     { key: 'color', label: 'Couleur', type: 'color' },
                   ]}
                   columns={[

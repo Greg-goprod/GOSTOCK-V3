@@ -127,7 +127,7 @@ async function step(id, title, fn, page) {
   group = 'P2 Écran';
   await step('P2-ouverture', 'PILOTE › Gantt s\'ouvre : groupe « Programme » et projet visibles, éléments repliés', async () => {
     await open(resp, '/pilote/gantt');
-    ok(await resp.page.getByRole('radio', { name: 'Trimestre' }).count(), 'écran du Gantt inaccessible');
+    ok(await resp.page.getByRole('radio', { name: '3 mois', exact: true }).count(), 'écran du Gantt inaccessible');
     const names = await rowLocator(resp).allInnerTexts();
     ok(names.some(t => t.includes(`${M} Programme`)), 'programme de test absent');
     ok(names.some(t => t.includes(`${M} Projet`)), 'projet de test absent');
@@ -146,8 +146,8 @@ async function step(id, title, fn, page) {
     const t = await resp.page.locator('section[aria-label="Sans date"]').innerText();
     ok(t.includes(`${M} À dater`), 'élément sans date absent du bac');
   }, resp.page);
-  await step('P2-zoom-regroupement', 'Zooms et regroupements sans erreur', async () => {
-    for (const z of ['Semaine', 'Mois', 'Année', 'Trimestre']) { await resp.page.getByRole('radio', { name: z, exact: true }).click(); await resp.page.waitForTimeout(300); }
+  await step('P2-zoom-regroupement', 'Périodes affichées et regroupements sans erreur', async () => {
+    for (const z of ['1 jour', '1 semaine', '2 semaines', '1 mois', '6 mois', '1 année', '3 mois']) { await resp.page.getByRole('radio', { name: z, exact: true }).click(); await resp.page.waitForTimeout(300); }
     await resp.page.getByRole('radio', { name: 'État', exact: true }).click(); await resp.page.waitForTimeout(400);
     ok((await rowLocator(resp).count()) > 0, 'aucune ligne par état');
     await resp.page.getByRole('radio', { name: 'Type', exact: true }).click(); await resp.page.waitForTimeout(400);
@@ -216,7 +216,7 @@ async function step(id, title, fn, page) {
   for (const c of readers) {
     await step(`P4-${c.who}`, `${c.who} : voit le Gantt, aucune création, fiche en lecture seule`, async () => {
       await open(c, '/pilote/gantt');
-      ok(await c.page.getByRole('radio', { name: 'Trimestre' }).count(), 'écran inaccessible');
+      ok(await c.page.getByRole('radio', { name: '3 mois', exact: true }).count(), 'écran inaccessible');
       ok((await c.page.getByRole('button', { name: 'Nouvel élément' }).count()) === 0, 'bouton « Nouvel élément » présent');
       ok((await c.page.locator('button[aria-label^="Ajouter dans"]').count()) === 0, 'boutons « + » présents');
       await expandAll(c);

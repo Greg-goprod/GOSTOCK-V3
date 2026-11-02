@@ -3106,5 +3106,22 @@
 "Déplier {0}": "Espandi {0}",
 "Ajouter dans {0}": "Aggiungi in {0}",
 "Projet : {0}": "Progetto: {0}",
-"Supprimer « {0} » ?": "Eliminare « {0} »?"
+"Supprimer « {0} » ?": "Eliminare « {0} »?",
+"1 jour": "1 giorno",
+"1 semaine": "1 settimana",
+"2 semaines": "2 settimane",
+"1 mois": "1 mese",
+"3 mois": "3 mesi",
+"6 mois": "6 mesi",
+"1 année": "1 anno",
+"Période affichée": "Periodo visualizzato",
+"Choisir une période": "Scegli un periodo",
+"Période (début et fin)": "Periodo (inizio e fine)",
+"Choisir le début et la fin": "Scegli inizio e fine",
+"Choisir le début et le retour": "Scegli inizio e restituzione",
+"Période (début et fin prévue)": "Periodo (inizio e fine prevista)",
+"Période (début et retour)": "Periodo (inizio e restituzione)",
+"Copier sur la période (début et fin incluses)": "Copia sul periodo (inizio e fine inclusi)",
+"Choisir le premier et le dernier jour": "Scegli il primo e l'ultimo giorno",
+"Période longue : clique sur une intervention pour ouvrir sa fiche. Choisis une période plus courte (1 semaine ou moins) pour déplacer à la souris.": "Periodo lungo: clicca su un intervento per aprire la sua scheda. Scegli un periodo più breve (1 settimana o meno) per spostare con il mouse."
 }

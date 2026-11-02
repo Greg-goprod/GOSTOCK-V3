@@ -150,24 +150,13 @@ export const undatedRows = (model: GanttModel): GanttRow[] => model.rows.filter(
 export const progressOf = (r: Pick<GanttRow, 'done' | 'total'>): number | null => (r.total > 0 ? r.done / r.total : null);
 
 /* ---------------------------------------------------------------- échelle de temps (en jours) */
-export type Zoom = 'week' | 'month' | 'quarter' | 'year';
-export const PX_PER_DAY: Record<Zoom, number> = { week: 44, month: 24, quarter: 9, year: 2.6 };
-const MIN_DAYS: Record<Zoom, number> = { week: 70, month: 130, quarter: 260, year: 520 };
+// La période affichée tient dans la largeur disponible : un jour = largeur / nombre de jours (jamais moins de 0,6 px)
+export interface Scale { startDay: number; days: number; px: number }
 
-export interface Scale { startDay: number; days: number; px: number; zoom: Zoom }
-
-const mondayOfNumber = (n: number) => n - ((new Date(n * 86_400_000).getUTCDay() + 6) % 7);
-
-// Fenêtre affichée : les dates du plan et aujourd'hui, avec de la marge, alignée sur des lundis
-export function makeScale(range: { min: string; max: string } | null, today: string, zoom: Zoom): Scale {
-  const t = dayToNumber(today);
-  const lo = Math.min(range ? dayToNumber(range.min) : t, t) - 14;
-  const hi = Math.max(range ? dayToNumber(range.max) : t, t) + 28;
-  const startDay = mondayOfNumber(lo);
-  let days = hi - startDay + 1;
-  if (days < MIN_DAYS[zoom]) days = MIN_DAYS[zoom];
-  days = Math.ceil(days / 7) * 7;
-  return { startDay, days, px: PX_PER_DAY[zoom], zoom };
+export function makeScale(period: { start: string; end: string }, availableWidth: number): Scale {
+  const startDay = dayToNumber(period.start);
+  const days = Math.max(1, dayToNumber(period.end) - startDay + 1);
+  return { startDay, days, px: Math.max(availableWidth / days, 0.6) };
 }
 
 export const xOfDay = (s: Scale, day: string | number) => ((typeof day === 'number' ? day : dayToNumber(day)) - s.startDay) * s.px;
@@ -176,17 +165,32 @@ export const barBox = (s: Scale, start: string, end: string) => ({ left: xOfDay(
 export const isWeekend = (n: number) => { const d = new Date(n * 86_400_000).getUTCDay(); return d === 0 || d === 6; };
 export const weekendBoxes = (s: Scale): { left: number; width: number }[] => {
   const out: { left: number; width: number }[] = [];
+  if (s.px < 3) return out;
   for (let i = 0; i < s.days; i++) {
     const n = s.startDay + i;
-    if (new Date(n * 86_400_000).getUTCDay() === 6) out.push({ left: i * s.px, width: Math.min(2, s.days - i) * s.px });
+    const wd = new Date(n * 86_400_000).getUTCDay();
+    if (wd === 6) out.push({ left: i * s.px, width: Math.min(2, s.days - i) * s.px });
+    else if (wd === 0 && i === 0) out.push({ left: 0, width: s.px });
   }
   return out;
 };
 
+// Partie d'une barre visible dans la fenêtre : null si elle est entièrement dehors
+export function clipBar(s: Scale, start: string, end: string): { left: number; width: number; clippedLeft: boolean; clippedRight: boolean } | null {
+  const { left, width } = barBox(s, start, end);
+  const total = s.days * s.px;
+  const right = left + width;
+  if (right <= 0 || left >= total) return null;
+  const l = Math.max(left, 0), r = Math.min(right, total);
+  return { left: l, width: r - l, clippedLeft: left < 0, clippedRight: right > total };
+}
+
 export interface HeaderCell { label: string; left: number; width: number }
 export interface Header { top: HeaderCell[]; bottom: HeaderCell[] }
 
-// En-tête à deux étages selon le zoom : mois / jours, mois / jours, mois / semaines, année / mois
+const mondayOfNumber = (n: number) => n - ((new Date(n * 86_400_000).getUTCDay() + 6) % 7);
+
+// En-tête à deux étages, choisi selon la place d'un jour : jours (nom + numéro) / jours (numéro) / semaines / mois ; l'étage du haut donne mois ou années
 export function makeHeader(s: Scale, locale: string): Header {
   const top: HeaderCell[] = [], bottom: HeaderCell[] = [];
   const fmt = (n: number, o: Intl.DateTimeFormatOptions) => new Date(n * 86_400_000).toLocaleDateString(locale, { ...o, timeZone: 'UTC' });
@@ -198,15 +202,16 @@ export function makeHeader(s: Scale, locale: string): Header {
     const a = Math.max(from, s.startDay), b = Math.min(to, endDay);
     return { label, left: (a - s.startDay) * s.px, width: (b - a) * s.px };
   };
-  if (s.zoom === 'year') {
-    for (let n = monthStart(s.startDay); n < endDay;) { const next = nextYear(n); top.push(cell(Math.max(n, s.startDay), next, fmt(Math.max(n, s.startDay), { year: 'numeric' }))); n = next; }
-    for (let n = monthStart(s.startDay); n < endDay;) { const next = nextMonth(n); bottom.push(cell(n, next, fmt(n, { month: 'short' }))); n = next; }
+  const years = s.px < 4;
+  if (years) {
+    for (let n = monthStart(s.startDay); n < endDay;) { const next = nextYear(n); const from = Math.max(n, s.startDay); top.push(cell(from, next, fmt(from, { year: 'numeric' }))); n = next; }
+    for (let n = monthStart(s.startDay); n < endDay;) { const next = nextMonth(n); bottom.push(cell(n, next, fmt(Math.max(n, s.startDay), { month: 'short' }))); n = next; }
   } else {
-    for (let n = monthStart(s.startDay); n < endDay;) { const next = nextMonth(n); top.push(cell(n, next, fmt(Math.max(n, s.startDay), { month: 'long', year: 'numeric' }))); n = next; }
-    if (s.zoom === 'quarter') {
-      for (let n = s.startDay; n < endDay; n += 7) bottom.push(cell(n, n + 7, fmt(n, { day: 'numeric', month: 'numeric' })));
+    for (let n = monthStart(s.startDay); n < endDay;) { const next = nextMonth(n); const from = Math.max(n, s.startDay); top.push(cell(from, next, fmt(from, { month: 'long', year: 'numeric' }))); n = next; }
+    if (s.px < 14) {
+      for (let n = mondayOfNumber(s.startDay); n < endDay; n += 7) bottom.push(cell(n, n + 7, fmt(Math.max(n, s.startDay), { day: 'numeric', month: 'numeric' })));
     } else {
-      for (let n = s.startDay; n < endDay; n++) bottom.push(cell(n, n + 1, s.zoom === 'week' ? `${fmt(n, { weekday: 'narrow' })} ${fmt(n, { day: 'numeric' })}` : fmt(n, { day: 'numeric' })));
+      for (let n = s.startDay; n < endDay; n++) bottom.push(cell(n, n + 1, s.px >= 44 ? `${fmt(n, { weekday: 'short' })} ${fmt(n, { day: 'numeric' })}` : fmt(n, { day: 'numeric' })));
     }
   }
   return { top, bottom };

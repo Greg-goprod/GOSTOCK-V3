@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { fileUrl } from '../lib/files';
 import { errorMessage } from '../lib/requests';
-import DateInput from '../components/common/DateInput';
+import { DateRangeInput } from '../components/common/DateInput';
 import { confirmAction, promptAction } from '../lib/confirm';
 import RentalInspectionModal from '../components/rentals/RentalInspectionModal';
 import { InspectionKind, RentalInspection, RentalKind, loadInspections, printInspection } from '../lib/rentalInspection';
@@ -431,12 +431,8 @@ const Rentals: React.FC = () => {
             <input id="rental-rate" type="number" min={0} step="0.05" inputMode="decimal" value={form.daily_rate} onChange={e => setForm({ ...form, daily_rate: e.target.value })} className={`${inputClass} font-mono`} required />
           </div>
           <div>
-            <label htmlFor="rental-start" className={labelClass}>Début</label>
-            <DateInput id="rental-start" value={form.start_on} onChange={e => setForm({ ...form, start_on: e.target.value })} className={inputClass} required />
-          </div>
-          <div>
-            <label htmlFor="rental-end" className={labelClass}>À rendre le</label>
-            <DateInput id="rental-end" value={form.end_on} min={form.start_on} onChange={e => setForm({ ...form, end_on: e.target.value })} className={inputClass} required />
+            <label htmlFor="rental-period" className={labelClass}>Période (début et retour)</label>
+            <DateRangeInput id="rental-period" start={form.start_on} end={form.end_on} onChange={(a, b) => setForm({ ...form, start_on: a, end_on: b })} className={inputClass} required placeholder="Choisir le début et le retour" />
           </div>
           <div>
             <label htmlFor="rental-fixed" className={labelClass}>Forfait (transport, nettoyage…)</label>

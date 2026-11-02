@@ -5,7 +5,7 @@ import { copyDay, daysInRange, planningError, WEEKDAYS, type PlanSite, type Site
 import { isoToWall, formatDay } from '../../lib/zurichTime';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import DateInput from '../common/DateInput';
+import DateInput, { DateRangeInput } from '../common/DateInput';
 
 interface Props {
   site: PlanSite;
@@ -55,15 +55,9 @@ const CopyDayModal: React.FC<Props> = ({ site, data, open, defaultDay, onClose, 
           <DateInput id="copy-from" className={inputClass} value={from} onChange={e => setFrom(e.target.value)} required />
         </div>
         <p className="text-sm text-gray-700 dark:text-gray-300" role="status">{count === 0 ? 'Aucune intervention ce jour-là.' : `${count} intervention(s) le ${formatDay(from)}.`}</p>
-        <div className="flex flex-wrap gap-3">
-          <div className="w-52">
-            <label htmlFor="copy-first" className={labelClass}>Copier du</label>
-            <DateInput id="copy-first" className={inputClass} value={first} onChange={e => setFirst(e.target.value)} required />
-          </div>
-          <div className="w-52">
-            <label htmlFor="copy-last" className={labelClass}>au (inclus)</label>
-            <DateInput id="copy-last" className={inputClass} value={last} min={first || undefined} onChange={e => setLast(e.target.value)} required />
-          </div>
+        <div>
+          <label htmlFor="copy-period" className={labelClass}>Copier sur la période (début et fin incluses)</label>
+          <DateRangeInput id="copy-period" className={inputClass} start={first} end={last} required onChange={(a, b) => { setFirst(a); setLast(b); }} placeholder="Choisir le premier et le dernier jour" />
         </div>
         <div className="flex flex-wrap gap-3" role="group" aria-label="Jours de la semaine">
           {WEEKDAYS.map(d => (

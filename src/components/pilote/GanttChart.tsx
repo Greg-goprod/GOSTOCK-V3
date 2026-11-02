@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { progressOf, barBox, isWeekend, makeHeader, weekendBoxes, xOfDay, type GanttRow, type Scale } from '../../lib/ganttModel';
+import { clipBar, isWeekend, makeHeader, makeScale, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
 import { ITEM_KIND_LABEL, type ItemKind } from '../../lib/pilote';
 
@@ -11,13 +11,11 @@ const HEAD_H = 24;
 
 interface Props {
   rows: GanttRow[];
-  scale: Scale;
+  period: { start: string; end: string };
   today: string;
   locale: string;
   expanded: ReadonlySet<string>;
   canCreate: boolean;
-  scrollTo: { day: string; nonce: number } | null;
-  scrollBy: { dir: -1 | 1; nonce: number } | null;
   onToggle: (key: string) => void;
   onOpen: (row: GanttRow) => void;
   onAdd: (row: GanttRow) => void;
@@ -28,7 +26,7 @@ const kindLabel = (r: GanttRow) => (r.kind === 'group' ? 'Groupe' : r.kind === '
 const canAddTo = (r: GanttRow) => r.kind === 'project' || r.kind === 'phase' || r.kind === 'task';
 
 // Diagramme de Gantt : liste en arbre à gauche (fixe), barres à droite. Une seule zone de défilement pour que la liste et les barres restent alignées.
-const GanttChart: React.FC<Props> = ({ rows, scale, today, locale, expanded, canCreate, scrollTo, scrollBy, onToggle, onOpen, onAdd }) => {
+const GanttChart: React.FC<Props> = ({ rows, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd }) => {
   const box = useRef<HTMLDivElement>(null);
   // Colonne des noms plus étroite sur téléphone, pour laisser de la place aux barres
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
@@ -39,27 +37,26 @@ const GanttChart: React.FC<Props> = ({ rows, scale, today, locale, expanded, can
     return () => q.removeEventListener('change', update);
   }, []);
   const NAME_W = narrow ? NAME_W_NARROW : NAME_W_WIDE;
+  // La période affichée tient dans la largeur : on mesure la zone, un jour = largeur disponible / nombre de jours
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWidth(el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const scale = useMemo(() => makeScale(period, Math.max(width - NAME_W - 2, 120)), [period, width, NAME_W]);
   const header = useMemo(() => makeHeader(scale, locale), [scale, locale]);
   const weekends = useMemo(() => weekendBoxes(scale), [scale]);
   const totalW = scale.days * scale.px;
   const bodyH = rows.length * ROW_H;
+  const todayInside = today >= period.start && today <= period.end;
   const todayX = xOfDay(scale, today) + scale.px / 2;
 
-  // Aller à un jour : le centre dans la partie visible des barres
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el || !scrollTo) return;
-    el.scrollLeft = Math.max(0, xOfDay(scale, scrollTo.day) - (el.clientWidth - NAME_W) / 2);
-    // Seul un nouvel ordre de défilement déclenche le déplacement (pas un simple changement de données)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrollTo?.nonce, scale.zoom]);
-  useEffect(() => {
-    const el = box.current;
-    if (el && scrollBy) el.scrollBy({ left: scrollBy.dir * (el.clientWidth - NAME_W) * 0.8, behavior: 'smooth' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrollBy?.nonce]);
-
-  const period = (r: GanttRow) => (r.start && r.end ? (r.start === r.end ? formatDay(r.start) : `${formatDay(r.start)} → ${formatDay(r.end)}`) : 'Sans date');
+  const datesOf = (r: GanttRow) => (r.start && r.end ? (r.start === r.end ? formatDay(r.start) : `${formatDay(r.start)} → ${formatDay(r.end)}`) : 'Sans date');
 
   return (
     <div ref={box} className="relative overflow-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ maxHeight: 'calc(100vh - 300px)', minHeight: 220 }}>
@@ -76,7 +73,7 @@ const GanttChart: React.FC<Props> = ({ rows, scale, today, locale, expanded, can
             {header.bottom.map((c, i) => {
               const n = scale.startDay + Math.round(c.left / scale.px);
               return (
-                <div key={i} className={`absolute top-0 flex items-center justify-center overflow-hidden whitespace-nowrap border-l border-gray-100 dark:border-gray-800 text-[11px] ${scale.zoom !== 'quarter' && scale.zoom !== 'year' && isWeekend(n) ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`} style={{ left: c.left, width: c.width, height: HEAD_H }}>{c.width >= 14 ? c.label : ''}</div>
+                <div key={i} className={`absolute top-0 flex items-center justify-center overflow-hidden whitespace-nowrap border-l border-gray-100 dark:border-gray-800 text-[11px] ${scale.px >= 14 && isWeekend(n) ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`} style={{ left: c.left, width: c.width, height: HEAD_H }}>{c.width >= 14 ? c.label : ''}</div>
               );
             })}
           </div>
@@ -113,19 +110,22 @@ const GanttChart: React.FC<Props> = ({ rows, scale, today, locale, expanded, can
         {/* Barres */}
         <div className="relative" style={{ height: bodyH, backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H}px)` }}>
           {weekends.map((w, i) => <div key={i} aria-hidden className="absolute top-0 bg-gray-500/5 dark:bg-white/5" style={{ left: w.left, width: w.width, height: bodyH }} />)}
-          <div aria-hidden className="absolute top-0 z-[5] w-px bg-danger-500" style={{ left: todayX, height: bodyH }} />
+          {todayInside && <div aria-hidden className="absolute top-0 z-[5] w-px bg-danger-500" style={{ left: todayX, height: bodyH }} />}
           {rows.map((r, i) => {
             if (!r.start || !r.end) return null;
             const top = i * ROW_H;
             const h = BAR_H[r.kind];
-            const { left, width } = barBox(scale, r.start, r.end);
+            const clipped = clipBar(scale, r.start, r.end);
+            if (!clipped) return null;
+            const { left, width: barW } = clipped;
             const pct = progressOf(r);
-            const title = `${kindLabel(r)} · ${r.name} · ${period(r)}${pct === null ? '' : ` · ${Math.round(pct * 100)} %`}`;
+            const title = `${kindLabel(r)} · ${r.name} · ${datesOf(r)}${pct === null ? '' : ` · ${Math.round(pct * 100)} %`}`;
             const clickable = r.kind !== 'group' && r.kind !== 'program';
             const common = { 'aria-label': title, title, role: clickable ? 'button' : undefined, tabIndex: clickable ? 0 : undefined } as const;
             const handle = clickable ? { onClick: () => onOpen(r), onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r); } } } : {};
             if (r.kind === 'milestone') {
-              const cx = left + width / 2;
+              if (clipped.clippedLeft || clipped.clippedRight) return null;
+              const cx = left + barW / 2;
               return (
                 <div key={r.key} className="absolute z-[6] flex items-center" style={{ left: cx - 8, top: top + (ROW_H - 16) / 2, height: 16 }}>
                   <div {...common} {...handle} className="h-3.5 w-3.5 shrink-0 rotate-45 cursor-pointer rounded-[2px] outline-offset-2 focus-visible:outline focus-visible:outline-2" style={{ background: r.color, marginLeft: 1, marginRight: 8, opacity: r.family === 'done' ? 0.55 : 1 }} />
@@ -137,13 +137,13 @@ const GanttChart: React.FC<Props> = ({ rows, scale, today, locale, expanded, can
             return (
               <div key={r.key} className="absolute z-[6] flex items-center" style={{ left, top: top + (ROW_H - h) / 2, height: h }}>
                 <div {...common} {...handle}
-                  className={`relative overflow-hidden ${summary ? 'rounded-sm' : 'rounded-md'} ${clickable ? 'cursor-pointer outline-offset-2 focus-visible:outline focus-visible:outline-2' : ''}`}
-                  style={{ width, height: h, background: `${r.color}${summary ? '66' : '40'}`, border: `1px solid ${r.color}`, opacity: r.family === 'cancelled' ? 0.45 : 1 }}>
+                  className={`relative overflow-hidden ${clickable ? 'cursor-pointer outline-offset-2 focus-visible:outline focus-visible:outline-2' : ''}`}
+                  style={{ width: barW, height: h, background: `${r.color}${summary ? '66' : '40'}`, border: `1px solid ${r.color}`, opacity: r.family === 'cancelled' ? 0.45 : 1, borderRadius: `${clipped.clippedLeft ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedLeft ? 0 : 6}px` }}>
                   {pct !== null && !summary && <div aria-hidden className="absolute inset-y-0 left-0" style={{ width: `${Math.round(pct * 100)}%`, background: r.color, opacity: 0.6 }} />}
                   {summary && pct !== null && <div aria-hidden className="absolute inset-y-0 left-0" style={{ width: `${Math.round(pct * 100)}%`, background: r.color }} />}
-                  {!summary && width >= 90 && <span className="relative z-[1] block truncate px-1.5 text-[11px] font-medium leading-[inherit] text-gray-900 dark:text-white" style={{ lineHeight: `${h - 2}px` }}>{r.name}</span>}
+                  {!summary && barW >= 90 && <span className="relative z-[1] block truncate px-1.5 text-[11px] font-medium leading-[inherit] text-gray-900 dark:text-white" style={{ lineHeight: `${h - 2}px` }}>{r.name}</span>}
                 </div>
-                {!summary && width < 90 && <span className="ml-1.5 whitespace-nowrap text-[11px] text-gray-700 dark:text-gray-300">{r.name}</span>}
+                {!summary && barW < 90 && !clipped.clippedRight && <span className="ml-1.5 whitespace-nowrap text-[11px] text-gray-700 dark:text-gray-300">{r.name}</span>}
               </div>
             );
           })}

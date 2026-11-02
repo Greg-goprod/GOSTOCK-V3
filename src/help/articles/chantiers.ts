@@ -108,7 +108,7 @@ export const CHANTIERS: HelpArticle[] = [
         title: 'Planifier avec la frise',
         who: 'Administrateur et responsable.',
         steps: [
-          { text: 'Onglet « Frise ». Choisis « Par zone » ou « Par prestataire », puis « Jour » ou « Semaine ». Les flèches et « Aujourd\'hui » changent de jour ou de semaine.' },
+          { text: 'Onglet « Frise ». Choisis « Par zone » ou « Par prestataire », puis la période affichée : « 1 jour », « 1 semaine », « 2 semaines », « 1 mois », « 3 mois », « 6 mois », « 1 année », ou une période libre avec le sélecteur de dates. Les flèches et « Aujourd\'hui » déplacent la période. Au-delà d\'une semaine, la frise sert à consulter : clique sur une intervention pour ouvrir sa fiche ; pour déplacer à la souris, choisis une période plus courte.' },
           { text: 'Clique dans une zone vide d\'une ligne : la fenêtre « Nouvelle intervention » s\'ouvre avec la ligne et l\'heure déjà remplies.' },
           { text: 'Glisse une intervention pour la déplacer, même sur une autre ligne (autre zone ou autre équipe). Tire son bord gauche ou droit pour changer sa durée. Les heures se calent sur le pas du chantier.' },
           { text: 'Au clavier : place-toi sur une intervention, flèches gauche/droite pour la déplacer d\'un pas, Maj + flèche pour changer sa durée, flèches haut/bas pour changer de ligne, Entrée pour l\'ouvrir.' },
@@ -153,7 +153,7 @@ export const CHANTIERS: HelpArticle[] = [
         who: 'Administrateur et responsable.',
         steps: [
           { text: 'Clique sur « Copier un jour » (dans la frise ou dans « Interventions »).' },
-          { text: 'Choisis « Jour à copier », puis la période de destination (« Copier du » / « au ») et les jours de la semaine.' },
+          { text: 'Choisis « Jour à copier », puis la période de destination (un seul sélecteur : 1er clic = premier jour, 2e clic = dernier jour inclus) et les jours de la semaine.' },
           { text: 'Clique sur « Copier ».' },
         ],
         result: 'Toutes les interventions du jour (avec leur matériel) sont recopiées aux mêmes heures. Là aussi, tout ou rien : un jour refusé annule la copie et le message nomme la date.',

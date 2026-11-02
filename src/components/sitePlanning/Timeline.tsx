@@ -1,13 +1,15 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CalendarClock, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { DEFAULT_CONFIG, firstUsefulDay, issueText, planningError, type PlanIntervention, type PlanSite, type PlanningRights, type SitePlanningData } from '../../lib/sitePlanning';
-import { dayToNumber, minutesToTime, MINUTES_PER_DAY, mondayOf, numberToDay, assignLanes, shiftIso, snap, toWallPoint } from '../../lib/timelineMath';
+import { dayToNumber, minutesToTime, MINUTES_PER_DAY, numberToDay, assignLanes, shiftIso, snap, toWallPoint } from '../../lib/timelineMath';
+import { isPreset, makePeriod, periodDays, type ViewPeriod } from '../../lib/viewPeriod';
+import { makeHeader } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
 import { getLanguage } from '../../i18n/translator';
 import Button from '../common/Button';
-import DateInput from '../common/DateInput';
+import PeriodControls from '../common/PeriodControls';
 import { MxEmpty } from '../mx/MxEmpty';
 import { MxSegmented } from '../mx/MxSegmented';
 import InterventionForm, { type InterventionTarget } from './InterventionForm';
@@ -23,7 +25,6 @@ interface Props {
 }
 
 type Mode = 'zone' | 'team';
-type Scale = 'day' | 'week';
 type DragKind = 'move' | 'start' | 'end';
 
 interface DragState { item: PlanIntervention; kind: DragKind; startX: number; startY: number; startAbs: number; moved: boolean }
@@ -49,13 +50,16 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
   const canCreate = rights.create && !locked;
 
   const [mode, setModeState] = useState<Mode>(() => readStored('gomat-timeline-mode', ['zone', 'team'] as const, 'zone'));
-  const [scale, setScaleState] = useState<Scale>(() => readStored('gomat-timeline-scale', ['day', 'week'] as const, 'day'));
-  const [day, setDay] = useState(() => {
+  const today = firstUsefulDay(site);
+  const [period, setPeriodState] = useState<ViewPeriod>(() => {
     const first = interventions[0] ? toWallPoint(interventions[0].starts_at).day : null;
-    return first !== null ? numberToDay(first) : firstUsefulDay(site);
+    const anchor = first !== null ? numberToDay(first) : today;
+    const stored = readStored('gomat-timeline-period', ['1d', '1w', '2w', '1m', '3m', '6m', '1y'] as const, '1d');
+    return makePeriod(isPreset(stored) ? stored : '1d', anchor);
   });
+  const day = period.start;
   const setMode = (m: Mode) => { setModeState(m); try { localStorage.setItem('gomat-timeline-mode', m); } catch { /* préférence facultative */ } };
-  const setScale = (s: Scale) => { setScaleState(s); try { localStorage.setItem('gomat-timeline-scale', s); } catch { /* préférence facultative */ } };
+  const setPeriod = (p: ViewPeriod) => { setPeriodState(p); if (p.preset !== 'custom') { try { localStorage.setItem('gomat-timeline-period', p.preset); } catch { /* préférence facultative */ } } };
 
   const [overrides, setOverrides] = useState<Map<string, PlanIntervention>>(new Map());
   const [dragView, setDragView] = useState<DragView | null>(null);
@@ -75,10 +79,13 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
     return () => observer.disconnect();
   }, []);
 
-  const firstDay = dayToNumber(scale === 'week' ? mondayOf(day) : day);
-  const columns = scale === 'week' ? 7 : 1;
+  const firstDay = dayToNumber(period.start);
+  const columns = periodDays(period);
   const colW = trackW / columns;
   const ppm = colW / span;
+  // En dessous de 36 px par jour, le déplacement à la souris n'est plus précis : on consulte et on ouvre la fiche (clic ou clavier)
+  const canDrag = canEdit && colW >= 36;
+  const headerH = columns === 1 ? HEADER_H : 54;
 
   const blocked = useMemo(() => new Map(blockedDays.map(b => [dayToNumber(b.day), b.reason])), [blockedDays]);
   const periodStart = site.start_on ? dayToNumber(site.start_on) : -Infinity;
@@ -147,7 +154,7 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
 
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
-    if (!d) return;
+    if (!d || !canDrag) return;
     const dy = e.clientY - d.startY;
     if (!d.moved && Math.abs(e.clientX - d.startX) + Math.abs(dy) < 4) return;
     d.moved = true;
@@ -195,9 +202,8 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
     setTarget({ mode: 'new', prefill: { day: numberToDay(dayNumber), endDay: numberToDay(dayNumber), start, end: finish, ...(mode === 'zone' ? { zone_id: rowKey } : { team_id: rowKey }) } });
   };
 
-  const goto = (delta: number) => setDay(numberToDay(dayToNumber(day) + delta * (scale === 'week' ? 7 : 1)));
   const LOCALES = { fr: 'fr-CH', de: 'de-CH', it: 'it-CH', en: 'en-GB' } as const;
-  const dayLabel = (n: number) => new Date(n * 86_400_000).toLocaleDateString(LOCALES[getLanguage()], { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+  const header = useMemo(() => (columns === 1 ? null : makeHeader({ startDay: firstDay, days: columns, px: colW }, LOCALES[getLanguage()])), [columns, firstDay, colW]); // eslint-disable-line react-hooks/exhaustive-deps
   const tickEvery = ppm * 60 < 44 ? 120 : 60;
   const ticks: number[] = [];
   for (let m = Math.ceil(startMin / tickEvery) * tickEvery; m <= endMin; m += tickEvery) ticks.push(m);
@@ -217,32 +223,36 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <MxSegmented aria-label="Lignes de la frise" value={mode} onChange={v => setMode(v as Mode)} options={[{ value: 'zone', label: 'Par zone' }, { value: 'team', label: 'Par prestataire' }]} />
-          <MxSegmented aria-label="Échelle de la frise" value={scale} onChange={v => setScale(v as Scale)} options={[{ value: 'day', label: 'Jour' }, { value: 'week', label: 'Semaine' }]} />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" ariaLabel={scale === 'week' ? 'Semaine précédente' : 'Jour précédent'} icon={<ChevronLeft size={14} />} onClick={() => goto(-1)} />
-          <div className="w-44"><DateInput aria-label="Aller au jour" value={day} onChange={e => e.target.value && setDay(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100" /></div>
-          <Button size="sm" variant="outline" ariaLabel={scale === 'week' ? 'Semaine suivante' : 'Jour suivant'} icon={<ChevronRight size={14} />} onClick={() => goto(1)} />
-          <Button size="sm" variant="outline" onClick={() => setDay(firstUsefulDay(site))}>Aujourd'hui</Button>
+        <PeriodControls value={period} today={today} onChange={setPeriod}>
           {canCreate && <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => setCopying(true)}>Copier un jour</Button>}
-        </div>
+        </PeriodControls>
       </div>
       <p className="text-xs text-gray-600 dark:text-gray-400">
-        {canEdit ? `Glisse une intervention pour la déplacer (même d'une ligne à l'autre), tire ses bords pour changer sa durée, clique dans une zone vide pour en créer une. Pas de ${step} minutes. Au clavier : flèches pour déplacer, Maj + flèche pour la durée.` : 'Lecture seule : tu ne peux pas modifier ce planning.'}
+        {canEdit ? (canDrag
+          ? `Glisse une intervention pour la déplacer (même d'une ligne à l'autre), tire ses bords pour changer sa durée, clique dans une zone vide pour en créer une. Pas de ${step} minutes. Au clavier : flèches pour déplacer, Maj + flèche pour la durée.`
+          : 'Période longue : clique sur une intervention pour ouvrir sa fiche. Choisis une période plus courte (1 semaine ou moins) pour déplacer à la souris.')
+          : 'Lecture seule : tu ne peux pas modifier ce planning.'}
       </p>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div style={{ minWidth: 640 }}>
-          <div className="flex border-b border-gray-200 dark:border-gray-700" style={{ height: HEADER_H }}>
+          <div className="flex border-b border-gray-200 dark:border-gray-700" style={{ height: headerH }}>
             <div className="shrink-0 border-r border-gray-200 dark:border-gray-700 px-3 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 flex items-center" style={{ width: LABEL_W }}>
-              {scale === 'week' ? `Semaine du ${formatDay(numberToDay(firstDay))}` : formatDay(day)}
+              {columns === 1 ? formatDay(day) : `${formatDay(period.start)} → ${formatDay(period.end)}`}
             </div>
             <div ref={trackRef} className="relative flex-1" aria-hidden>
-              {scale === 'week'
-                ? Array.from({ length: 7 }, (_, c) => (
-                  <div key={c} className="absolute top-0 bottom-0 flex items-center justify-center border-l border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-300"
-                    style={{ left: c * colW, width: colW }}>{dayLabel(firstDay + c)}</div>
-                ))
+              {header
+                ? (
+                  <>
+                    {header.top.map((c, i) => (
+                      <div key={`t${i}`} className="absolute top-0 flex items-center overflow-hidden whitespace-nowrap border-l border-gray-200 dark:border-gray-700 px-2 text-xs font-semibold capitalize text-gray-700 dark:text-gray-300" style={{ left: c.left, width: c.width, height: headerH / 2 }}>{c.label}</div>
+                    ))}
+                    {header.bottom.map((c, i) => (
+                      <div key={`b${i}`} className="absolute flex items-center justify-center overflow-hidden whitespace-nowrap border-l border-gray-100 dark:border-gray-700/60 text-[11px] text-gray-600 dark:text-gray-400" style={{ left: c.left, width: c.width, top: headerH / 2, height: headerH / 2 }}>{c.width >= 14 ? c.label : ''}</div>
+                    ))}
+                  </>
+                )
                 : ticks.map(m => (
                   <div key={m} className="absolute top-0 bottom-0 flex items-center border-l border-gray-200 dark:border-gray-700 pl-1 text-xs text-gray-600 dark:text-gray-400" style={{ left: (m - startMin) * ppm }}>{minutesToTime(m % MINUTES_PER_DAY)}</div>
                 ))}
@@ -277,7 +287,7 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
                   {Array.from({ length: columns }, (_, c) => {
                     const s = shade(firstDay + c);
                     return (
-                      <div key={c} data-shade="" className="absolute top-0 bottom-0 border-l border-gray-100 dark:border-gray-700/60" title={s?.reason}
+                      <div key={c} data-shade="" className={`absolute top-0 bottom-0 ${colW >= 6 ? 'border-l border-gray-100 dark:border-gray-700/60' : ''}`} title={s?.reason}
                         style={{ left: c * colW, width: colW, backgroundImage: s ? 'repeating-linear-gradient(45deg, rgba(148,163,184,.28) 0 6px, transparent 6px 12px)' : undefined }} />
                     );
                   })}
@@ -297,16 +307,16 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
                     return (
                       <div key={id} role="button" tabIndex={0} aria-label={`${sg.item.title}, ${time}, ${sub}`} title={`${sg.item.title}\n${time} · ${sub}${warns.length ? `\n${warns.join('\n')}` : ''}`}
                         onPointerDown={e => onPointerDown(e, sg.item, 'move')} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onKeyDown={e => onKeyDown(e, sg.item)}
-                        className={`absolute select-none overflow-hidden rounded-md text-white shadow-sm ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${view ? 'z-20 opacity-90 ring-2 ring-white' : warns.length ? 'z-10 ring-2 ring-amber-400' : 'z-10'}`}
+                        className={`absolute select-none overflow-hidden rounded-md text-white shadow-sm ${canDrag ? 'cursor-grab active:cursor-grabbing' : canEdit ? 'cursor-pointer' : ''} ${view ? 'z-20 opacity-90 ring-2 ring-white' : warns.length ? 'z-10 ring-2 ring-amber-400' : 'z-10'}`}
                         style={{ left, width, top: 4 + lane * LANE_H, height: BLOCK_H, background: colorOf(sg.item), transform: view && view.dy ? `translateY(${view.dy}px)` : undefined, touchAction: canEdit ? 'none' : undefined, transition: view ? 'none' : 'left .12s, width .12s' }}>
-                        {canEdit && sg.first && <span aria-hidden data-handle="start" onPointerDown={e => onPointerDown(e, sg.item, 'start')} onPointerMove={onPointerMove} onPointerUp={onPointerUp} className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/20" />}
+                        {canDrag && sg.first && <span aria-hidden data-handle="start" onPointerDown={e => onPointerDown(e, sg.item, 'start')} onPointerMove={onPointerMove} onPointerUp={onPointerUp} className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/20" />}
                         {width >= 54 && (
                           <div className="px-2.5 py-0.5 leading-tight pointer-events-none">
                             <p className="truncate text-xs font-semibold">{warns.length > 0 && <AlertTriangle size={11} aria-hidden className="mr-1 inline align-[-1px]" />}{sg.item.title}</p>
                             <p className="truncate text-[11px] opacity-90">{time} · {sub}</p>
                           </div>
                         )}
-                        {canEdit && sg.last && <span aria-hidden data-handle="end" onPointerDown={e => onPointerDown(e, sg.item, 'end')} onPointerMove={onPointerMove} onPointerUp={onPointerUp} className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/20" />}
+                        {canDrag && sg.last && <span aria-hidden data-handle="end" onPointerDown={e => onPointerDown(e, sg.item, 'end')} onPointerMove={onPointerMove} onPointerUp={onPointerUp} className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/20" />}
                       </div>
                     );
                   })}

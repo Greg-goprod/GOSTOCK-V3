@@ -3106,5 +3106,22 @@
 "Déplier {0}": "{0} aufklappen",
 "Ajouter dans {0}": "In {0} hinzufügen",
 "Projet : {0}": "Projekt: {0}",
-"Supprimer « {0} » ?": "« {0} » löschen?"
+"Supprimer « {0} » ?": "« {0} » löschen?",
+"1 jour": "1 Tag",
+"1 semaine": "1 Woche",
+"2 semaines": "2 Wochen",
+"1 mois": "1 Monat",
+"3 mois": "3 Monate",
+"6 mois": "6 Monate",
+"1 année": "1 Jahr",
+"Période affichée": "Angezeigter Zeitraum",
+"Choisir une période": "Zeitraum wählen",
+"Période (début et fin)": "Zeitraum (Anfang und Ende)",
+"Choisir le début et la fin": "Anfang und Ende wählen",
+"Choisir le début et le retour": "Anfang und Rückgabe wählen",
+"Période (début et fin prévue)": "Zeitraum (Anfang und geplantes Ende)",
+"Période (début et retour)": "Zeitraum (Anfang und Rückgabe)",
+"Copier sur la période (début et fin incluses)": "Auf den Zeitraum kopieren (Anfang und Ende inklusive)",
+"Choisir le premier et le dernier jour": "Ersten und letzten Tag wählen",
+"Période longue : clique sur une intervention pour ouvrir sa fiche. Choisis une période plus courte (1 semaine ou moins) pour déplacer à la souris.": "Langer Zeitraum: Klicke auf einen Einsatz, um sein Blatt zu öffnen. Wähle einen kürzeren Zeitraum (1 Woche oder weniger), um mit der Maus zu verschieben."
 }

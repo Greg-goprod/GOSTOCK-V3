@@ -6,17 +6,19 @@ import { confirmAction } from '../../lib/confirm';
 import { planningError, ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import DateInput from '../common/DateInput';
+import DateInput, { DateRangeInput } from '../common/DateInput';
 import { EntityTable, type EntityColumn } from '../common/EntityTable';
 import { MxEmpty } from '../mx/MxEmpty';
 
 export interface FieldDef {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'color' | 'select' | 'date' | 'checkbox';
+  type: 'text' | 'textarea' | 'color' | 'select' | 'date' | 'daterange' | 'checkbox';
   required?: boolean;
   options?: { value: string; label: string }[];
   hint?: string;
+  // Pour « daterange » : clé de la date de fin (key = date de début)
+  endKey?: string;
   // Non modifiable une fois l'élément créé (ex. famille d'un état)
   lockedOnEdit?: boolean;
 }
@@ -64,6 +66,7 @@ export function CrudSection<T extends { id: string }>({
       if (f.type === 'checkbox') next[f.key] = row === 'new' ? true : Boolean(current);
       else if (f.type === 'color') next[f.key] = typeof current === 'string' ? current : ZONE_COLORS[0];
       else next[f.key] = typeof current === 'string' ? current : '';
+      if (f.type === 'daterange' && f.endKey) { const e = row === 'new' ? undefined : (row as unknown as Record<string, unknown>)[f.endKey]; next[f.endKey] = typeof e === 'string' ? e : ''; }
     }
     setValues(next);
     setEditing(row);
@@ -76,6 +79,7 @@ export function CrudSection<T extends { id: string }>({
     for (const f of fields) {
       const v = values[f.key];
       payload[f.key] = f.type === 'checkbox' ? Boolean(v) : (typeof v === 'string' && v.trim() === '' && !f.required ? null : typeof v === 'string' ? v.trim() : v);
+      if (f.type === 'daterange' && f.endKey) { const e = values[f.endKey]; payload[f.endKey] = typeof e === 'string' && e.trim() !== '' ? e.trim() : null; }
     }
     setSaving(true);
     const { error } = editing === 'new'
@@ -135,6 +139,9 @@ export function CrudSection<T extends { id: string }>({
                       {!f.required && <option value="">—</option>}
                       {(f.options || []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
+                  ) : f.type === 'daterange' && f.endKey ? (
+                    <DateRangeInput id={`crud-${f.key}`} className={inputClass} start={String(values[f.key] ?? '')} end={String(values[f.endKey] ?? '')}
+                      onChange={(a, b) => setValues({ ...values, [f.key]: a, [f.endKey as string]: b })} placeholder="Choisir le début et la fin" />
                   ) : f.type === 'date' ? (
                     <DateInput id={`crud-${f.key}`} className={inputClass} value={String(values[f.key] ?? '')} onChange={e => setValues({ ...values, [f.key]: e.target.value })} />
                   ) : f.type === 'color' ? (

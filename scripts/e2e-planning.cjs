@@ -292,11 +292,11 @@ async function step(id, title, fn, page) {
     const now = rows(await api(resp, 'GET', `/rest/v1/cp_site_interventions?select=starts_at&id=eq.${S.i1}`))[0];
     ok(wallOf(now.starts_at) === '2027-06-02 08:45', `heure après flèche : ${wallOf(now.starts_at)}`);
   }, resp.page);
-  await step('P7-vues', 'Responsable : « Par prestataire » et « Semaine » s\'affichent', async () => {
+  await step('P7-vues', 'Responsable : « Par prestataire » et « 1 semaine » s\'affichent', async () => {
     await resp.page.getByRole('radio', { name: 'Par prestataire' }).click(); await resp.page.waitForTimeout(700);
     ok((await resp.page.locator('[data-row-key]').count()) >= 2, 'lignes par équipe absentes');
-    await resp.page.getByRole('radio', { name: 'Semaine' }).click(); await resp.page.waitForTimeout(700);
-    ok(/Semaine du/.test(await resp.page.locator('main').innerText()), 'en-tête de semaine absent');
+    await resp.page.getByRole('radio', { name: '1 semaine' }).click(); await resp.page.waitForTimeout(700);
+    ok(/\d{2}\.\d{2}\.\d{4} → \d{2}\.\d{2}\.\d{4}/.test(await resp.page.locator('main').innerText()), 'en-tête de période (du … → au …) absent');
     await resp.page.screenshot({ path: path.join(SHOTS, 'frise-semaine.png') });
   }, resp.page);
   await step('P7-liste', 'Responsable : onglet Interventions (liste) et fenêtres « Nouvelle intervention » / « Copier un jour »', async () => {

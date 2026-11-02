@@ -7,7 +7,7 @@ import { confirmAction } from '../../lib/confirm';
 import { allowedKinds, descendantsOf, ITEM_KIND_LABEL, parentKindsFor, piloteError, PRIORITY_LABEL, saveItemMembers, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import DateInput from '../common/DateInput';
+import DateInput, { DateRangeInput } from '../common/DateInput';
 
 export type ItemTarget = { mode: 'edit'; itemId: string } | { mode: 'new'; projectId?: string; parentId?: string | null; kind?: ItemKind };
 
@@ -218,13 +218,9 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canDelete, onClo
               </div>
             ) : (
               <>
-                <div>
-                  <label htmlFor="itm-start" className={labelClass}>Début</label>
-                  <DateInput id="itm-start" className={inputClass} value={form.starts_on} disabled={readOnly} onChange={e => set({ starts_on: e.target.value })} />
-                </div>
-                <div>
-                  <label htmlFor="itm-end" className={labelClass}>Fin</label>
-                  <DateInput id="itm-end" className={inputClass} value={form.ends_on} disabled={readOnly} onChange={e => set({ ends_on: e.target.value })} />
+                <div className="sm:col-span-2">
+                  <label htmlFor="itm-period" className={labelClass}>Période (début et fin)</label>
+                  <DateRangeInput id="itm-period" className={inputClass} start={form.starts_on} end={form.ends_on} disabled={readOnly} onChange={(a, b) => set({ starts_on: a, ends_on: b })} placeholder="Choisir le début et la fin" />
                 </div>
               </>
             )}

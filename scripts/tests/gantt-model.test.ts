@@ -1,6 +1,6 @@
 // Contrôles du modèle du Gantt (sans affichage). Lancer :
 //   npx esbuild scripts/tests/gantt-model.test.ts --bundle --platform=node --format=cjs --outfile=/tmp/gantt-model.test.cjs --define:import.meta.env.VITE_SUPABASE_URL='"http://x.test"' --define:import.meta.env.VITE_SUPABASE_ANON_KEY='"k"' --log-level=error && node /tmp/gantt-model.test.cjs
-import { buildGantt, visibleRows, defaultExpanded, undatedRows, progressOf, makeScale, barBox, makeHeader, weekendBoxes, xOfDay } from '../../src/lib/ganttModel';
+import { buildGantt, visibleRows, defaultExpanded, undatedRows, progressOf, makeScale, barBox, clipBar, makeHeader, weekendBoxes, xOfDay } from '../../src/lib/ganttModel';
 import type { GanttData } from '../../src/lib/pilote';
 
 let fails = 0;
@@ -70,20 +70,33 @@ eq('regroupement par état : un groupe par état utilisé', buildGantt(data, 'st
 eq('regroupement par type', buildGantt(data, 'type').rows.filter(x => x.kind === 'group').map(x => x.name), ['Chantier', 'R&D', 'Administratif']);
 eq('sans données : modèle vide', buildGantt({ ...data, projects: [], items: [], programs: [] }, 'program'), { rows: [], expandable: [], range: null });
 
-// Échelle
-const sc = makeScale({ min: '2027-02-01', max: '2027-09-01' }, '2027-06-15', 'month');
-eq('échelle : commence un lundi', new Date(sc.startDay * 86_400_000).getUTCDay(), 1);
-eq('échelle : multiple de 7 jours', sc.days % 7, 0);
-const b = barBox(sc, '2027-02-01', '2027-02-01');
-eq('une barre d\'un jour = 1 jour de large', b.width, sc.px);
+// Échelle : la période tient dans la largeur
+const sc = makeScale({ start: '2027-06-01', end: '2027-06-30' }, 900);
+eq('échelle : 30 jours dans 900 px = 30 px par jour', [sc.days, sc.px], [30, 30]);
+eq('une barre d\'un jour = 1 jour de large', barBox(sc, '2027-06-01', '2027-06-01').width, sc.px);
 eq('barre de 5 jours inclusifs', barBox(sc, '2027-06-01', '2027-06-05').width, 5 * sc.px);
-eq('x de la date de début', xOfDay(sc, sc.startDay), 0);
-eq('échelle sans plan : centrée sur aujourd\'hui', makeScale(null, '2027-06-15', 'year').days >= 520, true);
+eq('x du premier jour', xOfDay(sc, '2027-06-01'), 0);
+eq('x du dernier jour', xOfDay(sc, '2027-06-30'), 29 * sc.px);
+eq('une période d\'un jour occupe toute la largeur', makeScale({ start: '2027-06-01', end: '2027-06-01' }, 900).px, 900);
+eq('une très longue période garde au moins 0,6 px par jour', makeScale({ start: '2020-01-01', end: '2030-12-31' }, 900).px, 0.6);
+eq('barre entièrement avant la fenêtre : absente', clipBar(sc, '2027-05-01', '2027-05-31'), null);
+eq('barre entièrement après la fenêtre : absente', clipBar(sc, '2027-07-01', '2027-07-05'), null);
+eq('barre qui déborde à gauche : coupée', clipBar(sc, '2027-05-25', '2027-06-03'), { left: 0, width: 3 * 30, clippedLeft: true, clippedRight: false });
+eq('barre qui déborde à droite : coupée', clipBar(sc, '2027-06-28', '2027-07-10'), { left: 27 * 30, width: 3 * 30, clippedLeft: false, clippedRight: true });
+eq('barre dans la fenêtre : intacte', clipBar(sc, '2027-06-10', '2027-06-12'), { left: 9 * 30, width: 90, clippedLeft: false, clippedRight: false });
+eq('barre qui touche le dernier jour : visible', clipBar(sc, '2027-06-30', '2027-07-02')?.width, 30);
 const h = makeHeader(sc, 'fr-CH');
+eq('en-tête 30 jours : un mois en haut, un jour par colonne', [h.top.length, h.bottom.length], [1, 30]);
 eq('en-tête : la somme des mois couvre la fenêtre', Math.round(h.top.reduce((n, c) => n + c.width, 0)), Math.round(sc.days * sc.px));
-eq('en-tête : un jour par colonne en zoom mois', h.bottom.length, sc.days);
-eq('week-ends : 2 jours chacun', weekendBoxes(sc).every(w => w.width === 2 * sc.px || w.width === sc.px), true);
-const sy = makeScale({ min: '2027-02-01', max: '2027-09-01' }, '2027-06-15', 'year');
-eq('zoom année : en-tête en années / mois', [makeHeader(sy, 'fr-CH').top[0].label.length, makeHeader(sy, 'fr-CH').bottom.length > 12], [4, true]);
+const w = makeScale({ start: '2027-06-07', end: '2027-06-13' }, 1000);
+eq('en-tête 1 semaine : nom du jour + numéro', makeHeader(w, 'fr-CH').bottom.map(c => c.label.length > 3), [true, true, true, true, true, true, true]);
+const q = makeScale({ start: '2027-04-01', end: '2027-06-30' }, 1000);
+eq('en-tête 3 mois : des semaines (13 ou 14 colonnes)', [makeHeader(q, 'fr-CH').bottom.length >= 13, makeHeader(q, 'fr-CH').top.length], [true, 3]);
+const y = makeScale({ start: '2027-01-01', end: '2027-12-31' }, 1000);
+eq('en-tête 1 année : années en haut, 12 mois en bas', [makeHeader(y, 'fr-CH').top.length, makeHeader(y, 'fr-CH').bottom.length], [1, 12]);
+const y2 = makeScale({ start: '2027-07-01', end: '2028-06-30' }, 1000);
+eq('1 année glissante : 2 années en haut', makeHeader(y2, 'fr-CH').top.length, 2);
+eq('week-ends : un samedi + dimanche par semaine (jusqu\'à 5 pour juin 2027)', weekendBoxes(sc).length, 4);
+eq('très longue période : pas de week-ends dessinés', weekendBoxes(makeScale({ start: '2020-01-01', end: '2030-12-31' }, 900)).length, 0);
 console.log(fails ? `\n${fails} échec(s)` : '\nTous les contrôles passent');
 process.exit(fails ? 1 : 0);

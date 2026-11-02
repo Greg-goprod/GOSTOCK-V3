@@ -53,8 +53,7 @@ const PiloteProjects: React.FC = () => {
           fields={[
             { key: 'name', label: 'Nom', type: 'text', required: true },
             { key: 'description', label: 'Description', type: 'textarea' },
-            { key: 'starts_on', label: 'Début', type: 'date' },
-            { key: 'ends_on', label: 'Fin', type: 'date' },
+            { key: 'starts_on', endKey: 'ends_on', label: 'Période (début et fin)', type: 'daterange' },
             { key: 'color', label: 'Couleur', type: 'color' },
           ]}
           columns={[

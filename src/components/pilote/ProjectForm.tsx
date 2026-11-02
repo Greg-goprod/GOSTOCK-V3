@@ -6,7 +6,7 @@ import { piloteError, PRIORITY_LABEL, saveMembers, TYPE_LABEL, TYPE_ORDER, type 
 import { ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import DateInput from '../common/DateInput';
+import { DateRangeInput } from '../common/DateInput';
 
 export type ProjectTarget = { mode: 'edit'; row: CpProject } | { mode: 'new' };
 
@@ -124,13 +124,9 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
                 {(Object.keys(PRIORITY_LABEL) as ProjectPriority[]).map(p => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}
               </select>
             </div>
-            <div>
-              <label htmlFor="prj-start" className={labelClass}>Début</label>
-              <DateInput id="prj-start" className={inputClass} value={form.starts_on} onChange={e => set({ starts_on: e.target.value })} />
-            </div>
-            <div>
-              <label htmlFor="prj-end" className={labelClass}>Fin</label>
-              <DateInput id="prj-end" className={inputClass} value={form.ends_on} onChange={e => set({ ends_on: e.target.value })} />
+            <div className="sm:col-span-2">
+              <label htmlFor="prj-period" className={labelClass}>Période (début et fin)</label>
+              <DateRangeInput id="prj-period" className={inputClass} start={form.starts_on} end={form.ends_on} onChange={(a, b) => set({ starts_on: a, ends_on: b })} placeholder="Choisir le début et la fin" />
             </div>
           </div>
           {form.type === 'site' && (
