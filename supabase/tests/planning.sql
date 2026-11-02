@@ -23,6 +23,9 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA zz TO authenticated;
 -- rbac.sql laisse U avec un rôle personnalisé : on le remet dans son rôle système
 UPDATE public.users SET rbac_role_id = (SELECT id FROM public.rbac_roles WHERE system_key = 'user' AND organization_id = :ORG1::uuid) WHERE email = 'u@iso.test';
 
+-- Les nouvelles entreprises partent sans module : l'entreprise B reçoit le planning (la console le fait en vrai)
+INSERT INTO public.organization_modules (organization_id, module_key) VALUES (:ORG2::uuid, 'chantiers_planning') ON CONFLICT DO NOTHING;
+
 -- Droits par défaut des rôles système, dans chaque entreprise
 SELECT zz.check('droits du module : administrateur et responsable écrivent, magasinier et collaborateur lisent seulement', (
   SELECT bool_and(CASE WHEN r.system_key IN ('admin', 'manager') THEN n = 4 ELSE n = 1 END)
