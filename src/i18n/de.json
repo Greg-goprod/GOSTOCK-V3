@@ -2808,5 +2808,10 @@
 "Action": "Aktion",
 "Notifications par page": "Benachrichtigungen pro Seite",
 "{0} notification(s)": "{0} Benachrichtigung(en)",
-"Affichage des notifications": "Anzeige der Benachrichtigungen"
+"Affichage des notifications": "Anzeige der Benachrichtigungen",
+"à l'instant": "gerade eben",
+"il y a {0} min": "vor {0} Min.",
+"il y a {0} h": "vor {0} Std.",
+"il y a {0} j": "vor {0} T.",
+"Non lue : ": "Ungelesen: "
 }

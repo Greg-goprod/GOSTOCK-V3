@@ -2808,5 +2808,10 @@
 "Action": "Azione",
 "Notifications par page": "Notifiche per pagina",
 "{0} notification(s)": "{0} notifica/e",
-"Affichage des notifications": "Visualizzazione delle notifiche"
+"Affichage des notifications": "Visualizzazione delle notifiche",
+"à l'instant": "adesso",
+"il y a {0} min": "{0} min fa",
+"il y a {0} h": "{0} h fa",
+"il y a {0} j": "{0} g fa",
+"Non lue : ": "Non letta: "
 }

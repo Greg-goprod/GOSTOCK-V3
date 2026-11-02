@@ -4,12 +4,12 @@ import { useApp } from '../contexts/AppContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import PushToggle from '../components/common/PushToggle';
-import { CheckCircle, Bell, BookMarked as MarkAsUnread } from 'lucide-react';
+import { CheckCircle, Bell, BookMarked as MarkAsUnread, ClipboardList, RotateCcw, Package, Wrench, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { MxCardGrid } from '../components/mx/MxCardGrid';
-import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { NotificationCard } from '../components/notifications/NotificationCard';
 import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 import { EntityTable } from '../components/common/EntityTable';
@@ -42,6 +42,8 @@ const GROUP_OF: Record<string, Group> = {
 };
 
 const groupOf = (n: StockNotification): Group => GROUP_OF[n.kind] ?? 'other';
+
+const GROUP_ICON = { requests: ClipboardList, returns: RotateCcw, stock: Package, upkeep: Wrench, incidents: AlertTriangle, other: Bell };
 
 const TONE: Record<string, 'danger' | 'warning' | 'success' | 'info'> = {
   request_rejected: 'danger', return_overdue: 'danger', return_escalation: 'danger', incident: 'danger', tool_damaged: 'danger', repair_late: 'danger',
@@ -201,24 +203,13 @@ const Notifications: React.FC = () => {
             items={paged}
             getItemKey={n => n.id}
             renderItem={n => (
-              <MxEntityCard
-                avatarName={n.title}
-                title={n.title}
-                infoParts={[
-                  { content: n.message },
-                  { content: format(new Date(n.createdAt), 'dd.MM.yyyy HH:mm', { locale: fr }) },
-                ]}
-                statusBadge={<span className="inline-flex gap-1">
-                  <MxBadge tone={TONE[n.kind] ?? 'info'}>{GROUPS.find(g => g.id === groupOf(n))?.label ?? 'Autres'}</MxBadge>
-                  {n.read ? <MxBadge tone="neutral">Lue</MxBadge> : <MxBadge tone="accent">Non lue</MxBadge>}
-                </span>}
-                menuLabel={`Actions pour ${n.title}`}
-                menuActions={[
-                  n.read
-                    ? { id: 'unread', label: 'Marquer non lue', icon: MarkAsUnread, onSelect: () => void markNotificationUnread(n.id) }
-                    : { id: 'read', label: 'Marquer comme lue', icon: CheckCircle, onSelect: () => void markNotificationsRead([n.id]) },
-                ]}
+              <NotificationCard
+                notification={n}
+                familyLabel={GROUPS.find(g => g.id === groupOf(n))?.label ?? 'Autres'}
+                tone={TONE[n.kind] ?? 'info'}
+                icon={GROUP_ICON[groupOf(n)]}
                 onOpen={() => open(n)}
+                onToggleRead={() => { void (n.read ? markNotificationUnread(n.id) : markNotificationsRead([n.id])); }}
               />
             )}
           />

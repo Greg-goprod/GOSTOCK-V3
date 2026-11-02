@@ -2808,5 +2808,10 @@
 "Action": "Action",
 "Notifications par page": "Notifications per page",
 "{0} notification(s)": "{0} notification(s)",
-"Affichage des notifications": "Notifications display"
+"Affichage des notifications": "Notifications display",
+"à l'instant": "just now",
+"il y a {0} min": "{0} min ago",
+"il y a {0} h": "{0} h ago",
+"il y a {0} j": "{0} d ago",
+"Non lue : ": "Unread: "
 }

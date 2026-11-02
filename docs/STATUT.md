@@ -18,8 +18,8 @@
 ## À FAIRE ENSUITE (dans cet ordre, une chose à la fois)
 1. ~~Lenteur de la base après le module 0~~ **corrigée** (migration 41, appliquée sur GO-MAT le 2 novembre). Mesures : non lues 1 405 ms → 18 ms ; sorties 121 ms → 6 ms. Droits inchangés (collaborateur : 1 non lue, 57 listées, 93 sorties ; magasinier : 0 non lue, 90 listées, 111 sorties). 217 règles enveloppées, 0 restante. Batteries SQL locales : 85 / 103 / 18 / 16 contrôles, 0 échec.
 2. ~~Relance des batteries~~ **TOUT AU VERT (HEAD 3d3273f)** : complet 268 OK / 0 KO ; emprunts 36 OK / 0 KO ; notifications 25 OK / 0 KO (1 non testé) ; cohérence 11 OK / 0 KO. Le module multi-entreprise est validé de bout en bout.
-3. Notifications en vue Cartes : refaire la carte (message en entier, date relative, point « non lue », bouton « Marquer comme lue » sur la carte). La carte actuelle est faite pour des personnes ou des outils : le message est coupé et les initiales n'ont aucun sens.
-4. Relancer les trois batteries, puis `e2e-coherence`.
+3. ~~Notifications en vue Cartes~~ **refaite** : carte dédiée (couleur et icône de la famille, titre en minuscules, message en entier, date relative, point « non lue », bouton « Marquer comme lue » sur la carte). Vérifiée en capture (bureau et mobile), clic carte = ouverture de la page liée, clic bouton = reste sur la page. À valider chez toi après déploiement.
+4. (fait, voir 2)
 5. Migration 40 (droits compatibles Mannyx).
 
 ## BLOQUANT ACTUEL (une seule chose)
