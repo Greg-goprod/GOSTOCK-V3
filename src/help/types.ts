@@ -2,7 +2,7 @@
 // « Rendre un kit »…), chaque tâche en étapes précises, avec le résultat attendu et les blocages courants.
 
 export type HelpCategory =
-  | 'demarrage' | 'magasin' | 'materiel' | 'stock' | 'vehicules' | 'chantiers' | 'personnes' | 'pilotage' | 'reglages';
+  | 'demarrage' | 'magasin' | 'materiel' | 'stock' | 'vehicules' | 'chantiers' | 'personnes' | 'pilotage' | 'pilote' | 'reglages';
 
 export interface HelpStep {
   text: string;

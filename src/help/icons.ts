@@ -1,4 +1,4 @@
-import { BarChart3, HardHat, Package, Rocket, Settings, Truck, Users, Warehouse, Wrench } from 'lucide-react';
+import { BarChart3, Compass, HardHat, Package, Rocket, Settings, Truck, Users, Warehouse, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HelpCategory } from './types';
 
@@ -11,5 +11,6 @@ export const CATEGORY_ICONS: Record<HelpCategory, LucideIcon> = {
   chantiers: HardHat,
   personnes: Users,
   pilotage: BarChart3,
+  pilote: Compass,
   reglages: Settings,
 };

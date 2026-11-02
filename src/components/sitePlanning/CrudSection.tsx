@@ -17,6 +17,8 @@ export interface FieldDef {
   required?: boolean;
   options?: { value: string; label: string }[];
   hint?: string;
+  // Non modifiable une fois l'élément créé (ex. famille d'un état)
+  lockedOnEdit?: boolean;
 }
 
 interface Props<T extends { id: string }> {
@@ -34,6 +36,11 @@ interface Props<T extends { id: string }> {
   emptyTitle: string;
   emptyText: string;
   deleteMessage: (row: T) => string;
+  // Texte d'une erreur de la base (par défaut : celui du planning de chantier)
+  errorText?: (error: unknown) => string;
+  // Lignes que l'on peut supprimer / modifier (par défaut : toutes)
+  canDelete?: (row: T) => boolean;
+  canEdit?: (row: T) => boolean;
 }
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -43,7 +50,7 @@ type FormValues = Record<string, string | boolean>;
 
 // Liste + création / modification / suppression d'un élément simple du planning (zones, équipes, phases, prestataires)
 export function CrudSection<T extends { id: string }>({
-  title, addLabel, table, fields, rows, columns, baseValues, rights, locked, onChanged, emptyIcon, emptyTitle, emptyText, deleteMessage,
+  title, addLabel, table, fields, rows, columns, baseValues, rights, locked, onChanged, emptyIcon, emptyTitle, emptyText, deleteMessage, errorText = planningError, canDelete, canEdit,
 }: Props<T>) {
   const [editing, setEditing] = useState<T | 'new' | null>(null);
   const [values, setValues] = useState<FormValues>({});
@@ -75,7 +82,7 @@ export function CrudSection<T extends { id: string }>({
       ? await supabase.from(table).insert({ ...baseValues, ...payload })
       : await supabase.from(table).update(payload).eq('id', editing.id);
     setSaving(false);
-    if (error) return void toast.error(planningError(error));
+    if (error) return void toast.error(errorText(error));
     toast.success(editing === 'new' ? 'Ajouté' : 'Modifié');
     setEditing(null);
     await onChanged();
@@ -84,7 +91,7 @@ export function CrudSection<T extends { id: string }>({
   const remove = async (row: T) => {
     if (!(await confirmAction(deleteMessage(row)))) return;
     const { error } = await supabase.from(table).delete().eq('id', row.id);
-    if (error) return void toast.error(planningError(error));
+    if (error) return void toast.error(errorText(error));
     toast.success('Supprimé');
     await onChanged();
   };
@@ -93,8 +100,8 @@ export function CrudSection<T extends { id: string }>({
     id: 'actions', label: 'Actions',
     render: row => (
       <span className="inline-flex gap-2">
-        {rights.update && writable && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => open(row)}>Modifier</Button>}
-        {rights.delete && writable && <Button size="sm" variant="outline" icon={<Trash2 size={14} />} onClick={() => void remove(row)}>Supprimer</Button>}
+        {rights.update && writable && (canEdit?.(row) ?? true) && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => open(row)}>Modifier</Button>}
+        {rights.delete && writable && (canDelete?.(row) ?? true) && <Button size="sm" variant="outline" icon={<Trash2 size={14} />} onClick={() => void remove(row)}>Supprimer</Button>}
       </span>
     ),
   };
@@ -124,7 +131,7 @@ export function CrudSection<T extends { id: string }>({
                   {f.type === 'textarea' ? (
                     <textarea id={`crud-${f.key}`} rows={2} className={inputClass} value={String(values[f.key] ?? '')} onChange={e => setValues({ ...values, [f.key]: e.target.value })} />
                   ) : f.type === 'select' ? (
-                    <select id={`crud-${f.key}`} className={inputClass} value={String(values[f.key] ?? '')} required={f.required} onChange={e => setValues({ ...values, [f.key]: e.target.value })}>
+                    <select id={`crud-${f.key}`} className={inputClass} value={String(values[f.key] ?? '')} required={f.required} disabled={f.lockedOnEdit && editing !== 'new'} onChange={e => setValues({ ...values, [f.key]: e.target.value })}>
                       {!f.required && <option value="">—</option>}
                       {(f.options || []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>

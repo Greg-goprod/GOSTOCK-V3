@@ -1,0 +1,261 @@
+#!/usr/bin/env node
+// PILOTE › Projets (R2b) : états, programmes, projets, responsables — contrôles de la base, droits par rôle, écran.
+//
+//   BASE=http://localhost:5173 E2E_PASSWORD='…' node scripts/e2e-projets.cjs
+//
+// Prérequis : migrations 47 et 48 appliquées ; le module « Plan annuel et projets » (cp.projects) activé pour l'entreprise des comptes de test
+// (Console de la plateforme › Modules). Comptes : E2E_RESP (écrit : droit « cp.projects »), E2E_STAFF et E2E_COLLAB (lisent
+// seulement) ; par défaut test.responsable@ / test.magasinier@ / test.collaborateur@example.com. Mot de passe UNIQUEMENT par E2E_PASSWORD.
+// Tout ce qui est créé porte « TEST-PROJ » et est supprimé à la fin (projets, programmes, états ajoutés, chantiers de test).
+const fs = require('fs');
+const path = require('path');
+const { chromium } = require('playwright');
+
+const BASE = process.env.BASE || 'http://localhost:5173';
+const PASSWORD = process.env.E2E_PASSWORD || '';
+const ACCOUNTS = {
+  resp: process.env.E2E_RESP || 'test.responsable@example.com',
+  staff: process.env.E2E_STAFF || 'test.magasinier@example.com',
+  collab: process.env.E2E_COLLAB || 'test.collaborateur@example.com',
+};
+const OUT_DIR = path.join(__dirname, '..', 'docs', 'tests');
+const SHOTS = path.join(OUT_DIR, 'captures-projets');
+const REPORT = path.join(OUT_DIR, 'rapport-projets.md');
+fs.mkdirSync(SHOTS, { recursive: true });
+if (!PASSWORD) { console.error('E2E_PASSWORD manquant (variable d\'environnement).'); process.exit(2); }
+
+const M = 'TEST-PROJ';
+const results = [];
+const jsErrors = [];
+const S = {};
+let group = '';
+
+/* ------------------------------------------------------------------ outils */
+async function login(browser, who) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
+  const page = await ctx.newPage();
+  const c = { who, ctx, page, base: '', key: '' };
+  page.on('pageerror', e => jsErrors.push(`${who}: ${e.message}`));
+  page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
+  await page.goto(BASE);
+  await page.getByRole('button', { name: /J'ai un mot de passe/ }).click();
+  await page.locator('#login-email-pw').fill(ACCOUNTS[who]);
+  await page.locator('#login-password').fill(PASSWORD);
+  await page.getByRole('button', { name: /Se connecter/ }).click();
+  await page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 });
+  await page.waitForTimeout(1500);
+  return c;
+}
+async function api(c, method, route, body, extra = {}) {
+  return c.page.evaluate(async ({ base, key, method, route, body, extra }) => {
+    const tk = Object.keys(localStorage).find(k => /^sb-.*-auth-token$/.test(k));
+    const token = tk ? JSON.parse(localStorage.getItem(tk) || '{}').access_token : key;
+    let res;
+    try { res = await fetch(base + route, { method, headers: { apikey: key, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...extra }, body: body === undefined ? undefined : JSON.stringify(body) }); }
+    catch (e) { return { status: 0, body: { message: `requête bloquée (${e.message})` } }; }
+    let json = null; try { json = await res.json(); } catch { /* corps vide */ }
+    return { status: res.status, body: json };
+  }, { base: c.base, key: c.key, method, route, body, extra });
+}
+const rpc = (c, n, a = {}) => api(c, 'POST', `/rest/v1/rpc/${n}`, a);
+const rows = r => (Array.isArray(r.body) ? r.body : []);
+const refused = r => r.status >= 400 || r.status === 0;
+const msg = r => (r.body && (r.body.message || r.body.error)) || `HTTP ${r.status}`;
+const ok = (cond, m) => { if (!cond) throw new Error(m); };
+const INFO = d => ({ status: 'INFO', detail: d });
+const SKIP = d => ({ status: 'NON TESTÉ', detail: d });
+const REP = { Prefer: 'return=representation' };
+
+// Heure de Zurich → instant ISO (indépendant du fuseau de la machine)
+function zurichIso(day, time) {
+  const [y, m, d] = day.split('-').map(Number), [h, mi] = time.split(':').map(Number);
+  const guess = Date.UTC(y, m - 1, d, h, mi);
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const p = Object.fromEntries(fmt.formatToParts(new Date(guess)).map(x => [x.type, x.value]));
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+  return new Date(guess - (asUtc - guess)).toISOString();
+}
+
+async function step(id, title, fn, page) {
+  const e = { group, id, title, status: 'KO', detail: '', shot: '' };
+  try { const o = await fn(); e.status = (o && o.status) || 'OK'; e.detail = (o && o.detail) || ''; }
+  catch (err) { e.status = 'KO'; e.detail = String(err.message).split('\n')[0]; }
+  if (page && ['KO', 'PARTIEL'].includes(e.status)) { const f = `${id.replace(/[^\w-]/g, '_')}.png`; try { await page.screenshot({ path: path.join(SHOTS, f) }); e.shot = `captures-projets/${f}`; } catch { /* page fermée */ } }
+  console.log(`${e.status.padEnd(11)} ${id}  ${title}${e.detail ? ' — ' + e.detail.slice(0, 170) : ''}`);
+  results.push(e);
+}
+
+(async () => {
+  const browser = await chromium.launch();
+  const resp = await login(browser, 'resp');
+  const staff = await login(browser, 'staff');
+  const collab = await login(browser, 'collab');
+  const readers = [staff, collab];
+
+  const create = async (c, table, row) => { const r = await api(c, 'POST', `/rest/v1/${table}?select=id`, row, REP); ok(!refused(r), `${table} : ${msg(r)}`); return rows(r)[0]?.id; };
+  const open = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await c.page.waitForTimeout(2500); };
+
+  /* ============ P0 Prérequis ============ */
+  group = 'P0 Prérequis';
+  await step('P0-module', 'Le module « Plan annuel et projets » (cp.projects) est activé pour l\'entreprise des comptes de test', async () => {
+    for (const c of [resp, staff, collab]) { const me = (await rpc(c, 'whoami')).body || {}; ok((me.modules || []).includes('cp.projects'), `${c.who} : module absent (whoami.modules = ${JSON.stringify(me.modules)})`); }
+  });
+  await step('P0-droits', 'Droits : le responsable écrit ; magasinier et collaborateur lisent seulement', async () => {
+    const can = async (c, action) => (await rpc(c, 'rbac_has_any_permission', { p_keys: [`cp.projects:${action}`] })).body === true;
+    for (const a of ['create', 'update', 'delete']) { ok(await can(resp, a), `le responsable n'a pas « ${a} »`); ok(!(await can(staff, a)), `le magasinier a « ${a} »`); ok(!(await can(collab, a)), `le collaborateur a « ${a} »`); }
+    for (const c of [resp, staff, collab]) ok(await can(c, 'read'), `${c.who} ne lit pas`);
+  });
+  await step('P0-etats', 'Les 4 états de base existent, une fois par famille', async () => {
+    const st = rows(await api(resp, 'GET', '/rest/v1/cp_statuses?select=id,name,family,is_system&is_system=eq.true'));
+    ok(st.length === 4 && new Set(st.map(x => x.family)).size === 4, `états de base : ${JSON.stringify(st.map(x => x.family))}`);
+    S.stNot = st.find(x => x.family === 'not_started').id; S.stDone = st.find(x => x.family === 'done').id; S.stProg = st.find(x => x.family === 'in_progress').id;
+  });
+
+  /* ============ P1 Données ============ */
+  group = 'P1 Données';
+  await step('P1-prepa', 'Programme, chantier de test, projets de plusieurs types, responsables', async () => {
+    S.site = await create(resp, 'sites', { name: `${M} Chantier` });
+    S.site2 = await create(resp, 'sites', { name: `${M} Autre chantier` });
+    S.prog = await create(resp, 'cp_programs', { name: `${M} Festivals`, starts_on: '2027-01-01', ends_on: '2027-12-31' });
+    S.p1 = await create(resp, 'cp_projects', { name: `${M} Festival`, type: 'site', program_id: S.prog, site_id: S.site, starts_on: '2027-06-01', ends_on: '2027-06-30', priority: 'high' });
+    S.p2 = await create(resp, 'cp_projects', { name: `${M} Prototype`, type: 'rd', starts_on: '2027-02-01', ends_on: '2027-09-30' });
+    for (const [i, t] of ['design', 'recruitment', 'admin', 'event'].entries()) await create(resp, 'cp_projects', { name: `${M} Type ${i}`, type: t });
+    S.me = rows(await api(resp, 'GET', `/rest/v1/users?select=id&email=eq.${encodeURIComponent(ACCOUNTS.resp)}`))[0]?.id;
+    ok(S.me, 'fiche « users » du responsable introuvable');
+    const r = await api(resp, 'POST', '/rest/v1/cp_project_members', [{ project_id: S.p1, user_id: S.me }]);
+    ok(!refused(r), `responsable : ${msg(r)}`);
+  });
+  await step('P1-defaut', 'Sans état précisé, un projet est « Pas commencé »', async () => {
+    const p = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=status_id&id=eq.${S.p2}`))[0];
+    ok(p && p.status_id === S.stNot, `état par défaut = ${p && p.status_id}`);
+  });
+
+  /* ============ P2 Contrôles de la base ============ */
+  group = 'P2 Contrôles de la base';
+  const must = (name, fn) => step(`P2-${name.split(' ')[0]}`, name, async () => { const r = await fn(); ok(refused(r), `accepté (HTTP ${r.status})`); });
+  await must('type-site : projet R&D relié à un chantier refusé', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} R&D lié`, type: 'rd', site_id: S.site2 }));
+  await must('doublon-chantier : deux projets sur le même chantier refusé', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} Doublon`, type: 'site', site_id: S.site }));
+  await must('dates : fin avant début refusée', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} Inversé`, type: 'admin', starts_on: '2027-05-01', ends_on: '2027-04-01' }));
+  await must('type-inconnu : type inconnu refusé', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} Bizarre`, type: 'autre' }));
+  await must('programme-doublon : programme de même nom refusé', () => api(resp, 'POST', '/rest/v1/cp_programs', { name: ` ${M.toLowerCase()} festivals ` }));
+  await must('responsable-doublon : même responsable deux fois refusé', () => api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.p1, user_id: S.me }));
+  await step('P2-etat-base', 'Un état de base ne se supprime pas et ne change pas de famille', async () => {
+    ok(refused(await api(resp, 'DELETE', `/rest/v1/cp_statuses?id=eq.${S.stDone}`)), 'suppression acceptée');
+    ok(refused(await api(resp, 'PATCH', `/rest/v1/cp_statuses?id=eq.${S.stDone}`, { family: 'in_progress' })), 'changement de famille accepté');
+  });
+  await step('P2-etat-ajoute', 'État ajouté : créé dans une famille, utilisé par un projet (suppression refusée), puis supprimé une fois libre', async () => {
+    S.stCustom = await create(resp, 'cp_statuses', { name: `${M} En validation`, family: 'in_progress', color: '#f59e0b', position: 10 });
+    ok(!refused(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.p2}`, { status_id: S.stCustom })), 'état non affectable');
+    ok(refused(await api(resp, 'DELETE', `/rest/v1/cp_statuses?id=eq.${S.stCustom}`)), 'suppression d\'un état utilisé acceptée');
+    ok(!refused(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.p2}`, { status_id: S.stProg })), 'projet non remis à un état de base');
+    ok(!refused(await api(resp, 'DELETE', `/rest/v1/cp_statuses?id=eq.${S.stCustom}`)), 'état libre non supprimable');
+    S.stCustom = null;
+  });
+  await step('P2-programme-supprime', 'Supprimer un programme garde ses projets, sans programme', async () => {
+    const tmp = await create(resp, 'cp_programs', { name: `${M} Temporaire` });
+    const pid = await create(resp, 'cp_projects', { name: `${M} Orphelin`, type: 'admin', program_id: tmp });
+    ok(!refused(await api(resp, 'DELETE', `/rest/v1/cp_programs?id=eq.${tmp}`)), 'programme non supprimé');
+    const p = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=program_id&id=eq.${pid}`))[0];
+    ok(p && p.program_id === null, 'le projet a perdu son existence ou garde son programme');
+  });
+
+  /* ============ P3 Droits par rôle ============ */
+  group = 'P3 Droits par rôle';
+  for (const c of readers) {
+    await step(`P3-${c.who}-lecture`, `${c.who} : lit programmes, projets, états et responsables`, async () => {
+      ok(rows(await api(c, 'GET', `/rest/v1/cp_projects?select=id&name=like.${encodeURIComponent(M + '*')}`)).length >= 6, 'projets illisibles');
+      ok(rows(await api(c, 'GET', '/rest/v1/cp_statuses?select=id')).length >= 4, 'états illisibles');
+      ok(rows(await api(c, 'GET', `/rest/v1/cp_programs?select=id&name=like.${encodeURIComponent(M + '*')}`)).length >= 1, 'programmes illisibles');
+    });
+    await step(`P3-${c.who}-ecriture`, `${c.who} : ne crée, ne modifie, ne supprime rien`, async () => {
+      ok(refused(await api(c, 'POST', '/rest/v1/cp_projects', { name: `${M} Piraté`, type: 'admin' })), 'création de projet acceptée');
+      ok(refused(await api(c, 'POST', '/rest/v1/cp_programs', { name: `${M} Piraté` })), 'création de programme acceptée');
+      ok(refused(await api(c, 'POST', '/rest/v1/cp_statuses', { name: `${M} Piraté`, family: 'done' })), 'création d\'état acceptée');
+      const patch = await api(c, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.p1}`, { name: `${M} Piraté` }, REP);
+      ok(refused(patch) || rows(patch).length === 0, 'modification acceptée');
+      const del = await api(c, 'DELETE', `/rest/v1/cp_projects?id=eq.${S.p1}`, undefined, REP);
+      ok(refused(del) || rows(del).length === 0, 'suppression acceptée');
+    });
+  }
+
+  /* ============ P4 Écran ============ */
+  group = 'P4 Écran';
+  await step('P4-ouverture', 'Responsable : PILOTE › Projets s\'ouvre, les projets de test s\'affichent, compteurs par état', async () => {
+    await open(resp, '/pilote/projets');
+    ok(await resp.page.getByRole('radio', { name: /^Projets/ }).count(), 'écran des projets inaccessible');
+    ok(await resp.page.getByText(`${M} Festival`).first().isVisible(), 'projet de test absent');
+    ok(await resp.page.locator('[aria-label="Projets par état"] button').count() === 4, 'compteurs par famille absents');
+  }, resp.page);
+  await step('P4-liste', 'Bascule cartes / liste', async () => {
+    await resp.page.locator('[aria-label="Affichage des projets"] [role="radio"]').nth(1).click(); await resp.page.waitForTimeout(500);
+    ok(await resp.page.locator('table').count(), 'tableau absent en vue liste');
+    await resp.page.locator('[aria-label="Affichage des projets"] [role="radio"]').nth(0).click(); await resp.page.waitForTimeout(300);
+  }, resp.page);
+  await step('P4-creation', 'Création d\'un projet par le formulaire (type, programme, responsable)', async () => {
+    await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(700);
+    await resp.page.locator('#prj-name').fill(`${M} Par l'écran`);
+    await resp.page.locator('#prj-type').selectOption('design');
+    await resp.page.locator('#prj-program').selectOption({ label: `${M} Festivals` });
+    await resp.page.locator('fieldset input[type=checkbox]').first().check();
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
+    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id,type,program_id&name=eq.${encodeURIComponent(M + " Par l'écran")}`))[0];
+    ok(r && r.type === 'design' && r.program_id === S.prog, `projet enregistré = ${JSON.stringify(r)}`);
+    const m = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id&project_id=eq.${r.id}`));
+    ok(m.length === 1, `responsables enregistrés = ${m.length}`);
+  }, resp.page);
+  await step('P4-chantier-pris', 'Le chantier déjà relié n\'est plus proposé pour un autre projet', async () => {
+    await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(600);
+    await resp.page.locator('#prj-type').selectOption('site');
+    const options = await resp.page.locator('#prj-site option').allInnerTexts();
+    ok(!options.some(o => o.includes(`${M} Chantier`)), `chantier déjà relié proposé : ${options.join(' | ')}`);
+    ok(options.some(o => o.includes(`${M} Autre chantier`)), 'chantier libre non proposé');
+    await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(300);
+  }, resp.page);
+  await step('P4-programmes-etats', 'Onglets Programmes et États : lignes visibles, états de base non supprimables', async () => {
+    await resp.page.getByRole('radio', { name: /^Programmes/ }).click(); await resp.page.waitForTimeout(600);
+    ok(await resp.page.getByText(`${M} Festivals`).first().isVisible(), 'programme de test absent');
+    await resp.page.getByRole('radio', { name: /^États/ }).click(); await resp.page.waitForTimeout(600);
+    const txt = await resp.page.locator('main').innerText();
+    ok(/De base/.test(txt), 'mention « De base » absente');
+    ok((await resp.page.locator('table tbody tr', { hasText: 'De base' }).getByRole('button', { name: 'Supprimer' }).count()) === 0, 'bouton Supprimer sur un état de base');
+  }, resp.page);
+  for (const c of readers) {
+    await step(`P4-${c.who}-ecran`, `${c.who} : l\'écran s\'ouvre en lecture seule`, async () => {
+      await open(c, '/pilote/projets');
+      ok(await c.page.getByRole('radio', { name: /^Projets/ }).count(), 'écran inaccessible');
+      ok((await c.page.getByRole('button', { name: 'Nouveau projet' }).count()) === 0, 'bouton « Nouveau projet » présent');
+      ok((await c.page.getByRole('button', { name: 'Modifier' }).count()) === 0, 'bouton « Modifier » présent');
+    }, c.page);
+  }
+
+  /* ============ Nettoyage ============ */
+  group = 'Nettoyage';
+  const clean = {};
+  try {
+    const mine = encodeURIComponent(M + '*');
+    for (const table of ['cp_projects', 'cp_programs']) { const r = await api(resp, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, REP); clean[table] = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
+    { const r = await api(resp, 'DELETE', `/rest/v1/cp_statuses?name=like.${mine}`, undefined, REP); clean.cp_statuses = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
+    { const r = await api(resp, 'DELETE', `/rest/v1/sites?name=like.${mine}`, undefined, REP); clean.sites = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
+    clean.restants = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id&name=like.${mine}`)).length;
+  } catch (e) { clean.err = e.message; }
+
+  await browser.close();
+
+  /* ============ Rapport ============ */
+  const n = k => results.filter(r => r.status === k).length;
+  const groups = [...new Set(results.map(r => r.group))];
+  const md = [
+    '# Rapport des tests des projets PILOTE', '',
+    `Base : GO-MAT · comptes : ${Object.values(ACCOUNTS).join(', ')} · date : ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, 'Commit testé : à renseigner (`git log --oneline -1`).', '',
+    `**Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO**`, '',
+    `Nettoyage : ${JSON.stringify(clean)}`, '',
+    '## À corriger (KO et PARTIEL)', '', ...(results.filter(r => ['KO', 'PARTIEL'].includes(r.status)).map(r => `- **${r.status}** ${r.id} — ${r.title} : ${r.detail}${r.shot ? ` ([capture](${r.shot}))` : ''}`)), ...(results.some(r => ['KO', 'PARTIEL'].includes(r.status)) ? [] : ['Aucun.']), '',
+    '## Observations (INFO / NON TESTÉ)', '', ...results.filter(r => ['INFO', 'NON TESTÉ'].includes(r.status)).map(r => `- **${r.id}** — ${r.title} : ${r.detail}`), '',
+    ...groups.flatMap(g => ['', `## ${g}`, '', '| Point | Verdict | Détail |', '|---|---|---|', ...results.filter(r => r.group === g).map(r => `| ${r.id} — ${r.title.replace(/\|/g, '/')} | ${r.status} | ${r.detail.replace(/\|/g, '/').slice(0, 200)} |`)]),
+    '', '## Erreurs JavaScript', '', jsErrors.length ? [...new Set(jsErrors)].slice(0, 20).map(e => `- ${e}`).join('\n') : 'Aucune.', '',
+  ];
+  fs.writeFileSync(REPORT, md.join('\n'));
+  console.log(`\nRapport : ${path.relative(process.cwd(), REPORT)}`);
+  console.log(`Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO`);
+  process.exit(n('KO') ? 1 : 0);
+})();

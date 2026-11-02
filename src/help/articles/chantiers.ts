@@ -83,7 +83,7 @@ export const CHANTIERS: HelpArticle[] = [
   },
   {
     id: 'planning-chantier',
-    category: 'chantiers',
+    category: 'pilote',
     title: 'Le planning de chantier',
     summary: 'Qui intervient où et quand : zones, équipes, prestataires, frise, séries et matériel. Module payant, activé par la plateforme.',
     route: '/pilote/planning',
