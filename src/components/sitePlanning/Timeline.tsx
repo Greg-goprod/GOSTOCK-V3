@@ -1,8 +1,8 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, CalendarClock, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
-import { DEFAULT_CONFIG, firstUsefulDay, planningError, type PlanIntervention, type PlanSite, type PlanningRights, type SitePlanningData } from '../../lib/sitePlanning';
+import { DEFAULT_CONFIG, firstUsefulDay, issueText, planningError, type PlanIntervention, type PlanSite, type PlanningRights, type SitePlanningData } from '../../lib/sitePlanning';
 import { dayToNumber, minutesToTime, MINUTES_PER_DAY, mondayOf, numberToDay, assignLanes, shiftIso, snap, toWallPoint } from '../../lib/timelineMath';
 import { formatDay } from '../../lib/zurichTime';
 import { getLanguage } from '../../i18n/translator';
@@ -11,6 +11,7 @@ import DateInput from '../common/DateInput';
 import { MxEmpty } from '../mx/MxEmpty';
 import { MxSegmented } from '../mx/MxSegmented';
 import InterventionForm, { type InterventionTarget } from './InterventionForm';
+import CopyDayModal from './CopyDayModal';
 
 interface Props {
   site: PlanSite;
@@ -60,6 +61,7 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
   const [dragView, setDragView] = useState<DragView | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const [target, setTarget] = useState<InterventionTarget | null>(null);
+  const [copying, setCopying] = useState(false);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [trackW, setTrackW] = useState(900);
 
@@ -222,6 +224,7 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
           <div className="w-44"><DateInput aria-label="Aller au jour" value={day} onChange={e => e.target.value && setDay(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100" /></div>
           <Button size="sm" variant="outline" ariaLabel={scale === 'week' ? 'Semaine suivante' : 'Jour suivant'} icon={<ChevronRight size={14} />} onClick={() => goto(1)} />
           <Button size="sm" variant="outline" onClick={() => setDay(firstUsefulDay(site))}>Aujourd'hui</Button>
+          {canCreate && <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => setCopying(true)}>Copier un jour</Button>}
         </div>
       </div>
       <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -290,15 +293,16 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
                     const time = `${minutesToTime(w.minute)}–${minutesToTime(z.minute)}`;
                     const lane = lanes.get(id) ?? 0;
                     const sub = mode === 'zone' ? teamLabel(sg.item.team_id) : (zones.find(zn => zn.id === sg.item.zone_id)?.name ?? '');
+                    const warns = data.issues.filter(x => x.intervention_id === sg.item.id).map(issueText);
                     return (
-                      <div key={id} role="button" tabIndex={0} aria-label={`${sg.item.title}, ${time}, ${sub}`} title={`${sg.item.title}\n${time} · ${sub}`}
+                      <div key={id} role="button" tabIndex={0} aria-label={`${sg.item.title}, ${time}, ${sub}`} title={`${sg.item.title}\n${time} · ${sub}${warns.length ? `\n${warns.join('\n')}` : ''}`}
                         onPointerDown={e => onPointerDown(e, sg.item, 'move')} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onKeyDown={e => onKeyDown(e, sg.item)}
-                        className={`absolute select-none overflow-hidden rounded-md text-white shadow-sm ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${view ? 'z-20 opacity-90 ring-2 ring-white' : 'z-10'}`}
+                        className={`absolute select-none overflow-hidden rounded-md text-white shadow-sm ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${view ? 'z-20 opacity-90 ring-2 ring-white' : warns.length ? 'z-10 ring-2 ring-amber-400' : 'z-10'}`}
                         style={{ left, width, top: 4 + lane * LANE_H, height: BLOCK_H, background: colorOf(sg.item), transform: view && view.dy ? `translateY(${view.dy}px)` : undefined, touchAction: canEdit ? 'none' : undefined, transition: view ? 'none' : 'left .12s, width .12s' }}>
                         {canEdit && sg.first && <span aria-hidden data-handle="start" onPointerDown={e => onPointerDown(e, sg.item, 'start')} onPointerMove={onPointerMove} onPointerUp={onPointerUp} className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/20" />}
                         {width >= 54 && (
                           <div className="px-2.5 py-0.5 leading-tight pointer-events-none">
-                            <p className="truncate text-xs font-semibold">{sg.item.title}</p>
+                            <p className="truncate text-xs font-semibold">{warns.length > 0 && <AlertTriangle size={11} aria-hidden className="mr-1 inline align-[-1px]" />}{sg.item.title}</p>
                             <p className="truncate text-[11px] opacity-90">{time} · {sub}</p>
                           </div>
                         )}
@@ -314,6 +318,7 @@ const Timeline: React.FC<Props> = ({ site, data, rights, locked, onChanged, team
       </div>
 
       <InterventionForm site={site} data={data} target={target} onClose={() => setTarget(null)} onSaved={onChanged} teamLabel={teamLabel} />
+      <CopyDayModal site={site} data={data} open={copying} defaultDay={day} onClose={() => setCopying(false)} onDone={onChanged} />
     </div>
   );
 };

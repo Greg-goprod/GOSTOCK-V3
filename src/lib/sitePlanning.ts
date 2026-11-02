@@ -13,6 +13,9 @@ export interface PlanIntervention {
   starts_at: string; ends_at: string; notes: string | null; series_id: string | null;
 }
 
+export interface PlanNeed { id: string; intervention_id: string; equipment_id: string; quantity: number }
+export interface MaterialIssue { intervention_id: string; equipment_id: string; equipment_name: string; needed: number; available: number; shortage: number }
+
 export const DEFAULT_CONFIG = { day_start: '07:00:00', day_end: '19:00:00', all_day: false, step_minutes: 15 };
 
 export interface SitePlanningData {
@@ -23,6 +26,8 @@ export interface SitePlanningData {
   contractors: PlanContractor[];
   blockedDays: PlanBlockedDay[];
   interventions: PlanIntervention[];
+  needs: PlanNeed[];
+  issues: MaterialIssue[];
 }
 
 export async function loadOpenSites(): Promise<PlanSite[]> {
@@ -32,7 +37,7 @@ export async function loadOpenSites(): Promise<PlanSite[]> {
 }
 
 export async function loadSitePlanning(siteId: string): Promise<SitePlanningData> {
-  const [config, zones, teams, phases, contractors, blocked, interventions] = await Promise.all([
+  const [config, zones, teams, phases, contractors, blocked, interventions, needs, issues] = await Promise.all([
     supabase.from('site_config').select('*').eq('site_id', siteId).maybeSingle(),
     supabase.from('site_zones').select('*').eq('site_id', siteId).order('position').order('name'),
     supabase.from('site_teams').select('*').eq('site_id', siteId).order('name'),
@@ -40,8 +45,11 @@ export async function loadSitePlanning(siteId: string): Promise<SitePlanningData
     supabase.from('contractors').select('*').order('name'),
     supabase.from('site_blocked_days').select('*').eq('site_id', siteId).order('day'),
     supabase.from('site_interventions').select('*').eq('site_id', siteId).order('starts_at'),
+    supabase.from('site_intervention_needs').select('id, intervention_id, equipment_id, quantity, site_interventions!inner(site_id)').eq('site_interventions.site_id', siteId),
+    supabase.rpc('site_material_issues', { p_site_id: siteId }),
   ]);
-  const error = [config, zones, teams, phases, contractors, blocked, interventions].map(r => r.error).find(Boolean);
+  // Les avertissements de matériel ne bloquent jamais l'affichage du planning
+  const error = [config, zones, teams, phases, contractors, blocked, interventions, needs].map(r => r.error).find(Boolean);
   if (error) throw error;
   return {
     config: (config.data as PlanConfig | null) ?? null,
@@ -51,6 +59,8 @@ export async function loadSitePlanning(siteId: string): Promise<SitePlanningData
     contractors: (contractors.data || []) as PlanContractor[],
     blockedDays: (blocked.data || []) as PlanBlockedDay[],
     interventions: (interventions.data || []) as PlanIntervention[],
+    needs: ((needs.data || []) as (PlanNeed & { site_interventions?: unknown })[]).map(n => ({ id: n.id, intervention_id: n.intervention_id, equipment_id: n.equipment_id, quantity: Number(n.quantity) })),
+    issues: issues.error ? [] : ((issues.data || []) as MaterialIssue[]).map(i => ({ ...i, needed: Number(i.needed), available: Number(i.available), shortage: Number(i.shortage) })),
   };
 }
 
@@ -82,3 +92,54 @@ export const firstUsefulDay = (site: Pick<PlanSite, 'start_on' | 'end_on'>): str
   return site.start_on && today < site.start_on ? site.start_on : site.end_on && today > site.end_on ? site.end_on : today;
 };
 
+
+export interface NeedInput { equipment_id: string; quantity: number }
+
+// Remplace le matériel nécessaire d'une intervention
+export async function saveNeeds(interventionId: string, needs: NeedInput[]): Promise<void> {
+  const del = await supabase.from('site_intervention_needs').delete().eq('intervention_id', interventionId);
+  if (del.error) throw del.error;
+  if (needs.length === 0) return;
+  const ins = await supabase.from('site_intervention_needs').insert(needs.map(n => ({ intervention_id: interventionId, equipment_id: n.equipment_id, quantity: n.quantity })));
+  if (ins.error) throw ins.error;
+}
+
+export interface SeriesInput {
+  site_id: string; zone_id: string; team_id: string; phase_id: string | null; title: string; notes: string | null;
+  first_day: string; last_day: string; weekdays: number[]; start: string; end: string; end_day_offset: number; needs: NeedInput[];
+}
+
+// Tout ou rien : la base crée toute la série ou rien, et nomme la date refusée
+export async function createSeries(input: SeriesInput): Promise<{ created: number; skipped_blocked: number }> {
+  const { data, error } = await supabase.rpc('create_intervention_series', {
+    p_site_id: input.site_id, p_zone_id: input.zone_id, p_team_id: input.team_id, p_phase_id: input.phase_id, p_title: input.title, p_notes: input.notes,
+    p_first_day: input.first_day, p_last_day: input.last_day, p_weekdays: input.weekdays, p_start: input.start, p_end: input.end,
+    p_end_day_offset: input.end_day_offset, p_needs: input.needs,
+  });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as { created: number; skipped_blocked: number };
+  return { created: Number(row.created), skipped_blocked: Number(row.skipped_blocked) };
+}
+
+export async function copyDay(siteId: string, fromDay: string, toDays: string[]): Promise<{ created: number; skipped_blocked: number }> {
+  const { data, error } = await supabase.rpc('copy_interventions_day', { p_site_id: siteId, p_from_day: fromDay, p_to_days: toDays });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as { created: number; skipped_blocked: number };
+  return { created: Number(row.created), skipped_blocked: Number(row.skipped_blocked) };
+}
+
+export const WEEKDAYS = [{ n: 1, label: 'Lun' }, { n: 2, label: 'Mar' }, { n: 3, label: 'Mer' }, { n: 4, label: 'Jeu' }, { n: 5, label: 'Ven' }, { n: 6, label: 'Sam' }, { n: 7, label: 'Dim' }];
+
+// Jours « AAAA-MM-JJ » d'un intervalle dont le jour de la semaine (1 = lundi) est choisi
+export const daysInRange = (first: string, last: string, weekdays: number[]): string[] => {
+  const out: string[] = [];
+  const a = Date.UTC(+first.slice(0, 4), +first.slice(5, 7) - 1, +first.slice(8, 10)), b = Date.UTC(+last.slice(0, 4), +last.slice(5, 7) - 1, +last.slice(8, 10));
+  for (let t = a; t <= b && out.length < 400; t += 86_400_000) {
+    const d = new Date(t);
+    if (weekdays.includes(((d.getUTCDay() + 6) % 7) + 1)) out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+};
+
+// « Échafaudage : 2 demandé(s), 0 disponible(s) à ce moment »
+export const issueText = (i: MaterialIssue): string => `${i.equipment_name} : ${i.needed} demandé(s), ${i.available} disponible(s) à ce moment`;

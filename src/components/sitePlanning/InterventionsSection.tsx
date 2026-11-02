@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarClock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Copy, Pencil, Plus, Repeat, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { confirmAction } from '../../lib/confirm';
-import { planningError, type PlanIntervention, type PlanSite, type PlanningRights, type SitePlanningData } from '../../lib/sitePlanning';
+import { issueText, planningError, type PlanIntervention, type PlanSite, type PlanningRights, type SitePlanningData } from '../../lib/sitePlanning';
 import { formatDay, isoToWall } from '../../lib/zurichTime';
 import Button from '../common/Button';
 import DateInput from '../common/DateInput';
@@ -15,6 +15,7 @@ import { MxEntityViewToggle } from '../mx/MxEntityViewToggle';
 import { readMxViewMode, writeMxViewMode } from '../mx/mxViewModeStorage';
 import { InterventionCard } from './InterventionCard';
 import InterventionForm, { type InterventionTarget } from './InterventionForm';
+import CopyDayModal from './CopyDayModal';
 
 interface Props {
   site: PlanSite;
@@ -34,6 +35,8 @@ const InterventionsSection: React.FC<Props> = ({ site, data, rights, locked, onC
   const [teamFilter, setTeamFilter] = useState('');
   const [dayFilter, setDayFilter] = useState('');
   const [target, setTarget] = useState<InterventionTarget | null>(null);
+  const [copying, setCopying] = useState(false);
+  const warningsOf = (id: string) => data.issues.filter(x => x.intervention_id === id).map(issueText);
   const writable = !locked;
 
   const zoneById = useMemo(() => new Map(zones.map(z => [z.id, z])), [zones]);
@@ -99,6 +102,7 @@ const InterventionsSection: React.FC<Props> = ({ site, data, rights, locked, onC
         </div>
         <div className="flex items-center gap-3">
           <MxEntityViewToggle value={viewMode} onChange={setViewMode} aria-label="Affichage des interventions" />
+          {rights.create && writable && <Button variant="outline" icon={<Copy size={16} />} onClick={() => setCopying(true)} disabled={blocking}>Copier un jour</Button>}
           {rights.create && writable && <Button icon={<Plus size={16} />} onClick={() => open('new')} disabled={blocking}>Nouvelle intervention</Button>}
         </div>
       </div>
@@ -116,7 +120,13 @@ const InterventionsSection: React.FC<Props> = ({ site, data, rights, locked, onC
           caption="Interventions"
           columns={[
             { id: 'when', label: 'Quand', render: i => <span className="whitespace-nowrap">{whenOf(i)}</span> },
-            { id: 'title', label: 'Intervention', render: i => <span className="font-medium">{i.title}</span> },
+            { id: 'title', label: 'Intervention', render: i => (
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <span className="font-medium">{i.title}</span>
+                {i.series_id && <span title="Fait partie d'une série" aria-label="Série"><Repeat size={13} aria-hidden /></span>}
+                {warningsOf(i.id).length > 0 && <span className="inline-flex items-center gap-1 text-tone-warning" title={warningsOf(i.id).join('\n')}><AlertTriangle size={13} aria-hidden /><span className="text-xs">Matériel</span></span>}
+              </span>
+            ) },
             { id: 'zone', label: 'Zone', render: i => (
               <span className="inline-flex items-center gap-2"><span aria-hidden className="h-3 w-3 rounded-full" style={{ background: zoneById.get(i.zone_id)?.color }} />{zoneById.get(i.zone_id)?.name ?? '—'}</span>
             ) },
@@ -137,7 +147,7 @@ const InterventionsSection: React.FC<Props> = ({ site, data, rights, locked, onC
           renderItem={i => (
             <InterventionCard
               title={i.title} when={whenOf(i)} zone={zoneById.get(i.zone_id)?.name ?? '—'} zoneColor={zoneById.get(i.zone_id)?.color ?? '#6366f1'}
-              team={teamLabel(i.team_id)} phase={i.phase_id ? phaseById.get(i.phase_id)?.name ?? null : null} notes={i.notes}
+              team={teamLabel(i.team_id)} phase={i.phase_id ? phaseById.get(i.phase_id)?.name ?? null : null} notes={i.notes} inSeries={!!i.series_id} warnings={warningsOf(i.id)}
               onEdit={rights.update && writable ? () => open(i) : undefined} onDelete={rights.delete && writable ? () => void remove(i) : undefined}
             />
           )}
@@ -145,6 +155,7 @@ const InterventionsSection: React.FC<Props> = ({ site, data, rights, locked, onC
       )}
 
       <InterventionForm site={site} data={data} target={target} onClose={() => setTarget(null)} onSaved={onChanged} teamLabel={teamLabel} />
+      <CopyDayModal site={site} data={data} open={copying} defaultDay={dayFilter || (interventions[0] ? isoToWall(interventions[0].starts_at).day : site.start_on ?? new Date().toISOString().slice(0, 10))} onClose={() => setCopying(false)} onDone={onChanged} />
     </div>
   );
 };
