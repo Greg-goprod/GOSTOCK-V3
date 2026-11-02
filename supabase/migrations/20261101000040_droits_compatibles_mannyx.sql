@@ -71,13 +71,13 @@ DROP POLICY IF EXISTS rbac_roles_read ON public.rbac_roles;
 DROP POLICY IF EXISTS rbac_roles_write ON public.rbac_roles;
 DROP POLICY IF EXISTS rbac_perms_read ON public.rbac_role_permissions;
 DROP POLICY IF EXISTS rbac_perms_write ON public.rbac_role_permissions;
-CREATE POLICY rbac_roles_read ON public.rbac_roles FOR SELECT TO authenticated USING (public.app_is_member());
+CREATE POLICY rbac_roles_read ON public.rbac_roles FOR SELECT TO authenticated USING ((SELECT public.app_is_member()));
 CREATE POLICY rbac_roles_write ON public.rbac_roles FOR ALL TO authenticated
-  USING (public.app_has('settings') AND NOT is_system) WITH CHECK (public.app_has('settings') AND NOT is_system);
-CREATE POLICY rbac_perms_read ON public.rbac_role_permissions FOR SELECT TO authenticated USING (public.app_is_member());
+  USING ((SELECT public.app_has('settings')) AND NOT is_system) WITH CHECK ((SELECT public.app_has('settings')) AND NOT is_system);
+CREATE POLICY rbac_perms_read ON public.rbac_role_permissions FOR SELECT TO authenticated USING ((SELECT public.app_is_member()));
 CREATE POLICY rbac_perms_write ON public.rbac_role_permissions FOR ALL TO authenticated
-  USING (public.app_has('settings') AND NOT EXISTS (SELECT 1 FROM public.rbac_roles r WHERE r.id = role_id AND r.is_system))
-  WITH CHECK (public.app_has('settings') AND NOT EXISTS (SELECT 1 FROM public.rbac_roles r WHERE r.id = role_id AND r.is_system));
+  USING ((SELECT public.app_has('settings')) AND NOT EXISTS (SELECT 1 FROM public.rbac_roles r WHERE r.id = role_id AND r.is_system))
+  WITH CHECK ((SELECT public.app_has('settings')) AND NOT EXISTS (SELECT 1 FROM public.rbac_roles r WHERE r.id = role_id AND r.is_system));
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.rbac_roles, public.rbac_role_permissions TO authenticated, service_role;
 REVOKE ALL ON public.rbac_roles, public.rbac_role_permissions FROM anon;
 
