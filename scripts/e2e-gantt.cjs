@@ -128,10 +128,11 @@ async function step(id, title, fn, page) {
   await step('P2-ouverture', 'PILOTE › Gantt s\'ouvre : groupe « Programme » et projet visibles, éléments repliés', async () => {
     await open(resp, '/pilote/gantt');
     ok(await resp.page.getByRole('radio', { name: '3 mois', exact: true }).count(), 'écran du Gantt inaccessible');
-    const names = await rowLocator(resp).allInnerTexts();
-    ok(names.some(t => t.includes(`${M} Programme`)), 'programme de test absent');
-    ok(names.some(t => t.includes(`${M} Projet`)), 'projet de test absent');
-    ok(!names.some(t => t.includes(`${M} Tâche`)), 'les tâches devraient être repliées à l\'ouverture');
+    // Les titres de groupe sont affichés en majuscules par le style (innerText rend la majuscule) : on compare sans tenir compte de la casse
+    const names = (await rowLocator(resp).allInnerTexts()).map(t => t.toLowerCase());
+    ok(names.some(t => t.includes(`${M} Programme`.toLowerCase())), 'programme de test absent');
+    ok(names.some(t => t.includes(`${M} Projet`.toLowerCase())), 'projet de test absent');
+    ok(!names.some(t => t.includes(`${M} Tâche`.toLowerCase())), 'les tâches devraient être repliées à l\'ouverture');
   }, resp.page);
   await step('P2-deplier', '« Tout déplier » montre la phase, la tâche, la sous-tâche et le jalon', async () => {
     await expandAll(resp);
@@ -197,7 +198,8 @@ async function step(id, title, fn, page) {
     await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(300);
   }, resp.page);
   await step('P3-placer', '« Placer aujourd\'hui » date l\'élément sans date', async () => {
-    await resp.page.getByRole('button', { name: "Placer aujourd'hui" }).first().click(); await resp.page.waitForTimeout(1500);
+    // La ligne de l'élément visé (le bac contient aussi la sous-tâche créée à l'étape précédente, sans date) : on clique SON bouton
+    await resp.page.locator('section[aria-label="Sans date"] li', { hasText: `${M} À dater` }).getByRole('button', { name: "Placer aujourd'hui" }).click(); await resp.page.waitForTimeout(1500);
     const it = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=starts_on,ends_on&id=eq.${S.undated}`))[0];
     ok(it && it.starts_on && it.ends_on, `dates en base = ${JSON.stringify(it)}`);
   }, resp.page);
