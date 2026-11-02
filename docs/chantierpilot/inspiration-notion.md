@@ -49,8 +49,8 @@ Propriétés personnalisées, formules, pages libres, intégrations Drive / Figm
 ## 4. Réalisation du Gantt (honnêteté technique)
 Notre frise actuelle est faite pour des heures dans une journée. Le Gantt demande une **nouvelle échelle en jours** : je réutilise les maths de temps existantes quand c'est possible mais le composant est nouveau, avec son propre test. Rendu visé : sobre, mêmes tokens et composants Mx que le reste.
 
-## 5. Quatre décisions à prendre (par Greg)
-1. **Profondeur** : projet → phase → tâche (3 niveaux, recommandé) ou illimitée comme Notion ?
-2. **États** : 4 états fixes (Pas commencé / En cours / Terminé / Annulé, recommandé) ou configurables par entreprise ?
-3. **Dépendances** : dans R3 ou juste après (recommandé : juste après, pour livrer le Gantt vite).
-4. **Responsable** : une seule personne (recommandé) ou plusieurs ?
+## 5. Décisions de Greg (2 novembre)
+1. **Profondeur** : 3 niveaux proposés (projet → phase → tâche/jalon) — en attente de confirmation de Greg. Les étapes d'une tâche se font par liste à cocher, pas par un niveau de plus.
+2. **États** : 4 états de base fixes (Pas commencé / En cours / Terminé / Annulé) **et** possibilité d'en ajouter dans les Paramètres. Un état ajouté se range dans l'une des 4 familles (comme les groupes de Notion), pour que l'avancement et les filtres restent calculables.
+3. **Dépendances** : juste après le Gantt.
+4. **Responsables** : **plusieurs** personnes par élément (table de liaison élément ↔ personne).
