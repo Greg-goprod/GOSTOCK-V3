@@ -2955,5 +2955,20 @@
 "Aucun jour bloqué.": "Nessun giorno bloccato.",
 "Raison": "Motivo",
 "Débloquer": "Sblocca",
-"Débloquer le {0} ?": "Sbloccare il {0}?"
+"Débloquer le {0} ?": "Sbloccare il {0}?",
+"Frise": "Cronologia",
+"Par zone": "Per zona",
+"Par prestataire": "Per fornitore",
+"Semaine": "Settimana",
+"Lignes de la frise": "Righe della cronologia",
+"Échelle de la frise": "Scala della cronologia",
+"Jour précédent": "Giorno precedente",
+"Jour suivant": "Giorno successivo",
+"Aller au jour": "Vai al giorno",
+"Glisse une intervention pour la déplacer (même d'une ligne à l'autre), tire ses bords pour changer sa durée, clique dans une zone vide pour en créer une. Pas de {0} minutes. Au clavier : flèches pour déplacer, Maj + flèche pour la durée.": "Trascina un intervento per spostarlo (anche su un'altra riga), tira i bordi per cambiarne la durata, fai clic in un'area vuota per crearne uno. Passo di {0} minuti. Da tastiera: frecce per spostare, Maiusc + freccia per la durata.",
+"Lecture seule : tu ne peux pas modifier ce planning.": "Sola lettura: non puoi modificare questa pianificazione.",
+"Semaine du {0}": "Settimana del {0}",
+"Équipe interne": "Squadra interna",
+"Ajoute d'abord des zones et des équipes (onglets Zones et Équipes) : la frise s'affichera ici.": "Aggiungi prima zone e squadre (schede Zone e Squadre): la cronologia apparirà qui.",
+"Hors période du chantier": "Fuori dal periodo del cantiere"
 }

@@ -11,8 +11,9 @@ import { MxSegmented } from '../components/mx/MxSegmented';
 import { CrudSection } from '../components/sitePlanning/CrudSection';
 import ConfigSection from '../components/sitePlanning/ConfigSection';
 import InterventionsSection from '../components/sitePlanning/InterventionsSection';
+import Timeline from '../components/sitePlanning/Timeline';
 
-type Section = 'interventions' | 'zones' | 'teams' | 'contractors' | 'phases' | 'settings';
+type Section = 'timeline' | 'interventions' | 'zones' | 'teams' | 'contractors' | 'phases' | 'settings';
 
 const NO_RIGHTS: PlanningRights = { create: false, update: false, delete: false };
 const Dot = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} />;
@@ -23,7 +24,7 @@ const SitePlanning: React.FC = () => {
   const [sites, setSites] = useState<PlanSite[] | null>(null);
   const [data, setData] = useState<SitePlanningData | null>(null);
   const [rights, setRights] = useState<PlanningRights>(NO_RIGHTS);
-  const [section, setSection] = useState<Section>('interventions');
+  const [section, setSection] = useState<Section>('timeline');
 
   const siteId = params.get('site') ?? '';
   const site = sites?.find(s => s.id === siteId) ?? null;
@@ -48,6 +49,12 @@ const SitePlanning: React.FC = () => {
 
   const contractorOptions = useMemo(() => (data?.contractors || []).filter(c => c.active).map(c => ({ value: c.id, label: c.name })), [data]);
   const locked = site?.status === 'closed';
+  // « Équipe (Prestataire) » ou « Équipe » pour une équipe interne
+  const teamLabel = useCallback((teamId: string) => {
+    const t = data?.teams.find(x => x.id === teamId);
+    const c = t?.contractor_id ? data?.contractors.find(x => x.id === t.contractor_id) : null;
+    return t ? (c ? `${t.name} (${c.name})` : t.name) : '—';
+  }, [data]);
 
   if (sites === null) return <p className="text-gray-500 dark:text-gray-400 font-medium">Chargement…</p>;
 
@@ -80,6 +87,7 @@ const SitePlanning: React.FC = () => {
           ) : (
             <>
               <MxSegmented aria-label="Sections du planning" value={section} onChange={v => setSection(v as Section)} options={[
+                { value: 'timeline', label: 'Frise' },
                 { value: 'interventions', label: `Interventions (${data.interventions.length})` },
                 { value: 'zones', label: `Zones (${data.zones.length})` },
                 { value: 'teams', label: `Équipes (${data.teams.length})` },
@@ -88,6 +96,7 @@ const SitePlanning: React.FC = () => {
                 { value: 'settings', label: 'Réglages' },
               ]} />
 
+              {section === 'timeline' && <Timeline site={site} data={data} rights={rights} locked={!!locked} onChanged={reload} teamLabel={teamLabel} />}
               {section === 'interventions' && <InterventionsSection site={site} data={data} rights={rights} locked={!!locked} onChanged={reload} />}
               {section === 'zones' && (
                 <CrudSection<PlanZone>

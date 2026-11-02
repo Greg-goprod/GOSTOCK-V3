@@ -2955,5 +2955,20 @@
 "Aucun jour bloqué.": "No blocked days.",
 "Raison": "Reason",
 "Débloquer": "Unblock",
-"Débloquer le {0} ?": "Unblock {0}?"
+"Débloquer le {0} ?": "Unblock {0}?",
+"Frise": "Timeline",
+"Par zone": "By zone",
+"Par prestataire": "By contractor",
+"Semaine": "Week",
+"Lignes de la frise": "Timeline rows",
+"Échelle de la frise": "Timeline scale",
+"Jour précédent": "Previous day",
+"Jour suivant": "Next day",
+"Aller au jour": "Go to day",
+"Glisse une intervention pour la déplacer (même d'une ligne à l'autre), tire ses bords pour changer sa durée, clique dans une zone vide pour en créer une. Pas de {0} minutes. Au clavier : flèches pour déplacer, Maj + flèche pour la durée.": "Drag an intervention to move it (even to another row), pull its edges to change its length, click an empty area to create one. {0}-minute steps. Keyboard: arrows to move, Shift + arrow for the length.",
+"Lecture seule : tu ne peux pas modifier ce planning.": "Read-only: you cannot edit this planning.",
+"Semaine du {0}": "Week of {0}",
+"Équipe interne": "Internal team",
+"Ajoute d'abord des zones et des équipes (onglets Zones et Équipes) : la frise s'affichera ici.": "First add zones and teams (Zones and Teams tabs): the timeline will appear here.",
+"Hors période du chantier": "Outside the site period"
 }

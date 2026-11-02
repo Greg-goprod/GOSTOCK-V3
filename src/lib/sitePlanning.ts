@@ -75,3 +75,10 @@ export const planningError = (error: unknown): string => {
 };
 
 export const ZONE_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#64748b'];
+
+// Premier jour utile du chantier : aujourd'hui s'il est dans la période, sinon le bord le plus proche
+export const firstUsefulDay = (site: Pick<PlanSite, 'start_on' | 'end_on'>): string => {
+  const today = new Date().toISOString().slice(0, 10);
+  return site.start_on && today < site.start_on ? site.start_on : site.end_on && today > site.end_on ? site.end_on : today;
+};
+

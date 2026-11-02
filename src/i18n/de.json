@@ -2955,5 +2955,20 @@
 "Aucun jour bloqué.": "Keine gesperrten Tage.",
 "Raison": "Grund",
 "Débloquer": "Entsperren",
-"Débloquer le {0} ?": "{0} entsperren?"
+"Débloquer le {0} ?": "{0} entsperren?",
+"Frise": "Zeitleiste",
+"Par zone": "Nach Zone",
+"Par prestataire": "Nach Dienstleister",
+"Semaine": "Woche",
+"Lignes de la frise": "Zeilen der Zeitleiste",
+"Échelle de la frise": "Skala der Zeitleiste",
+"Jour précédent": "Vorheriger Tag",
+"Jour suivant": "Nächster Tag",
+"Aller au jour": "Zum Tag gehen",
+"Glisse une intervention pour la déplacer (même d'une ligne à l'autre), tire ses bords pour changer sa durée, clique dans une zone vide pour en créer une. Pas de {0} minutes. Au clavier : flèches pour déplacer, Maj + flèche pour la durée.": "Ziehe einen Einsatz, um ihn zu verschieben (auch in eine andere Zeile), ziehe an seinen Rändern, um die Dauer zu ändern, klicke in einen leeren Bereich, um einen neuen zu erstellen. {0}-Minuten-Raster. Tastatur: Pfeile zum Verschieben, Umschalt + Pfeil für die Dauer.",
+"Lecture seule : tu ne peux pas modifier ce planning.": "Nur Lesen: Du kannst diese Planung nicht ändern.",
+"Semaine du {0}": "Woche vom {0}",
+"Équipe interne": "Internes Team",
+"Ajoute d'abord des zones et des équipes (onglets Zones et Équipes) : la frise s'affichera ici.": "Füge zuerst Zonen und Teams hinzu (Reiter Zonen und Teams): die Zeitleiste erscheint hier.",
+"Hors période du chantier": "Außerhalb des Baustellenzeitraums"
 }
