@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid } from 'lucide-react';
 import { MxDrawer } from '../mx/MxDrawer';
 import { useApp } from '../../contexts/AppContext';
-import { MOBILE_SHORTCUTS, locate } from '../../lib/navigation';
+import { MOBILE_SHORTCUTS, PRODUCTS, locate } from '../../lib/navigation';
 import { useNavSpaces } from '../../lib/useNavSpaces';
 
 // Téléphone et tablette : barre du bas (4 raccourcis + « Plus ») ; « Plus » ouvre tous les espaces dans un drawer
@@ -37,7 +37,16 @@ const MobileNav: React.FC = () => {
 
       <MxDrawer open={open} onClose={() => setOpen(false)} title="Menu" side="left" size="sm">
         <div className="flex flex-col gap-5">
-          {spaces.map(space => (
+          {[...PRODUCTS.map(p => ({ product: p, items: spaces.filter(s => s.product === p.id) })), { product: undefined, items: spaces.filter(s => !s.product) }]
+            .filter(group => group.items.length > 0)
+            .map(group => (
+            <div key={group.product?.id ?? 'common'} className="flex flex-col gap-4">
+              {group.product && (
+                <h2 className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-1 text-[length:calc(12px*var(--mx-scale,1))] font-bold uppercase tracking-wide text-gray-900 dark:text-white">
+                  <group.product.icon size={15} aria-hidden="true" />{group.product.label}
+                </h2>
+              )}
+          {group.items.map(space => (
             <section key={space.id}>
               <h3 className="mx-section-label mb-1.5 flex items-center gap-1.5"><space.icon size={13} aria-hidden="true" />{space.label}</h3>
               <ul className="grid grid-cols-2 gap-1.5">
@@ -56,6 +65,8 @@ const MobileNav: React.FC = () => {
                 ))}
               </ul>
             </section>
+          ))}
+            </div>
           ))}
         </div>
       </MxDrawer>

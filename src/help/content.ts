@@ -22,7 +22,7 @@ export const CATEGORIES: { id: HelpCategory; label: string; summary: string }[] 
   { id: 'vehicules', label: 'Véhicules et locations', summary: 'Réserver, partir, rentrer, louer chez un loueur.' },
   { id: 'chantiers', label: 'Chantiers', summary: 'Budget, matériel sur place, carte, planning.' },
   { id: 'personnes', label: 'Personnes', summary: 'Fiches, badges, permis machines, EPI, départs.' },
-  { id: 'pilotage', label: 'Pilotage', summary: 'Retards, coûts, comptabilité, journal.' },
+  { id: 'pilotage', label: 'Suivi', summary: 'Retards, coûts, comptabilité, journal.' },
   { id: 'reglages', label: 'Réglages', summary: 'Paramètres, alertes, sauvegarde, santé des données.' },
 ];
 

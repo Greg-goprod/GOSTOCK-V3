@@ -31,8 +31,8 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   '/ecran': ['scan', 'view_all', 'manage_stock'],
   '/epi': ['scan', 'manage_people', 'manage_stock', 'view_all'],
   '/planning': ['view_all', 'scan', 'approve', 'manage_stock', 'manage_fleet'],
-  // Planning de chantier : module payant activé pour l'entreprise (les droits fins sont vérifiés par la base)
-  '/planning-chantier': ['module:chantiers_planning'],
+  // PILOTE : module payant activé pour l'entreprise (les droits fins sont vérifiés par la base)
+  '/pilote/planning': ['module:chantiers_planning'],
   '/incidents': ['view_all', 'scan', 'approve', 'manage_stock'],
   '/checkouts': ['scan', 'view_all'],
   '/consommables': ['scan', 'manage_stock'],

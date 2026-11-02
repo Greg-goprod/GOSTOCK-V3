@@ -3005,5 +3005,7 @@
 "Choisis les jours de destination. Les jours bloqués sont sautés. Si un jour est refusé (équipe déjà occupée, hors période…), rien n'est copié et le jour concerné est indiqué.": "Scegli i giorni di destinazione. I giorni bloccati vengono saltati. Se un giorno è rifiutato (squadra già occupata, fuori periodo…), non viene copiato nulla e il giorno interessato è indicato.",
 "Copier": "Copia",
 "{0} interventions copiées": "{0} interventi copiati",
-"{0} interventions copiées ({1} jour(s) bloqué(s) sauté(s))": "{0} interventi copiati ({1} giorno/i bloccato/i saltato/i)"
+"{0} interventions copiées ({1} jour(s) bloqué(s) sauté(s))": "{0} interventi copiati ({1} giorno/i bloccato/i saltato/i)",
+"Logistique": "Logistica",
+"Planification": "Pianificazione"
 }

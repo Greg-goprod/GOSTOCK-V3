@@ -80,7 +80,7 @@ export const DEMARRAGE: HelpArticle[] = [
         id: 'menu',
         title: 'Utiliser le menu (ordinateur)',
         steps: [
-          { text: 'À gauche, le menu liste les modules : Accueil, Magasin, Matériel, Consommables, Véhicules, Chantiers, Personnes, Pilotage ; en bas Réglages et Aide, puis ton compte.', shot: 'accueil-magasinier' },
+          { text: 'À gauche, le menu est rangé en deux produits : « Logistique » (Accueil, Magasin, Matériel, Consommables, Véhicules, Chantiers, Personnes, Suivi) et, si ton entreprise l\'a activé, « PILOTE » (planification) ; en bas Réglages et Aide, puis ton compte.', shot: 'accueil-magasinier' },
           { text: 'Clique sur un module : il s\'ouvre sur la dernière page que tu y as consultée.' },
           { text: 'En haut de la page, le nom du module est suivi de ses onglets (ex. MAGASIN : Comptoir, Scanner, Demandes…). Clique sur un onglet pour changer de page. Le titre et les onglets restent en place quand tu fais défiler.' },
           { text: 'Le bouton en haut du menu (à droite de GO-MAT) le réduit aux icônes pour gagner de la place ; reclique pour le rouvrir.' },
@@ -179,7 +179,7 @@ export const DEMARRAGE: HelpArticle[] = [
         title: 'Ce que je fais le plus souvent',
         steps: [
           { text: 'Sur l\'accueil, « Demandes à valider » : ouvre chaque demande, puis « Valider » ou « Refuser » (avec un motif).' },
-          { text: '« Pilotage » : retards, outils jamais sortis, valeur du stock.', shot: 'pilotage-1' },
+          { text: '« Suivi » : retards, outils jamais sortis, valeur du stock.', shot: 'pilotage-1' },
           { text: '« Chantiers » : dépenses par rapport au budget et matériel encore sur place.' },
           { text: '« Pertes et casse » : décide de la suite de chaque incident.' },
         ],

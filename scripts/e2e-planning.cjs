@@ -257,7 +257,7 @@ async function step(id, title, fn, page) {
   const openPlanning = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await c.page.waitForTimeout(3000); };
   const blockByTitle = (c, title) => c.page.locator(`[role="button"][aria-label^="${title},"]`).first();
   await step('P7-frise', 'Responsable : la frise s\'affiche (jour du premier chantier) avec les interventions du 2 juin', async () => {
-    await openPlanning(resp, `/planning-chantier?site=${S.site}`);
+    await openPlanning(resp, `/pilote/planning?site=${S.site}`);
     ok(await resp.page.getByRole('radio', { name: 'Frise' }).count(), 'onglet « Frise » absent');
     ok((await resp.page.locator('[data-row-key]').count()) >= 2, 'lignes de la frise absentes');
     ok(await blockByTitle(resp, `${M} Montage`).count(), 'intervention « Montage » absente de la frise');
@@ -316,7 +316,7 @@ async function step(id, title, fn, page) {
   }, resp.page);
   for (const c of readers) {
     await step(`P7-${c.who}-ecran`, `${c.who} : l\'écran s\'ouvre en lecture seule (pas de bouton de création, pas de glisser)`, async () => {
-      await openPlanning(c, `/planning-chantier?site=${S.site}`);
+      await openPlanning(c, `/pilote/planning?site=${S.site}`);
       ok(await c.page.getByRole('radio', { name: 'Frise' }).count(), 'écran du planning inaccessible');
       ok(/Lecture seule/.test(await c.page.locator('main').innerText()), 'mention « Lecture seule » absente');
       await c.page.getByRole('radio', { name: /^Interventions/ }).click(); await c.page.waitForTimeout(700);
@@ -328,7 +328,7 @@ async function step(id, title, fn, page) {
     ok(!refused(await api(resp, 'PATCH', `/rest/v1/sites?id=eq.${S.site}`, { status: 'closed', closed_at: new Date().toISOString() })), 'clôture refusée');
     const r = await api(resp, 'POST', '/rest/v1/site_interventions', itv({ title: `${M} après clôture`, team_id: S.t2, ...slot('2027-06-24', '08:00', '09:00') }));
     ok(refused(r) && /clôturé/i.test(msg(r)), `réponse ${r.status} « ${msg(r)} »`);
-    await openPlanning(resp, `/planning-chantier?site=${S.site}`);
+    await openPlanning(resp, `/pilote/planning?site=${S.site}`);
     ok(/Clôturé : lecture seule/.test(await resp.page.locator('main').innerText()), 'bandeau « Clôturé : lecture seule » absent');
   }, resp.page);
 

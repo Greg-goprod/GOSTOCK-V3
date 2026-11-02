@@ -115,7 +115,7 @@ const Home: React.FC = () => {
       { to: '/chantiers', label: 'Chantiers', hint: 'Budget, matériel sur place, rapports', icon: HardHat },
       { to: '/vehicules', label: 'Véhicules', hint: 'Flotte, réservations, échéances', icon: Truck },
       { to: '/comptoir', label: 'Comptoir', hint: 'Sortir ou rentrer du matériel', icon: ScanBarcode },
-      { to: '/pilotage', label: 'Pilotage', hint: 'Utilisation, retards, coûts', icon: Gauge },
+      { to: '/pilotage', label: 'Suivi', hint: 'Utilisation, retards, coûts', icon: Gauge },
     ];
     if (role === 'admin') {
       lead.push(

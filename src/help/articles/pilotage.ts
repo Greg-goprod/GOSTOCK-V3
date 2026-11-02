@@ -8,13 +8,13 @@ export const PILOTAGE: HelpArticle[] = [
     summary: 'Utilisation du matériel, retards et coûts, en un écran.',
     route: '/pilotage',
     routes: ['/pilotage', '/tableau-de-bord'],
-    where: 'Pilotage › Pilotage.',
+    where: 'Suivi › Suivi.',
     tasks: [
       {
         id: 'lire',
         title: 'Lire le tableau de pilotage',
         steps: [
-          { text: 'Ouvre « Pilotage ».', shot: 'pilotage-1' },
+          { text: 'Ouvre « Suivi ».', shot: 'pilotage-1' },
           { text: '« Retours en retard » : qui doit rendre quoi. Relance les personnes.' },
           { text: '« Jamais sortis depuis 90 jours » : outils à revendre ou à déplacer.' },
           { text: '« Valeur du stock » : ce que vaut le matériel.' },
@@ -30,7 +30,7 @@ export const PILOTAGE: HelpArticle[] = [
     summary: 'Pose la question comme tu la dirais au magasin.',
     route: '/recherche',
     routes: ['/recherche'],
-    where: 'Pilotage › Recherche.',
+    where: 'Accueil › Recherche.',
     tasks: [
       {
         id: 'chercher',
@@ -50,7 +50,7 @@ export const PILOTAGE: HelpArticle[] = [
     summary: 'Coûts par chantier, amortissements, export pour la fiduciaire.',
     route: '/comptabilite',
     routes: ['/couts', '/comptabilite'],
-    where: 'Pilotage › Coûts, et Pilotage › Comptabilité.',
+    where: 'Suivi › Coûts, et Suivi › Comptabilité.',
     tasks: [
       {
         id: 'couts',
@@ -82,7 +82,7 @@ export const PILOTAGE: HelpArticle[] = [
     summary: 'Qui a changé quoi, quand, avant et après.',
     route: '/journal',
     routes: ['/journal'],
-    where: 'Pilotage › Journal.',
+    where: 'Suivi › Journal.',
     tasks: [
       {
         id: 'chercher',

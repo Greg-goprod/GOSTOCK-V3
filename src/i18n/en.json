@@ -3005,5 +3005,7 @@
 "Choisis les jours de destination. Les jours bloqués sont sautés. Si un jour est refusé (équipe déjà occupée, hors période…), rien n'est copié et le jour concerné est indiqué.": "Choose the destination days. Blocked days are skipped. If a day is refused (team already busy, outside the period…), nothing is copied and the day concerned is shown.",
 "Copier": "Copy",
 "{0} interventions copiées": "{0} interventions copied",
-"{0} interventions copiées ({1} jour(s) bloqué(s) sauté(s))": "{0} interventions copied ({1} blocked day(s) skipped)"
+"{0} interventions copiées ({1} jour(s) bloqué(s) sauté(s))": "{0} interventions copied ({1} blocked day(s) skipped)",
+"Logistique": "Logistics",
+"Planification": "Planning"
 }

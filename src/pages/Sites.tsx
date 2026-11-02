@@ -227,7 +227,7 @@ const Sites: React.FC = () => {
               menuLabel={`Actions pour ${site.name}`}
               menuActions={[
                 { id: 'report', label: 'Rapport PDF', icon: FileText, onSelect: () => report(site) },
-                ...(hasPlanning ? [{ id: 'planning', label: 'Planning', icon: CalendarClock, onSelect: () => navigate(`/planning-chantier?site=${site.id}`) }] : []),
+                ...(hasPlanning ? [{ id: 'planning', label: 'Planning', icon: CalendarClock, onSelect: () => navigate(`/pilote/planning?site=${site.id}`) }] : []),
                 { id: 'similar', label: 'Préparer un chantier semblable', icon: Copy, onSelect: () => prepareSimilar(site) },
                 ...(canEdit ? [
                   { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => openForm(site) },
@@ -293,7 +293,7 @@ const Sites: React.FC = () => {
           </div>
               {site.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{site.notes}</p>}
               <div className="flex flex-wrap gap-2 pt-1">
-                {hasPlanning && <Button size="sm" variant="outline" icon={<CalendarClock size={14} />} onClick={() => navigate(`/planning-chantier?site=${site.id}`)}>Planning</Button>}
+                {hasPlanning && <Button size="sm" variant="outline" icon={<CalendarClock size={14} />} onClick={() => navigate(`/pilote/planning?site=${site.id}`)}>Planning</Button>}
                 <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => report(site)}>Rapport PDF</Button>
                 <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => prepareSimilar(site)}>Préparer un chantier semblable</Button>
               </div>

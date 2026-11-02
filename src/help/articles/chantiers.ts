@@ -86,16 +86,16 @@ export const CHANTIERS: HelpArticle[] = [
     category: 'chantiers',
     title: 'Le planning de chantier',
     summary: 'Qui intervient où et quand : zones, équipes, prestataires, frise, séries et matériel. Module payant, activé par la plateforme.',
-    route: '/planning-chantier',
-    routes: ['/planning-chantier'],
-    where: 'Chantiers › Planning chantier (ou « Planning » dans la fiche d\'un chantier).',
+    route: '/pilote/planning',
+    routes: ['/pilote/planning', '/planning-chantier'],
+    where: 'PILOTE › Planification › Planning (ou « Planning » dans la fiche d\'un chantier).',
     tasks: [
       {
         id: 'preparer',
         title: 'Préparer le planning d\'un chantier',
         who: 'Administrateur et responsable (les autres lisent le planning).',
         steps: [
-          { text: 'Ouvre « Planning chantier » et choisis le chantier en haut de la page.' },
+          { text: 'Ouvre « PILOTE », puis « Planning », et choisis le chantier en haut de la page.' },
           { text: 'Onglet « Réglages » : règle les heures de la journée (ou coche « Chantier en 24 h/24 »), le « Pas de planification » (15 minutes par défaut) et bloque les jours impossibles (dimanche, jour férié) avec « Bloquer ce jour ».' },
           { text: 'Onglet « Prestataires » : « Nouveau prestataire » pour chaque société externe (scène, son, lumière, traiteur…). Ils servent pour tous tes chantiers.' },
           { text: 'Onglet « Zones » : « Nouvelle zone » pour chaque lieu du chantier (scène, parking, accueil…).' },

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { QrCode } from 'lucide-react';
+import { ChevronDown, QrCode } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { BOTTOM_SPACES, NavSpace, locate } from '../../lib/navigation';
+import { BOTTOM_SPACES, NavSpace, PRODUCTS, ProductId, locate } from '../../lib/navigation';
 import { useNavSpaces } from '../../lib/useNavSpaces';
 import { supabase } from '../../lib/supabase';
 import UserMenu from './UserMenu';
@@ -20,8 +20,12 @@ const Sidebar: React.FC = () => {
   const { alertCount } = useApp();
   const { pathname } = useLocation();
   const spaces = useNavSpaces();
-  const current = locate(pathname).space?.id;
+  const located = locate(pathname).space;
+  const current = located?.id;
   const [companyLogo, setCompanyLogo] = useState('');
+  // Produit déroulé dans le rail : celui de la page ouverte ; on peut dérouler l'autre sans quitter la page
+  const [expanded, setExpanded] = useState<ProductId | null>(located?.product ?? 'logistics');
+  useEffect(() => { if (located?.product) setExpanded(located.product); }, [located?.product]);
 
   useEffect(() => {
     supabase.from('system_settings').select('value').eq('id', 'company_logo').maybeSingle()
@@ -63,6 +67,33 @@ const Sidebar: React.FC = () => {
     );
   };
 
+  const productGroup = (id: ProductId) => {
+    const product = PRODUCTS.find(p => p.id === id)!;
+    const items = spaces.filter(s => s.product === id);
+    if (items.length === 0) return null;
+    const open = expanded === id;
+    const hasCurrent = located?.product === id;
+    return (
+      <li key={id} className="flex w-full flex-col items-center">
+        <button
+          type="button"
+          onClick={() => setExpanded(open ? null : id)}
+          aria-expanded={open}
+          aria-controls={`rail-${id}`}
+          title={product.label}
+          className={`relative flex w-[calc(72px*var(--mx-scale,1))] flex-col items-center gap-[calc(2px*var(--mx-scale,1))] rounded-md px-1 py-[calc(6px*var(--mx-scale,1))] text-[length:calc(10px*var(--mx-scale,1))] font-bold uppercase leading-tight tracking-wide transition-colors ${
+            hasCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300'
+          } hover:bg-gray-100 dark:hover:bg-gray-700`}
+        >
+          <product.icon aria-hidden="true" style={{ width: 'calc(16px * var(--mx-scale, 1))', height: 'calc(16px * var(--mx-scale, 1))' }} />
+          <span>{product.label}</span>
+          <ChevronDown aria-hidden="true" size={11} className={`absolute right-1 top-1.5 opacity-60 transition-transform ${open ? '' : '-rotate-90'}`} />
+        </button>
+        {open && <ul id={`rail-${id}`} className="mt-[2px] flex flex-col items-center gap-[2px] border-l-2 border-primary-100 dark:border-primary-900/60 pl-[2px]">{items.map(railLink)}</ul>}
+      </li>
+    );
+  };
+
   return (
     <aside
       className="hidden lg:flex h-full shrink-0 flex-col items-center bg-white dark:bg-gray-800 print:hidden"
@@ -79,7 +110,7 @@ const Sidebar: React.FC = () => {
       </NavLink>
 
       <nav aria-label="Navigation principale" className="flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto pb-2">
-        <ul className="flex flex-col items-center gap-[2px]">{spaces.filter(s => !BOTTOM_SPACES.includes(s.id)).map(railLink)}</ul>
+        <ul className="flex w-full flex-col items-center gap-[calc(6px*var(--mx-scale,1))]">{PRODUCTS.map(p => productGroup(p.id))}</ul>
         <div className="flex-1" />
         <ul className="flex flex-col items-center gap-[2px]">{spaces.filter(s => BOTTOM_SPACES.includes(s.id)).map(railLink)}</ul>
       </nav>

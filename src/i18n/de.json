@@ -3005,5 +3005,7 @@
 "Choisis les jours de destination. Les jours bloqués sont sautés. Si un jour est refusé (équipe déjà occupée, hors période…), rien n'est copié et le jour concerné est indiqué.": "Wähle die Zieltage. Gesperrte Tage werden übersprungen. Wird ein Tag abgelehnt (Team bereits belegt, außerhalb des Zeitraums …), wird nichts kopiert und der betroffene Tag angezeigt.",
 "Copier": "Kopieren",
 "{0} interventions copiées": "{0} Einsätze kopiert",
-"{0} interventions copiées ({1} jour(s) bloqué(s) sauté(s))": "{0} Einsätze kopiert ({1} gesperrte(r) Tag(e) übersprungen)"
+"{0} interventions copiées ({1} jour(s) bloqué(s) sauté(s))": "{0} Einsätze kopiert ({1} gesperrte(r) Tag(e) übersprungen)",
+"Logistique": "Logistik",
+"Planification": "Planung"
 }

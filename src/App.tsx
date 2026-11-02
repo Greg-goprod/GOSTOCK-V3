@@ -68,6 +68,12 @@ const BareGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // Accueil adapté au rôle (actions rapides du magasinier, du responsable, du collaborateur)
 const Home: React.FC = () => <MainLayout><HomePage /></MainLayout>;
 
+// Page déplacée : on garde les paramètres de l'adresse (?site=…)
+const MovedTo: React.FC<{ to: string }> = ({ to }) => {
+  const { search } = useLocation();
+  return <Navigate to={`${to}${search}`} replace />;
+};
+
 function App() {
   return (
     <ErrorBoundary>
@@ -101,7 +107,9 @@ function App() {
         <Route path="/pilotage" element={<Guard><Steering /></Guard>} />
         <Route path="/journal" element={<Guard><AuditLog /></Guard>} />
         <Route path="/chantiers" element={<Guard><Sites /></Guard>} />
-        <Route path="/planning-chantier" element={<Guard><SitePlanning /></Guard>} />
+        <Route path="/pilote/planning" element={<Guard><SitePlanning /></Guard>} />
+        {/* Ancienne adresse (liens enregistrés, aide) : même page, rangée sous PILOTE */}
+        <Route path="/planning-chantier" element={<MovedTo to="/pilote/planning" />} />
         <Route path="/carte" element={<Guard><SiteMap /></Guard>} />
         <Route path="/kits" element={<Guard><Kits /></Guard>} />
         <Route path="/formations" element={<Guard><Trainings /></Guard>} />
