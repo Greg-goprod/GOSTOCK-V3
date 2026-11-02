@@ -16,8 +16,8 @@
 - Planning de chantier (module 1) : démarre après l'étape 1 des droits.
 
 ## À FAIRE ENSUITE (dans cet ordre, une chose à la fois)
-1. **Lenteur de la base après le module 0 (cause trouvée, à corriger avant de relancer les tests)** : 144 règles de sécurité sur 227 appellent `app_has()` / `app_user_id()` une fois par ligne lue. Depuis le module 0, chaque appel coûte plus cher (il cherche l'entreprise active). Mesure sur GO-MAT (compte collaborateur, 161 notifications) : compter les non lues = 1 405 ms ; le même parcours avec les appels calculés une seule fois par requête (`(SELECT app_has(...))`) = 10 ms. Essai fait dans une transaction annulée : rien n'est modifié en base. Correctif prévu : une migration qui réécrit ces règles, vérifiée par les batteries SQL locales.
-2. Ensuite seulement : décision sur les 36 KO (la plupart sont des lenteurs, donc à relancer après le correctif).
+1. ~~Lenteur de la base après le module 0~~ **corrigée** (migration 41, appliquée sur GO-MAT le 2 novembre). Mesures : non lues 1 405 ms → 18 ms ; sorties 121 ms → 6 ms. Droits inchangés (collaborateur : 1 non lue, 57 listées, 93 sorties ; magasinier : 0 non lue, 90 listées, 111 sorties). 217 règles enveloppées, 0 restante. Batteries SQL locales : 85 / 103 / 18 / 16 contrôles, 0 échec.
+2. **EN COURS : relancer les trois batteries sur la base corrigée** (e2e-complet, e2e-emprunts, e2e-notifications) puis e2e-coherence, avec ton Claude local. Ce qui échoue encore après cela est une vraie panne.
 3. Notifications en vue Cartes : refaire la carte (message en entier, date relative, point « non lue », bouton « Marquer comme lue » sur la carte). La carte actuelle est faite pour des personnes ou des outils : le message est coupé et les initiales n'ont aucun sens.
 4. Relancer les trois batteries, puis `e2e-coherence`.
 5. Migration 40 (droits compatibles Mannyx).
