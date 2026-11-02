@@ -1,6 +1,7 @@
 # Où en sommes-nous ? (mis à jour le 1er novembre 2026, soir)
 
 ## FAIT et en service sur GO-MAT
+- **Module 1, étape 1.1 : base du planning de chantier** (migration 42, collée par Greg le 2 novembre, vérifiée par Claude : 7 tables avec sécurité par ligne, règles et déclencheurs en place, droits `chantiers.planning` des 4 rôles, essai réel annulé : intervention valide, chevauchement / hors pas / hors période refusés, collaborateur en lecture seule). Aucun écran encore.
 - Migration 41 (règles de sécurité calculées une fois par requête) et migration 40 (droits compatibles Mannyx), appliquées le 2 novembre ; batteries e2e toutes au vert ; vue Cartes des notifications refaite.
 - Prolongation d'emprunts (migration 34).
 - Notifications « lu / non lu » par personne (migration 37).
@@ -9,7 +10,7 @@
 - Vue Liste sur Notifications.
 
 ## ÉCRIT, TESTÉ EN LOCAL, PAS ENCORE APPLIQUÉ
-- **Module 1, étape 1.1 : base du planning de chantier** (migration 42, `docs/chantierpilot/module-1.md`). 50 contrôles SQL locaux au vert (droits, contrôles d'horaires et de chevauchement, isolation entre entreprises) ; toutes les batteries SQL passent (85 / 103 / 18 / 16 / 50). Attend ton feu vert pour l'appliquer sur GO-MAT. Aucun écran dans cette étape : rien ne change à l'écran.
+- Rien en attente.
 
 ## MIS DE CÔTÉ (ne pas toucher pour l'instant)
 - Alignements Mannyx (journal de la plateforme, plan, entreprise active par onglet) : branche locale `wip/alignements-mannyx`.
