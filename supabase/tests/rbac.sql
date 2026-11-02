@@ -37,27 +37,27 @@ SELECT zz.check('une nouvelle entreprise reçoit ses rôles', (SELECT count(*) F
 -- Vérification des droits
 SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
 SELECT zz.check('administrateur : droit réglages (clé Mannyx) et comptoir', public.rbac_has_any_permission(ARRAY['reglages.parametres:update']) AND public.rbac_has_any_permission(ARRAY['magasin.comptoir:update']));
-SELECT zz.check('une clé inconnue est refusée', NOT public.rbac_has_any_permission(ARRAY['chantiers.planning:update']) AND NOT public.rbac_has_any_permission(ARRAY[]::text[]));
+SELECT zz.check('une clé inconnue est refusée', NOT public.rbac_has_any_permission(ARRAY['hotel.rooming:update']) AND NOT public.rbac_has_any_permission(ARRAY[]::text[]));
 SELECT zz.check('app_has répond comme avant', public.app_has('settings') AND public.app_has('scan') AND NOT public.app_has('inconnu'));
 SELECT zz.check('A voit les rôles de son entreprise seulement', zz.count('SELECT 1 FROM public.rbac_roles') = 4 AND zz.count(format('SELECT 1 FROM public.rbac_roles WHERE organization_id = %L', :ORG2)) = 0);
 SELECT zz.check('rôle système : ni modifiable ni supprimable', zz.raises($$UPDATE public.rbac_roles SET name = 'Autre' WHERE system_key = 'user'$$) IS NULL AND (SELECT name FROM public.rbac_roles WHERE system_key = 'user') = 'Collaborateur'
   AND zz.raises($$DELETE FROM public.rbac_roles WHERE system_key = 'admin'$$) IS NULL AND (SELECT count(*) FROM public.rbac_roles WHERE system_key = 'admin') = 1);
 -- Un nouveau module crée ses droits : rôle personnalisé + clé + personne rattachée
 INSERT INTO public.rbac_roles (name) VALUES ('Chef d''équipe prestataire');
-INSERT INTO public.rbac_role_permissions (role_id, permission_key) SELECT id, 'chantiers.planning:update' FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire';
-INSERT INTO public.rbac_role_permissions (role_id, permission_key) SELECT id, 'chantiers.planning:read' FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire';
+INSERT INTO public.rbac_role_permissions (role_id, permission_key) SELECT id, 'hotel.rooming:update' FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire';
+INSERT INTO public.rbac_role_permissions (role_id, permission_key) SELECT id, 'hotel.rooming:read' FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire';
 SELECT zz.check('rôle personnalisé créé dans son entreprise', (SELECT organization_id FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire') = :ORG1::uuid AND (SELECT NOT is_system FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire'));
 SELECT zz.check('une clé mal formée est refusée', zz.raises($$INSERT INTO public.rbac_role_permissions (role_id, permission_key) SELECT id, 'nimportequoi' FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire'$$) IS NOT NULL);
 RESET ROLE;
 UPDATE public.users SET rbac_role_id = (SELECT id FROM public.rbac_roles WHERE name = 'Chef d''équipe prestataire') WHERE email = 'u@iso.test';
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
 SELECT zz.check('première connexion du collaborateur (liaison de son compte)', public.whoami() IS NOT NULL);
-SELECT zz.check('collaborateur avec le rôle personnalisé : la nouvelle clé fonctionne, sans droit supplémentaire ailleurs', public.rbac_has_any_permission(ARRAY['chantiers.planning:update'])
+SELECT zz.check('collaborateur avec le rôle personnalisé : la nouvelle clé fonctionne, sans droit supplémentaire ailleurs', public.rbac_has_any_permission(ARRAY['hotel.rooming:update'])
   AND NOT public.rbac_has_any_permission(ARRAY['reglages.parametres:update']) AND NOT public.app_has('scan'));
 SELECT zz.check('un simple utilisateur ne crée ni ne modifie de rôle', zz.raises($$INSERT INTO public.rbac_roles (name) VALUES ('Pirate')$$) IS NOT NULL);
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', :B, false); SET ROLE authenticated;
-SELECT zz.check('B ne voit pas le rôle personnalisé de A et ne l''utilise pas', zz.count($$SELECT 1 FROM public.rbac_roles WHERE name LIKE 'Chef%'$$) = 0 AND NOT public.rbac_has_any_permission(ARRAY['chantiers.planning:update']));
+SELECT zz.check('B ne voit pas le rôle personnalisé de A et ne l''utilise pas', zz.count($$SELECT 1 FROM public.rbac_roles WHERE name LIKE 'Chef%'$$) = 0 AND NOT public.rbac_has_any_permission(ARRAY['hotel.rooming:update']));
 RESET ROLE;
 SELECT (CASE WHEN ok THEN 'OK     ' ELSE 'ECHEC  ' END) || name AS resultat FROM zz.results ORDER BY n;
 SELECT count(*) FILTER (WHERE ok) AS ok, count(*) FILTER (WHERE NOT ok) AS echecs FROM zz.results;

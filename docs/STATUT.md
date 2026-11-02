@@ -9,12 +9,11 @@
 - Vue Liste sur Notifications.
 
 ## ÉCRIT, TESTÉ EN LOCAL, PAS ENCORE APPLIQUÉ
-- Rien en attente.
+- **Module 1, étape 1.1 : base du planning de chantier** (migration 42, `docs/chantierpilot/module-1.md`). 50 contrôles SQL locaux au vert (droits, contrôles d'horaires et de chevauchement, isolation entre entreprises) ; toutes les batteries SQL passent (85 / 103 / 18 / 16 / 50). Attend ton feu vert pour l'appliquer sur GO-MAT. Aucun écran dans cette étape : rien ne change à l'écran.
 
 ## MIS DE CÔTÉ (ne pas toucher pour l'instant)
 - Alignements Mannyx (journal de la plateforme, plan, entreprise active par onglet) : branche locale `wip/alignements-mannyx`.
 - Bascule Cartes / Liste sur les 15 autres pages.
-- Planning de chantier (module 1) : l'étape 1 des droits est faite, il peut démarrer quand tu le décides.
 
 ## À FAIRE ENSUITE (dans cet ordre, une chose à la fois)
 1. ~~Lenteur de la base après le module 0~~ **corrigée** (migration 41, appliquée sur GO-MAT le 2 novembre). Mesures : non lues 1 405 ms → 18 ms ; sorties 121 ms → 6 ms. Droits inchangés (collaborateur : 1 non lue, 57 listées, 93 sorties ; magasinier : 0 non lue, 90 listées, 111 sorties). 217 règles enveloppées, 0 restante. Batteries SQL locales : 85 / 103 / 18 / 16 contrôles, 0 échec.
