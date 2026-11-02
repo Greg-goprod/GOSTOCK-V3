@@ -1,7 +1,7 @@
 # Rapport des tests des projets PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 15:35
-Commit testé : 3b62ee0 (R2b-2 : écran PILOTE › Projets)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 15:44
+Commit testé : 3b62ee0 (R2b-2 : écran PILOTE › Projets) — KO reproductible
 
 **Synthèse : 24 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 0 INFO**
 
