@@ -28,7 +28,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA zz TO authenticated;
 -- Jeu d'essai --------------------------------------------------------------------------------
 INSERT INTO auth.users (id, email) VALUES
   (:A, 'a@iso.test'), (:B, 'b@iso.test'), (:C, 'c@iso.test'), (:P, 'p@iso.test'), (:U, 'u@iso.test');
-INSERT INTO public.platform_admins (auth_user_id) VALUES (:P);
+INSERT INTO public.owner_admins (user_id) VALUES (:P);
 -- Entreprise 1 (historique) : A admin, C technicien, U simple utilisateur
 INSERT INTO public.users (email, first_name, last_name, role) VALUES
   ('a@iso.test', 'Alice', 'Un', 'admin'),
@@ -141,8 +141,8 @@ SELECT zz.check('le dernier administrateur de B ne dépend pas de A', (SELECT co
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
 SELECT zz.check('U : simple utilisateur sans droit de personnel', NOT public.app_has('scan') AND NOT public.app_has('manage_people'));
 SELECT zz.check('U ne voit que son entreprise', zz.count($$SELECT 1 FROM public.equipment WHERE name = 'ISO Perceuse B'$$) = 0);
-SELECT zz.check('U ne fait pas de lui un administrateur de plateforme', zz.raises($$INSERT INTO public.platform_admins (auth_user_id) VALUES (auth.uid())$$) IS NOT NULL);
-SELECT zz.check('U ne lit pas platform_admins', zz.raises('SELECT * FROM public.platform_admins') IS NOT NULL);
+SELECT zz.check('U ne fait pas de lui un administrateur de plateforme', zz.raises($$INSERT INTO public.owner_admins (user_id) VALUES (auth.uid())$$) IS NOT NULL);
+SELECT zz.check('U ne lit pas owner_admins', zz.raises('SELECT * FROM public.owner_admins') IS NOT NULL);
 SELECT zz.check('U ne touche pas account_context', zz.raises($$INSERT INTO public.account_context (auth_user_id, organization_id) VALUES (auth.uid(), '00000000-0000-0000-0000-000000000001')$$) IS NOT NULL);
 RESET ROLE;
 

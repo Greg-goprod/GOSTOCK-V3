@@ -14,7 +14,7 @@ BEGIN
   FOR t IN
     SELECT c.relname FROM pg_class c
     WHERE c.relnamespace = 'public'::regnamespace AND c.relkind = 'r'
-      AND c.relname NOT IN ('organizations', 'platform_admins', 'account_context')
+      AND c.relname NOT IN ('organizations', 'platform_admins', 'owner_admins', 'account_context')
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS org_isolation ON public.%I', t);
     EXECUTE format('DROP TRIGGER IF EXISTS a_org_write_guard ON public.%I', t);

@@ -10,7 +10,7 @@
 - Vue Liste sur Notifications.
 
 ## ÉCRIT, TESTÉ EN LOCAL, PAS ENCORE APPLIQUÉ
-- **Console plateforme C1 (migration 43 + `supabase/tests/platform.sql`) : EN PAUSE, brouillon.** Non appliquée sur GO-MAT. Tests locaux 35 OK / 2 en échec (deux contrôles de test à corriger). En attente de tes réponses sur la fusion avec Mannyx (échéance, mêmes entreprises clientes ou non, personnel de la console) : la migration sera peut-être allégée (un seul niveau d'accès, tenant lifecycle en couche fine) avant application.
+- **Console plateforme C1, version allégée (migration 43 + `supabase/tests/platform.sql`)** : `owner_admins` (renommage de `platform_admins`, mêmes données), `admin_audit_log` en ajout seul, modules activés par entreprise (le planning exige d'être activé), fonctions de la console, usage. Batteries SQL locales toutes au vert (85 / 103 / 18 / 16 / 50 / 25). Non appliquée sur GO-MAT : attend ton feu vert (à coller dans l'éditeur SQL). Cadrage de la fusion : `docs/chantierpilot/fusion-mannyx.md`.
 
 ## MIS DE CÔTÉ (ne pas toucher pour l'instant)
 - Alignements Mannyx (journal de la plateforme, plan, entreprise active par onglet) : branche locale `wip/alignements-mannyx`.

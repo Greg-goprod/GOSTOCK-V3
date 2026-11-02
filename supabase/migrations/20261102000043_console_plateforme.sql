@@ -1,167 +1,88 @@
 /*
-  Console de la plateforme, étape C1 : base de données (aucun écran dans cette étape).
+  Console de la plateforme, étape C1 (version allégée) : base de données, aucun écran dans cette étape.
 
-  Qui : l'équipe de la plateforme, deux niveaux, indépendants des rôles d'une entreprise cliente.
-    - propriétaire : tout, y compris gérer l'équipe, suspendre une entreprise, changer son plan, activer ses modules ;
-    - support      : voit toutes les entreprises, leur usage et le journal ; crée une entreprise ; tient la note interne.
-  Quoi : entreprises (identifiant lisible, plan, note interne, suspension), modules activés par entreprise,
-         usage (personnes, dernière connexion, articles, sorties, stockage), équipe de la plateforme, journal des actions.
-  La console gère les entreprises, JAMAIS leurs données : aucune fonction ne lit le contenu d'une entreprise cliente.
+  Alignée sur Mannyx, où la plateforme est administrée par « owner_admins » (table + is_owner_admin()) et où le journal
+  des actions s'appelle admin_audit_log. À la fusion, ces objets sont remplacés par ceux de Mannyx ; les modules activés par
+  entreprise (organization_modules, futur company_modules) sont la pièce qui manque chez Mannyx : ils portent les modules payants
+  (GO-Mat, ChantierPilot…).
 
-  Sécurité : chaque fonction vérifie le niveau côté base ; le journal est en ajout seul (ni modification ni suppression) ;
-  la note interne est dans une table invisible par l'API.
-  Le module « planning de chantier » exige désormais d'être activé pour l'entreprise (comme les modules à venir).
+  Contenu :
+    1. owner_admins : la table des administrateurs de plateforme est renommée (même contenu, colonne user_id comme chez Mannyx) ;
+       is_owner_admin() est la fonction de référence, is_platform_admin() reste comme synonyme pour le code existant.
+    2. admin_audit_log : journal des actions de la plateforme, en ajout seul (colonnes de la spécification Mannyx).
+    3. platform_modules / organization_modules : catalogue des modules et modules activés par entreprise. Le planning de chantier
+       exige désormais d'être activé ; les entreprises existantes le gardent, les nouvelles partent sans module.
+    4. Fonctions de la console : création / suspension d'une entreprise (journalisées), activation d'un module, liste des entreprises
+       avec leurs modules, usage (des chiffres, jamais le contenu), journal.
+  La console gère les entreprises, JAMAIS leurs données.
 */
 
--- 1. Entreprise : identifiant lisible et plan -----------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.slugify(p_text text)
-RETURNS text
-LANGUAGE sql
-IMMUTABLE
-SET search_path = public, extensions
-AS $$
-  SELECT COALESCE(NULLIF(trim(both '-' FROM regexp_replace(
-    lower(translate(COALESCE(p_text, ''), 'àâäáãåéèêëíìîïóòôöõúùûüçñÀÂÄÁÃÅÉÈÊËÍÌÎÏÓÒÔÖÕÚÙÛÜÇÑ', 'aaaaaaeeeeiiiiooooouuuucnaaaaaaeeeeiiiiooooouuuucn')),
-    '[^a-z0-9]+', '-', 'g')), ''), 'entreprise')
-$$;
-
-ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS slug text;
-ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS plan text NOT NULL DEFAULT 'standard';
+-- 1. owner_admins ---------------------------------------------------------------------------------------
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organizations_plan_check') THEN
-    ALTER TABLE public.organizations ADD CONSTRAINT organizations_plan_check CHECK (plan IN ('essai', 'standard', 'premium'));
-  END IF;
-END $$;
-UPDATE public.organizations o SET slug = public.slugify(o.name) WHERE o.slug IS NULL;
-UPDATE public.organizations o SET slug = o.slug || '-' || substr(o.id::text, 1, 4)
-WHERE EXISTS (SELECT 1 FROM public.organizations p WHERE p.slug = o.slug AND p.created_at < o.created_at);
-ALTER TABLE public.organizations ALTER COLUMN slug SET NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS organizations_slug_key ON public.organizations (slug);
-
--- Une entreprise ne change ni son plan ni son identifiant (comme déjà sa série d'articles et son état)
-CREATE OR REPLACE FUNCTION public.organizations_guard()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path = public, extensions
-AS $$
-BEGIN
-  IF current_user = 'authenticated' THEN
-    NEW.article_series := OLD.article_series;
-    NEW.article_counter := OLD.article_counter;
-    NEW.active := OLD.active;
-    NEW.created_at := OLD.created_at;
-    NEW.slug := OLD.slug;
-    NEW.plan := OLD.plan;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
--- Note interne : table sans aucune règle d'accès (invisible par l'API)
-CREATE TABLE IF NOT EXISTS public.platform_organization_notes (
-  organization_id uuid PRIMARY KEY REFERENCES public.organizations(id) ON DELETE CASCADE,
-  note text NOT NULL DEFAULT '',
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE public.platform_organization_notes ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.platform_organization_notes FROM anon, authenticated;
-
--- 2. Équipe de la plateforme : niveaux ---------------------------------------------------------------------
-ALTER TABLE public.platform_admins ADD COLUMN IF NOT EXISTS level text NOT NULL DEFAULT 'owner';
-ALTER TABLE public.platform_admins ADD COLUMN IF NOT EXISTS added_by uuid;
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'platform_admins_level_check') THEN
-    ALTER TABLE public.platform_admins ADD CONSTRAINT platform_admins_level_check CHECK (level IN ('owner', 'support'));
+  IF to_regclass('public.platform_admins') IS NOT NULL AND to_regclass('public.owner_admins') IS NULL THEN
+    ALTER TABLE public.platform_admins RENAME TO owner_admins;
+    ALTER TABLE public.owner_admins RENAME COLUMN auth_user_id TO user_id;
   END IF;
 END $$;
 
-CREATE OR REPLACE FUNCTION public.platform_level()
-RETURNS text
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$ SELECT level FROM public.platform_admins WHERE auth_user_id = auth.uid() $$;
-
-CREATE OR REPLACE FUNCTION public.is_platform_owner()
+CREATE OR REPLACE FUNCTION public.is_owner_admin()
 RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public, extensions
-AS $$ SELECT COALESCE(public.platform_level() = 'owner', false) $$;
-GRANT EXECUTE ON FUNCTION public.platform_level(), public.is_platform_owner() TO authenticated;
-REVOKE EXECUTE ON FUNCTION public.platform_level(), public.is_platform_owner() FROM PUBLIC, anon;
+AS $$ SELECT EXISTS (SELECT 1 FROM public.owner_admins WHERE user_id = auth.uid()) $$;
 
--- Vérification commune : p_need = 'support' (toute l'équipe) ou 'owner'
-CREATE OR REPLACE FUNCTION public.platform_require(p_need text)
-RETURNS void
-LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS boolean
+LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public, extensions
-AS $$
-DECLARE
-  v_level text := public.platform_level();
-BEGIN
-  IF v_level IS NULL THEN
-    RAISE EXCEPTION 'Réservé à l''équipe de la plateforme';
-  END IF;
-  IF p_need = 'owner' AND v_level <> 'owner' THEN
-    RAISE EXCEPTION 'Réservé au propriétaire de la plateforme';
-  END IF;
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION public.platform_require(text) FROM PUBLIC, anon, authenticated;
+AS $$ SELECT public.is_owner_admin() $$;
+REVOKE EXECUTE ON FUNCTION public.is_owner_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_owner_admin() TO authenticated;
 
--- 3. Journal des actions de la plateforme : ajout seul -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.platform_audit_log (
-  id bigserial PRIMARY KEY,
-  at timestamptz NOT NULL DEFAULT now(),
-  actor_auth_user_id uuid,
-  actor_email text,
+-- 2. Journal de la plateforme : ajout seul -----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.admin_audit_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id uuid,                                   -- compte (auth.users) de la personne qui a agi
   action text NOT NULL,
-  organization_id uuid REFERENCES public.organizations(id) ON DELETE SET NULL,
-  organization_name text,
-  details jsonb NOT NULL DEFAULT '{}'
+  target_type text NOT NULL,                       -- company / module / owner_admin
+  target_id uuid,
+  metadata jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS platform_audit_log_at_idx ON public.platform_audit_log (at DESC);
-CREATE INDEX IF NOT EXISTS platform_audit_log_org_idx ON public.platform_audit_log (organization_id);
-ALTER TABLE public.platform_audit_log ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.platform_audit_log FROM anon, authenticated;
+CREATE INDEX IF NOT EXISTS admin_audit_log_created_idx ON public.admin_audit_log (created_at DESC);
+CREATE INDEX IF NOT EXISTS admin_audit_log_target_idx ON public.admin_audit_log (target_type, target_id);
+ALTER TABLE public.admin_audit_log ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.admin_audit_log FROM anon, authenticated;
 
-CREATE OR REPLACE FUNCTION public.platform_audit_append_only()
+CREATE OR REPLACE FUNCTION public.admin_audit_append_only()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Seule la suppression d'une entreprise détache ses lignes (organization_id → NULL) ; tout le reste est refusé
-  IF TG_OP = 'UPDATE' AND NEW.organization_id IS NULL AND OLD.organization_id IS NOT NULL
-     AND (to_jsonb(NEW) - 'organization_id') = (to_jsonb(OLD) - 'organization_id') THEN
-    RETURN NEW;
-  END IF;
   RAISE EXCEPTION 'Le journal de la plateforme est en ajout seul';
 END;
 $$;
-DROP TRIGGER IF EXISTS platform_audit_append_only_trigger ON public.platform_audit_log;
-CREATE TRIGGER platform_audit_append_only_trigger BEFORE UPDATE OR DELETE ON public.platform_audit_log
-  FOR EACH ROW EXECUTE FUNCTION public.platform_audit_append_only();
+DROP TRIGGER IF EXISTS admin_audit_append_only_trigger ON public.admin_audit_log;
+CREATE TRIGGER admin_audit_append_only_trigger BEFORE UPDATE OR DELETE ON public.admin_audit_log
+  FOR EACH ROW EXECUTE FUNCTION public.admin_audit_append_only();
 
-CREATE OR REPLACE FUNCTION public.platform_log(p_action text, p_organization_id uuid, p_details jsonb DEFAULT '{}')
+CREATE OR REPLACE FUNCTION public.admin_log(p_action text, p_target_type text, p_target_id uuid, p_metadata jsonb DEFAULT '{}')
 RETURNS void
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
-  INSERT INTO public.platform_audit_log (actor_auth_user_id, actor_email, action, organization_id, organization_name, details)
-  VALUES (auth.uid(), (SELECT email FROM auth.users WHERE id = auth.uid()), p_action, p_organization_id,
-          (SELECT name FROM public.organizations WHERE id = p_organization_id), COALESCE(p_details, '{}'))
+  INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, metadata)
+  VALUES (auth.uid(), p_action, p_target_type, p_target_id, COALESCE(p_metadata, '{}'))
 $$;
-REVOKE EXECUTE ON FUNCTION public.platform_log(text, uuid, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.admin_log(text, text, uuid, jsonb) FROM PUBLIC, anon, authenticated;
 
--- 4. Modules activés par entreprise ----------------------------------------------------------------------------
+-- 3. Modules activés par entreprise -------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.platform_modules (
   key text PRIMARY KEY CHECK (key ~ '^[a-z0-9_]+$'),
   label text NOT NULL,
@@ -231,7 +152,7 @@ INSERT INTO public.organization_modules (organization_id, module_key)
 SELECT o.id, 'chantiers_planning' FROM public.organizations o
 ON CONFLICT DO NOTHING;
 
--- Le planning exige le module activé : les règles d'accès de ses tables s'ajoutent le contrôle
+-- Le planning exige le module activé
 DO $$
 DECLARE
   t text;
@@ -248,7 +169,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- 5. Fonctions de la console ------------------------------------------------------------------------------------
+-- 4. Fonctions de la console (réservées à un owner_admin) -------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.platform_create_organization(
   p_name text, p_admin_email text, p_admin_first_name text, p_admin_last_name text
 ) RETURNS uuid
@@ -259,13 +180,12 @@ AS $$
 DECLARE
   v_id uuid := gen_random_uuid();
   v_n integer;
-  v_s integer;
-  v_slug text;
-  v_base text;
   v_email text := lower(btrim(p_admin_email));
 BEGIN
   PERFORM set_config('app.org_guard_off', 'on', true);
-  PERFORM public.platform_require('support');
+  IF NOT public.is_owner_admin() THEN
+    RAISE EXCEPTION 'Réservé à l''administrateur de la plateforme';
+  END IF;
   IF btrim(COALESCE(p_name, '')) = '' THEN RAISE EXCEPTION 'Le nom de l''entreprise est obligatoire'; END IF;
   IF v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' THEN RAISE EXCEPTION 'Adresse e-mail de l''administrateur invalide'; END IF;
   IF btrim(COALESCE(p_admin_first_name, '')) = '' OR btrim(COALESCE(p_admin_last_name, '')) = '' THEN
@@ -276,16 +196,11 @@ BEGIN
   END IF;
   SELECT count(*) + 1 INTO v_n FROM public.organizations;
   WHILE EXISTS (SELECT 1 FROM public.organizations WHERE article_series = 'GM' || lpad(v_n::text, 4, '0')) LOOP v_n := v_n + 1; END LOOP;
-  v_base := public.slugify(p_name);
-  v_slug := v_base;
-  v_s := 1;
-  WHILE EXISTS (SELECT 1 FROM public.organizations WHERE slug = v_slug) LOOP v_s := v_s + 1; v_slug := v_base || '-' || v_s; END LOOP;
-  INSERT INTO public.organizations (id, name, slug, article_series)
-  VALUES (v_id, btrim(p_name), v_slug, 'GM' || lpad(v_n::text, 4, '0'));
+  INSERT INTO public.organizations (id, name, article_series) VALUES (v_id, btrim(p_name), 'GM' || lpad(v_n::text, 4, '0'));
   PERFORM public.seed_organization(v_id);
   INSERT INTO public.users (organization_id, email, first_name, last_name, role, active)
   VALUES (v_id, v_email, btrim(p_admin_first_name), btrim(p_admin_last_name), 'admin', true);
-  PERFORM public.platform_log('create_organization', v_id, jsonb_build_object('slug', v_slug, 'admin_email', v_email));
+  PERFORM public.admin_log('create_company', 'company', v_id, jsonb_build_object('name', btrim(p_name), 'admin_email', v_email));
   RETURN v_id;
 END;
 $$;
@@ -298,44 +213,13 @@ SET search_path = public, extensions
 AS $$
 BEGIN
   PERFORM set_config('app.org_guard_off', 'on', true);
-  PERFORM public.platform_require('owner');
+  IF NOT public.is_owner_admin() THEN
+    RAISE EXCEPTION 'Réservé à l''administrateur de la plateforme';
+  END IF;
   UPDATE public.organizations SET active = p_active WHERE id = p_organization_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Entreprise introuvable'; END IF;
-  PERFORM public.platform_log(CASE WHEN p_active THEN 'reactivate_organization' ELSE 'suspend_organization' END, p_organization_id);
-END;
-$$;
-
--- Plan : propriétaire seulement. Note interne : toute l'équipe.
-CREATE OR REPLACE FUNCTION public.platform_update_organization(p_organization_id uuid, p_plan text, p_note text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_old_plan text;
-  v_old_note text;
-  v_new_note text := COALESCE(p_note, '');
-BEGIN
-  PERFORM set_config('app.org_guard_off', 'on', true);
-  PERFORM public.platform_require('support');
-  IF p_plan NOT IN ('essai', 'standard', 'premium') THEN
-    RAISE EXCEPTION 'Plan inconnu : essai, standard ou premium';
-  END IF;
-  SELECT plan INTO v_old_plan FROM public.organizations WHERE id = p_organization_id;
-  IF NOT FOUND THEN RAISE EXCEPTION 'Entreprise introuvable'; END IF;
-  IF p_plan <> v_old_plan THEN
-    PERFORM public.platform_require('owner');
-    UPDATE public.organizations SET plan = p_plan WHERE id = p_organization_id;
-    PERFORM public.platform_log('change_plan', p_organization_id, jsonb_build_object('plan_before', v_old_plan, 'plan_after', p_plan));
-  END IF;
-  SELECT COALESCE((SELECT n.note FROM public.platform_organization_notes n WHERE n.organization_id = p_organization_id), '') INTO v_old_note;
-  IF v_new_note <> v_old_note THEN
-    INSERT INTO public.platform_organization_notes (organization_id, note, updated_at)
-    VALUES (p_organization_id, v_new_note, now())
-    ON CONFLICT (organization_id) DO UPDATE SET note = EXCLUDED.note, updated_at = now();
-    PERFORM public.platform_log('update_note', p_organization_id);
-  END IF;
+  PERFORM public.admin_log(CASE WHEN p_active THEN 'reactivate_company' ELSE 'suspend_company' END, 'company', p_organization_id,
+    jsonb_build_object('name', (SELECT name FROM public.organizations WHERE id = p_organization_id)));
 END;
 $$;
 
@@ -347,31 +231,35 @@ SET search_path = public, extensions
 AS $$
 BEGIN
   PERFORM set_config('app.org_guard_off', 'on', true);
-  PERFORM public.platform_require('owner');
+  IF NOT public.is_owner_admin() THEN
+    RAISE EXCEPTION 'Réservé à l''administrateur de la plateforme';
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM public.organizations WHERE id = p_organization_id) THEN RAISE EXCEPTION 'Entreprise introuvable'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.platform_modules WHERE key = p_module_key) THEN RAISE EXCEPTION 'Module inconnu'; END IF;
   INSERT INTO public.organization_modules (organization_id, module_key, enabled, updated_at)
   VALUES (p_organization_id, p_module_key, COALESCE(p_enabled, false), now())
   ON CONFLICT (organization_id, module_key) DO UPDATE SET enabled = EXCLUDED.enabled, updated_at = now();
-  PERFORM public.platform_log(CASE WHEN p_enabled THEN 'enable_module' ELSE 'disable_module' END, p_organization_id, jsonb_build_object('module', p_module_key));
+  PERFORM public.admin_log(CASE WHEN p_enabled THEN 'enable_module' ELSE 'disable_module' END, 'company', p_organization_id,
+    jsonb_build_object('module', p_module_key, 'name', (SELECT name FROM public.organizations WHERE id = p_organization_id)));
 END;
 $$;
 
 -- Liste des entreprises avec leurs modules (l'ancienne platform_list_organizations reste en place)
 CREATE OR REPLACE FUNCTION public.platform_organizations()
-RETURNS TABLE (id uuid, name text, slug text, plan text, active boolean, created_at timestamptz, people bigint, admins bigint, note text, modules text[])
+RETURNS TABLE (id uuid, name text, active boolean, created_at timestamptz, people bigint, admins bigint, modules text[])
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 BEGIN
-  PERFORM public.platform_require('support');
+  IF NOT public.is_owner_admin() THEN
+    RAISE EXCEPTION 'Réservé à l''administrateur de la plateforme';
+  END IF;
   RETURN QUERY
-  SELECT o.id, o.name, o.slug, o.plan, o.active, o.created_at,
+  SELECT o.id, o.name, o.active, o.created_at,
          (SELECT count(*) FROM public.users u WHERE u.organization_id = o.id AND u.active),
          (SELECT count(*) FROM public.users u WHERE u.organization_id = o.id AND u.active AND u.role = 'admin'),
-         COALESCE((SELECT n.note FROM public.platform_organization_notes n WHERE n.organization_id = o.id), ''),
          COALESCE((SELECT array_agg(m.module_key ORDER BY m.module_key) FROM public.organization_modules m WHERE m.organization_id = o.id AND m.enabled), ARRAY[]::text[])
   FROM public.organizations o ORDER BY o.created_at;
 END;
@@ -386,7 +274,9 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 BEGIN
-  PERFORM public.platform_require('support');
+  IF NOT public.is_owner_admin() THEN
+    RAISE EXCEPTION 'Réservé à l''administrateur de la plateforme';
+  END IF;
   RETURN QUERY
   SELECT o.id,
          (SELECT count(*) FROM public.users u WHERE u.organization_id = o.id AND u.active),
@@ -399,108 +289,31 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.platform_audit(p_limit integer DEFAULT 100)
-RETURNS TABLE (id bigint, at timestamptz, actor_email text, action text, organization_name text, details jsonb)
+RETURNS TABLE (id uuid, at timestamptz, actor_email text, action text, target_type text, target_name text, metadata jsonb)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 BEGIN
-  PERFORM public.platform_require('support');
-  RETURN QUERY
-  SELECT l.id, l.at, l.actor_email, l.action, COALESCE((SELECT o.name FROM public.organizations o WHERE o.id = l.organization_id), l.organization_name), l.details
-  FROM public.platform_audit_log l ORDER BY l.at DESC, l.id DESC LIMIT GREATEST(1, LEAST(COALESCE(p_limit, 100), 500));
-END;
-$$;
-
--- 6. Équipe de la plateforme -------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.platform_team()
-RETURNS TABLE (auth_user_id uuid, email text, level text, since timestamptz, added_by_email text)
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-BEGIN
-  PERFORM public.platform_require('support');
-  RETURN QUERY
-  SELECT p.auth_user_id, a.email, p.level, p.created_at, (SELECT b.email FROM auth.users b WHERE b.id = p.added_by)
-  FROM public.platform_admins p LEFT JOIN auth.users a ON a.id = p.auth_user_id
-  ORDER BY (p.level = 'owner') DESC, p.created_at;
-END;
-$$;
-
--- La personne doit s'être connectée au moins une fois (son compte existe) ; elle doit aussi avoir une fiche dans une entreprise pour ouvrir l'application
-CREATE OR REPLACE FUNCTION public.platform_add_team_member(p_email text, p_level text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_uid uuid;
-BEGIN
-  PERFORM public.platform_require('owner');
-  IF p_level NOT IN ('owner', 'support') THEN RAISE EXCEPTION 'Niveau inconnu : propriétaire ou support'; END IF;
-  SELECT id INTO v_uid FROM auth.users WHERE lower(email) = lower(btrim(p_email)) LIMIT 1;
-  IF v_uid IS NULL THEN RAISE EXCEPTION 'Aucun compte avec cette adresse : la personne doit d''abord se connecter une fois à l''application'; END IF;
-  IF EXISTS (SELECT 1 FROM public.platform_admins WHERE auth_user_id = v_uid) THEN RAISE EXCEPTION 'Cette personne fait déjà partie de l''équipe'; END IF;
-  INSERT INTO public.platform_admins (auth_user_id, level, added_by) VALUES (v_uid, p_level, auth.uid());
-  PERFORM public.platform_log('add_team_member', NULL, jsonb_build_object('email', lower(btrim(p_email)), 'level', p_level));
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.platform_set_team_level(p_auth_user_id uuid, p_level text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_old text;
-BEGIN
-  PERFORM public.platform_require('owner');
-  IF p_level NOT IN ('owner', 'support') THEN RAISE EXCEPTION 'Niveau inconnu : propriétaire ou support'; END IF;
-  SELECT level INTO v_old FROM public.platform_admins WHERE auth_user_id = p_auth_user_id FOR UPDATE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'Personne introuvable dans l''équipe'; END IF;
-  IF v_old = 'owner' AND p_level <> 'owner' AND (SELECT count(*) FROM public.platform_admins WHERE level = 'owner') <= 1 THEN
-    RAISE EXCEPTION 'Il doit toujours rester au moins un propriétaire';
+  IF NOT public.is_owner_admin() THEN
+    RAISE EXCEPTION 'Réservé à l''administrateur de la plateforme';
   END IF;
-  UPDATE public.platform_admins SET level = p_level WHERE auth_user_id = p_auth_user_id;
-  PERFORM public.platform_log('set_team_level', NULL, jsonb_build_object('email', (SELECT email FROM auth.users WHERE id = p_auth_user_id), 'from', v_old, 'to', p_level));
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.platform_remove_team_member(p_auth_user_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_old text;
-BEGIN
-  PERFORM public.platform_require('owner');
-  SELECT level INTO v_old FROM public.platform_admins WHERE auth_user_id = p_auth_user_id FOR UPDATE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'Personne introuvable dans l''équipe'; END IF;
-  IF v_old = 'owner' AND (SELECT count(*) FROM public.platform_admins WHERE level = 'owner') <= 1 THEN
-    RAISE EXCEPTION 'Il doit toujours rester au moins un propriétaire';
-  END IF;
-  DELETE FROM public.platform_admins WHERE auth_user_id = p_auth_user_id;
-  PERFORM public.platform_log('remove_team_member', NULL, jsonb_build_object('email', (SELECT email FROM auth.users WHERE id = p_auth_user_id), 'level', v_old));
+  RETURN QUERY
+  SELECT l.id, l.created_at, (SELECT a.email FROM auth.users a WHERE a.id = l.actor_id), l.action, l.target_type,
+         COALESCE((SELECT o.name FROM public.organizations o WHERE o.id = l.target_id), l.metadata ->> 'name'), l.metadata
+  FROM public.admin_audit_log l ORDER BY l.created_at DESC, l.id DESC LIMIT GREATEST(1, LEAST(COALESCE(p_limit, 100), 500));
 END;
 $$;
 
 REVOKE EXECUTE ON FUNCTION public.platform_create_organization(text, text, text, text), public.platform_set_organization_active(uuid, boolean),
-  public.platform_update_organization(uuid, text, text), public.platform_set_module(uuid, text, boolean), public.platform_organizations(),
-  public.platform_organization_usage(), public.platform_audit(integer), public.platform_team(), public.platform_add_team_member(text, text),
-  public.platform_set_team_level(uuid, text), public.platform_remove_team_member(uuid) FROM PUBLIC, anon;
+  public.platform_set_module(uuid, text, boolean), public.platform_organizations(), public.platform_organization_usage(), public.platform_audit(integer)
+  FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.platform_create_organization(text, text, text, text), public.platform_set_organization_active(uuid, boolean),
-  public.platform_update_organization(uuid, text, text), public.platform_set_module(uuid, text, boolean), public.platform_organizations(),
-  public.platform_organization_usage(), public.platform_audit(integer), public.platform_team(), public.platform_add_team_member(text, text),
-  public.platform_set_team_level(uuid, text), public.platform_remove_team_member(uuid) TO authenticated;
+  public.platform_set_module(uuid, text, boolean), public.platform_organizations(), public.platform_organization_usage(), public.platform_audit(integer)
+  TO authenticated;
 
--- 7. whoami : ajoute le niveau de plateforme (le reste est inchangé) -------------------------------------------------
+-- 5. whoami : ajoute les modules de l'entreprise active (le reste est inchangé) ---------------------------------------
 CREATE OR REPLACE FUNCTION public.whoami()
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -542,8 +355,7 @@ BEGIN
     'depot_ids', COALESCE((SELECT jsonb_agg(depot_id) FROM public.user_depots WHERE user_id = v_user.id), '[]'::jsonb),
     'organization', (SELECT jsonb_build_object('id', o.id, 'name', o.name) FROM public.organizations o WHERE o.id = v_org),
     'organizations', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', m.id, 'name', m.name, 'role', m.role, 'current', m.is_current)) FROM public.my_organizations() m), '[]'::jsonb),
-    'platform_admin', public.is_platform_admin(),
-    'platform_level', public.platform_level(),
+    'platform_admin', public.is_owner_admin(),
     'modules', public.my_modules()
   );
 END;
