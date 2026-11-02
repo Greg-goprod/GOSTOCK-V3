@@ -1,15 +1,15 @@
 # Rapport des tests des notifications
 
-Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-02 07:02
+Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-02 07:18
 Commit testé : à renseigner (`git log --oneline -1`).
 
-**Synthèse : 24 OK · 0 PARTIEL · 1 KO · 1 NON TESTÉ · 0 INFO**
+**Synthèse : 25 OK · 0 PARTIEL · 0 KO · 1 NON TESTÉ · 0 INFO**
 
 Nettoyage : 12 notification(s) marquée(s) lue(s) pour les trois comptes (les notifications « TEST-NOTIF » restent en base : ces comptes ne peuvent pas les supprimer).
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** N3-collab-hors-perimetre — Collaborateur : ne peut ni lire ni modifier l'alerte du magasin ni l'avis d'un autre : il lit des lignes de lecture
+Aucun.
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -41,7 +41,7 @@ Nettoyage : 12 notification(s) marquée(s) lue(s) pour les trois comptes (les no
 | N3-staff-lit — Magasinier : lit l'alerte du magasin (son compteur baisse de 1) | OK |  |
 | N3-resp-inchange — Responsable : l'alerte lue par le magasinier reste NON lue pour lui | OK |  |
 | N3-non-lue — Magasinier : remet l'alerte en « non lue » (compteur +1) | OK |  |
-| N3-collab-hors-perimetre — Collaborateur : ne peut ni lire ni modifier l'alerte du magasin ni l'avis d'un autre | KO | il lit des lignes de lecture |
+| N3-collab-hors-perimetre — Collaborateur : ne peut ni lire ni modifier l'alerte du magasin ni l'avis d'un autre | OK |  |
 | N3-lignes-privees — Chacun ne lit que ses propres lignes de lecture | OK |  |
 | N3-tout-lire — Collaborateur : « tout marquer comme lu » vide son compteur sans toucher aux autres | OK |  |
 | N3-nouvelle — Une nouvelle notification fait remonter le compteur de 1 | OK |  |

@@ -1,15 +1,15 @@
 # Rapport du cycle de vie d'un emprunt
 
-Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-02 07:01
+Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-02 07:17
 Commit testé : à renseigner (`git log --oneline -1`).
 
-**Synthèse : 36 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 12 INFO (comportements à lire)**
+**Synthèse : 36 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 13 INFO (comportements à lire)**
 
 Nettoyage : 7 sortie(s) rendue(s), 4 incident(s) clos « retrouvé », 2 maintenance(s) close(s), 2 demande(s) annulée(s), 19 outil(s) retiré(s), rien de bloqué.
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** E7-demande-collab — Collaborateur : demande une prolongation (avis au magasin, pas de doublon) ; pas pour l'outil d'un autre : 2 avis pour la même demande (doublon)
+Aucun.
 
 ## Comportements observés (INFO)
 
@@ -18,11 +18,12 @@ Nettoyage : 7 sortie(s) rendue(s), 4 incident(s) clos « retrouvé », 2 mainten
 - **E4-decision-casse** — Responsable : décide « déduit du salaire » avec un coût ; le magasin seul ne peut pas : le magasinier seul ne peut pas décider
 - **E5-sortie-echue** — Sortie dont le retour est déjà dépassé (hier) : acceptée ou refusée ? : acceptée (le serveur ne contrôle pas la date de retour passée)
 - **E5-commande-en-retard** — Une personne en retard peut-elle encore commander ? : autorisée (aucun blocage automatique des personnes en retard)
-- **E5-notification-retard** — Une alerte de retard est créée pour le magasin : alerte : Merci de rendre au plus vite : TEST-EMPRUNT Outil F (prévu le 01.11).
+- **E5-notification-retard** — Une alerte de retard est créée pour le magasin : alerte : TEST Rôle Collaborateur demande de garder « TEST-EMPRUNT Outil K » jusqu'au 10.11.2026 (retour prévu le 07.11.2026) : TEST-EMPRUNT chantier retardé.
 - **E6-perte** — Perte déclarée : sortie « perdue », incident à décider, outil indisponible : disponibilité après perte : 0 (2 sorties, dont 1 perdue)
 - **E6-double-declaration** — Déclarer deux fois la même perte : acceptée (un second incident est créé)
 - **E6-retrouve** — Objet retrouvé : la sortie n'est plus « perdue », l'outil est de nouveau disponible : statut de la sortie après « retrouvé » : returned ; disponibilité 1
 - **E6-collab-declare** — Collaborateur : peut-il déclarer lui-même la perte d'un outil qu'il a ? : accepté (sortie : lost)
+- **E7-demande-collab** — Collaborateur : demande une prolongation (avis au magasin, pas de doublon) ; pas pour l'outil d'un autre : 2e demande identique absorbée (un seul avis)
 - **E8-demande-perdu** — Demande dont un outil est perdu et l'autre rendu : état de la demande : demande : closed (1 outil perdu, 1 rendu)
 - **E9-accueil-retards** — Accueil magasin : le retard/perte est compté : mention « retard » présente
 
@@ -74,7 +75,7 @@ Nettoyage : 7 sortie(s) rendue(s), 4 incident(s) clos « retrouvé », 2 mainten
 | E5-dispo-retard — Un outil en retard reste indisponible : 1 sur 2 seulement réservable | OK |  |
 | E5-qui-a-quoi — Le retard est visible : « qui a quoi » et « Mon matériel » | OK |  |
 | E5-commande-en-retard — Une personne en retard peut-elle encore commander ? | INFO | autorisée (aucun blocage automatique des personnes en retard) |
-| E5-notification-retard — Une alerte de retard est créée pour le magasin | INFO | alerte : Merci de rendre au plus vite : TEST-EMPRUNT Outil F (prévu le 01.11). |
+| E5-notification-retard — Une alerte de retard est créée pour le magasin | INFO | alerte : TEST Rôle Collaborateur demande de garder « TEST-EMPRUNT Outil K » jusqu'au 10.11.2026 (retour prévu le 07.11.2026) : TEST-EMPRUNT chantier retardé. |
 | E5-retour-tardif — Retour tardif : accepté, disponibilité rétablie | OK |  |
 
 ## E6 Perte et vol
@@ -102,7 +103,7 @@ Nettoyage : 7 sortie(s) rendue(s), 4 incident(s) clos « retrouvé », 2 mainten
 | E7-prolonger-apres-partiel — Après un retour partiel : seules les sorties restantes sont prolongées | OK |  |
 | E7-conflit-reservation — Une réservation à venir sur le même outil empêche la prolongation | OK |  |
 | E7-prolonger-retard — Une sortie en retard prolongée redevient « active » | OK |  |
-| E7-demande-collab — Collaborateur : demande une prolongation (avis au magasin, pas de doublon) ; pas pour l'outil d'un autre | KO | 2 avis pour la même demande (doublon) |
+| E7-demande-collab — Collaborateur : demande une prolongation (avis au magasin, pas de doublon) ; pas pour l'outil d'un autre | INFO | 2e demande identique absorbée (un seul avis) |
 
 ## E8 Demande puis sortie
 
