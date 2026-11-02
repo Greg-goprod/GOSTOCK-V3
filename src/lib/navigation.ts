@@ -65,6 +65,7 @@ export const NAV_SPACES: NavSpace[] = [
     { to: '/chantiers', label: 'Chantiers', icon: HardHat },
     { to: '/carte', label: 'Carte', icon: MapIcon },
     { to: '/planning', label: 'Planning', icon: CalendarRange },
+    { to: '/planning-chantier', label: 'Planning chantier', icon: CalendarClock },
     { to: '/locations', label: 'Locations', icon: KeyRound },
   ] },
   { id: 'people', label: 'Personnes', short: 'Personnes', icon: Users, links: [

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Copy, FileText, HardHat, LocateFixed, Lock, MapPin, Pencil, Plus, Unlock } from 'lucide-react';
+import { CalendarClock, Copy, FileText, HardHat, LocateFixed, Lock, MapPin, Pencil, Plus, Unlock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { printSiteReport, similarSiteItems } from '../lib/siteReport';
 import toast from 'react-hot-toast';
@@ -65,6 +65,7 @@ const Sites: React.FC = () => {
   const navigate = useNavigate();
   const { can } = useAuth();
   const canEdit = can('manage_stock') || can('approve');
+  const hasPlanning = can('module:chantiers_planning');
   const [sites, setSites] = useState<Site[]>([]);
   const [openItems, setOpenItems] = useState<OpenItem[]>([]);
   const [filter, setFilter] = useState<'open' | 'closed' | 'all'>('open');
@@ -226,6 +227,7 @@ const Sites: React.FC = () => {
               menuLabel={`Actions pour ${site.name}`}
               menuActions={[
                 { id: 'report', label: 'Rapport PDF', icon: FileText, onSelect: () => report(site) },
+                ...(hasPlanning ? [{ id: 'planning', label: 'Planning', icon: CalendarClock, onSelect: () => navigate(`/planning-chantier?site=${site.id}`) }] : []),
                 { id: 'similar', label: 'Préparer un chantier semblable', icon: Copy, onSelect: () => prepareSimilar(site) },
                 ...(canEdit ? [
                   { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => openForm(site) },
@@ -291,6 +293,7 @@ const Sites: React.FC = () => {
           </div>
               {site.notes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{site.notes}</p>}
               <div className="flex flex-wrap gap-2 pt-1">
+                {hasPlanning && <Button size="sm" variant="outline" icon={<CalendarClock size={14} />} onClick={() => navigate(`/planning-chantier?site=${site.id}`)}>Planning</Button>}
                 <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => report(site)}>Rapport PDF</Button>
                 <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => prepareSimilar(site)}>Préparer un chantier semblable</Button>
               </div>

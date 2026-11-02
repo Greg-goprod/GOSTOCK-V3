@@ -10,7 +10,9 @@ export type Permission =
   | 'view_all'
   | 'all_depots'
   // Administrateur de la plateforme (création des entreprises) : ne s'attribue pas, il vient de la base
-  | 'platform';
+  | 'platform'
+  // Module payant activé pour l'entreprise (ex. « module:chantiers_planning ») : vient de la base, activé par la plateforme
+  | `module:${string}`;
 
 export interface Profile {
   id: string;
@@ -24,6 +26,7 @@ export interface Profile {
   organization?: { id: string; name: string };
   organizations?: { id: string; name: string; role: string; current: boolean }[];
   platform_admin?: boolean;
+  modules?: string[];
 }
 
 export const ROLE_LABELS: Record<Profile['role'], string> = {

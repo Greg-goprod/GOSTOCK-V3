@@ -7,7 +7,7 @@ Décisions de Greg (audit, § 10) : les deux vues (par zone et par prestataire) 
 | Étape | Contenu | État |
 |---|---|---|
 | 1.1 | **Base de données** : prestataires, équipes, zones, phases, interventions, configuration du chantier, jours bloqués ; droits `chantiers.planning:*` ; contrôles faits par la base ; batterie SQL locale | Écrite, testée en local (50 contrôles) et **appliquée sur GO-MAT le 2 novembre** |
-| 1.2 | Écran « Planning » du chantier : configuration (heures, 24 h/24, pas, jours bloqués), zones, équipes, prestataires, phases ; liste des interventions en cartes et en tableau ; création et modification | À faire |
+| 1.2 | Écran « Planning » du chantier : configuration (heures, 24 h/24, pas, jours bloqués), zones, équipes, prestataires, phases ; liste des interventions en cartes et en tableau ; création et modification | **Faite** (route `/planning-chantier`, module `chantiers_planning` exigé ; droits fins lus via `rbac_has_any_permission`) |
 | 1.3 | Frise horaire glisser-déposer, vue par zone et vue par prestataire, vue jour et semaine | À faire |
 | 1.4 | Récurrence (`series_id`), copie d'un jour, contrôles de matériel non disponible et de formation non valide | À faire |
 | 1.5 | Aide intégrée, traductions FR/DE/IT/EN, sauvegarde des nouvelles tables (liste de BackupPanel et fonction de bord), parcours e2e | À faire |

@@ -27,6 +27,7 @@ import Costs from './pages/Costs';
 import Steering from './pages/Steering';
 import AuditLog from './pages/AuditLog';
 import Sites from './pages/Sites';
+import SitePlanning from './pages/SitePlanning';
 import SiteMap from './pages/SiteMap';
 import Kits from './pages/Kits';
 import Trainings from './pages/Trainings';
@@ -100,6 +101,7 @@ function App() {
         <Route path="/pilotage" element={<Guard><Steering /></Guard>} />
         <Route path="/journal" element={<Guard><AuditLog /></Guard>} />
         <Route path="/chantiers" element={<Guard><Sites /></Guard>} />
+        <Route path="/planning-chantier" element={<Guard><SitePlanning /></Guard>} />
         <Route path="/carte" element={<Guard><SiteMap /></Guard>} />
         <Route path="/kits" element={<Guard><Kits /></Guard>} />
         <Route path="/formations" element={<Guard><Trainings /></Guard>} />

@@ -111,7 +111,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [loadProfile]);
 
-  const can = useCallback((permission: Permission) => (permission === 'platform' ? !!profile?.platform_admin : !!profile?.permissions.includes(permission)), [profile]);
+  const can = useCallback((permission: Permission) => {
+    if (permission === 'platform') return !!profile?.platform_admin;
+    if (permission.startsWith('module:')) return !!profile?.modules?.includes(permission.slice('module:'.length));
+    return !!profile?.permissions.includes(permission);
+  }, [profile]);
 
   const value: AuthContextType = {
     session,
