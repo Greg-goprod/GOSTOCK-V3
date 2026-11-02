@@ -1,15 +1,15 @@
 # Rapport des tests des projets PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 15:44
-Commit testé : 3b62ee0 (R2b-2 : écran PILOTE › Projets) — KO reproductible
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 16:11
+Commit testé : 40ca47f (R3a : base des éléments de projet + batterie de tests)
 
-**Synthèse : 24 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 0 INFO**
+**Synthèse : 25 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 
 Nettoyage : {"cp_projects":"8 supprimé(s)","cp_programs":"1 supprimé(s)","cp_statuses":"0 supprimé(s)","sites":"2 supprimé(s)","restants":0}
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** P4-ouverture — Responsable : PILOTE › Projets s'ouvre, les projets de test s'affichent, compteurs par état : projet de test absent ([capture](captures-projets/P4-ouverture.png))
+Aucun.
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -57,7 +57,7 @@ Nettoyage : {"cp_projects":"8 supprimé(s)","cp_programs":"1 supprimé(s)","cp_s
 
 | Point | Verdict | Détail |
 |---|---|---|
-| P4-ouverture — Responsable : PILOTE › Projets s'ouvre, les projets de test s'affichent, compteurs par état | KO | projet de test absent |
+| P4-ouverture — Responsable : PILOTE › Projets s'ouvre, les projets de test s'affichent, compteurs par état | OK |  |
 | P4-liste — Bascule cartes / liste | OK |  |
 | P4-creation — Création d'un projet par le formulaire (type, programme, responsable) | OK |  |
 | P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet | OK |  |
