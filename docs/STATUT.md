@@ -17,6 +17,7 @@
 - L'espace « Pilotage » de Logistique s'appelle maintenant **« Suivi »** (adresse `/pilotage` inchangée ; aide et traductions de/it/en mises à jour).
 - Le planning de chantier est sorti de « Chantiers » : il vit sous PILOTE › Planification › Planning, adresse `/pilote/planning`. L'ancienne adresse `/planning-chantier?site=…` redirige (liens enregistrés). Le bouton « Planning » de la fiche chantier pointe vers la nouvelle adresse ; `scripts/e2e-planning.cjs` aussi.
 - Vérifié sur maquette (bureau et mobile) : produits dépliables, accès refusé sans module (retour à l'accueil), redirection avec le paramètre `site`, aucune erreur de page ; typage, lint des fichiers touchés et build OK.
+- Inspiration Notion pour la planification (captures de Greg) : `docs/chantierpilot/inspiration-notion.md` (fonctions retenues / écartées, 4 décisions à prendre avant R3).
 - **Prochaine étape : R2** (tables `cp_`, clés de module alignées sur le cahier, objet « projet » généraliste), puis R3 (plan annuel).
 
 ## DÉCISIONS EN ATTENTE (relecture du cahier des charges v2, 2 novembre)
