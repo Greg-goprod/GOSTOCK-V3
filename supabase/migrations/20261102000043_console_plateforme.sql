@@ -300,7 +300,7 @@ BEGIN
     RAISE EXCEPTION 'Réservé à l''administrateur de la plateforme';
   END IF;
   RETURN QUERY
-  SELECT l.id, l.created_at, (SELECT a.email FROM auth.users a WHERE a.id = l.actor_id), l.action, l.target_type,
+  SELECT l.id, l.created_at, (SELECT a.email::text FROM auth.users a WHERE a.id = l.actor_id), l.action, l.target_type,
          COALESCE((SELECT o.name FROM public.organizations o WHERE o.id = l.target_id), l.metadata ->> 'name'), l.metadata
   FROM public.admin_audit_log l ORDER BY l.created_at DESC, l.id DESC LIMIT GREATEST(1, LEAST(COALESCE(p_limit, 100), 500));
 END;
