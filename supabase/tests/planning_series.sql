@@ -107,6 +107,29 @@ SELECT public.whoami() IS NOT NULL;
 SELECT zz.check('stock de GO-Mat à zéro : les 7 interventions qui comptent sur la perceuse sont averties', (SELECT count(*) FROM public.site_material_issues(:'site'::uuid) WHERE equipment_name = 'Perceuse série' AND shortage = 1) = 7);
 RESET ROLE;
 
+-- 7b. Restauration d'une sauvegarde : les interventions sont reprises telles quelles (migration 46)
+SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
+SELECT public.whoami() IS NOT NULL;
+INSERT INTO public.sites (name, start_on, end_on, status) VALUES ('Restauration essai', '2026-12-01', '2026-12-31', 'closed');
+INSERT INTO public.site_zones (site_id, name) SELECT id, 'ZR' FROM public.sites WHERE name = 'Restauration essai';
+INSERT INTO public.site_teams (site_id, name) SELECT id, 'ER' FROM public.sites WHERE name = 'Restauration essai';
+SELECT s.id AS rsite, z.id AS rzone, t.id AS rteam FROM public.sites s JOIN public.site_zones z ON z.site_id = s.id JOIN public.site_teams t ON t.site_id = s.id WHERE s.name = 'Restauration essai' \gset
+SELECT zz.check('hors restauration : intervention sur un chantier clôturé refusée', zz.raises(format($f$INSERT INTO public.site_interventions (site_id, zone_id, team_id, title, starts_at, ends_at) VALUES (%L, %L, %L, 'Normale', '2026-12-03 02:00+01', '2026-12-03 03:00+01')$f$, :'rsite', :'rzone', :'rteam')) LIKE '%clôturé%');
+SELECT public.restore_missing_rows('site_interventions', jsonb_build_array(jsonb_build_object('id', 'aaaaaaaa-0000-0000-0000-00000000aa01', 'organization_id', :ORG1, 'site_id', :'rsite', 'zone_id', :'rzone', 'team_id', :'rteam',
+  'title', 'Restaurée', 'starts_at', '2026-12-03T01:07:00Z', 'ends_at', '2026-12-03T02:00:00Z', 'created_at', '2026-11-01T10:00:00Z'))) AS restored \gset
+SELECT zz.check('restauration : l''intervention (chantier clôturé, heures et minutes anciennes) est reprise telle quelle', :restored = 1
+  AND (SELECT count(*) FROM public.site_interventions WHERE title = 'Restaurée') = 1);
+SELECT public.restore_missing_rows('site_intervention_needs', jsonb_build_array(jsonb_build_object('id', 'bbbbbbbb-0000-0000-0000-00000000bb01', 'organization_id', :ORG1, 'intervention_id', 'aaaaaaaa-0000-0000-0000-00000000aa01', 'equipment_id', :'ech', 'quantity', 1, 'created_at', '2026-11-01T10:00:00Z'))) AS restored2 \gset
+SELECT zz.check('restauration : le matériel nécessaire est repris', :restored2 = 1);
+SELECT public.restore_missing_rows('site_interventions', jsonb_build_array(jsonb_build_object('id', 'aaaaaaaa-0000-0000-0000-00000000aa01', 'organization_id', :ORG1, 'site_id', :'rsite', 'zone_id', :'rzone', 'team_id', :'rteam', 'title', 'Restaurée', 'starts_at', '2026-12-03T01:07:00Z', 'ends_at', '2026-12-03T02:00:00Z'))) AS restored3 \gset
+SELECT zz.check('restauration rejouée : rien n''est dupliqué', :restored3 = 0 AND (SELECT count(*) FROM public.site_interventions WHERE title = 'Restaurée') = 1);
+SELECT zz.check('après la restauration, les contrôles s''appliquent de nouveau', zz.raises(format($f$INSERT INTO public.site_interventions (site_id, zone_id, team_id, title, starts_at, ends_at) VALUES (%L, %L, %L, 'Après', '2026-12-04 02:00+01', '2026-12-04 03:00+01')$f$, :'rsite', :'rzone', :'rteam')) LIKE '%clôturé%');
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
+SELECT public.whoami() IS NOT NULL;
+SELECT zz.check('un collaborateur ne restaure rien', zz.raises(format($f$SELECT public.restore_missing_rows('site_interventions', jsonb_build_array(jsonb_build_object('id', 'aaaaaaaa-0000-0000-0000-00000000aa02', 'organization_id', %L, 'site_id', %L, 'zone_id', %L, 'team_id', %L, 'title', 'Pirate', 'starts_at', '2026-12-03T01:00:00Z', 'ends_at', '2026-12-03T02:00:00Z')))$f$, :ORG1, :'rsite', :'rzone', :'rteam')) LIKE '%Accès refusé%');
+RESET ROLE;
+
 -- 8. Collaborateur (lecture seule) et entreprise B
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
 SELECT zz.check('U : première connexion', public.whoami() IS NOT NULL);
