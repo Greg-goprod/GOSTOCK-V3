@@ -139,3 +139,7 @@ On ne sait pas encore s'il s'agit de vraies régressions ou de tests trop press�
 - **Le KO N-equipe-assignation est une erreur de MON script** : il comptait tous les avis d'équipe du collaborateur, dont ceux reçus plus tôt dans les scénarios B (projets B et C). Corrigé (isolation par nom de projet).
 - Reste à décider avec Greg : page Notifications ouverte aux collaborateurs de PILOTE, lecture de la table des avis, « dernier gagnant » sur une fiche partagée. En attente : redéploiement de `send-notification-emails` (v22) pour les rappels d'échéance.
 
+### Tests manuels déclarés par Greg (rappels quotidiens, isolation entre entreprises à l'écran, sauvegarde/restauration, e-mail et push réels)
+- Déclarés « testés » par Greg, sans détail des constats : à ne pas compter comme vérifiés par un script. 
+- Point factuel vérifié le même jour sur Supabase : la fonction `send-notification-emails` déployée est toujours en **v21** (elle ne contient pas l'appel à `check_cp_deadlines` ni la sauvegarde de `cp_notification_prefs`). Les rappels d'échéance ne peuvent donc pas partir tout seuls tant que la v22 n'est pas déployée ; un test des rappels n'a pu se faire qu'en appelant `check_cp_deadlines()` à la main.
+
