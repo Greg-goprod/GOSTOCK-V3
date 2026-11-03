@@ -1,19 +1,25 @@
 # Rapport des scénarios PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 14:48
-Commit testé : a09d0ea Tests PILOTE : correction de P4-chantier-pris, nouveau e2e-pilote-scenarios (refus vérifiés par leur message), rapport invalidé supprimé
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 16:01
+Commit testé : a66b97c Tests PILOTE : correction du script de scénarios (barre de navigation mobile et traduite, fenêtre/thème remis, perf de l'arbre déplié)
 
-**Synthèse : 46 OK · 0 PARTIEL · 5 KO · 2 NON TESTÉ · 4 INFO**
+**Synthèse : 46 OK · 3 PARTIEL · 2 KO · 2 NON TESTÉ · 4 INFO**
 
 Nettoyage : {"cp_projects":"17 supprimé(s)","cp_programs":"0 supprimé(s)","sites":"2 supprimé(s)","restants":{"projets":0,"programmes":0,"chantiers":0,"elements":0}}
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** I-mobile — Mobile 390 px : Projets, Mes tâches et Gantt sans défilement horizontal de la page : page.waitForSelector: Timeout 30000ms exceeded. ([capture](captures-pilote-scenarios/I-mobile.png))
-- **KO** I-sombre — Mode sombre : les écrans PILOTE s'ouvrent sans débordement ni erreur JavaScript : page.waitForSelector: Timeout 30000ms exceeded. ([capture](captures-pilote-scenarios/I-sombre.png))
-- **KO** I-langue-de — Langue de : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) : page.waitForSelector: Timeout 30000ms exceeded. ([capture](captures-pilote-scenarios/I-langue-de.png))
-- **KO** I-langue-it — Langue it : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) : page.waitForSelector: Timeout 30000ms exceeded. ([capture](captures-pilote-scenarios/I-langue-it.png))
-- **KO** I-langue-en — Langue en : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) : page.waitForSelector: Timeout 30000ms exceeded. ([capture](captures-pilote-scenarios/I-langue-en.png))
+- **KO-ENV** I-perf-200 — 200 éléments : création des 190 tâches échoue avec « canceling statement due to statement timeout ». Cause : base de données timeout (ENV). Fix : augmenter timeout Supabase ou optimizer la requête de création.
+
+- **KO-SCRIPT** I-mobile — Mobile 390 px : page.waitForSelector: Timeout 30000ms exceeded. Cause : le script resize le viewport, mais le sélecteur `nav[aria-label]` ne trouve pas après. Fix : attendre redessinage après changement viewport.
+
+- **PARTIEL-APP** I-langue-de — « Responsable » reste en français. Cause : `src/lib/pilote.ts:22` : `TEAM_ROLE_LABEL = { lead: 'Responsable', member: 'Membre' }` hardcodé, pas de clé i18n. Fix : utiliser t('team_role.lead').
+
+- **PARTIEL-APP** I-langue-it — « Responsable » reste en français. Cause : même que I-langue-de (src/lib/pilote.ts:22).
+
+- **PARTIEL-APP** I-langue-en — « Responsable » et « Description » restent en français. Cause : 
+  - Responsable : src/lib/pilote.ts:22 (hardcodé 'Responsable')
+  - Description : src/components/pilote/ItemDrawer.tsx:284 (hardcodé `<label>Description</label>`, pas d'i18n)
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -104,15 +110,15 @@ Nettoyage : {"cp_projects":"17 supprimé(s)","cp_programs":"0 supprimé(s)","sit
 | I-long-nom — Nom de 300 caractères : on observe ce que fait la base (pas de verdict arbitraire) | INFO | accepté tel quel (aucune limite de longueur en base) ; à vérifier à l'écran : la carte doit passer à la ligne |
 | I-doublon-nom-projet — Deux projets de même nom : on observe | INFO | 1er : accepté · 2e : accepté (les noms de projet peuvent se répéter) |
 | I-html — Un nom contenant du HTML s'affiche en texte brut et n'exécute rien | OK |  |
-| I-perf-200 — 200 éléments dans un projet : le Gantt affiche le projet et reste utilisable | OK | affichage en 747 ms, 19 lignes |
+| I-perf-200 — 200 éléments dans un projet : le Gantt affiche le projet et reste utilisable | KO | création des 190 tâches : canceling statement due to statement timeout |
 | I-double-clic — Double-clic sur « Enregistrer » : un seul projet est créé | OK |  |
 | I-coupure-reseau — Coupure réseau pendant l'enregistrement : message d'erreur, rien d'écrit à moitié | INFO | rien écrit en base ; formulaire toujours ouvert (la saisie est conservée) ; message(s) affiché(s) : ["TypeError: Failed to fetch"] |
 | I-rechargement — Rechargement de la page en plein formulaire : pas d'erreur JavaScript, la page revient | OK |  |
 | I-mobile — Mobile 390 px : Projets, Mes tâches et Gantt sans défilement horizontal de la page | KO | page.waitForSelector: Timeout 30000ms exceeded. |
-| I-sombre — Mode sombre : les écrans PILOTE s'ouvrent sans débordement ni erreur JavaScript | KO | page.waitForSelector: Timeout 30000ms exceeded. |
-| I-langue-de — Langue de : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | KO | page.waitForSelector: Timeout 30000ms exceeded. |
-| I-langue-it — Langue it : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | KO | page.waitForSelector: Timeout 30000ms exceeded. |
-| I-langue-en — Langue en : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | KO | page.waitForSelector: Timeout 30000ms exceeded. |
+| I-sombre — Mode sombre : les écrans PILOTE s'ouvrent sans débordement ni erreur JavaScript | OK |  |
+| I-langue-de — Langue de : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | PARTIEL | restent en français dans la fiche : Responsable |
+| I-langue-it — Langue it : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | PARTIEL | restent en français dans la fiche : Responsable |
+| I-langue-en — Langue en : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | PARTIEL | restent en français dans la fiche : Responsable, Description |
 | I-concurrence — Deux sessions modifient le même élément : on DÉCRIT ce qui se passe (pas de verdict) | INFO | Modifications PARTIELLES (champs différents) : les deux sont conservées = true. ATTENTION : la fiche de l'écran enregistre l'élément ENTIER (voir ItemDrawer.tsx, fonction d'enregistrement) : si deux p |
 
 ## J Sauvegarde
