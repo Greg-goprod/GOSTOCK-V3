@@ -596,6 +596,71 @@ async function step(id, title, fn, page) {
     return INFO(`Modifications PARTIELLES (champs différents) : les deux sont conservées = ${r.name.endsWith('A') && r.description === 'écrite par B'}. ATTENTION : la fiche de l'écran enregistre l'élément ENTIER (voir ItemDrawer.tsx, fonction d'enregistrement) : si deux personnes ouvrent la même fiche, la dernière à enregistrer écrase les champs de l'autre sans avertissement (« dernier gagnant »).`);
   });
 
+  /* ============ N Notifications PILOTE (étape 2, migration 53) ============ */
+  group = 'N Notifications';
+  const myNotifs = async c => rows(await rpc(c, 'my_notifications', { p_limit: 500 })).filter(n => /^cp_/.test(n.kind) && (n.message || '').includes(M));
+  await step('N-equipe-assignation', 'Ajouter le collaborateur à l\'équipe puis lui assigner une tâche : il reçoit 2 avis précis, le responsable (auteur) aucun', async () => {
+    S.pN = await proj(resp, { name: `${M} Projet notifs` });
+    S.tN1 = await item(resp, { project_id: S.pN, name: `${M} Notif T1`, starts_on: '2027-05-03', ends_on: '2027-05-07' });
+    accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.pN, user_id: S.u_resp, role: 'lead' }), 'équipe : responsable');
+    accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.pN, user_id: S.u_collab, role: 'member' }), 'équipe : collaborateur');
+    accepts(await api(resp, 'POST', '/rest/v1/cp_item_members', [{ item_id: S.tN1, user_id: S.u_collab }, { item_id: S.tN1, user_id: S.u_resp }]), 'assignations');
+    const mine = await myNotifs(collab);
+    const team = mine.filter(n => n.kind === 'cp_team_added'), asg = mine.filter(n => n.kind === 'cp_assigned');
+    ok(team.length === 1 && /membre/.test(team[0].message) && team[0].message.includes(`${M} Projet notifs`), `avis d'équipe = ${JSON.stringify(team.map(n => n.message))}`);
+    ok(asg.length === 1 && asg[0].message.includes(`la tâche « ${M} Notif T1 »`) && asg[0].message.includes('à terminer le 07.05.2027'), `avis d'assignation = ${JSON.stringify(asg.map(n => n.message))}`);
+    ok((await myNotifs(resp)).length === 0, 'l\'auteur reçoit des avis sur ses propres actions');
+  });
+  await step('N-dates-regroupees', 'Décaler une tâche assignée : avis « dates modifiées » ; un 2e décalage rapproché est regroupé (toujours un seul avis)', async () => {
+    accepts(await rpc(resp, 'cp_shift_item', { p_item_id: S.tN1, p_days: 7 }), 'décaler +7');
+    let d1 = (await myNotifs(collab)).filter(n => n.kind === 'cp_dates_changed');
+    ok(d1.length === 1 && d1[0].message.includes('du 10.05.2027 au 14.05.2027'), `avis de dates = ${JSON.stringify(d1.map(n => n.message))}`);
+    accepts(await rpc(resp, 'cp_shift_item', { p_item_id: S.tN1, p_days: 7 }), 'décaler +7 encore');
+    d1 = (await myNotifs(collab)).filter(n => n.kind === 'cp_dates_changed');
+    ok(d1.length === 1, `après un 2e décalage : ${d1.length} avis (attendu 1, regroupé)`);
+    accepts(await api(resp, 'PATCH', `/rest/v1/cp_items?id=eq.${S.tN1}`, { description: 'sans effet sur les dates' }), 'description');
+    ok((await myNotifs(collab)).filter(n => n.kind === 'cp_dates_changed').length === 1, 'modifier la description a produit un avis');
+  });
+  await step('N-ecran-notifications', 'Écran « Notifications » du collaborateur : famille PILOTE, avis lisibles, un clic ouvre « Mes tâches »', async () => {
+    await open(collab, '/notifications');
+    ok(await collab.page.getByText(`${M} Projet notifs`, { exact: false }).first().isVisible(), 'avis PILOTE absent de l\'écran');
+    ok(await collab.page.getByRole('radio', { name: /^PILOTE/ }).count() > 0, 'famille « PILOTE » absente');
+    await collab.page.getByRole('radio', { name: /^PILOTE/ }).click(); await collab.page.waitForTimeout(500);
+    await collab.page.getByText(`${M} Projet notifs`, { exact: false }).first().click(); await collab.page.waitForTimeout(1800);
+    ok(/\/pilote\/projets/.test(collab.page.url()) && /section=mytasks/.test(collab.page.url()), `adresse après clic = ${collab.page.url()}`);
+    ok(await collab.page.getByRole('button', { name: `${M} Notif T1` }).first().isVisible(), '« Mes tâches » ne s\'est pas ouvert sur la tâche');
+  }, collab.page);
+  await step('N-choix-ecran', 'Choix par personne à l\'écran : 5 événements × 3 canaux, une case cochée est enregistrée en base', async () => {
+    await open(collab, '/notifications');
+    const card = collab.page.locator('table', { has: collab.page.getByText('Échéance proche') }).first();
+    ok(await card.locator('tbody tr').count() === 5, 'le tableau des choix n\'a pas 5 lignes');
+    ok(await card.locator('input[type=checkbox]').count() === 15, 'le tableau des choix n\'a pas 15 cases');
+    const box = card.locator('input[aria-label*="m\'assigne une tâche"]').first();
+    await box.click(); await collab.page.waitForTimeout(1200);
+    const p = (await get(collab, `/rest/v1/cp_notification_prefs?select=kind,in_app&kind=eq.cp_assigned`))[0];
+    ok(p && p.in_app === false, `choix enregistré = ${JSON.stringify(p)} (attendu in_app = false)`);
+  }, collab.page);
+  await step('N-choix-respecte', '« Dans l\'application » décoché : une nouvelle assignation ne produit AUCUN avis ; recoché, elle en produit un', async () => {
+    const t2 = await item(resp, { project_id: S.pN, name: `${M} Notif T2` });
+    const before = (await myNotifs(collab)).filter(n => n.kind === 'cp_assigned').length;
+    accepts(await api(resp, 'POST', '/rest/v1/cp_item_members', { item_id: t2, user_id: S.u_collab }), 'assigner T2');
+    ok((await myNotifs(collab)).filter(n => n.kind === 'cp_assigned').length === before, 'un avis a été créé malgré le choix');
+    accepts(await api(collab, 'PATCH', '/rest/v1/cp_notification_prefs?kind=eq.cp_assigned', { in_app: true }), 'recocher');
+    const t3 = await item(resp, { project_id: S.pN, name: `${M} Notif T3` });
+    accepts(await api(resp, 'POST', '/rest/v1/cp_item_members', { item_id: t3, user_id: S.u_collab }), 'assigner T3');
+    ok((await myNotifs(collab)).filter(n => n.kind === 'cp_assigned').length === before + 1, 'recoché, aucun avis créé');
+    accepts(await api(collab, 'DELETE', '/rest/v1/cp_notification_prefs?kind=eq.cp_assigned'), 'remise à zéro des choix');
+  });
+  await step('N-droits', 'Droits : les choix d\'un autre sont illisibles ; les rappels quotidiens ne se lancent pas à la main', async () => {
+    accepts(await api(staff, 'POST', '/rest/v1/cp_notification_prefs', { kind: 'cp_overdue', in_app: false }), 'le magasinier fixe SON choix');
+    ok((await get(collab, '/rest/v1/cp_notification_prefs?select=user_id')).every(r => r.user_id === S.u_collab), 'le collaborateur lit des choix qui ne sont pas les siens');
+    ok((await get(resp, '/rest/v1/cp_notification_prefs?select=user_id')).every(r => r.user_id === S.u_resp), 'le responsable lit les choix des autres');
+    accepts(await api(staff, 'DELETE', '/rest/v1/cp_notification_prefs?kind=eq.cp_overdue'), 'nettoyage du choix du magasinier');
+    refuses(await rpc(resp, 'check_cp_deadlines'), /permission|denied|autoris/i, 'lancer les rappels depuis l\'écran');
+    refuses(await rpc(resp, 'cp_notify', { p_user: S.u_collab, p_kind: 'cp_assigned', p_title: 'x', p_message: 'y', p_project: null, p_item: null }), /permission|denied|autoris|function/i, 'créer un avis à la main');
+  });
+  await step('N-rappels-quotidiens', 'Rappels d\'échéance (cp_due_soon / cp_overdue)', async () => SKIP('NON TESTÉ ici : le contrôle quotidien est réservé à la clé de service (la fonction Edge) ; il est couvert par les tests SQL (notifications_pilote.sql) et par un essai annulé sur la vraie base, pas par ce script.'));
+
   /* ============ J Sauvegarde ============ */
   group = 'J Sauvegarde';
   await step('J-sauvegarde', 'La sauvegarde contient l\'équipe (colonne role) et les assignations', async () => SKIP('NON TESTÉ : générer une sauvegarde crée un fichier réel et la restaurer est destructif ; non exécuté volontairement. Vérifié par lecture du code seulement : BACKUP_TABLES contient cp_project_members et cp_item_members, et la sauvegarde lit select(\'*\') donc la colonne role est incluse.'));
@@ -608,7 +673,7 @@ async function step(id, title, fn, page) {
     { const r = await api(resp, 'DELETE', `/rest/v1/sites?name=like.${mine}`, undefined, REP); clean.sites = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
     clean.restants = {
       projets: await count(resp, 'cp_projects', `name=like.${mine}`), programmes: await count(resp, 'cp_programs', `name=like.${mine}`),
-      chantiers: await count(resp, 'sites', `name=like.${mine}`), elements: await count(resp, 'cp_items', `name=like.${mine}`),
+      chantiers: await count(resp, 'sites', `name=like.${mine}`), avis: await count(resp, 'notifications', `message=like.${encodeURIComponent('*' + M + '*')}`), elements: await count(resp, 'cp_items', `name=like.${mine}`),
     };
   } catch (e) { clean.err = e.message; }
   await step('Z-restes', 'Aucun reste après nettoyage (vérifié par requête)', async () => {

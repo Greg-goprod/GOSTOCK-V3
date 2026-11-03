@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layers, ListChecks } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, type CpProgram, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
@@ -20,7 +21,9 @@ const TONE = { not_started: 'neutral', in_progress: 'info', done: 'success', can
 const PiloteProjects: React.FC = () => {
   const [data, setData] = useState<PiloteData | null>(null);
   const [rights, setRights] = useState<PiloteRights>(NO_RIGHTS);
-  const [section, setSection] = useState<Section>('projects');
+  // Les avis PILOTE ouvrent directement « Mes tâches » (?section=mytasks)
+  const [params] = useSearchParams();
+  const [section, setSection] = useState<Section>(params.get('section') === 'mytasks' ? 'mytasks' : 'projects');
 
   const reload = useCallback(async () => {
     try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], programs: [], projects: [], members: [], sites: [] }); }
