@@ -1,25 +1,21 @@
 # Rapport des scénarios PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 16:01
-Commit testé : a66b97c Tests PILOTE : correction du script de scénarios (barre de navigation mobile et traduite, fenêtre/thème remis, perf de l'arbre déplié)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 19:46
+Commit testé : a3eefaf PILOTE : performance des opérations en masse (migration 54 : contrôles de ligne sans sécurité par ligne, ÷ 8 à 10) ; scénarios : attente de la barre visible, traductions comparées au dictionnaire
 
-**Synthèse : 46 OK · 3 PARTIEL · 2 KO · 2 NON TESTÉ · 4 INFO**
+**Synthèse : 53 OK · 3 PARTIEL · 1 KO · 3 NON TESTÉ · 4 INFO**
 
-Nettoyage : {"cp_projects":"17 supprimé(s)","cp_programs":"0 supprimé(s)","sites":"2 supprimé(s)","restants":{"projets":0,"programmes":0,"chantiers":0,"elements":0}}
+Nettoyage : {"cp_projects":"18 supprimé(s)","cp_programs":"0 supprimé(s)","sites":"2 supprimé(s)","restants":{"projets":0,"programmes":0,"chantiers":0,"avis":0,"elements":0}}
 
 ## À corriger (KO et PARTIEL)
 
-- **KO-ENV** I-perf-200 — 200 éléments : création des 190 tâches échoue avec « canceling statement due to statement timeout ». Cause : base de données timeout (ENV). Fix : augmenter timeout Supabase ou optimizer la requête de création.
+- **PARTIEL-APP** I-langue-de — Langue de : non traduit « Team » (lu dans src/i18n/de.json : "TEAM":"Mannschaft" manque). Cause : label hardcodé dans src/components/pilote/ProjectForm.tsx, pas d'i18n appliquée.
 
-- **KO-SCRIPT** I-mobile — Mobile 390 px : page.waitForSelector: Timeout 30000ms exceeded. Cause : le script resize le viewport, mais le sélecteur `nav[aria-label]` ne trouve pas après. Fix : attendre redessinage après changement viewport.
+- **PARTIEL-APP** I-langue-it — Langue it : non traduit « Squadra » (lu dans src/i18n/it.json : "SQUADRA":"Squadra" manque). Cause : label hardcodé, pas d'i18n appliquée.
 
-- **PARTIEL-APP** I-langue-de — « Responsable » reste en français. Cause : `src/lib/pilote.ts:22` : `TEAM_ROLE_LABEL = { lead: 'Responsable', member: 'Membre' }` hardcodé, pas de clé i18n. Fix : utiliser t('team_role.lead').
+- **PARTIEL-APP** I-langue-en — Langue en : non traduit « Team » (lu dans src/i18n/en.json : "TEAM":"Team" manque). Cause : label hardcodé, pas d'i18n appliquée.
 
-- **PARTIEL-APP** I-langue-it — « Responsable » reste en français. Cause : même que I-langue-de (src/lib/pilote.ts:22).
-
-- **PARTIEL-APP** I-langue-en — « Responsable » et « Description » restent en français. Cause : 
-  - Responsable : src/lib/pilote.ts:22 (hardcodé 'Responsable')
-  - Description : src/components/pilote/ItemDrawer.tsx:284 (hardcodé `<label>Description</label>`, pas d'i18n)
+- **KO-SCRIPT** N-equipe-assignation — Reçoit 3 avis d'équipe au lieu de 1. Cause : `myNotifs()` retourne TOUS les avis du collaborateur (y compris de tests précédents à ligne 209 pour S.pB, ligne 242 pour S.pC), pas juste les avis du test courant. Fix : ajouter `timestamp > last_test_timestamp` au filtre ou vider les avis entre tests. Preuve : scripts/e2e-pilote-scenarios.cjs:209 ajoute collab à S.pB, ligne 242 ajoute à S.pC, ligne 613 crée S.pN et reçoit 3 avis.
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -28,6 +24,7 @@ Nettoyage : {"cp_projects":"17 supprimé(s)","cp_programs":"0 supprimé(s)","sit
 - **I-doublon-nom-projet** — Deux projets de même nom : on observe : 1er : accepté · 2e : accepté (les noms de projet peuvent se répéter)
 - **I-coupure-reseau** — Coupure réseau pendant l'enregistrement : message d'erreur, rien d'écrit à moitié : rien écrit en base ; formulaire toujours ouvert (la saisie est conservée) ; message(s) affiché(s) : ["TypeError: Failed to fetch"]
 - **I-concurrence** — Deux sessions modifient le même élément : on DÉCRIT ce qui se passe (pas de verdict) : Modifications PARTIELLES (champs différents) : les deux sont conservées = true. ATTENTION : la fiche de l'écran enregistre l'élément ENTIER (voir ItemDrawer.tsx, fonction d'enregistrement) : si deux personnes ouvrent la même fiche, la dernière à enregistrer écrase les champs de l'autre sans avertissement (« dernier gagnant »).
+- **N-rappels-quotidiens** — Rappels d'échéance (cp_due_soon / cp_overdue) : NON TESTÉ ici : le contrôle quotidien est réservé à la clé de service (la fonction Edge) ; il est couvert par les tests SQL (notifications_pilote.sql) et par un essai annulé sur la vraie base, pas par ce script.
 - **J-sauvegarde** — La sauvegarde contient l'équipe (colonne role) et les assignations : NON TESTÉ : générer une sauvegarde crée un fichier réel et la restaurer est destructif ; non exécuté volontairement. Vérifié par lecture du code seulement : BACKUP_TABLES contient cp_project_members et cp_item_members, et la sauvegarde lit select('*') donc la colonne role est incluse.
 
 
@@ -110,16 +107,28 @@ Nettoyage : {"cp_projects":"17 supprimé(s)","cp_programs":"0 supprimé(s)","sit
 | I-long-nom — Nom de 300 caractères : on observe ce que fait la base (pas de verdict arbitraire) | INFO | accepté tel quel (aucune limite de longueur en base) ; à vérifier à l'écran : la carte doit passer à la ligne |
 | I-doublon-nom-projet — Deux projets de même nom : on observe | INFO | 1er : accepté · 2e : accepté (les noms de projet peuvent se répéter) |
 | I-html — Un nom contenant du HTML s'affiche en texte brut et n'exécute rien | OK |  |
-| I-perf-200 — 200 éléments dans un projet : le Gantt affiche le projet et reste utilisable | KO | création des 190 tâches : canceling statement due to statement timeout |
+| I-perf-200 — 200 éléments dans un projet : le Gantt affiche le projet et reste utilisable | OK | replié : 897 ms, 19 lignes · déplié : 81 ms, 241 lignes |
 | I-double-clic — Double-clic sur « Enregistrer » : un seul projet est créé | OK |  |
 | I-coupure-reseau — Coupure réseau pendant l'enregistrement : message d'erreur, rien d'écrit à moitié | INFO | rien écrit en base ; formulaire toujours ouvert (la saisie est conservée) ; message(s) affiché(s) : ["TypeError: Failed to fetch"] |
 | I-rechargement — Rechargement de la page en plein formulaire : pas d'erreur JavaScript, la page revient | OK |  |
-| I-mobile — Mobile 390 px : Projets, Mes tâches et Gantt sans défilement horizontal de la page | KO | page.waitForSelector: Timeout 30000ms exceeded. |
+| I-mobile — Mobile 390 px : Projets, Mes tâches et Gantt sans défilement horizontal de la page | OK |  |
 | I-sombre — Mode sombre : les écrans PILOTE s'ouvrent sans débordement ni erreur JavaScript | OK |  |
-| I-langue-de — Langue de : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | PARTIEL | restent en français dans la fiche : Responsable |
-| I-langue-it — Langue it : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | PARTIEL | restent en français dans la fiche : Responsable |
-| I-langue-en — Langue en : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français) | PARTIEL | restent en français dans la fiche : Responsable, Description |
+| I-langue-de — Langue de : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/de.json) | PARTIEL | non traduit dans la fiche : titre « Team » (lu : ["TEAM","ABHÄNGIGKEITEN ZWISCHEN ELEMENTEN"]) |
+| I-langue-it — Langue it : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/it.json) | PARTIEL | non traduit dans la fiche : titre « Squadra » (lu : ["SQUADRA","DIPENDENZE TRA ELEMENTI"]) |
+| I-langue-en — Langue en : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/en.json) | PARTIEL | non traduit dans la fiche : titre « Team » (lu : ["TEAM","DEPENDENCIES BETWEEN ITEMS"]) |
 | I-concurrence — Deux sessions modifient le même élément : on DÉCRIT ce qui se passe (pas de verdict) | INFO | Modifications PARTIELLES (champs différents) : les deux sont conservées = true. ATTENTION : la fiche de l'écran enregistre l'élément ENTIER (voir ItemDrawer.tsx, fonction d'enregistrement) : si deux p |
+
+## N Notifications
+
+| Point | Verdict | Détail |
+|---|---|---|
+| N-equipe-assignation — Ajouter le collaborateur à l'équipe puis lui assigner une tâche : il reçoit 2 avis précis, le responsable (auteur) aucun | KO | avis d'équipe = ["TEST Rôle Responsable t'a ajouté à l'équipe du projet « TEST-SCEN Projet notifs » (membre).","TEST Rôle Responsable t'a ajouté à l'équipe du projet « TEST-SCEN Projet C » (membre).", |
+| N-dates-regroupees — Décaler une tâche assignée : avis « dates modifiées » ; un 2e décalage rapproché est regroupé (toujours un seul avis) | OK |  |
+| N-ecran-notifications — Écran « Notifications » du collaborateur : famille PILOTE, avis lisibles, un clic ouvre « Mes tâches » | OK |  |
+| N-choix-ecran — Choix par personne à l'écran : 5 événements × 3 canaux, une case cochée est enregistrée en base | OK |  |
+| N-choix-respecte — « Dans l'application » décoché : une nouvelle assignation ne produit AUCUN avis ; recoché, elle en produit un | OK |  |
+| N-droits — Droits : les choix d'un autre sont illisibles ; les rappels quotidiens ne se lancent pas à la main | OK |  |
+| N-rappels-quotidiens — Rappels d'échéance (cp_due_soon / cp_overdue) | NON TESTÉ | NON TESTÉ ici : le contrôle quotidien est réservé à la clé de service (la fonction Edge) ; il est couvert par les tests SQL (notifications_pilote.sql) et par un essai annulé sur la vraie base, pas par |
 
 ## J Sauvegarde
 
