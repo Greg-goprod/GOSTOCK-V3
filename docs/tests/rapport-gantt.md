@@ -1,11 +1,11 @@
 # Rapport des tests du Gantt PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 20:46
-Commit testé : 1758578 (e2e-gantt : deux défauts du script corrigés)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 07:48
+Commit testé : e22ad27 (Statut : migration 50 appliquée et vérifiée)
 
-**Synthèse : 19 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
+**Synthèse : 26 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 
-Nettoyage : {"cp_projects":"1 supprimé(s)","cp_programs":"1 supprimé(s)","elements_restants":0}
+Nettoyage : {"cp_projects":"2 supprimé(s)","cp_programs":"1 supprimé(s)","elements_restants":0}
 
 ## À corriger (KO et PARTIEL)
 
@@ -49,6 +49,18 @@ Aucun.
 | P3-plus — Le « + » d'une phase propose tâche et jalon, parent figé | OK |  |
 | P3-placer — « Placer aujourd'hui » date l'élément sans date | OK |  |
 | P3-supprimer — Supprimer la phase : le message annonce les éléments en dessous, tout part en cascade | OK |  |
+
+## P3b Gestes
+
+| Point | Verdict | Détail |
+|---|---|---|
+| P3b-prepa — Projet « Gestes » : phase, tâche et sous-tâche datées à partir d'aujourd'hui (donc visibles à l'ouverture) | OK |  |
+| P3b-clavier-deplacer — Flèche droite sur la tâche : elle ET sa sous-tâche se décalent d'un jour (la phase ne bouge pas) | OK |  |
+| P3b-clavier-bord — Maj + flèche droite sur la sous-tâche : sa fin avance d'un jour, son début ne bouge pas | OK |  |
+| P3b-souris-deplacer — Glisser la phase de +2 jours à la souris : la phase, la tâche et la sous-tâche se décalent de 2 jours | OK |  |
+| P3b-souris-bord — Tirer le bord droit de la tâche de +2 jours : seule sa fin change | OK |  |
+| P3b-clic-fiche — Un clic sans mouvement ouvre toujours la fiche | OK |  |
+| P3b-nouveau — « + Nouveau » dans la liste : une tâche créée sous la phase, avec des dates, et la saisie reste ouverte | OK |  |
 
 ## P4 Lecteurs
 
