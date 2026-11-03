@@ -4,12 +4,18 @@ import { supabase } from './supabase';
 export type StatusFamily = 'not_started' | 'in_progress' | 'done' | 'cancelled';
 export type ProjectType = 'site' | 'rd' | 'design' | 'recruitment' | 'admin' | 'event';
 export type ProjectPriority = 'low' | 'medium' | 'high';
+// Réglage des dépendances d'un projet : décaler seulement si les dates se chevauchent, garder l'intervalle, ou ne rien décaler
+export type LinkMode = 'overlap' | 'keep_gap' | 'none';
+export const LINK_MODE_LABEL: Record<LinkMode, string> = {
+  overlap: 'Seulement si les dates se chevauchent', keep_gap: 'Garder l\'intervalle entre les éléments', none: 'Ne pas décaler automatiquement',
+};
 
 export interface CpStatus { id: string; name: string; family: StatusFamily; color: string; position: number; is_system: boolean }
 export interface CpProgram { id: string; name: string; description: string | null; color: string; starts_on: string | null; ends_on: string | null }
 export interface CpProject {
   id: string; program_id: string | null; site_id: string | null; type: ProjectType; name: string; description: string | null;
   status_id: string; priority: ProjectPriority | null; color: string; starts_on: string | null; ends_on: string | null;
+  link_mode: LinkMode; link_skip_weekends: boolean;
 }
 export interface CpMember { project_id: string; user_id: string }
 
@@ -20,6 +26,8 @@ export interface CpItem {
   status_id: string; priority: ProjectPriority | null; starts_on: string | null; ends_on: string | null; position: number;
 }
 export interface CpItemMember { item_id: string; user_id: string }
+// « Le successeur commence après la fin du prédécesseur »
+export interface CpLink { id: string; project_id: string; predecessor_id: string; successor_id: string }
 export interface CpItemCheck { id: string; item_id: string; label: string; done: boolean; position: number }
 
 export const ITEM_KIND_LABEL: Record<ItemKind, string> = { phase: 'Phase', task: 'Tâche', milestone: 'Jalon', subtask: 'Sous-tâche' };
@@ -59,6 +67,7 @@ export interface PiloteData {
 export interface GanttData extends PiloteData {
   items: CpItem[];
   itemMembers: CpItemMember[];
+  links: CpLink[];
 }
 
 export async function loadPilote(): Promise<PiloteData> {
@@ -81,14 +90,15 @@ export async function loadPilote(): Promise<PiloteData> {
 }
 
 export async function loadGantt(): Promise<GanttData> {
-  const [base, items, itemMembers] = await Promise.all([
+  const [base, items, itemMembers, links] = await Promise.all([
     loadPilote(),
     supabase.from('cp_items').select('*').order('position').order('starts_on', { nullsFirst: false }).order('name'),
     supabase.from('cp_item_members').select('item_id, user_id'),
+    supabase.from('cp_item_links').select('id, project_id, predecessor_id, successor_id'),
   ]);
-  const error = [items, itemMembers].map(r => r.error).find(Boolean);
+  const error = [items, itemMembers, links].map(r => r.error).find(Boolean);
   if (error) throw error;
-  return { ...base, items: (items.data || []) as CpItem[], itemMembers: (itemMembers.data || []) as CpItemMember[] };
+  return { ...base, items: (items.data || []) as CpItem[], itemMembers: (itemMembers.data || []) as CpItemMember[], links: (links.data || []) as CpLink[] };
 }
 
 export interface PiloteRights { create: boolean; update: boolean; delete: boolean }
@@ -132,6 +142,16 @@ export async function shiftProject(projectId: string, days: number): Promise<voi
 // Change seulement les dates de cet élément ou de ce projet (bords tirés à la souris ou au clavier)
 export async function setDates(kind: 'project' | 'item', id: string, start: string, end: string): Promise<void> {
   const { error } = await supabase.from(kind === 'project' ? 'cp_projects' : 'cp_items').update({ starts_on: start, ends_on: end }).eq('id', id);
+  if (error) throw error;
+}
+
+// Dépendances : la base refuse les boucles, la parenté et les projets différents (message en français) et décale le successeur si besoin
+export async function addLink(predecessorId: string, successorId: string): Promise<void> {
+  const { error } = await supabase.from('cp_item_links').insert({ predecessor_id: predecessorId, successor_id: successorId });
+  if (error) throw error;
+}
+export async function removeLink(linkId: string): Promise<void> {
+  const { error } = await supabase.from('cp_item_links').delete().eq('id', linkId);
   if (error) throw error;
 }
 

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
 import { confirmAction } from '../../lib/confirm';
-import { allowedKinds, descendantsOf, ITEM_KIND_LABEL, parentKindsFor, piloteError, PRIORITY_LABEL, saveItemMembers, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
+import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL, parentKindsFor, piloteError, removeLink, PRIORITY_LABEL, saveItemMembers, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import DateInput, { DateRangeInput } from '../common/DateInput';
@@ -15,6 +15,7 @@ interface Props {
   data: GanttData;
   target: ItemTarget | null;
   canUpdate: boolean;
+  canCreate: boolean;
   canDelete: boolean;
   onClose: () => void;
   onSaved: () => Promise<void>;
@@ -30,13 +31,15 @@ const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-60
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 // Fiche d'un élément : création, modification, suppression ; responsables (plusieurs) et liste à cocher
-const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canDelete, onClose, onSaved }) => {
+const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDelete, onClose, onSaved }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
   const [checks, setChecks] = useState<CheckLine[]>([]);
   const [initialChecks, setInitialChecks] = useState<CheckLine[]>([]);
   const [newCheck, setNewCheck] = useState('');
   const [saving, setSaving] = useState(false);
+  const [newPred, setNewPred] = useState('');
+  const datesTouched = useRef(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
   const edited = target?.mode === 'edit' ? data.items.find(i => i.id === target.itemId) ?? null : null;
   const isNew = target?.mode === 'new';
@@ -46,6 +49,8 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canDelete, onClo
     if (!target) { setForm(null); setChecks([]); setInitialChecks([]); setNewCheck(''); return; }
     const notStarted = data.statuses.find(s => s.is_system && s.family === 'not_started')?.id ?? data.statuses[0]?.id ?? '';
     setNewCheck('');
+    setNewPred('');
+    datesTouched.current = false;
     if (target.mode === 'edit') {
       const it = data.items.find(i => i.id === target.itemId);
       if (!it) return;
@@ -94,6 +99,34 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canDelete, onClo
     if (!form) return;
     const valid = data.items.some(i => i.id === form.parentId && parentKindsFor(kind).includes(i.kind));
     set({ kind, parentId: valid ? form.parentId : '', ...(kind === 'milestone' ? { ends_on: form.starts_on || form.ends_on, starts_on: form.starts_on || form.ends_on } : {}) });
+  };
+
+  // Une dépendance ajoutée ou retirée peut décaler CET élément (s'il est le successeur) : les dates affichées suivent, tant qu'on ne les a pas modifiées soi-même
+  useEffect(() => {
+    if (!edited || !form || datesTouched.current) return;
+    if ((edited.starts_on ?? '') !== form.starts_on || (edited.ends_on ?? '') !== form.ends_on) set({ starts_on: edited.starts_on ?? '', ends_on: edited.ends_on ?? '' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edited?.starts_on, edited?.ends_on]);
+
+  const projectOfItem = edited ? data.projects.find(p => p.id === edited.project_id) ?? null : null;
+  const predLinks = edited ? data.links.filter(l => l.successor_id === edited.id) : [];
+  const succLinks = edited ? data.links.filter(l => l.predecessor_id === edited.id) : [];
+  const itemName = (id: string) => data.items.find(i => i.id === id)?.name ?? '—';
+  // Éléments proposables comme prédécesseur : du même projet, ni lui-même, ni déjà lié ; la base refuse parenté et boucles avec un message clair
+  const predOptions = useMemo(() => {
+    if (!edited) return [] as { id: string; label: string }[];
+    const taken = new Set(predLinks.map(l => l.predecessor_id));
+    // Ni ses parents ni ce qu'il contient (la base les refuse de toute façon)
+    const related = new Set<string>();
+    for (let up = data.items.find(i => i.id === edited.parent_id); up; up = data.items.find(i => i.id === up!.parent_id)) related.add(up.id);
+    const below = (id: string) => { for (const c of data.items.filter(i => i.parent_id === id)) { related.add(c.id); below(c.id); } };
+    below(edited.id);
+    return data.items.filter(i => i.project_id === edited.project_id && i.id !== edited.id && !taken.has(i.id) && !related.has(i.id))
+      .map(i => ({ id: i.id, label: `${ITEM_KIND_LABEL[i.kind]} · ${i.name}` }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.items, data.links, edited]);
+  const changeLink = async (action: () => Promise<void>) => {
+    try { await action(); await onSaved(); } catch (error) { toast.error(piloteError(error)); }
   };
 
   const save = async (event: React.FormEvent) => {
@@ -214,13 +247,13 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canDelete, onClo
             {form.kind === 'milestone' ? (
               <div className="sm:col-span-2">
                 <label htmlFor="itm-start" className={labelClass}>Date du jalon</label>
-                <DateInput id="itm-start" className={inputClass} value={form.starts_on} disabled={readOnly} onChange={e => set({ starts_on: e.target.value })} />
+                <DateInput id="itm-start" className={inputClass} value={form.starts_on} disabled={readOnly} onChange={e => { datesTouched.current = true; set({ starts_on: e.target.value }); }} />
               </div>
             ) : (
               <>
                 <div className="sm:col-span-2">
                   <label htmlFor="itm-period" className={labelClass}>Période (début et fin)</label>
-                  <DateRangeInput id="itm-period" className={inputClass} start={form.starts_on} end={form.ends_on} disabled={readOnly} onChange={(a, b) => set({ starts_on: a, ends_on: b })} placeholder="Choisir le début et la fin" />
+                  <DateRangeInput id="itm-period" className={inputClass} start={form.starts_on} end={form.ends_on} disabled={readOnly} onChange={(a, b) => { datesTouched.current = true; set({ starts_on: a, ends_on: b }); }} placeholder="Choisir le début et la fin" />
                 </div>
               </>
             )}
@@ -262,6 +295,47 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canDelete, onClo
               </div>
             )}
           </fieldset>
+          {edited && (
+            <fieldset disabled={!canCreate && !canDelete}>
+              <legend className={labelClass}>Dépendances</legend>
+              <p className="mb-2 text-xs text-gray-600 dark:text-gray-400">
+                {projectOfItem && <>Un élément qui « commence après » un autre est décalé automatiquement. Réglage du projet : <span>{LINK_MODE_LABEL[projectOfItem.link_mode ?? 'overlap']}</span>.</>}
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Commence après</p>
+              {predLinks.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucun élément.</p> : (
+                <ul className="space-y-1">
+                  {predLinks.map(l => (
+                    <li key={l.id} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                      <span className="min-w-0 flex-1 truncate">{itemName(l.predecessor_id)}</span>
+                      {canDelete && <button type="button" aria-label={`Retirer la dépendance avec ${itemName(l.predecessor_id)}`} onClick={() => void changeLink(() => removeLink(l.id))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {canCreate && (
+                <div className="mt-2 flex gap-2">
+                  <select aria-label="Commence après l'élément" className={inputClass} value={newPred} onChange={e => setNewPred(e.target.value)}>
+                    <option value="">— Choisis un élément</option>
+                    {predOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  </select>
+                  <Button variant="outline" size="sm" icon={<Plus size={14} />} disabled={!newPred} onClick={() => void changeLink(async () => { await addLink(newPred, edited.id); setNewPred(''); })}>Ajouter</Button>
+                </div>
+              )}
+              {succLinks.length > 0 && (
+                <>
+                  <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">Débloque (commencent après lui)</p>
+                  <ul className="space-y-1">
+                    {succLinks.map(l => (
+                      <li key={l.id} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <span className="min-w-0 flex-1 truncate">{itemName(l.successor_id)}</span>
+                        {canDelete && <button type="button" aria-label={`Retirer la dépendance avec ${itemName(l.successor_id)}`} onClick={() => void changeLink(() => removeLink(l.id))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </fieldset>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <div>{edited && canDelete && <Button variant="outline" icon={<Trash2 size={14} />} onClick={() => void remove()}>Supprimer</Button>}</div>
             <div className="flex gap-2">
