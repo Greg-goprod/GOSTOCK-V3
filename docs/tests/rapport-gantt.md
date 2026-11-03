@@ -1,15 +1,15 @@
 # Rapport des tests du Gantt PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 11:47
-Commit testé : 9f72bf1 (Fiche d'élément : bouton dépendances renommé « Ajouter la dépendance »)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 11:59
+Commit testé : 78094b8 (e2e-gantt : fenêtre de départ Gantt corrigée)
 
-**Synthèse : 34 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 0 INFO**
+**Synthèse : 35 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 
 Nettoyage : {"cp_projects":"3 supprimé(s)","cp_programs":"1 supprimé(s)","elements_restants":0}
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** P2-barres — Une barre par élément daté, un losange pour le jalon : barre de la tâche absente ([capture](captures-gantt/P2-barres.png))
+Aucun.
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -35,7 +35,7 @@ Nettoyage : {"cp_projects":"3 supprimé(s)","cp_programs":"1 supprimé(s)","elem
 |---|---|---|
 | P2-ouverture — PILOTE › Gantt s'ouvre : groupe « Programme » et projet visibles, éléments repliés | OK |  |
 | P2-deplier — « Tout déplier » montre la phase, la tâche, la sous-tâche et le jalon | OK |  |
-| P2-barres — Une barre par élément daté, un losange pour le jalon | KO | barre de la tâche absente |
+| P2-barres — Une barre par élément daté, un losange pour le jalon | OK |  |
 | P2-sans-date — L'élément sans date est dans le bac « Sans date » | OK |  |
 | P2-zoom-regroupement — Périodes affichées et regroupements sans erreur | OK |  |
 
