@@ -95,6 +95,12 @@ async function step(id, title, fn, page) {
   const create = async (c, table, row) => { const r = await api(c, 'POST', `/rest/v1/${table}?select=id`, row, REP); ok(!refused(r), `${table} : ${msg(r)}`); return rows(r)[0]?.id; };
   const open = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await c.page.waitForTimeout(3000); };
   const rowLocator = c => c.page.locator('.group\\/row');
+  // Le Gantt s'ouvre sur aujourd'hui s'il est dans le plan (par exemple dès qu'un vrai projet daté existe), sinon sur le plan : on ne suppose
+  // jamais la fenêtre de départ. On passe en « 1 année » et on avance d'une année à la fois jusqu'à voir la barre cherchée.
+  const showBar = async (c, label) => {
+    await c.page.getByRole('radio', { name: '1 année', exact: true }).click(); await c.page.waitForTimeout(400);
+    for (let i = 0; i < 24 && !(await c.page.locator(`[role="button"][aria-label*="${label}"]`).count()); i++) { await c.page.getByRole('button', { name: 'Période suivante' }).click(); await c.page.waitForTimeout(250); }
+  };
   const expandAll = async c => { await c.page.getByRole('button', { name: 'Tout déplier' }).click(); await c.page.waitForTimeout(500); };
 
   /* ============ P0 Prérequis ============ */
@@ -140,6 +146,7 @@ async function step(id, title, fn, page) {
     for (const n of ['Phase', 'Tâche', 'Sous-tâche', 'Jalon', 'À dater']) ok(names.includes(`${M} ${n}`), `« ${n} » absent`);
   }, resp.page);
   await step('P2-barres', 'Une barre par élément daté, un losange pour le jalon', async () => {
+    await showBar(resp, `${M} Tâche`);
     ok(await resp.page.locator(`[role="button"][aria-label*="${M} Tâche"]`).count() >= 1, 'barre de la tâche absente');
     ok(await resp.page.locator(`[role="button"][aria-label*="${M} Jalon"]`).count() >= 1, 'losange du jalon absent');
   }, resp.page);
