@@ -1,19 +1,15 @@
 # Rapport des tests du Gantt PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 11:33
-Commit testé : 660bab1 (migration 51 appliquée, P3c Dépendances ajoutées)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 11:47
+Commit testé : 9f72bf1 (Fiche d'élément : bouton dépendances renommé « Ajouter la dépendance »)
 
-**Synthèse : 30 OK · 0 PARTIEL · 5 KO · 0 NON TESTÉ · 0 INFO**
+**Synthèse : 34 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 0 INFO**
 
 Nettoyage : {"cp_projects":"3 supprimé(s)","cp_programs":"1 supprimé(s)","elements_restants":0}
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** P3-modifier — Modifier le nom, cocher une étape ajoutée, enregistrer : tout est en base : locator.click: Error: strict mode violation: getByRole('button', { name: 'Ajouter', exact: true }) resolved to 2 elements: ([capture](captures-gantt/P3-modifier.png))
-- **KO** P3-creer — Nouvel élément par la fiche : une sous-tâche sous la tâche, avec un responsable : locator.click: Timeout 30000ms exceeded. ([capture](captures-gantt/P3-creer.png))
-- **KO** P3-plus — Le « + » d'une phase propose tâche et jalon, parent figé : locator.click: Timeout 30000ms exceeded. ([capture](captures-gantt/P3-plus.png))
-- **KO** P3-placer — « Placer aujourd'hui » date l'élément sans date : locator.click: Timeout 30000ms exceeded. ([capture](captures-gantt/P3-placer.png))
-- **KO** P3-supprimer — Supprimer la phase : le message annonce les éléments en dessous, tout part en cascade : locator.click: Timeout 30000ms exceeded. ([capture](captures-gantt/P3-supprimer.png))
+- **KO** P2-barres — Une barre par élément daté, un losange pour le jalon : barre de la tâche absente ([capture](captures-gantt/P2-barres.png))
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -39,7 +35,7 @@ Nettoyage : {"cp_projects":"3 supprimé(s)","cp_programs":"1 supprimé(s)","elem
 |---|---|---|
 | P2-ouverture — PILOTE › Gantt s'ouvre : groupe « Programme » et projet visibles, éléments repliés | OK |  |
 | P2-deplier — « Tout déplier » montre la phase, la tâche, la sous-tâche et le jalon | OK |  |
-| P2-barres — Une barre par élément daté, un losange pour le jalon | OK |  |
+| P2-barres — Une barre par élément daté, un losange pour le jalon | KO | barre de la tâche absente |
 | P2-sans-date — L'élément sans date est dans le bac « Sans date » | OK |  |
 | P2-zoom-regroupement — Périodes affichées et regroupements sans erreur | OK |  |
 
@@ -48,11 +44,11 @@ Nettoyage : {"cp_projects":"3 supprimé(s)","cp_programs":"1 supprimé(s)","elem
 | Point | Verdict | Détail |
 |---|---|---|
 | P3-ouvrir — Clic sur la tâche : fiche avec type verrouillé et parent | OK |  |
-| P3-modifier — Modifier le nom, cocher une étape ajoutée, enregistrer : tout est en base | KO | locator.click: Error: strict mode violation: getByRole('button', { name: 'Ajouter', exact: true }) resolved to 2 elements: |
-| P3-creer — Nouvel élément par la fiche : une sous-tâche sous la tâche, avec un responsable | KO | locator.click: Timeout 30000ms exceeded. |
-| P3-plus — Le « + » d'une phase propose tâche et jalon, parent figé | KO | locator.click: Timeout 30000ms exceeded. |
-| P3-placer — « Placer aujourd'hui » date l'élément sans date | KO | locator.click: Timeout 30000ms exceeded. |
-| P3-supprimer — Supprimer la phase : le message annonce les éléments en dessous, tout part en cascade | KO | locator.click: Timeout 30000ms exceeded. |
+| P3-modifier — Modifier le nom, cocher une étape ajoutée, enregistrer : tout est en base | OK |  |
+| P3-creer — Nouvel élément par la fiche : une sous-tâche sous la tâche, avec un responsable | OK |  |
+| P3-plus — Le « + » d'une phase propose tâche et jalon, parent figé | OK |  |
+| P3-placer — « Placer aujourd'hui » date l'élément sans date | OK |  |
+| P3-supprimer — Supprimer la phase : le message annonce les éléments en dessous, tout part en cascade | OK |  |
 
 ## P3b Gestes
 
