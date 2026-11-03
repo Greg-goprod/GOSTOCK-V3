@@ -31,10 +31,14 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
+  // Création d'un programme sans quitter le formulaire (champ qui s'ouvre sous la liste)
+  const [newProgram, setNewProgram] = useState<string | null>(null);
+  const [creatingProgram, setCreatingProgram] = useState(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
   const editedRow = target?.mode === 'edit' ? target.row : null;
 
   useEffect(() => {
+    setNewProgram(null);
     if (!target) { setForm(null); return; }
     const base = data.statuses.find(s => s.is_system && s.family === 'not_started')?.id ?? data.statuses[0]?.id ?? '';
     if (target.mode === 'edit') {
@@ -59,6 +63,26 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
 
   const set = (patch: Partial<FormState>) => setForm(f => (f ? { ...f, ...patch } : f));
   const toggleMember = (id: string) => set({ members: form?.members.includes(id) ? form.members.filter(x => x !== id) : [...(form?.members ?? []), id] });
+
+  const createProgram = async () => {
+    const name = (newProgram ?? '').trim();
+    if (!name || creatingProgram) return;
+    const existing = data.programs.find(p => p.name.trim().toLowerCase() === name.toLowerCase());
+    if (existing) { set({ program_id: existing.id }); setNewProgram(null); return void toast.success('Ce programme existe déjà : il est sélectionné'); }
+    setCreatingProgram(true);
+    try {
+      const { data: row, error } = await supabase.from('cp_programs').insert({ name }).select('id').single();
+      if (error) throw error;
+      await onSaved();
+      set({ program_id: row.id as string });
+      setNewProgram(null);
+      toast.success('Programme créé');
+    } catch (error) {
+      toast.error(piloteError(error));
+    } finally {
+      setCreatingProgram(false);
+    }
+  };
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -119,6 +143,16 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
                 <option value="">— Aucun</option>
                 {data.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
+              {newProgram === null ? (
+                <button type="button" className="mt-1 text-xs font-medium text-primary-600 hover:underline" onClick={() => setNewProgram('')}>+ Créer un programme</button>
+              ) : (
+                <div className="mt-1 flex gap-2">
+                  <input aria-label="Nom du nouveau programme" className={inputClass} autoFocus value={newProgram} placeholder="Nom du programme"
+                    onChange={e => setNewProgram(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void createProgram(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setNewProgram(null); } }} />
+                  <Button type="button" size="sm" loading={creatingProgram} onClick={() => void createProgram()}>Ajouter</Button>
+                </div>
+              )}
             </div>
             <div>
               <label htmlFor="prj-priority" className={labelClass}>Priorité</label>

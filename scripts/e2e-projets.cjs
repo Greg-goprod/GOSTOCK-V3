@@ -204,6 +204,21 @@ async function step(id, title, fn, page) {
     const m = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id&project_id=eq.${r.id}`));
     ok(m.length === 1, `responsables enregistrés = ${m.length}`);
   }, resp.page);
+  await step('P4-programme-inline', 'Formulaire de projet : « Créer un programme » crée et sélectionne le programme, le projet y est rangé', async () => {
+    const name = `${M} Programme express`;
+    await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(700);
+    await resp.page.locator('#prj-name').fill(`${M} Avec programme express`);
+    await resp.page.getByRole('button', { name: /Créer un programme/ }).click();
+    await resp.page.getByLabel('Nom du nouveau programme').fill(name);
+    await resp.page.getByRole('button', { name: 'Ajouter', exact: true }).click(); await resp.page.waitForTimeout(1500);
+    const prog = rows(await api(resp, 'GET', `/rest/v1/cp_programs?select=id&name=eq.${encodeURIComponent(name)}`))[0];
+    ok(prog, 'programme non créé en base');
+    ok((await resp.page.locator('#prj-name').inputValue()) === `${M} Avec programme express`, 'le nom saisi du projet a été perdu');
+    ok((await resp.page.locator('#prj-program').inputValue()) === prog.id, 'programme créé non sélectionné');
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
+    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=program_id&name=eq.${encodeURIComponent(M + ' Avec programme express')}`))[0];
+    ok(r && r.program_id === prog.id, `projet rangé dans = ${r && r.program_id}`);
+  }, resp.page);
   await step('P4-chantier-pris', 'Le chantier déjà relié n\'est plus proposé pour un autre projet', async () => {
     await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(600);
     await resp.page.locator('#prj-type').selectOption('site');

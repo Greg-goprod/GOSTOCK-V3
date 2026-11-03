@@ -3153,5 +3153,10 @@
 "Un élément ne dépend pas de son parent ni de ce qu'il contient": "Un elemento non dipende dal suo genitore né da ciò che contiene",
 "Les deux éléments doivent être dans le même projet": "I due elementi devono essere nello stesso progetto",
 "Chaîne de dépendances trop longue": "Catena di dipendenze troppo lunga",
-"Ajouter la dépendance": "Aggiungi la dipendenza"
+"Ajouter la dépendance": "Aggiungi la dipendenza",
+"+ Créer un programme": "+ Crea un programma",
+"Nom du nouveau programme": "Nome del nuovo programma",
+"Nom du programme": "Nome del programma",
+"Programme créé": "Programma creato",
+"Ce programme existe déjà : il est sélectionné": "Questo programma esiste già: è selezionato"
 }

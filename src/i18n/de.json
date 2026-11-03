@@ -3153,5 +3153,10 @@
 "Un élément ne dépend pas de son parent ni de ce qu'il contient": "Ein Element hängt nicht von seinem übergeordneten Element oder seinem Inhalt ab",
 "Les deux éléments doivent être dans le même projet": "Beide Elemente müssen im selben Projekt sein",
 "Chaîne de dépendances trop longue": "Abhängigkeitskette zu lang",
-"Ajouter la dépendance": "Abhängigkeit hinzufügen"
+"Ajouter la dépendance": "Abhängigkeit hinzufügen",
+"+ Créer un programme": "+ Programm erstellen",
+"Nom du nouveau programme": "Name des neuen Programms",
+"Nom du programme": "Name des Programms",
+"Programme créé": "Programm erstellt",
+"Ce programme existe déjà : il est sélectionné": "Dieses Programm gibt es bereits: Es ist ausgewählt"
 }

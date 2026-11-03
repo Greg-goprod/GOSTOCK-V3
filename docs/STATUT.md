@@ -98,3 +98,5 @@
 ## BLOQUANT ACTUEL (une seule chose)
 Les tests lancés par ton Claude local après le module multi-entreprise ont donné **36 KO** (242 OK sur 281 au test complet, etc.).
 On ne sait pas encore s'il s'agit de vraies régressions ou de tests trop pressés (attente fixe de 900 ms). **Étape suivante : lancer le diagnostic `scripts/diag-demarrage.cjs`** (lecture seule, 2 minutes), puis décider.
+
+- Formulaire de projet : lien « + Créer un programme » (création sans quitter le formulaire, le programme est sélectionné ensuite). Typecheck et lint OK ; étape `P4-programme-inline` ajoutée à `e2e-projets`, **pas encore exécutée** sur la vraie base (à lancer par Claude local).

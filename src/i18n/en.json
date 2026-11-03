@@ -3153,5 +3153,10 @@
 "Un élément ne dépend pas de son parent ni de ce qu'il contient": "An item does not depend on its parent or on what it contains",
 "Les deux éléments doivent être dans le même projet": "Both items must be in the same project",
 "Chaîne de dépendances trop longue": "Dependency chain too long",
-"Ajouter la dépendance": "Add the dependency"
+"Ajouter la dépendance": "Add the dependency",
+"+ Créer un programme": "+ Create a program",
+"Nom du nouveau programme": "New program name",
+"Nom du programme": "Program name",
+"Programme créé": "Program created",
+"Ce programme existe déjà : il est sélectionné": "This program already exists: it is selected"
 }
