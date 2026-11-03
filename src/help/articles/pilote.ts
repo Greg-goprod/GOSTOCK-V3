@@ -92,6 +92,24 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'dependances',
+        title: 'Relier des éléments : « commence après »',
+        who: 'Administrateur et responsable (les autres voient les flèches).',
+        steps: [
+          { text: 'Ouvre la fiche d\'un élément : dans « Dépendances », « Commence après » liste les éléments qu\'il doit attendre. Choisis un élément du même projet dans la liste, puis « Ajouter ». La corbeille retire la dépendance.' },
+          { text: 'Sur le Gantt, une flèche va de la fin de l\'élément qui précède au début de celui qui suit. Une flèche rouge signale un conflit : le successeur commence avant la fin de son prédécesseur.' },
+          { text: 'Le projet décide de ce qui se passe quand un élément change de dates (fiche du projet › « Dépendances entre éléments ») : « Seulement si les dates se chevauchent » (par défaut : le successeur est repoussé au lendemain de la fin de son prédécesseur), « Garder l\'intervalle entre les éléments » (il suit son prédécesseur, en avant comme en arrière) ou « Ne pas décaler automatiquement ».' },
+          { text: '« Éviter les week-ends » (coché par défaut) : un élément décalé automatiquement ne commence jamais un samedi ou un dimanche.' },
+          { text: 'Le décalage entraîne aussi tout ce que le successeur contient (ses tâches et sous-tâches), puis les successeurs de ces éléments, d\'une seule opération : tout ou rien.' },
+        ],
+        result: 'Quand tu déplaces ou redimensionnes un élément, ceux qui en dépendent se replacent d\'eux-mêmes.',
+        problems: [
+          { if: '« Cette dépendance créerait une boucle ».', then: 'A ne peut pas commencer après B si B commence déjà après A, même en passant par d\'autres éléments.' },
+          { if: '« Un élément ne dépend pas de son parent ni de ce qu\'il contient ».', then: 'Relie plutôt deux éléments qui ne sont pas l\'un dans l\'autre (deux tâches, deux phases…).' },
+          { if: 'Le successeur ne bouge pas.', then: 'Vérifie le réglage du projet (« Ne pas décaler automatiquement » ?), et que les deux éléments ont des dates.' },
+        ],
+      },
+      {
         id: 'elements',
         title: 'Créer et modifier des phases, tâches, jalons et sous-tâches',
         who: 'Administrateur et responsable (les autres consultent les fiches).',

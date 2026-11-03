@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
-import { piloteError, PRIORITY_LABEL, saveMembers, TYPE_LABEL, TYPE_ORDER, type CpProject, type PiloteData, type ProjectPriority, type ProjectType } from '../../lib/pilote';
+import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, saveMembers, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType } from '../../lib/pilote';
 import { ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -20,6 +20,7 @@ interface Props {
 interface FormState {
   name: string; type: ProjectType; program_id: string; status_id: string; priority: '' | ProjectPriority;
   starts_on: string; ends_on: string; color: string; description: string; site_id: string; members: string[];
+  link_mode: LinkMode; link_skip_weekends: boolean;
 }
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
@@ -41,9 +42,10 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
       setForm({
         name: r.name, type: r.type, program_id: r.program_id ?? '', status_id: r.status_id, priority: r.priority ?? '', starts_on: r.starts_on ?? '', ends_on: r.ends_on ?? '',
         color: r.color, description: r.description ?? '', site_id: r.site_id ?? '', members: data.members.filter(m => m.project_id === r.id).map(m => m.user_id),
+        link_mode: r.link_mode ?? 'overlap', link_skip_weekends: r.link_skip_weekends ?? true,
       });
     } else {
-      setForm({ name: '', type: 'site', program_id: '', status_id: base, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', members: [] });
+      setForm({ name: '', type: 'site', program_id: '', status_id: base, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', members: [], link_mode: 'overlap', link_skip_weekends: true });
     }
     // Le formulaire repart de zéro à chaque ouverture
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -65,6 +67,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
       name: form.name.trim(), type: form.type, program_id: form.program_id || null, status_id: form.status_id, priority: form.priority || null,
       starts_on: form.starts_on || null, ends_on: form.ends_on || null, color: form.color, description: form.description.trim() || null,
       site_id: form.type === 'site' && form.site_id ? form.site_id : null,
+      link_mode: form.link_mode, link_skip_weekends: form.link_skip_weekends,
     };
     if (payload.starts_on && payload.ends_on && payload.ends_on < payload.starts_on) return void toast.error('La fin doit être après le début');
     setSaving(true);
@@ -163,6 +166,17 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
               ))}
             </div>
           </div>
+          <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
+            <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Dépendances entre éléments</legend>
+            <label htmlFor="prj-linkmode" className={labelClass}>Décalage automatique du successeur</label>
+            <select id="prj-linkmode" className={inputClass} value={form.link_mode} onChange={e => set({ link_mode: e.target.value as LinkMode })}>
+              {(Object.keys(LINK_MODE_LABEL) as LinkMode[]).map(m => <option key={m} value={m}>{LINK_MODE_LABEL[m]}</option>)}
+            </select>
+            <label className="mt-2 flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+              <input type="checkbox" checked={form.link_skip_weekends} onChange={e => set({ link_skip_weekends: e.target.checked })} />
+              Éviter les week-ends (un élément décalé automatiquement ne commence pas un samedi ou un dimanche)
+            </label>
+          </fieldset>
           <div>
             <label htmlFor="prj-desc" className={labelClass}>Description</label>
             <textarea id="prj-desc" rows={3} className={inputClass} value={form.description} onChange={e => set({ description: e.target.value })} />

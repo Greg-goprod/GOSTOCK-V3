@@ -1,6 +1,6 @@
 // Contrôles du modèle du Gantt (sans affichage). Lancer :
 //   npx esbuild scripts/tests/gantt-model.test.ts --bundle --platform=node --format=cjs --outfile=/tmp/gantt-model.test.cjs --define:import.meta.env.VITE_SUPABASE_URL='"http://x.test"' --define:import.meta.env.VITE_SUPABASE_ANON_KEY='"k"' --log-level=error && node /tmp/gantt-model.test.cjs
-import { buildGantt, visibleRows, defaultExpanded, undatedRows, withAddRows, progressOf, makeScale, barBox, clipBar, makeHeader, weekendBoxes, xOfDay } from '../../src/lib/ganttModel';
+import { buildGantt, visibleRows, defaultExpanded, undatedRows, withAddRows, linkPaths, progressOf, makeScale, barBox, clipBar, makeHeader, weekendBoxes, xOfDay } from '../../src/lib/ganttModel';
 import type { GanttData } from '../../src/lib/pilote';
 
 let fails = 0;
@@ -15,12 +15,12 @@ const ST = [
 const item = (id: string, project_id: string, parent_id: string | null, kind: any, name: string, status_id: string, starts_on: string | null, ends_on: string | null, position = 0) =>
   ({ id, project_id, parent_id, kind, name, description: null, status_id, priority: null, starts_on, ends_on, position });
 const data: GanttData = {
-  statuses: ST as any, sites: [], members: [], itemMembers: [],
+  statuses: ST as any, sites: [], members: [], itemMembers: [], links: [],
   programs: [{ id: 'g1', name: 'Festivals 2027', description: null, color: '#639', starts_on: null, ends_on: null }],
   projects: [
-    { id: 'p1', program_id: 'g1', site_id: null, type: 'site', name: 'Festival', description: null, status_id: 's1', priority: null, color: '#0ea5e9', starts_on: null, ends_on: null },
-    { id: 'p2', program_id: null, site_id: null, type: 'rd', name: 'Prototype', description: null, status_id: 's2', priority: null, color: '#10b981', starts_on: '2027-02-01', ends_on: '2027-03-31' },
-    { id: 'p3', program_id: 'g1', site_id: null, type: 'admin', name: 'Sans élément', description: null, status_id: 's0', priority: null, color: '#f00', starts_on: '2027-09-01', ends_on: null },
+    { id: 'p1', program_id: 'g1', site_id: null, type: 'site', name: 'Festival', description: null, status_id: 's1', priority: null, color: '#0ea5e9', starts_on: null, ends_on: null, link_mode: 'overlap', link_skip_weekends: true },
+    { id: 'p2', program_id: null, site_id: null, type: 'rd', name: 'Prototype', description: null, status_id: 's2', priority: null, color: '#10b981', starts_on: '2027-02-01', ends_on: '2027-03-31', link_mode: 'overlap', link_skip_weekends: true },
+    { id: 'p3', program_id: 'g1', site_id: null, type: 'admin', name: 'Sans élément', description: null, status_id: 's0', priority: null, color: '#f00', starts_on: '2027-09-01', ends_on: null, link_mode: 'overlap', link_skip_weekends: true },
   ],
   items: [
     item('a', 'p1', null, 'phase', 'Montage', 's1', null, null, 0),
@@ -78,6 +78,24 @@ eq('« + Nouveau » : parent et type', [withAdd.find(x => x.key === 'add:i:a')!.
 eq('« + Nouveau » : niveau = parent + 1', withAdd.find(x => x.key === 'add:i:c')!.level, r('i:c').level + 1);
 eq('« + Nouveau » : rien pour un parent replié', withAddRows(visibleRows(m, defaultExpanded(m)), defaultExpanded(m)).filter(x => x.kind === 'add').length, 0);
 eq('« + Nouveau » : jamais dans le bac « Sans date »', undatedRows(m).some(x => x.kind === 'add'), false);
+
+// Flèches des dépendances
+const scL = makeScale({ start: '2027-06-01', end: '2027-06-30' }, 900);   // 30 px par jour
+const showAll = new Set(m.expandable);
+const rowsAll = visibleRows(m, showAll);
+const idx = (k: string) => rowsAll.findIndex(x => x.key === k);
+const arrows = linkPaths(rowsAll, [{ id: 'l1', predecessor_id: 'b', successor_id: 'c' }], scL, 36);
+eq('flèche : une pour une dépendance dont les deux lignes sont visibles', arrows.length, 1);
+eq('flèche : du bord droit du prédécesseur (fin le 5 juin → x = 5 × 30) au début du successeur (4 juin → x = 3 × 30) : contournement, jamais « en arrière » sans détour', arrows[0].d.startsWith('M 150 '), true);
+eq('flèche : le successeur commence avant la fin du prédécesseur → signalée en conflit', arrows[0].violated, true);
+const ok1 = linkPaths(rowsAll, [{ id: 'l2', predecessor_id: 'd', successor_id: 'c' }], scL, 36);
+eq('flèche : successeur après le prédécesseur (Câblage 4→6 juin, puis Éclairage qui commence le 4) = conflit aussi si ça se chevauche', ok1[0].violated, true);
+const far = linkPaths(rowsAll, [{ id: 'l3', predecessor_id: 'b', successor_id: 'f' }], scL, 36);
+eq('flèche : successeur loin après (Ouverture le 20 juin) : trajet simple en trois segments, pas en conflit', [far[0].violated, far[0].d.split(' ').filter(t => t === 'H' || t === 'V').join('')], [false, 'HVH']);
+eq('flèche : y du prédécesseur et du successeur = milieu de leurs lignes', [far[0].d.includes(`M 150 ${idx('i:b') * 36 + 18}`), far[0].d.includes(`V ${idx('i:f') * 36 + 18}`)], [true, true]);
+eq('flèche : ligne repliée (non visible) : pas de flèche', linkPaths(visibleRows(m, defaultExpanded(m)), [{ id: 'l4', predecessor_id: 'b', successor_id: 'c' }], scL, 36).length, 0);
+eq('flèche : élément sans date : pas de flèche', linkPaths(rowsAll, [{ id: 'l5', predecessor_id: 'b', successor_id: 'h' }], scL, 36).length, 0);
+eq('flèche : entièrement hors de la fenêtre : pas de flèche', linkPaths(rowsAll, [{ id: 'l6', predecessor_id: 'b', successor_id: 'c' }], makeScale({ start: '2028-01-01', end: '2028-01-30' }, 900), 36).length, 0);
 
 eq('regroupement par état : un groupe par état utilisé', buildGantt(data, 'status').rows.filter(x => x.kind === 'group').map(x => x.name), ['Pas commencé', 'En cours', 'Terminé']);
 eq('regroupement par type', buildGantt(data, 'type').rows.filter(x => x.kind === 'group').map(x => x.name), ['Chantier', 'R&D', 'Administratif']);

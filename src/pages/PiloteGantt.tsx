@@ -19,7 +19,7 @@ import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectFor
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const LOCALES = { fr: 'fr-CH', de: 'de-CH', it: 'it-CH', en: 'en-GB' } as const;
 const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
-const EMPTY: GanttData = { statuses: [], programs: [], projects: [], members: [], sites: [], items: [], itemMembers: [] };
+const EMPTY: GanttData = { statuses: [], programs: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [] };
 
 // PILOTE › Gantt (module payant) : programmes, projets et leurs éléments sur une échelle de temps
 const PiloteGantt: React.FC = () => {
@@ -133,7 +133,7 @@ const PiloteGantt: React.FC = () => {
       {!period ? null : rows.length === 0 ? (
         <MxEmpty icon={CalendarCheck} title="Rien à afficher" description="Crée d'abord un projet dans PILOTE › Projets : il apparaîtra ici avec ses phases, tâches et jalons." />
       ) : (
-        <GanttChart rows={rows} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
+        <GanttChart rows={rows} links={data.links} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
           onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline} />
       )}
 
@@ -153,7 +153,7 @@ const PiloteGantt: React.FC = () => {
         </section>
       )}
 
-      <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />
+      <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />
       <ProjectForm data={data} target={projectTarget} onClose={() => setProjectTarget(null)} onSaved={reload} />
     </div>
   );

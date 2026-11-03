@@ -290,6 +290,84 @@ async function step(id, title, fn, page) {
     ok(await resp.page.getByLabel('Nom du nouvel élément').count() >= 1, 'la saisie ne reste pas ouverte');
   }, resp.page);
 
+  /* ============ P3c Dépendances ============ */
+  group = 'P3c Dépendances';
+  const dts = async id => rows(await api(resp, 'GET', `/rest/v1/cp_items?select=starts_on,ends_on&id=eq.${id}`))[0];
+  await step('P3c-prepa', 'Projet « Liens » : deux tâches qui se chevauchent, une troisième plus tard', async () => {
+    S.lp = await create(resp, 'cp_projects', { name: `${M} Liens`, type: 'admin' });
+    // Lundi 1er mars 2027 : le 6 est un samedi ; le 29 mars est un lundi
+    S.lA = await create(resp, 'cp_items', { project_id: S.lp, kind: 'task', name: `${M} L-A`, starts_on: '2027-03-01', ends_on: '2027-03-05' });
+    S.lB = await create(resp, 'cp_items', { project_id: S.lp, kind: 'task', name: `${M} L-B`, starts_on: '2027-03-03', ends_on: '2027-03-08' });
+    S.lC = await create(resp, 'cp_items', { project_id: S.lp, kind: 'task', name: `${M} L-C`, starts_on: '2027-03-29', ends_on: '2027-03-31' });
+    const p = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=link_mode,link_skip_weekends&id=eq.${S.lp}`))[0];
+    ok(p.link_mode === 'overlap' && p.link_skip_weekends === true, `réglages par défaut = ${JSON.stringify(p)}`);
+  });
+  await step('P3c-creer', 'Dépendance A → B : B (qui chevauchait) passe au lundi 8 mars, même durée (6 jours : 8 → 13)', async () => {
+    const r = await api(resp, 'POST', '/rest/v1/cp_item_links?select=id', { predecessor_id: S.lA, successor_id: S.lB }, REP);
+    ok(!refused(r), `création : ${msg(r)}`); S.link1 = rows(r)[0]?.id;
+    const b = await dts(S.lB);
+    ok(b.starts_on === '2027-03-08' && b.ends_on === '2027-03-13', `B = ${JSON.stringify(b)}`);
+  });
+  await step('P3c-cascade', 'Décaler A de +7 jours par la base : B suit (au lundi 15) ; C, plus tard, ne bouge pas', async () => {
+    const r = await rpc(resp, 'cp_shift_item', { p_item_id: S.lA, p_days: 7 });
+    ok(!refused(r), `décalage : ${msg(r)}`);
+    const a = await dts(S.lA), b = await dts(S.lB), c = await dts(S.lC);
+    ok(a.starts_on === '2027-03-08' && a.ends_on === '2027-03-12', `A = ${JSON.stringify(a)}`);
+    ok(b.starts_on === '2027-03-15' && b.ends_on === '2027-03-20', `B = ${JSON.stringify(b)}`);
+    ok(c.starts_on === '2027-03-29', `C a bougé : ${JSON.stringify(c)}`);
+  });
+  await step('P3c-refus', 'La base refuse la boucle (B → A), la même dépendance deux fois et un élément avec lui-même', async () => {
+    ok(refused(await api(resp, 'POST', '/rest/v1/cp_item_links', { predecessor_id: S.lB, successor_id: S.lA })), 'boucle acceptée');
+    ok(refused(await api(resp, 'POST', '/rest/v1/cp_item_links', { predecessor_id: S.lA, successor_id: S.lB })), 'doublon accepté');
+    ok(refused(await api(resp, 'POST', '/rest/v1/cp_item_links', { predecessor_id: S.lA, successor_id: S.lA })), 'auto-dépendance acceptée');
+  });
+  await step('P3c-fleche', 'Écran : une flèche relie A et B sur le Gantt', async () => {
+    await resp.page.goto(`${BASE}/pilote/gantt`); await resp.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await resp.page.waitForTimeout(3000);
+    await expandAll(resp);
+    // Fenêtre : on affiche mars 2027 avec la période libre « 1 mois » ancrée sur le plan ; les barres de test sont en 2027
+    await resp.page.getByRole('radio', { name: '1 année', exact: true }).click(); await resp.page.waitForTimeout(500);
+    for (let i = 0; i < 24 && !(await resp.page.locator(`[role="button"][aria-label*="${M} L-A"]`).count()); i++) { await resp.page.getByRole('button', { name: 'Période suivante' }).click(); await resp.page.waitForTimeout(250); }
+    ok(await resp.page.locator(`[role="button"][aria-label*="${M} L-A"]`).count(), 'barre de L-A absente de la fenêtre');
+    ok((await resp.page.locator('svg path[data-link]').count()) >= 1, 'aucune flèche de dépendance');
+  }, resp.page);
+  await step('P3c-fiche', 'Fiche de B : « Commence après » liste A ; ajout de A → C par la fiche de C, puis retrait', async () => {
+    await resp.page.locator(`[role="button"][aria-label*="${M} L-B"]`).first().click(); await resp.page.waitForTimeout(1200);
+    const txt = await resp.page.locator('fieldset:has(legend:text("Dépendances"))').innerText();
+    ok(txt.includes(`${M} L-A`), `A absent de « Commence après » : ${txt.slice(0, 160)}`);
+    await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(400);
+    await resp.page.locator(`[role="button"][aria-label*="${M} L-C"]`).first().click(); await resp.page.waitForTimeout(1200);
+    await resp.page.locator('select[aria-label="Commence après l\'élément"]').selectOption({ label: `Tâche · ${M} L-A` });
+    await resp.page.getByRole('button', { name: 'Ajouter', exact: true }).last().click(); await resp.page.waitForTimeout(1800);
+    const l = rows(await api(resp, 'GET', `/rest/v1/cp_item_links?select=id&predecessor_id=eq.${S.lA}&successor_id=eq.${S.lC}`));
+    ok(l.length === 1, `dépendance A → C créée = ${l.length}`);
+    await resp.page.getByRole('button', { name: new RegExp(`^Retirer la dépendance avec ${M} L-A`) }).click(); await resp.page.waitForTimeout(1800);
+    ok(rows(await api(resp, 'GET', `/rest/v1/cp_item_links?select=id&predecessor_id=eq.${S.lA}&successor_id=eq.${S.lC}`)).length === 0, 'dépendance A → C non retirée');
+    await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(300);
+  }, resp.page);
+  await step('P3c-mode-garder', 'Réglage « Garder l\'intervalle » : A +3 jours → B suit de 3 jours (sans week-end évité)', async () => {
+    ok(!refused(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.lp}`, { link_mode: 'keep_gap', link_skip_weekends: false })), 'réglage refusé');
+    const before = await dts(S.lB);
+    ok(!refused(await rpc(resp, 'cp_shift_item', { p_item_id: S.lA, p_days: 3 })), 'décalage refusé');
+    const after = await dts(S.lB);
+    const add = (day, n) => { const [y, m, d] = day.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+    ok(after.starts_on === add(before.starts_on, 3) && after.ends_on === add(before.ends_on, 3), `B : ${JSON.stringify(before)} → ${JSON.stringify(after)}`);
+  });
+  await step('P3c-mode-aucun', 'Réglage « Ne pas décaler » : A +10 jours → B ne bouge pas', async () => {
+    ok(!refused(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.lp}`, { link_mode: 'none' })), 'réglage refusé');
+    const before = await dts(S.lB);
+    ok(!refused(await rpc(resp, 'cp_shift_item', { p_item_id: S.lA, p_days: 10 })), 'décalage refusé');
+    ok(JSON.stringify(await dts(S.lB)) === JSON.stringify(before), 'B a bougé malgré le réglage');
+  });
+  await step('P3c-reglages-ecran', 'Fiche du projet : les réglages « Dépendances entre éléments » s\'affichent et s\'enregistrent', async () => {
+    await resp.page.goto(`${BASE}/pilote/gantt`); await resp.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await resp.page.waitForTimeout(3000);
+    await resp.page.locator('.group\\/row button', { hasText: `${M} Liens` }).first().click(); await resp.page.waitForTimeout(1200);
+    ok(await resp.page.locator('#prj-linkmode').inputValue() === 'none', 'le mode affiché ne correspond pas à la base');
+    await resp.page.locator('#prj-linkmode').selectOption('overlap');
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
+    const p = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=link_mode&id=eq.${S.lp}`))[0];
+    ok(p.link_mode === 'overlap', `mode en base = ${p.link_mode}`);
+  }, resp.page);
+
   /* ============ P4 Lecteurs ============ */
   group = 'P4 Lecteurs';
   for (const c of readers) {
@@ -305,6 +383,7 @@ async function step(id, title, fn, page) {
     }, c.page);
     await step(`P4-${c.who}-ecriture`, `${c.who} : la base refuse toute écriture sur les éléments`, async () => {
       ok(refused(await api(c, 'POST', '/rest/v1/cp_items', { project_id: S.proj, kind: 'task', name: `${M} Piraté` })), 'création acceptée');
+      ok(refused(await api(c, 'POST', '/rest/v1/cp_item_links', { predecessor_id: S.lA, successor_id: S.lC })), 'création de dépendance acceptée');
       const patch = await api(c, 'PATCH', `/rest/v1/cp_items?id=eq.${S.undated}`, { name: `${M} Piraté` }, REP);
       ok(refused(patch) || rows(patch).length === 0, 'modification acceptée');
     });

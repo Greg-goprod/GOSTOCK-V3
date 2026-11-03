@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { dayFromNumber, dayNumberOf } from '../../lib/ganttModel';
-import { clipBar, isWeekend, makeHeader, makeScale, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
+import { clipBar, isWeekend, linkPaths, makeHeader, makeScale, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
 import { allowedKinds, ITEM_KIND_LABEL, type ItemKind } from '../../lib/pilote';
 
@@ -12,6 +12,7 @@ const HEAD_H = 24;
 
 interface Props {
   rows: GanttRow[];
+  links: { id: string; predecessor_id: string; successor_id: string }[];
   period: { start: string; end: string };
   today: string;
   locale: string;
@@ -76,7 +77,7 @@ const InlineAdd: React.FC<{ row: GanttRow; onCreate: Props['onCreate'] }> = ({ r
   );
 };
 
-const GanttChart: React.FC<Props> = ({ rows, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate }) => {
+const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate }) => {
   const box = useRef<HTMLDivElement>(null);
   // Colonne des noms plus étroite sur téléphone, pour laisser de la place aux barres
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
@@ -102,6 +103,7 @@ const GanttChart: React.FC<Props> = ({ rows, period, today, locale, expanded, ca
   const header = useMemo(() => makeHeader(scale, locale), [scale, locale]);
   const weekends = useMemo(() => weekendBoxes(scale), [scale]);
   const totalW = scale.days * scale.px;
+  const arrows = useMemo(() => linkPaths(rows, links, scale, ROW_H), [rows, links, scale]);
   const bodyH = rows.length * ROW_H;
   const todayInside = today >= period.start && today <= period.end;
   const todayX = xOfDay(scale, today) + scale.px / 2;
@@ -223,6 +225,15 @@ const GanttChart: React.FC<Props> = ({ rows, period, today, locale, expanded, ca
         {/* Barres */}
         <div className="relative" style={{ height: bodyH, backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H}px)` }}>
           {weekends.map((w, i) => <div key={i} aria-hidden className="absolute top-0 bg-gray-500/5 dark:bg-white/5" style={{ left: w.left, width: w.width, height: bodyH }} />)}
+          {arrows.length > 0 && (
+            <svg aria-hidden className="pointer-events-none absolute left-0 top-0 z-[7]" width={totalW} height={bodyH} style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="gantt-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#64748b" /></marker>
+                <marker id="gantt-arrow-bad" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#dc2626" /></marker>
+              </defs>
+              {arrows.map(a => <path key={a.id} data-link={a.id} data-violated={a.violated ? 'true' : undefined} d={a.d} fill="none" stroke={a.violated ? '#dc2626' : '#64748b'} strokeWidth={1.5} markerEnd={`url(#${a.violated ? 'gantt-arrow-bad' : 'gantt-arrow'})`} />)}
+            </svg>
+          )}
           {todayInside && <div aria-hidden className="absolute top-0 z-[5] w-px bg-danger-500" style={{ left: todayX, height: bodyH }} />}
           {rows.map((r, i) => {
             if (r.kind === 'add' || !r.start || !r.end) return null;

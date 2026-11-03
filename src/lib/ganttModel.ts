@@ -243,5 +243,35 @@ export function makeHeader(s: Scale, locale: string): Header {
   return { top, bottom };
 }
 
+// Flèches des dépendances : du bord droit du prédécesseur au bord gauche du successeur (deux lignes visibles, avec dates, dans la fenêtre)
+export interface LinkPath { id: string; d: string; violated: boolean }
+export function linkPaths(rows: GanttRow[], links: { id: string; predecessor_id: string; successor_id: string }[], s: Scale, rowH: number): LinkPath[] {
+  const index = new Map(rows.map((r, i) => [r.key, i]));
+  const total = s.days * s.px;
+  const out: LinkPath[] = [];
+  for (const l of links) {
+    const ip = index.get(`i:${l.predecessor_id}`), is = index.get(`i:${l.successor_id}`);
+    if (ip === undefined || is === undefined) continue;
+    const a = rows[ip], b = rows[is];
+    if (!a.end || !b.start) continue;
+    const x1 = xOfDay(s, a.end) + s.px + (a.kind === 'milestone' ? 8 - s.px / 2 : 0);
+    const x2 = xOfDay(s, b.start) - (b.kind === 'milestone' ? 8 - s.px / 2 : 0);
+    if (Math.max(x1, x2) < 0 || Math.min(x1, x2) > total) continue;
+    const y1 = ip * rowH + rowH / 2, y2 = is * rowH + rowH / 2;
+    const r = (n: number) => Math.round(n * 10) / 10;
+    let d: string;
+    if (x2 - x1 >= 16) {
+      const xm = x1 + 8;
+      d = `M ${r(x1)} ${r(y1)} H ${r(xm)} V ${r(y2)} H ${r(x2)}`;
+    } else {
+      // Successeur trop proche (ou avant la fin du prédécesseur) : on contourne par l'espace entre les deux lignes
+      const ym = y1 + (y2 > y1 ? rowH / 2 : -rowH / 2);
+      d = `M ${r(x1)} ${r(y1)} H ${r(x1 + 8)} V ${r(ym)} H ${r(x2 - 8)} V ${r(y2)} H ${r(x2)}`;
+    }
+    out.push({ id: l.id, d, violated: !!b.start && !!a.end && b.start <= a.end });
+  }
+  return out;
+}
+
 export const dayNumberOf = dayToNumber;
 export const dayFromNumber = numberToDay;
