@@ -95,9 +95,10 @@ async function step(id, title, fn, page) {
   const readers = [staff, collab];
 
   const create = async (c, table, row) => { const r = await api(c, 'POST', `/rest/v1/${table}?select=id`, row, REP); ok(!refused(r), `${table} : ${msg(r)}`); return rows(r)[0]?.id; };
-  // Deux pièges : sur écran étroit la barre latérale (réservée aux écrans larges : « hidden lg:flex ») est masquée et c'est la barre du bas qui est visible ;
-  // et dans les autres langues l'aria-label « Navigation principale » est traduit. On attend donc l'une OU l'autre barre, sans dépendre du libellé.
-  const open = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.waitForSelector('aside nav, nav.fixed', { timeout: 30000 }); await c.page.waitForTimeout(2500); };
+  // Pièges : sur écran étroit la barre latérale (« hidden lg:flex ») est masquée et c'est la barre du bas qui est visible ; dans les autres langues
+  // l'aria-label « Navigation principale » est traduit ; et un sélecteur « A, B » ne renvoie que le PREMIER élément du document (ici la barre latérale,
+  // masquée sur mobile) : on attend donc le premier élément VISIBLE de l'une ou l'autre barre.
+  const open = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.locator('aside nav:visible, nav.fixed:visible').first().waitFor({ state: 'visible', timeout: 30000 }); await c.page.waitForTimeout(2500); };
 
   /* ---- outils de scénario ---- */
   // Un refus n'a de valeur que s'il vient de la bonne règle : on vérifie aussi le message (sinon un test « refusé » peut passer pour une mauvaise raison)
@@ -566,24 +567,30 @@ async function step(id, title, fn, page) {
     return dark ? undefined : INFO('le mode sombre n\'a pas été détecté sur <html> : la vérification visuelle n\'est pas garantie');
   }, resp.page);
   for (const [lang, expectTab] of [['de', 'Meine Aufgaben'], ['it', 'Le mie attività'], ['en', 'My tasks']]) {
-    await step(`I-langue-${lang}`, `Langue ${lang} : « Mes tâches » et la fiche du projet sont traduits (on liste ce qui reste en français)`, async () => {
-      await resp.page.evaluate(l => localStorage.setItem('gomat-language', l), lang);
-      await open(resp, '/pilote/projets');
-      const body = await resp.page.locator('main').innerText();
-      ok(body.includes(expectTab), `onglet « ${expectTab} » absent (langue non appliquée ou onglet non traduit)`);
-      const edit = resp.page.locator('button', { hasText: /Modif|Bearbeiten|Edit|Modifica/ }).first();
-      let rest = [];
-      let opened = false;
-      if (await edit.count()) {
-        await edit.click(); await resp.page.waitForTimeout(800);
-        const form = await resp.page.locator('form').first().innerText();
-        opened = true;
-        rest = ['Équipe', 'Pas dans l\'équipe', 'Membre', 'Responsable', 'Description', 'Période'].filter(w => form.includes(w));
-        await resp.page.keyboard.press('Escape');
-      }
-      await resp.page.evaluate(() => localStorage.setItem('gomat-language', 'fr'));
+    await step(`I-langue-${lang}`, `Langue ${lang} : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/${lang}.json)`, async () => {
+      // On compare aux traductions ATTENDUES, et seulement dans les éléments concernés : chercher un mot français dans tout le formulaire donne de faux positifs
+      // (une donnée n'est jamais traduite : la personne de test s'appelle « TEST Rôle Responsable » ; et « Description » s'écrit pareil en anglais).
+      const dict = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'i18n', `${lang}.json`), 'utf8'));
+      const want = k => { ok(dict[k], `pas de traduction ${lang} pour « ${k} » dans le dictionnaire`); return dict[k]; };
+      let opened = false, missing = [];
+      try {
+        await resp.page.evaluate(l => localStorage.setItem('gomat-language', l), lang);
+        await open(resp, '/pilote/projets');
+        const body = await resp.page.locator('main').innerText();
+        ok(body.includes(expectTab), `onglet « ${expectTab} » absent (langue non appliquée ou onglet non traduit)`);
+        const edit = resp.page.locator('button', { hasText: new RegExp(`${dict['Modifier'] || 'Modifier'}|Modifier`) }).first();
+        if (await edit.count()) {
+          await edit.click(); await resp.page.waitForTimeout(900);
+          opened = true;
+          const legends = await resp.page.locator('form legend').allInnerTexts();
+          const options = await resp.page.locator('form fieldset select').first().locator('option').allInnerTexts();
+          if (!legends.some(t => t.trim() === want('Équipe'))) missing.push(`titre « ${want('Équipe')} » (lu : ${JSON.stringify(legends)})`);
+          for (const k of ['Pas dans l\'équipe', 'Membre', 'Responsable']) if (!options.some(t => t.trim() === want(k))) missing.push(`option « ${want(k)} » (lues : ${JSON.stringify(options)})`);
+          await resp.page.keyboard.press('Escape');
+        }
+      } finally { await resp.page.evaluate(() => localStorage.setItem('gomat-language', 'fr')); }
       if (!opened) return INFO('onglet « Mes tâches » traduit, mais la fiche du projet n\'a pas pu être ouverte (bouton de modification introuvable) : traduction de la fiche NON vérifiée');
-      return rest.length ? { status: 'PARTIEL', detail: `restent en français dans la fiche : ${rest.join(', ')}` } : undefined;
+      return missing.length ? { status: 'PARTIEL', detail: `non traduit dans la fiche : ${missing.join(' ; ')}` } : undefined;
     }, resp.page);
   }
   await step('I-concurrence', 'Deux sessions modifient le même élément : on DÉCRIT ce qui se passe (pas de verdict)', async () => {
