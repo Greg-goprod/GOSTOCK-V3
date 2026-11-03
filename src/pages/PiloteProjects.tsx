@@ -8,8 +8,9 @@ import { MxBadge } from '../components/mx/MxBadge';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { CrudSection } from '../components/sitePlanning/CrudSection';
 import ProjectsSection from '../components/pilote/ProjectsSection';
+import MyTasks from '../components/pilote/MyTasks';
 
-type Section = 'projects' | 'programs' | 'statuses';
+type Section = 'projects' | 'mytasks' | 'programs' | 'statuses';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const Dot = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} />;
@@ -33,17 +34,20 @@ const PiloteProjects: React.FC = () => {
       <div>
         <PageTitle>Projets</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
-          Tes projets de toute nature (chantier, R&amp;D, conception, recrutement, administratif, évènement), regroupés en programmes, avec leur état et leurs responsables.
+          Tes projets de toute nature (chantier, R&amp;D, conception, recrutement, administratif, évènement), regroupés en programmes, avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.
         </p>
       </div>
 
       <MxSegmented aria-label="Sections des projets" value={section} onChange={v => setSection(v as Section)} options={[
         { value: 'projects', label: `Projets (${data.projects.length})` },
+        { value: 'mytasks', label: 'Mes tâches' },
         { value: 'programs', label: `Programmes (${data.programs.length})` },
         { value: 'statuses', label: `États (${data.statuses.length})` },
       ]} />
 
       {section === 'projects' && <ProjectsSection data={data} rights={rights} onChanged={reload} />}
+
+      {section === 'mytasks' && <MyTasks rights={rights} />}
 
       {section === 'programs' && (
         <CrudSection<CpProgram>

@@ -18,7 +18,7 @@ export const PILOTE: HelpArticle[] = [
           { text: 'Ouvre « PILOTE », puis « Projets », et clique sur « Nouveau projet ».' },
           { text: 'Donne un « Nom du projet » et choisis son « Type » : Chantier, R&D, Conception, Recrutement, Administratif ou Évènement.' },
           { text: 'Choisis l\'« État » (« Pas commencé » par défaut), le « Programme » si le projet en fait partie, la « Priorité » et les dates « Début » et « Fin ».' },
-          { text: 'Coche les « Responsables » : tu peux en choisir plusieurs.' },
+          { text: 'Compose l\'« Équipe » : pour chaque personne, choisis « Responsable » ou « Membre » (« Pas dans l\'équipe » par défaut). Tu peux en choisir plusieurs.' },
           { text: 'Pour un projet de type Chantier, « Chantier de Logistique » le relie au chantier déjà suivi dans Logistique (un chantier n\'a qu\'un projet).' },
           { text: 'Clique sur « Enregistrer ».' },
         ],
@@ -30,12 +30,28 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'equipe',
+        title: 'Composer l\'équipe et assigner des tâches',
+        who: 'Administrateur et responsable (les autres lisent).',
+        steps: [
+          { text: 'Dans « Projets », clique sur « Modifier » sur la carte du projet.' },
+          { text: 'Dans « Équipe », choisis pour chaque personne « Membre » ou « Responsable ». Les membres font le travail, les responsables sont ceux qui suivent le projet.' },
+          { text: 'Clique sur « Enregistrer ».' },
+          { text: 'Ouvre une tâche (dans « Gantt » ou « Mes tâches ») : la liste « Assignés » propose les personnes de l\'équipe, tu en coches une ou plusieurs.' },
+        ],
+        result: 'Une tâche ne s\'assigne qu\'à une personne de l\'équipe du projet. Retirer quelqu\'un de l\'équipe le désassigne aussi de toutes les tâches du projet. Chacun retrouve ses tâches dans l\'onglet « Mes tâches » : en retard, à faire, sans date, terminées.',
+        problems: [
+          { if: 'La liste « Assignés » est vide.', then: 'L\'équipe du projet est vide : ajoute d\'abord des personnes dans « Modifier le projet ».' },
+          { if: '« Cette personne ne fait pas partie de l\'équipe du projet ».', then: 'Ajoute-la à l\'équipe du projet, puis assigne-la.' },
+        ],
+      },
+      {
         id: 'programmes',
         title: 'Regrouper des projets dans un programme',
         who: 'Administrateur et responsable.',
         steps: [
           { text: 'Onglet « Programmes », puis « Nouveau programme » : un nom (« Festivals 2027 »), une description, une période et une couleur.' },
-          { text: 'Dans un projet, choisis ce programme dans « Programme ». Le filtre « Programme » de la liste regroupe ensuite ses projets.' },
+          { text: 'Dans un projet, choisis ce programme dans « Programme », ou clique sur « + Créer un programme » sous la liste pour en créer un sans quitter le formulaire. Le filtre « Programme » de la liste regroupe ensuite ses projets.' },
         ],
         result: 'Supprimer un programme garde ses projets : ils passent simplement « Sans programme ».',
       },

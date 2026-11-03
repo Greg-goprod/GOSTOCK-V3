@@ -1,3 +1,4 @@
+import type React from 'react';
 import { CalendarRange, FolderKanban, Link2, Pencil, Trash2, Users } from 'lucide-react';
 import { MxBadge } from '../mx/MxBadge';
 import Button from '../common/Button';
@@ -10,7 +11,7 @@ interface Props {
   statusTone: 'neutral' | 'info' | 'success' | 'danger';
   program: string | null;
   period: string;
-  members: string;
+  members: React.ReactNode;
   site: string | null;
   priority: string | null;
   description: string | null;

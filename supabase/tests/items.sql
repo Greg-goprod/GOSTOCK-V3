@@ -83,6 +83,9 @@ UPDATE public.cp_items SET status_id = (SELECT id FROM public.cp_statuses WHERE 
 SELECT zz.check('un état utilisé par un élément ne se supprime pas', zz.raises($$DELETE FROM public.cp_statuses WHERE is_system AND family = 'done'$$) IS NOT NULL);
 
 -- Responsables et liste à cocher
+-- Depuis la migration 52, on n'assigne qu'une personne de l'équipe du projet
+INSERT INTO public.cp_project_members (project_id, user_id, role) SELECT id, :'ua'::uuid, 'lead' FROM public.cp_projects WHERE name = 'Projet X';
+INSERT INTO public.cp_project_members (project_id, user_id, role) SELECT id, :'uu'::uuid, 'member' FROM public.cp_projects WHERE name = 'Projet X';
 INSERT INTO public.cp_item_members (item_id, user_id) SELECT id, :'ua'::uuid FROM public.cp_items WHERE name = 'Cahier des charges';
 INSERT INTO public.cp_item_members (item_id, user_id) SELECT id, :'uu'::uuid FROM public.cp_items WHERE name = 'Cahier des charges';
 SELECT zz.check('un élément a plusieurs responsables', (SELECT count(*) FROM public.cp_item_members) = 2);

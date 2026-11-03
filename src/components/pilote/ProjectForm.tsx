@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
-import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, saveMembers, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType } from '../../lib/pilote';
+import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, saveTeam, TEAM_ROLE_LABEL, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType, type TeamRole } from '../../lib/pilote';
 import { ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -19,14 +19,14 @@ interface Props {
 
 interface FormState {
   name: string; type: ProjectType; program_id: string; status_id: string; priority: '' | ProjectPriority;
-  starts_on: string; ends_on: string; color: string; description: string; site_id: string; members: string[];
+  starts_on: string; ends_on: string; color: string; description: string; site_id: string; team: Record<string, TeamRole>;
   link_mode: LinkMode; link_skip_weekends: boolean;
 }
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
-// Création / modification d'un projet : type, état, programme, dates, responsables (plusieurs), chantier de Logistique (type chantier)
+// Création / modification d'un projet : type, état, programme, dates, équipe (responsables et membres), chantier de Logistique (type chantier)
 const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
@@ -45,11 +45,11 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
       const r = target.row;
       setForm({
         name: r.name, type: r.type, program_id: r.program_id ?? '', status_id: r.status_id, priority: r.priority ?? '', starts_on: r.starts_on ?? '', ends_on: r.ends_on ?? '',
-        color: r.color, description: r.description ?? '', site_id: r.site_id ?? '', members: data.members.filter(m => m.project_id === r.id).map(m => m.user_id),
+        color: r.color, description: r.description ?? '', site_id: r.site_id ?? '', team: Object.fromEntries(data.members.filter(m => m.project_id === r.id).map(m => [m.user_id, m.role])),
         link_mode: r.link_mode ?? 'overlap', link_skip_weekends: r.link_skip_weekends ?? true,
       });
     } else {
-      setForm({ name: '', type: 'site', program_id: '', status_id: base, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', members: [], link_mode: 'overlap', link_skip_weekends: true });
+      setForm({ name: '', type: 'site', program_id: '', status_id: base, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', team: {}, link_mode: 'overlap', link_skip_weekends: true });
     }
     // Le formulaire repart de zéro à chaque ouverture
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,7 +62,13 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
   }, [data, editedRow]);
 
   const set = (patch: Partial<FormState>) => setForm(f => (f ? { ...f, ...patch } : f));
-  const toggleMember = (id: string) => set({ members: form?.members.includes(id) ? form.members.filter(x => x !== id) : [...(form?.members ?? []), id] });
+  // '' = hors équipe
+  const setRole = (id: string, role: '' | TeamRole) => setForm(f => {
+    if (!f) return f;
+    const team = { ...f.team };
+    if (role === '') delete team[id]; else team[id] = role;
+    return { ...f, team };
+  });
 
   const createProgram = async () => {
     const name = (newProgram ?? '').trim();
@@ -105,7 +111,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
         const { error } = await supabase.from('cp_projects').update(payload).eq('id', id);
         if (error) throw error;
       }
-      await saveMembers(id, form.members);
+      await saveTeam(id, form.team);
       toast.success(target.mode === 'new' ? 'Projet créé' : 'Projet modifié');
       onClose();
       await onSaved();
@@ -177,19 +183,23 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
             </div>
           )}
           <fieldset>
-            <legend className={labelClass}>Responsables</legend>
+            <legend className={labelClass}>Équipe</legend>
             {people.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucune personne active.</p> : (
-              <ul className="grid max-h-40 gap-1 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 p-2 sm:grid-cols-2">
+              <ul className="grid max-h-56 gap-1 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 p-2">
                 {people.map(u => (
-                  <li key={u.id}>
-                    <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
-                      <input type="checkbox" checked={form.members.includes(u.id)} onChange={() => toggleMember(u.id)} />
-                      {u.first_name} {u.last_name}
-                    </label>
+                  <li key={u.id} className="flex items-center justify-between gap-2 text-sm text-gray-800 dark:text-gray-200">
+                    <span className="min-w-0 truncate">{u.first_name} {u.last_name}</span>
+                    <select aria-label={`Rôle de ${u.first_name} ${u.last_name}`} className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-sm"
+                      value={form.team[u.id] ?? ''} onChange={e => setRole(u.id, e.target.value as '' | TeamRole)}>
+                      <option value="">Pas dans l'équipe</option>
+                      <option value="member">{TEAM_ROLE_LABEL.member}</option>
+                      <option value="lead">{TEAM_ROLE_LABEL.lead}</option>
+                    </select>
                   </li>
                 ))}
               </ul>
             )}
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Les tâches ne s'assignent qu'aux personnes de l'équipe. Retirer quelqu'un de l'équipe le désassigne aussi de toutes les tâches du projet.</p>
           </fieldset>
           <div>
             <span className={labelClass}>Couleur</span>

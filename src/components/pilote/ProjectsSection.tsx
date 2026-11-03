@@ -39,7 +39,17 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
   const programById = useMemo(() => new Map(data.programs.map(p => [p.id, p])), [data.programs]);
   const siteById = useMemo(() => new Map(data.sites.map(s => [s.id, s])), [data.sites]);
   const userName = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
-  const membersOf = (projectId: string) => data.members.filter(m => m.project_id === projectId).map(m => userName.get(m.user_id) ?? '—');
+  // Responsables en clair, puis le nombre de membres de l'équipe (morceaux séparés pour que chacun soit traduit)
+  const teamOf = (projectId: string) => {
+    const team = data.members.filter(m => m.project_id === projectId);
+    const leads = team.filter(m => m.role === 'lead').map(m => userName.get(m.user_id) ?? '—').join(', ');
+    return { leads, others: team.length - team.filter(m => m.role === 'lead').length };
+  };
+  const teamNode = (projectId: string, empty: string) => {
+    const { leads, others } = teamOf(projectId);
+    if (!leads && others === 0) return <span>{empty}</span>;
+    return <>{leads && <span>{leads}</span>}{leads && others > 0 && ' · '}{others > 0 && <span>{`${others} membre${others > 1 ? 's' : ''}`}</span>}</>;
+  };
 
   const counts = useMemo(() => {
     const c: Record<StatusFamily, number> = { not_started: 0, in_progress: 0, done: 0, cancelled: 0 };
@@ -71,7 +81,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
     const status = statusById.get(p.status_id);
     return {
       status, program: p.program_id ? programById.get(p.program_id)?.name ?? null : null,
-      members: membersOf(p.id), site: p.site_id ? siteById.get(p.site_id)?.name ?? null : null,
+      members: teamNode(p.id, 'Aucune équipe'), site: p.site_id ? siteById.get(p.site_id)?.name ?? null : null,
     };
   };
 
@@ -129,7 +139,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
             } },
             { id: 'program', label: 'Programme', hideOnMobile: true, render: p => (p.program_id ? programById.get(p.program_id)?.name ?? '—' : '—') },
             { id: 'period', label: 'Période', hideOnMobile: true, render: p => <span className="whitespace-nowrap">{formatPeriod(p.starts_on, p.ends_on, fmt)}</span> },
-            { id: 'members', label: 'Responsables', hideOnMobile: true, render: p => membersOf(p.id).join(', ') || '—' },
+            { id: 'members', label: 'Équipe', hideOnMobile: true, render: p => teamNode(p.id, '—') },
             { id: 'actions', label: 'Actions', render: p => (
               <span className="inline-flex gap-2">
                 {rights.update && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setTarget({ mode: 'edit', row: p })}>Modifier</Button>}
@@ -147,7 +157,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
             return (
               <ProjectCard
                 name={p.name} typeLabel={TYPE_LABEL[p.type]} color={p.color} statusName={c.status?.name ?? '—'} statusTone={TONE[c.status?.family ?? 'not_started']}
-                program={c.program} period={formatPeriod(p.starts_on, p.ends_on, fmt)} members={c.members.join(', ') || 'Aucun responsable'} site={c.site}
+                program={c.program} period={formatPeriod(p.starts_on, p.ends_on, fmt)} members={c.members} site={c.site}
                 priority={p.priority ? PRIORITY_LABEL[p.priority] : null} description={p.description}
                 onEdit={rights.update ? () => setTarget({ mode: 'edit', row: p }) : undefined} onDelete={rights.delete ? () => void remove(p) : undefined}
               />

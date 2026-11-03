@@ -3158,5 +3158,22 @@
 "Nom du nouveau programme": "Nome del nuovo programma",
 "Nom du programme": "Nome del programma",
 "Programme créé": "Programma creato",
-"Ce programme existe déjà : il est sélectionné": "Questo programma esiste già: è selezionato"
+"Ce programme existe déjà : il est sélectionné": "Questo programma esiste già: è selezionato",
+"Membre": "Membro",
+"Mes tâches": "Le mie attività",
+"À faire": "Da fare",
+"Assignés": "Assegnati",
+"responsable": "responsabile",
+"Pas dans l'équipe": "Non nel team",
+"Rôle de {0}": "Ruolo di {0}",
+"{0} membre": "{0} membro",
+"{0} membres": "{0} membri",
+"À faire ({0})": "Da fare ({0})",
+"Terminées ou annulées ({0})": "Concluse o annullate ({0})",
+"Aucune tâche ne t'est assignée": "Non hai attività assegnate",
+"Quand quelqu'un t'assigne une tâche, un jalon ou une phase d'un projet, elle apparaît ici.": "Quando qualcuno ti assegna un'attività, una pietra miliare o una fase di un progetto, compare qui.",
+"Les tâches ne s'assignent qu'aux personnes de l'équipe. Retirer quelqu'un de l'équipe le désassigne aussi de toutes les tâches du projet.": "Le attività si assegnano solo alle persone del team. Rimuovere qualcuno dal team lo toglie anche da tutte le attività del progetto.",
+"L'équipe de ce projet est vide : ajoute d'abord des personnes à l'équipe (Projets › Modifier le projet) pour pouvoir leur assigner des tâches.": "Il team di questo progetto è vuoto: aggiungi prima delle persone al team (Progetti › Modifica il progetto) per poter assegnare loro delle attività.",
+"Cette personne ne fait pas partie de l'équipe du projet : ajoute-la d'abord à l'équipe": "Questa persona non fa parte del team del progetto: aggiungila prima al team",
+"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), regroupés en programmes, avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "I tuoi progetti di ogni tipo (cantiere, R&S, progettazione, reclutamento, amministrativo, evento), raggruppati in programmi, con stato e team. «Le mie attività» raccoglie ciò che ti è assegnato."
 }

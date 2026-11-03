@@ -100,3 +100,10 @@ Les tests lancés par ton Claude local après le module multi-entreprise ont don
 On ne sait pas encore s'il s'agit de vraies régressions ou de tests trop pressés (attente fixe de 900 ms). **Étape suivante : lancer le diagnostic `scripts/diag-demarrage.cjs`** (lecture seule, 2 minutes), puis décider.
 
 - Formulaire de projet : lien « + Créer un programme » (création sans quitter le formulaire, le programme est sélectionné ensuite). Typecheck et lint OK ; étape `P4-programme-inline` ajoutée à `e2e-projets`, **pas encore exécutée** sur la vraie base (à lancer par Claude local).
+
+## Étape 1 PILOTE — Équipe, tâches assignées, « Mes tâches » (décisions de Greg : « personnel » = comptes GO-Mat ; type/priorité restent fixes)
+- **Migration 52** (`20261103000052_pilote_equipe.sql`, **à appliquer sur GO-MAT**) : rôle `lead`/`member` dans `cp_project_members` (les lignes existantes restent responsables), une tâche ne s'assigne qu'à l'équipe du projet (`cp_item_member_guard`), quitter l'équipe désassigne des tâches du projet (`cp_unassign_on_team_leave`), reprise : les personnes déjà assignées entrent dans l'équipe comme « membres ». Suspendu pendant une restauration (`gomat.restoring`).
+- Écran : fiche du projet = section « Équipe » (rôle par personne), enregistrement **par différence** (`saveTeam` : ne défait plus les assignations des personnes qui restent), fiche d'un élément = liste « Assignés » limitée à l'équipe, onglet « Mes tâches » (en retard / à faire / sans date / terminées, ouvre la fiche), cartes : responsables + nombre de membres, aide mise à jour.
+- Tests SQL locaux : nouvelle batterie `team.sql` (22 OK, mutations vérifiées : sans règle d'équipe 8 échecs, sans désassignation 2, sans contrainte de rôle le script s'arrête) ; suite complète 85/103/18/16/50/42/49/68/39/22/25, 0 échec.
+- **Non vérifié** : l'écran n'a pas été ouvert dans un navigateur (pas de base distante côté Claude web) ; typecheck et lint OK. À faire passer par Claude local : `e2e-projets` (étapes `P2-equipe`, `P4-equipe-ecran`, `P4-mes-taches`, `P4-programme-inline` ajoutées) et `e2e-gantt` (le responsable de test est maintenant mis dans l'équipe avant d'assigner).
+

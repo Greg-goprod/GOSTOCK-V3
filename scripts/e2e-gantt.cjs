@@ -123,6 +123,11 @@ async function step(id, title, fn, page) {
     S.sub = await create(resp, 'cp_items', { project_id: S.proj, parent_id: S.task, kind: 'subtask', name: `${M} Sous-tâche`, starts_on: '2027-02-10', ends_on: '2027-02-12' });
     S.mile = await create(resp, 'cp_items', { project_id: S.proj, parent_id: S.phase, kind: 'milestone', name: `${M} Jalon`, starts_on: '2027-04-30', ends_on: '2027-04-30' });
     S.undated = await create(resp, 'cp_items', { project_id: S.proj, kind: 'task', name: `${M} À dater` });
+    // Depuis la migration 52, on n'assigne une tâche qu'à quelqu'un de l'équipe du projet : le responsable de test y entre.
+    S.me = rows(await api(resp, 'GET', `/rest/v1/users?select=id&email=eq.${encodeURIComponent(ACCOUNTS.resp)}`))[0]?.id;
+    ok(S.me, 'fiche « users » du responsable introuvable');
+    const team = await api(resp, 'POST', '/rest/v1/cp_project_members', [{ project_id: S.proj, user_id: S.me, role: 'lead' }]);
+    ok(!refused(team), `équipe : ${msg(team)}`);
   });
   await step('P1-regles', 'La base refuse une phase sous une tâche et une sous-tâche sous le projet', async () => {
     ok(refused(await api(resp, 'POST', '/rest/v1/cp_items', { project_id: S.proj, parent_id: S.task, kind: 'phase', name: `${M} Mal placée` })), 'phase sous tâche acceptée');

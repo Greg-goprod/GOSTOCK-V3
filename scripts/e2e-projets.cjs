@@ -139,6 +139,19 @@ async function step(id, title, fn, page) {
   await must('type-inconnu : type inconnu refusé', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} Bizarre`, type: 'autre' }));
   await must('programme-doublon : programme de même nom refusé', () => api(resp, 'POST', '/rest/v1/cp_programs', { name: ` ${M.toLowerCase()} festivals ` }));
   await must('responsable-doublon : même responsable deux fois refusé', () => api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.p1, user_id: S.me }));
+  await step('P2-equipe', 'Équipe : rôle inconnu refusé ; une tâche ne s\'assigne qu\'à l\'équipe ; quitter l\'équipe désassigne', async () => {
+    S.collab = rows(await api(resp, 'GET', `/rest/v1/users?select=id&email=eq.${encodeURIComponent(ACCOUNTS.collab)}`))[0]?.id;
+    ok(S.collab, 'fiche « users » du collaborateur introuvable');
+    ok(refused(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.p1, user_id: S.collab, role: 'chef' })), 'rôle inconnu accepté');
+    S.itemTeam = await create(resp, 'cp_items', { project_id: S.p1, kind: 'task', name: `${M} Tâche équipe` });
+    const hors = await api(resp, 'POST', '/rest/v1/cp_item_members', { item_id: S.itemTeam, user_id: S.collab });
+    ok(refused(hors) && /équipe/.test(msg(hors)), `assignation hors équipe : ${refused(hors) ? msg(hors) : 'ACCEPTÉE'}`);
+    ok(!refused(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.p1, user_id: S.collab, role: 'member' })), 'ajout comme membre refusé');
+    ok(!refused(await api(resp, 'POST', '/rest/v1/cp_item_members', [{ item_id: S.itemTeam, user_id: S.collab }, { item_id: S.itemTeam, user_id: S.me }])), 'assignation d\'un membre et du responsable refusée');
+    ok(!refused(await api(resp, 'DELETE', `/rest/v1/cp_project_members?project_id=eq.${S.p1}&user_id=eq.${S.collab}`)), 'retrait de l\'équipe refusé');
+    const left = rows(await api(resp, 'GET', `/rest/v1/cp_item_members?select=user_id&item_id=eq.${S.itemTeam}`)).map(r => r.user_id);
+    ok(left.length === 1 && left[0] === S.me, `assignations restantes = ${JSON.stringify(left)} (attendu : le responsable seul)`);
+  });
   await step('P2-etat-base', 'Un état de base ne se supprime pas et ne change pas de famille', async () => {
     ok(refused(await api(resp, 'DELETE', `/rest/v1/cp_statuses?id=eq.${S.stDone}`)), 'suppression acceptée');
     ok(refused(await api(resp, 'PATCH', `/rest/v1/cp_statuses?id=eq.${S.stDone}`, { family: 'in_progress' })), 'changement de famille accepté');
@@ -197,12 +210,14 @@ async function step(id, title, fn, page) {
     await resp.page.locator('#prj-name').fill(`${M} Par l'écran`);
     await resp.page.locator('#prj-type').selectOption('design');
     await resp.page.locator('#prj-program').selectOption({ label: `${M} Festivals` });
-    await resp.page.locator('fieldset input[type=checkbox]').first().check();
+    await resp.page.getByLabel(/^Rôle de /).first().selectOption('lead');
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
     const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id,type,program_id&name=eq.${encodeURIComponent(M + " Par l'écran")}`))[0];
     ok(r && r.type === 'design' && r.program_id === S.prog, `projet enregistré = ${JSON.stringify(r)}`);
     const m = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id&project_id=eq.${r.id}`));
     ok(m.length === 1, `responsables enregistrés = ${m.length}`);
+    const role = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=role&project_id=eq.${r.id}`))[0]?.role;
+    ok(role === 'lead', `rôle enregistré = ${role}`);
   }, resp.page);
   await step('P4-programme-inline', 'Formulaire de projet : « Créer un programme » crée et sélectionne le programme, le projet y est rangé', async () => {
     const name = `${M} Programme express`;
@@ -218,6 +233,43 @@ async function step(id, title, fn, page) {
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
     const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=program_id&name=eq.${encodeURIComponent(M + ' Avec programme express')}`))[0];
     ok(r && r.program_id === prog.id, `projet rangé dans = ${r && r.program_id}`);
+  }, resp.page);
+  await step('P4-equipe-ecran', 'Fiche du projet : ajouter un membre par l\'écran ne défait pas les assignations existantes ; retirer la personne la désassigne', async () => {
+    await open(resp, '/pilote/projets');
+    const card = () => resp.page.locator('div', { has: resp.page.locator('h3', { hasText: `${M} Festival` }) }).filter({ has: resp.page.getByRole('button', { name: 'Modifier' }) }).last();
+    await card().getByRole('button', { name: 'Modifier' }).click(); await resp.page.waitForTimeout(800);
+    ok(await resp.page.locator('legend', { hasText: 'Équipe' }).count(), 'section « Équipe » absente de la fiche');
+    const collabRole = resp.page.getByLabel(/^Rôle de /).filter({ has: resp.page.locator('option[value="member"]') });
+    ok((await collabRole.count()) >= 2, 'moins de deux personnes proposées');
+    // le responsable de test est déjà dans l'équipe : il doit apparaître avec son rôle
+    const roles = await resp.page.getByLabel(/^Rôle de /).evaluateAll(els => els.map(e => e.value));
+    ok(roles.includes('lead'), `le responsable n'apparaît pas comme « Responsable » : ${JSON.stringify(roles)}`);
+    // on passe la 1re personne HORS équipe (≠ responsable) en « Membre »
+    const idx = roles.findIndex(v => v === '');
+    ok(idx >= 0, 'personne hors équipe introuvable');
+    await resp.page.getByLabel(/^Rôle de /).nth(idx).selectOption('member');
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
+    const team = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id,role&project_id=eq.${S.p1}`));
+    ok(team.length === 2 && team.some(t => t.user_id === S.me && t.role === 'lead') && team.some(t => t.role === 'member'), `équipe en base = ${JSON.stringify(team)}`);
+    const kept = rows(await api(resp, 'GET', `/rest/v1/cp_item_members?select=user_id&item_id=eq.${S.itemTeam}`));
+    ok(kept.length === 1 && kept[0].user_id === S.me, `l'assignation du responsable a été défaite par l'enregistrement : ${JSON.stringify(kept)}`);
+    // on remet cette personne hors équipe : elle n'a aucune tâche, le responsable garde la sienne
+    await card().getByRole('button', { name: 'Modifier' }).click(); await resp.page.waitForTimeout(800);
+    const roles2 = await resp.page.getByLabel(/^Rôle de /).evaluateAll(els => els.map(e => e.value));
+    const idx2 = roles2.findIndex(v => v === 'member');
+    ok(idx2 >= 0, 'le membre ajouté n\'est pas relu dans la fiche');
+    await resp.page.getByLabel(/^Rôle de /).nth(idx2).selectOption('');
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
+    const team2 = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id,role&project_id=eq.${S.p1}`));
+    ok(team2.length === 1 && team2[0].user_id === S.me, `équipe après retrait = ${JSON.stringify(team2)}`);
+  }, resp.page);
+  await step('P4-mes-taches', 'Onglet « Mes tâches » : la tâche assignée au responsable s\'affiche et ouvre sa fiche', async () => {
+    await open(resp, '/pilote/projets');
+    await resp.page.getByRole('radio', { name: /^Mes tâches/ }).click(); await resp.page.waitForTimeout(1500);
+    ok(await resp.page.getByRole('button', { name: `${M} Tâche équipe` }).first().isVisible(), 'tâche assignée absente de « Mes tâches »');
+    await resp.page.getByRole('button', { name: `${M} Tâche équipe` }).first().click(); await resp.page.waitForTimeout(1000);
+    ok(await resp.page.locator('#itm-name').inputValue() === `${M} Tâche équipe`, 'la fiche de la tâche ne s\'ouvre pas');
+    await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(300);
   }, resp.page);
   await step('P4-chantier-pris', 'Le chantier déjà relié n\'est plus proposé pour un autre projet', async () => {
     await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(600);

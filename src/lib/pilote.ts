@@ -17,7 +17,10 @@ export interface CpProject {
   status_id: string; priority: ProjectPriority | null; color: string; starts_on: string | null; ends_on: string | null;
   link_mode: LinkMode; link_skip_weekends: boolean;
 }
-export interface CpMember { project_id: string; user_id: string }
+// Équipe d'un projet : « responsable » (lead) ou « membre ». Une tâche ne s'assigne qu'à quelqu'un de l'équipe.
+export type TeamRole = 'lead' | 'member';
+export const TEAM_ROLE_LABEL: Record<TeamRole, string> = { lead: 'Responsable', member: 'Membre' };
+export interface CpMember { project_id: string; user_id: string; role: TeamRole }
 
 // Éléments d'un projet (niveaux 3 à 5) : phase, tâche, jalon, sous-tâche
 export type ItemKind = 'phase' | 'task' | 'milestone' | 'subtask';
@@ -75,7 +78,7 @@ export async function loadPilote(): Promise<PiloteData> {
     supabase.from('cp_statuses').select('*').order('position').order('name'),
     supabase.from('cp_programs').select('*').order('name'),
     supabase.from('cp_projects').select('*').order('starts_on', { nullsFirst: false }).order('name'),
-    supabase.from('cp_project_members').select('project_id, user_id'),
+    supabase.from('cp_project_members').select('project_id, user_id, role'),
     supabase.from('sites').select('id, name, status').order('name'),
   ]);
   const error = [statuses, programs, projects, members, sites].map(r => r.error).find(Boolean);
@@ -115,18 +118,30 @@ export async function loadPiloteRights(): Promise<PiloteRights> {
 
 export const piloteError = (error: unknown): string => {
   const e = error as { code?: string; message?: string } | null;
+  if (e?.message?.includes('équipe du projet')) return 'Cette personne ne fait pas partie de l\'équipe du projet : ajoute-la d\'abord à l\'équipe';
   if (e?.code === '23503') return 'Impossible : cet élément est encore utilisé';
   if (e?.code === '23505') return e.message?.includes('cp_projects_site_key') ? 'Ce chantier a déjà un projet' : 'Ce nom existe déjà';
   return e?.message || 'Une erreur est survenue';
 };
 
-// Remplace les responsables d'un projet
-export async function saveMembers(projectId: string, userIds: string[]): Promise<void> {
-  const del = await supabase.from('cp_project_members').delete().eq('project_id', projectId);
-  if (del.error) throw del.error;
-  if (userIds.length === 0) return;
-  const ins = await supabase.from('cp_project_members').insert(userIds.map(user_id => ({ project_id: projectId, user_id })));
-  if (ins.error) throw ins.error;
+// Met à jour l'équipe d'un projet par différence : seules les personnes retirées sont supprimées (la base les désassigne alors
+// de ses tâches), les rôles changés sont modifiés sur place, les nouvelles personnes sont ajoutées. Les autres ne bougent pas.
+export async function saveTeam(projectId: string, team: Record<string, TeamRole>): Promise<void> {
+  const current = await supabase.from('cp_project_members').select('user_id, role').eq('project_id', projectId);
+  if (current.error) throw current.error;
+  const before = new Map((current.data || []).map(r => [r.user_id as string, r.role as TeamRole]));
+  const removed = [...before.keys()].filter(id => !(id in team));
+  if (removed.length > 0) {
+    const del = await supabase.from('cp_project_members').delete().eq('project_id', projectId).in('user_id', removed);
+    if (del.error) throw del.error;
+  }
+  for (const [userId, role] of Object.entries(team)) {
+    if (before.get(userId) === role) continue;
+    const res = before.has(userId)
+      ? await supabase.from('cp_project_members').update({ role }).eq('project_id', projectId).eq('user_id', userId)
+      : await supabase.from('cp_project_members').insert({ project_id: projectId, user_id: userId, role });
+    if (res.error) throw res.error;
+  }
 }
 
 // Décale un élément ET tout ce qu'il contient du même nombre de jours (en une seule opération de la base, tout ou rien)

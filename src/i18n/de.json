@@ -3158,5 +3158,22 @@
 "Nom du nouveau programme": "Name des neuen Programms",
 "Nom du programme": "Name des Programms",
 "Programme créé": "Programm erstellt",
-"Ce programme existe déjà : il est sélectionné": "Dieses Programm gibt es bereits: Es ist ausgewählt"
+"Ce programme existe déjà : il est sélectionné": "Dieses Programm gibt es bereits: Es ist ausgewählt",
+"Membre": "Mitglied",
+"Mes tâches": "Meine Aufgaben",
+"À faire": "Zu erledigen",
+"Assignés": "Zugewiesen",
+"responsable": "verantwortlich",
+"Pas dans l'équipe": "Nicht im Team",
+"Rôle de {0}": "Rolle von {0}",
+"{0} membre": "{0} Mitglied",
+"{0} membres": "{0} Mitglieder",
+"À faire ({0})": "Zu erledigen ({0})",
+"Terminées ou annulées ({0})": "Erledigt oder abgebrochen ({0})",
+"Aucune tâche ne t'est assignée": "Dir ist keine Aufgabe zugewiesen",
+"Quand quelqu'un t'assigne une tâche, un jalon ou une phase d'un projet, elle apparaît ici.": "Wenn dir jemand eine Aufgabe, einen Meilenstein oder eine Phase eines Projekts zuweist, erscheint sie hier.",
+"Les tâches ne s'assignent qu'aux personnes de l'équipe. Retirer quelqu'un de l'équipe le désassigne aussi de toutes les tâches du projet.": "Aufgaben können nur Personen aus dem Team zugewiesen werden. Wer aus dem Team entfernt wird, wird auch von allen Aufgaben des Projekts abgezogen.",
+"L'équipe de ce projet est vide : ajoute d'abord des personnes à l'équipe (Projets › Modifier le projet) pour pouvoir leur assigner des tâches.": "Das Team dieses Projekts ist leer: Füge zuerst Personen zum Team hinzu (Projekte › Projekt bearbeiten), um ihnen Aufgaben zuzuweisen.",
+"Cette personne ne fait pas partie de l'équipe du projet : ajoute-la d'abord à l'équipe": "Diese Person gehört nicht zum Projektteam: Füge sie zuerst zum Team hinzu",
+"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), regroupés en programmes, avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "Deine Projekte jeder Art (Baustelle, F&E, Konzeption, Rekrutierung, Verwaltung, Veranstaltung), in Programmen gruppiert, mit Status und Team. «Meine Aufgaben» sammelt, was dir zugewiesen ist."
 }

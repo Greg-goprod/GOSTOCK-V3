@@ -12,4 +12,5 @@ psql -q -f planning_series.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f projects.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f items.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f links.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
+psql -q -f team.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f platform.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
 import { confirmAction } from '../../lib/confirm';
-import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL, parentKindsFor, piloteError, removeLink, PRIORITY_LABEL, saveItemMembers, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
+import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL, parentKindsFor, piloteError, removeLink, PRIORITY_LABEL, saveItemMembers, TEAM_ROLE_LABEL, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import DateInput, { DateRangeInput } from '../common/DateInput';
@@ -30,7 +30,7 @@ interface FormState {
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 disabled:opacity-70';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
-// Fiche d'un élément : création, modification, suppression ; responsables (plusieurs) et liste à cocher
+// Fiche d'un élément : création, modification, suppression ; personnes assignées (de l'équipe du projet, plusieurs) et liste à cocher
 const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDelete, onClose, onSaved }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
@@ -41,6 +41,11 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
   const [newPred, setNewPred] = useState('');
   const datesTouched = useRef(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
+  // Seules les personnes de l'équipe du projet peuvent être assignées (règle de la base) ; responsables en premier
+  const team = useMemo(() => {
+    const roleOf = new Map(data.members.filter(m => m.project_id === form?.projectId).map(m => [m.user_id, m.role]));
+    return people.filter(u => roleOf.has(u.id)).map(u => ({ ...u, role: roleOf.get(u.id) })).sort((a, b) => Number(b.role === 'lead') - Number(a.role === 'lead'));
+  }, [people, data.members, form?.projectId]);
   const edited = target?.mode === 'edit' ? data.items.find(i => i.id === target.itemId) ?? null : null;
   const isNew = target?.mode === 'new';
   const readOnly = !!edited && !canUpdate;
@@ -204,7 +209,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
           {isNew && !presetParent && (
             <div>
               <label htmlFor="itm-project" className={labelClass}>Projet</label>
-              <select id="itm-project" className={inputClass} value={form.projectId} onChange={e => set({ projectId: e.target.value, parentId: '' })} required>
+              <select id="itm-project" className={inputClass} value={form.projectId} onChange={e => set({ projectId: e.target.value, parentId: '', members: [] })} required>
                 {data.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
@@ -259,14 +264,16 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
             )}
           </div>
           <fieldset disabled={readOnly}>
-            <legend className={labelClass}>Responsables</legend>
-            {people.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucune personne active.</p> : (
+            <legend className={labelClass}>Assignés</legend>
+            {team.length === 0 ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">L'équipe de ce projet est vide : ajoute d'abord des personnes à l'équipe (Projets › Modifier le projet) pour pouvoir leur assigner des tâches.</p>
+            ) : (
               <ul className="grid max-h-40 gap-1 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 p-2 sm:grid-cols-2">
-                {people.map(u => (
+                {team.map(u => (
                   <li key={u.id}>
                     <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
                       <input type="checkbox" checked={form.members.includes(u.id)} onChange={() => set({ members: form.members.includes(u.id) ? form.members.filter(x => x !== u.id) : [...form.members, u.id] })} />
-                      {u.first_name} {u.last_name}
+                      {u.first_name} {u.last_name}{u.role === 'lead' && <span className="text-xs text-gray-500 dark:text-gray-400"> · {TEAM_ROLE_LABEL.lead.toLowerCase()}</span>}
                     </label>
                   </li>
                 ))}

@@ -3158,5 +3158,22 @@
 "Nom du nouveau programme": "New program name",
 "Nom du programme": "Program name",
 "Programme créé": "Program created",
-"Ce programme existe déjà : il est sélectionné": "This program already exists: it is selected"
+"Ce programme existe déjà : il est sélectionné": "This program already exists: it is selected",
+"Membre": "Member",
+"Mes tâches": "My tasks",
+"À faire": "To do",
+"Assignés": "Assigned",
+"responsable": "lead",
+"Pas dans l'équipe": "Not on the team",
+"Rôle de {0}": "Role of {0}",
+"{0} membre": "{0} member",
+"{0} membres": "{0} members",
+"À faire ({0})": "To do ({0})",
+"Terminées ou annulées ({0})": "Done or cancelled ({0})",
+"Aucune tâche ne t'est assignée": "No task is assigned to you",
+"Quand quelqu'un t'assigne une tâche, un jalon ou une phase d'un projet, elle apparaît ici.": "When someone assigns you a task, milestone or phase of a project, it appears here.",
+"Les tâches ne s'assignent qu'aux personnes de l'équipe. Retirer quelqu'un de l'équipe le désassigne aussi de toutes les tâches du projet.": "Tasks can only be assigned to people on the team. Removing someone from the team also unassigns them from all of the project's tasks.",
+"L'équipe de ce projet est vide : ajoute d'abord des personnes à l'équipe (Projets › Modifier le projet) pour pouvoir leur assigner des tâches.": "This project's team is empty: first add people to the team (Projects › Edit project) so you can assign tasks to them.",
+"Cette personne ne fait pas partie de l'équipe du projet : ajoute-la d'abord à l'équipe": "This person is not on the project team: add them to the team first",
+"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), regroupés en programmes, avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "Your projects of every kind (site, R&D, design, recruitment, admin, event), grouped into programs, with their status and team. \"My tasks\" gathers what is assigned to you."
 }
