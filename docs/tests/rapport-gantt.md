@@ -1,7 +1,7 @@
 # Rapport des tests du Gantt PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 11:59
-Commit testé : 78094b8 (e2e-gantt : fenêtre de départ Gantt corrigée)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 14:03
+Commit testé : 3f4e21a (PILOTE étape 1 : équipe du projet, Mes tâches, migration 52)
 
 **Synthèse : 35 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 

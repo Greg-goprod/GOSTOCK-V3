@@ -1,11 +1,11 @@
 # Rapport des tests du planning de chantier
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 18:24
-Commit testé : 38bdbae (Statut : e2e-projets vert) — inclut c0c2fe0 (Plages de dates : un seul sélecteur début+fin)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 14:02
+Commit testé : 3f4e21a (PILOTE étape 1 : équipe du projet, Mes tâches, migration 52)
 
 **Synthèse : 40 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 1 INFO**
 
-Nettoyage : {"eb913ccf-6875-4e7c-984e-673bf4c6ed6f":"supprimé","859cde30-0cce-4940-9a28-67cf6462ce46":"supprimé","contractor":"supprimé","restants":0}
+Nettoyage : {"6520b687-7564-4118-aa1e-6844f1a4f5de":"supprimé","de7eca1e-af20-4e57-8889-84eaaf263707":"supprimé","contractor":"supprimé","restants":0}
 
 ## À corriger (KO et PARTIEL)
 

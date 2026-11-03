@@ -1,15 +1,15 @@
 # Rapport des tests des projets PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-02 16:11
-Commit testé : 40ca47f (R3a : base des éléments de projet + batterie de tests)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 13:58
+Commit testé : 3f4e21a (PILOTE étape 1 : équipe du projet, Mes tâches, migration 52)
 
-**Synthèse : 25 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
+**Synthèse : 28 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 0 INFO**
 
-Nettoyage : {"cp_projects":"8 supprimé(s)","cp_programs":"1 supprimé(s)","cp_statuses":"0 supprimé(s)","sites":"2 supprimé(s)","restants":0}
+Nettoyage : {"cp_projects":"9 supprimé(s)","cp_programs":"2 supprimé(s)","cp_statuses":"0 supprimé(s)","sites":"2 supprimé(s)","restants":0}
 
 ## À corriger (KO et PARTIEL)
 
-Aucun.
+- **KO** P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet : locator.click: Timeout 30000ms exceeded. ([capture](captures-projets/P4-chantier-pris.png))
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -40,6 +40,7 @@ Aucun.
 | P2-type-inconnu — type-inconnu : type inconnu refusé | OK |  |
 | P2-programme-doublon — programme-doublon : programme de même nom refusé | OK |  |
 | P2-responsable-doublon — responsable-doublon : même responsable deux fois refusé | OK |  |
+| P2-equipe — Équipe : rôle inconnu refusé ; une tâche ne s'assigne qu'à l'équipe ; quitter l'équipe désassigne | OK |  |
 | P2-etat-base — Un état de base ne se supprime pas et ne change pas de famille | OK |  |
 | P2-etat-ajoute — État ajouté : créé dans une famille, utilisé par un projet (suppression refusée), puis supprimé une fois libre | OK |  |
 | P2-programme-supprime — Supprimer un programme garde ses projets, sans programme | OK |  |
@@ -60,7 +61,10 @@ Aucun.
 | P4-ouverture — Responsable : PILOTE › Projets s'ouvre, les projets de test s'affichent, compteurs par état | OK |  |
 | P4-liste — Bascule cartes / liste | OK |  |
 | P4-creation — Création d'un projet par le formulaire (type, programme, responsable) | OK |  |
-| P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet | OK |  |
+| P4-programme-inline — Formulaire de projet : « Créer un programme » crée et sélectionne le programme, le projet y est rangé | OK |  |
+| P4-equipe-ecran — Fiche du projet : ajouter un membre par l'écran ne défait pas les assignations existantes ; retirer la personne la désassigne | OK |  |
+| P4-mes-taches — Onglet « Mes tâches » : la tâche assignée au responsable s'affiche et ouvre sa fiche | OK |  |
+| P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet | KO | locator.click: Timeout 30000ms exceeded. |
 | P4-programmes-etats — Onglets Programmes et États : lignes visibles, états de base non supprimables | OK |  |
 | P4-staff-ecran — staff : l'écran s'ouvre en lecture seule | OK |  |
 | P4-collab-ecran — collab : l'écran s'ouvre en lecture seule | OK |  |
