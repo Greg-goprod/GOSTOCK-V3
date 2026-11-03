@@ -95,7 +95,9 @@ async function step(id, title, fn, page) {
   const readers = [staff, collab];
 
   const create = async (c, table, row) => { const r = await api(c, 'POST', `/rest/v1/${table}?select=id`, row, REP); ok(!refused(r), `${table} : ${msg(r)}`); return rows(r)[0]?.id; };
-  const open = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await c.page.waitForTimeout(2500); };
+  // Deux pièges : sur écran étroit la barre latérale (réservée aux écrans larges : « hidden lg:flex ») est masquée et c'est la barre du bas qui est visible ;
+  // et dans les autres langues l'aria-label « Navigation principale » est traduit. On attend donc l'une OU l'autre barre, sans dépendre du libellé.
+  const open = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.waitForSelector('aside nav, nav.fixed', { timeout: 30000 }); await c.page.waitForTimeout(2500); };
 
   /* ---- outils de scénario ---- */
   // Un refus n'a de valeur que s'il vient de la bonne règle : on vérifie aussi le message (sinon un test « refusé » peut passer pour une mauvaise raison)
@@ -494,10 +496,18 @@ async function step(id, title, fn, page) {
     await resp.page.locator('.group\\/row', { hasText: `${M} Perf` }).first().waitFor({ state: 'visible', timeout: 15000 });
     const ms = Date.now() - t0;
     S.perfMs = ms;
-    const rowsShown = await resp.page.locator('[role="row"], .group\\/row').count();
+    const rowsShown = await resp.page.locator('.group\\/row').count();
     ok(rowsShown > 0, 'aucune ligne dans le Gantt');
-    if (ms > 2000) return { status: 'PARTIEL', detail: `affichage en ${ms} ms (objectif < 2000 ms)` };
-    return { status: 'OK', detail: `affichage en ${ms} ms, ${rowsShown} lignes` };
+    // L'arbre s'ouvre replié (quelques lignes) : on mesure aussi l'arbre DÉPLIÉ, avec les 200 éléments à l'écran
+    const t1 = Date.now();
+    await resp.page.getByRole('button', { name: 'Tout déplier' }).click();
+    await resp.page.waitForFunction(() => document.querySelectorAll('.group\\/row').length >= 200, null, { timeout: 20000 }).catch(() => {});
+    const msExpand = Date.now() - t1;
+    const rowsExpanded = await resp.page.locator('.group\\/row').count();
+    const detail = `replié : ${ms} ms, ${rowsShown} lignes · déplié : ${msExpand} ms, ${rowsExpanded} lignes`;
+    if (rowsExpanded < 200) return { status: 'PARTIEL', detail: `${detail} (moins de 200 lignes affichées : l'arbre déplié n'a pas été mesuré en entier)` };
+    if (ms > 2000 || msExpand > 2000) return { status: 'PARTIEL', detail: `${detail} (objectif < 2000 ms)` };
+    return { status: 'OK', detail };
   }, resp.page);
   await step('I-double-clic', 'Double-clic sur « Enregistrer » : un seul projet est créé', async () => {
     await open(resp, '/pilote/projets');
@@ -530,25 +540,28 @@ async function step(id, title, fn, page) {
     ok(await count(resp, 'cp_projects', `name=eq.${encodeURIComponent(M + ' Reload')}`) === 0, 'un projet « Reload » a été créé');
   }, resp.page);
   await step('I-mobile', 'Mobile 390 px : Projets, Mes tâches et Gantt sans défilement horizontal de la page', async () => {
-    await resp.page.setViewportSize({ width: 390, height: 800 });
     const bad = [];
-    for (const [url, tab] of [['/pilote/projets', null], ['/pilote/projets', /^Mes tâches/], ['/pilote/gantt', null]]) {
-      await open(resp, url);
-      if (tab) { await resp.page.getByRole('radio', { name: tab }).click(); await resp.page.waitForTimeout(1200); }
-      const w = await resp.page.evaluate(() => ({ s: document.documentElement.scrollWidth, i: window.innerWidth }));
-      if (w.s > w.i + 1) bad.push(`${url}${tab ? ' (Mes tâches)' : ''} : largeur ${w.s} > ${w.i}`);
-    }
-    await resp.page.setViewportSize({ width: 1440, height: 900 });
+    try {
+      await resp.page.setViewportSize({ width: 390, height: 800 });
+      for (const [url, tab] of [['/pilote/projets', null], ['/pilote/projets', /^Mes tâches/], ['/pilote/gantt', null]]) {
+        await open(resp, url);
+        if (tab) { await resp.page.getByRole('radio', { name: tab }).click(); await resp.page.waitForTimeout(1200); }
+        const w = await resp.page.evaluate(() => ({ s: document.documentElement.scrollWidth, i: window.innerWidth }));
+        if (w.s > w.i + 1) bad.push(`${url}${tab ? ' (Mes tâches)' : ''} : largeur ${w.s} > ${w.i}`);
+      }
+    } finally { await resp.page.setViewportSize({ width: 1440, height: 900 }); }
     ok(bad.length === 0, `débordement horizontal : ${bad.join(' ; ')}`);
   }, resp.page);
   await step('I-sombre', 'Mode sombre : les écrans PILOTE s\'ouvrent sans débordement ni erreur JavaScript', async () => {
     const before = jsErrors.length;
-    await resp.page.evaluate(() => localStorage.setItem('theme', 'dark'));
-    await open(resp, '/pilote/projets');
-    const dark = await resp.page.evaluate(() => document.documentElement.classList.contains('dark') || document.documentElement.dataset.theme === 'dark');
-    const w = await resp.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-    await resp.page.evaluate(() => localStorage.setItem('theme', 'light'));
-    ok(w, 'débordement horizontal en mode sombre');
+    let dark = false, noOverflow = false;
+    try {
+      await resp.page.evaluate(() => localStorage.setItem('theme', 'dark'));
+      await open(resp, '/pilote/projets');
+      dark = await resp.page.evaluate(() => document.documentElement.classList.contains('dark') || document.documentElement.dataset.theme === 'dark');
+      noOverflow = await resp.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+    } finally { await resp.page.evaluate(() => localStorage.setItem('theme', 'light')); }
+    ok(noOverflow, 'débordement horizontal en mode sombre');
     ok(jsErrors.length === before, `erreurs JavaScript : ${jsErrors.slice(before).join(' | ')}`);
     return dark ? undefined : INFO('le mode sombre n\'a pas été détecté sur <html> : la vérification visuelle n\'est pas garantie');
   }, resp.page);
