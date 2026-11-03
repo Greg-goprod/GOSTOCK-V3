@@ -584,8 +584,9 @@ async function step(id, title, fn, page) {
           opened = true;
           const legends = await resp.page.locator('form legend').allInnerTexts();
           const options = await resp.page.locator('form fieldset select').first().locator('option').allInnerTexts();
-          if (!legends.some(t => t.trim() === want('Équipe'))) missing.push(`titre « ${want('Équipe')} » (lu : ${JSON.stringify(legends)})`);
-          for (const k of ['Pas dans l\'équipe', 'Membre', 'Responsable']) if (!options.some(t => t.trim() === want(k))) missing.push(`option « ${want(k)} » (lues : ${JSON.stringify(options)})`);
+          // innerText applique la mise en majuscules du titre (CSS text-transform) : « TEAM » est bien la traduction de « Team »
+          if (!legends.some(t => t.trim().toLocaleLowerCase() === want('Équipe').toLocaleLowerCase())) missing.push(`titre « ${want('Équipe')} » (lu : ${JSON.stringify(legends)})`);
+          for (const k of ['Pas dans l\'équipe', 'Membre', 'Responsable']) if (!options.some(t => t.trim().toLocaleLowerCase() === want(k).toLocaleLowerCase())) missing.push(`option « ${want(k)} » (lues : ${JSON.stringify(options)})`);
           await resp.page.keyboard.press('Escape');
         }
       } finally { await resp.page.evaluate(() => localStorage.setItem('gomat-language', 'fr')); }
@@ -612,21 +613,23 @@ async function step(id, title, fn, page) {
     accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.pN, user_id: S.u_resp, role: 'lead' }), 'équipe : responsable');
     accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.pN, user_id: S.u_collab, role: 'member' }), 'équipe : collaborateur');
     accepts(await api(resp, 'POST', '/rest/v1/cp_item_members', [{ item_id: S.tN1, user_id: S.u_collab }, { item_id: S.tN1, user_id: S.u_resp }]), 'assignations');
-    const mine = await myNotifs(collab);
+    // Le collaborateur a déjà reçu des avis des scénarios B (équipes des projets B et C) : on isole ceux de CE projet
+    const mine = (await myNotifs(collab)).filter(n => n.message.includes(`${M} Projet notifs`) || n.message.includes(`${M} Notif T`));
     const team = mine.filter(n => n.kind === 'cp_team_added'), asg = mine.filter(n => n.kind === 'cp_assigned');
     ok(team.length === 1 && /membre/.test(team[0].message) && team[0].message.includes(`${M} Projet notifs`), `avis d'équipe = ${JSON.stringify(team.map(n => n.message))}`);
     ok(asg.length === 1 && asg[0].message.includes(`la tâche « ${M} Notif T1 »`) && asg[0].message.includes('à terminer le 07.05.2027'), `avis d'assignation = ${JSON.stringify(asg.map(n => n.message))}`);
-    ok((await myNotifs(resp)).length === 0, 'l\'auteur reçoit des avis sur ses propres actions');
+    ok((await myNotifs(resp)).filter(n => n.message.includes(`${M} Projet notifs`) || n.message.includes(`${M} Notif T`)).length === 0, 'l\'auteur reçoit des avis sur ses propres actions');
   });
   await step('N-dates-regroupees', 'Décaler une tâche assignée : avis « dates modifiées » ; un 2e décalage rapproché est regroupé (toujours un seul avis)', async () => {
     accepts(await rpc(resp, 'cp_shift_item', { p_item_id: S.tN1, p_days: 7 }), 'décaler +7');
-    let d1 = (await myNotifs(collab)).filter(n => n.kind === 'cp_dates_changed');
+    const datesOfN = async () => (await myNotifs(collab)).filter(n => n.kind === 'cp_dates_changed' && n.message.includes(`${M} Projet notifs`));
+    let d1 = await datesOfN();
     ok(d1.length === 1 && d1[0].message.includes('du 10.05.2027 au 14.05.2027'), `avis de dates = ${JSON.stringify(d1.map(n => n.message))}`);
     accepts(await rpc(resp, 'cp_shift_item', { p_item_id: S.tN1, p_days: 7 }), 'décaler +7 encore');
-    d1 = (await myNotifs(collab)).filter(n => n.kind === 'cp_dates_changed');
+    d1 = await datesOfN();
     ok(d1.length === 1, `après un 2e décalage : ${d1.length} avis (attendu 1, regroupé)`);
     accepts(await api(resp, 'PATCH', `/rest/v1/cp_items?id=eq.${S.tN1}`, { description: 'sans effet sur les dates' }), 'description');
-    ok((await myNotifs(collab)).filter(n => n.kind === 'cp_dates_changed').length === 1, 'modifier la description a produit un avis');
+    ok((await datesOfN()).length === 1, 'modifier la description a produit un avis');
   });
   await step('N-ecran-notifications', 'Écran « Notifications » du collaborateur : famille PILOTE, avis lisibles, un clic ouvre « Mes tâches »', async () => {
     await open(collab, '/notifications');
