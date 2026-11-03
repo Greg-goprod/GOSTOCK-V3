@@ -318,7 +318,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
                     <option value="">— Choisis un élément</option>
                     {predOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                   </select>
-                  <Button variant="outline" size="sm" icon={<Plus size={14} />} disabled={!newPred} onClick={() => void changeLink(async () => { await addLink(newPred, edited.id); setNewPred(''); })}>Ajouter</Button>
+                  <Button variant="outline" size="sm" ariaLabel="Ajouter la dépendance" icon={<Plus size={14} />} disabled={!newPred} onClick={() => void changeLink(async () => { await addLink(newPred, edited.id); setNewPred(''); })}>Ajouter</Button>
                 </div>
               )}
               {succLinks.length > 0 && (

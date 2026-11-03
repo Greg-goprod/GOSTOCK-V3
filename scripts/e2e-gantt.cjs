@@ -337,7 +337,7 @@ async function step(id, title, fn, page) {
     await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(400);
     await resp.page.locator(`[role="button"][aria-label*="${M} L-C"]`).first().click(); await resp.page.waitForTimeout(1200);
     await resp.page.locator('select[aria-label="Commence après l\'élément"]').selectOption({ label: `Tâche · ${M} L-A` });
-    await resp.page.getByRole('button', { name: 'Ajouter', exact: true }).last().click(); await resp.page.waitForTimeout(1800);
+    await resp.page.getByRole('button', { name: 'Ajouter la dépendance' }).click(); await resp.page.waitForTimeout(1800);
     const l = rows(await api(resp, 'GET', `/rest/v1/cp_item_links?select=id&predecessor_id=eq.${S.lA}&successor_id=eq.${S.lC}`));
     ok(l.length === 1, `dépendance A → C créée = ${l.length}`);
     await resp.page.getByRole('button', { name: new RegExp(`^Retirer la dépendance avec ${M} L-A`) }).click(); await resp.page.waitForTimeout(1800);

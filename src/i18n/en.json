@@ -3152,5 +3152,6 @@
 "Cette dépendance créerait une boucle": "This dependency would create a loop",
 "Un élément ne dépend pas de son parent ni de ce qu'il contient": "An item does not depend on its parent or on what it contains",
 "Les deux éléments doivent être dans le même projet": "Both items must be in the same project",
-"Chaîne de dépendances trop longue": "Dependency chain too long"
+"Chaîne de dépendances trop longue": "Dependency chain too long",
+"Ajouter la dépendance": "Add the dependency"
 }

@@ -3152,5 +3152,6 @@
 "Cette dépendance créerait une boucle": "Diese Abhängigkeit würde eine Schleife erzeugen",
 "Un élément ne dépend pas de son parent ni de ce qu'il contient": "Ein Element hängt nicht von seinem übergeordneten Element oder seinem Inhalt ab",
 "Les deux éléments doivent être dans le même projet": "Beide Elemente müssen im selben Projekt sein",
-"Chaîne de dépendances trop longue": "Abhängigkeitskette zu lang"
+"Chaîne de dépendances trop longue": "Abhängigkeitskette zu lang",
+"Ajouter la dépendance": "Abhängigkeit hinzufügen"
 }
