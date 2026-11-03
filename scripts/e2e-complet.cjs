@@ -119,7 +119,8 @@ const SKIP = detail => ({ status: 'NON TESTÉ', detail });
 function routeMatrix() {
   const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'lib', 'access.ts'), 'utf8');
   const out = [];
-  for (const m of src.matchAll(/'(\/[\w-]*)':\s*\[([^\]]*)\]/g)) out.push({ route: m[1], perms: [...m[2].matchAll(/'(\w+)'/g)].map(x => x[1]) });
+  // Les routes qui dépendent d'un module de l'entreprise (« module:… ») ne se jugent pas sur le seul rôle : on les laisse à e2e-projets / e2e-planning / e2e-pilote-scenarios
+  for (const m of src.matchAll(/'(\/[\w-]*)':\s*\[([^\]]*)\]/g)) { if (/module:/.test(m[2])) continue; out.push({ route: m[1], perms: [...m[2].matchAll(/'(\w+)'/g)].map(x => x[1]) }); }
   return out;
 }
 const PAGES = ['/', '/shop', '/shop?vue=commandes', '/demandes', '/consommables', '/commande', '/commandes', '/equipment', '/kits', '/entretien', '/atelier', '/incidents', '/etiquettes',

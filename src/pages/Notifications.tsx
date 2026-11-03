@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
+import { canAccess } from '../lib/access';
+import PilotePrefs from '../components/notifications/PilotePrefs';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import PushToggle from '../components/common/PushToggle';
-import { CheckCircle, Bell, BookMarked as MarkAsUnread, ClipboardList, RotateCcw, Package, Wrench, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Bell, BookMarked as MarkAsUnread, ClipboardList, RotateCcw, Package, Wrench, AlertTriangle, FolderKanban } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MxSegmented } from '../components/mx/MxSegmented';
@@ -19,7 +22,7 @@ import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStor
 import { PageCommands } from '../components/Layout/ModuleHeader';
 import type { StockNotification } from '../types';
 
-type Group = 'requests' | 'returns' | 'stock' | 'upkeep' | 'incidents' | 'other';
+type Group = 'requests' | 'returns' | 'stock' | 'upkeep' | 'incidents' | 'pilote' | 'other';
 
 const GROUPS: { id: Group; label: string; empty: string; to: string }[] = [
   { id: 'requests', label: 'Demandes', empty: 'Aucune notification de demande.', to: '/demandes' },
@@ -27,6 +30,7 @@ const GROUPS: { id: Group; label: string; empty: string; to: string }[] = [
   { id: 'stock', label: 'Stock', empty: 'Aucune notification de stock.', to: '/commande' },
   { id: 'upkeep', label: 'Entretien et échéances', empty: 'Aucune notification d\'entretien ou d\'échéance.', to: '/entretien' },
   { id: 'incidents', label: 'Pertes et casse', empty: 'Aucune notification de perte ou de casse.', to: '/incidents' },
+  { id: 'pilote', label: 'PILOTE', empty: 'Aucune notification PILOTE.', to: '/pilote/projets?section=mytasks' },
   { id: 'other', label: 'Autres', empty: 'Aucune autre notification.', to: '/notifications' },
 ];
 
@@ -39,23 +43,26 @@ const GROUP_OF: Record<string, Group> = {
   maintenance_due: 'upkeep', vehicle_deadline: 'upkeep', warranty_end: 'upkeep', repair_late: 'upkeep', battery_end: 'upkeep',
   training_expiry: 'upkeep', rental_due: 'upkeep', ppe_renewal: 'upkeep', mission_end: 'upkeep',
   incident: 'incidents', tool_damaged: 'incidents',
+  cp_assigned: 'pilote', cp_team_added: 'pilote', cp_dates_changed: 'pilote', cp_due_soon: 'pilote', cp_overdue: 'pilote',
 };
 
 const groupOf = (n: StockNotification): Group => GROUP_OF[n.kind] ?? 'other';
 
-const GROUP_ICON = { requests: ClipboardList, returns: RotateCcw, stock: Package, upkeep: Wrench, incidents: AlertTriangle, other: Bell };
+const GROUP_ICON = { requests: ClipboardList, returns: RotateCcw, stock: Package, upkeep: Wrench, incidents: AlertTriangle, pilote: FolderKanban, other: Bell };
 
 const TONE: Record<string, 'danger' | 'warning' | 'success' | 'info'> = {
   request_rejected: 'danger', return_overdue: 'danger', return_escalation: 'danger', incident: 'danger', tool_damaged: 'danger', repair_late: 'danger',
   request_to_approve: 'warning', extension_request: 'warning', low_stock: 'warning', maintenance_due: 'warning', vehicle_deadline: 'warning',
   warranty_end: 'warning', battery_end: 'warning', training_expiry: 'warning', rental_due: 'warning', ppe_renewal: 'warning', mission_end: 'warning',
-  backup_due: 'warning', return_reminder: 'warning',
+  backup_due: 'warning', return_reminder: 'warning', cp_due_soon: 'warning', cp_overdue: 'danger', cp_dates_changed: 'warning',
   request_approved: 'success', request_ready: 'success', loan_extended: 'success',
 };
 
 const Notifications: React.FC = () => {
   const { userNotifications, unreadNotificationCount, markNotificationsRead, markNotificationUnread, markAllNotificationsRead, refreshNotifications, checkouts, loadingAppData } = useApp();
   const navigate = useNavigate();
+  const { profile, can } = useAuth();
+  const hasPilote = !!profile?.modules?.includes('cp.projects');
   const [status, setStatus] = useState<'all' | 'unread' | 'read'>('all');
   const [group, setGroup] = useState<'all' | Group>('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -98,8 +105,10 @@ const Notifications: React.FC = () => {
 
   const open = (n: StockNotification) => {
     if (!n.read) void markNotificationsRead([n.id]);
-    const target = GROUPS.find(g => g.id === groupOf(n))?.to;
-    if (target && target !== '/notifications') navigate(target);
+    // Être ajouté à une équipe mène à la liste des projets ; les autres avis PILOTE, à « Mes tâches »
+    const target = n.kind === 'cp_team_added' ? '/pilote/projets' : GROUPS.find(g => g.id === groupOf(n))?.to;
+    // Une personne sans accès à la page de destination (ex. un collaborateur : « Demandes ») est envoyée à ses commandes du Shop
+    if (target && target !== '/notifications') navigate(canAccess(target.split('?')[0], can) ? target : '/shop?vue=commandes');
   };
 
   const emptyText = status === 'unread' ? 'Aucune notification non lue.'
@@ -116,6 +125,7 @@ const Notifications: React.FC = () => {
         </p>
         <div className="mt-2"><PushToggle /></div>
       </div>
+      {hasPilote && <PilotePrefs />}
       <PageCommands
         filters={<MxSegmented aria-label="Statut" value={status} onChange={v => setStatus(v as typeof status)} options={[
           { value: 'all', label: `Toutes (${userNotifications.length})` },
@@ -147,7 +157,7 @@ const Notifications: React.FC = () => {
                 {'. Ce n\'est pas une notification : le chiffre se met à jour tout seul quand le matériel revient.'}
               </p>
             </div>
-            <Link to="/checkouts" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline">Voir les sorties</Link>
+            {canAccess('/checkouts', can) && <Link to="/checkouts" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline">Voir les sorties</Link>}
           </div>
         </Card>
       )}

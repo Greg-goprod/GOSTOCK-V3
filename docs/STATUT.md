@@ -118,3 +118,12 @@ On ne sait pas encore s'il s'agit de vraies régressions ou de tests trop press�
 - À noter : le mesure « 200 éléments en 747 ms, 19 lignes » ne portait que sur l'arbre **replié** ; le script mesure maintenant aussi l'arbre déplié.
 - Observation (INFO) à décider : la fiche d'un élément enregistre l'élément entier, donc deux personnes sur la même fiche = « dernier gagnant » sans avertissement.
 
+## Étape 2 PILOTE — Notifications (migration 53, **à appliquer sur GO-MAT**)
+- Réutilise l'existant : table `notifications` (avis personnel = `recipient_user_id`), cloche, écran Notifications, « lu » par personne, e-mail et push par la fonction Edge `send-notification-emails`. Rien de ces fonctions n'est modifié côté SQL.
+- Nouveaux avis (`cp_assigned`, `cp_team_added`, `cp_dates_changed` regroupé sur 10 min par projet, `cp_due_soon`, `cp_overdue` ≤ 3 jours) ; jamais pour soi-même, ni pendant une restauration, ni pour les éléments terminés/annulés, ni pour une personne inactive. Rappels quotidiens = `check_cp_deadlines()` (réservée à la clé de service), **appelée par la fonction Edge : elle doit être redéployée (v22)**.
+- Choix par personne (`cp_notification_prefs`, écran « Mes avis PILOTE ») : un canal décoché = l'avis naît déjà marqué envoyé (`emailed_at` / `pushed_at`), donc la file d'envoi existante ne le prend pas ; « dans l'application » décoché = aucun avis.
+- Écran : famille « PILOTE » dans Notifications, clic → « Mes tâches » (`?section=mytasks`), carte des choix. **Changement de comportement à connaître** : la page Notifications est maintenant ouverte aussi aux personnes d'une entreprise ayant PILOTE (`'module:cp.projects'` dans `access.ts`), car un collaborateur n'avait aucun autre endroit pour lire ses avis PILOTE ; un avis d'un autre type dont la page est interdite l'envoie vers « Shop › Mes commandes ».
+- Tests SQL locaux : `notifications_pilote.sql` 41 OK (mutations : 6 protections retirées → chacune détectée) ; suite complète 85/103/18/16/50/42/49/68/39/22/41/25, 0 échec.
+- Constaté (existant, hors périmètre, non modifié) : la règle d'accès de la table `notifications` laisse le personnel (view_all/scan/approve/manage_stock) lire directement TOUS les avis de son entreprise, personnels compris ; l'application filtre via `my_notifications()`.
+- **Non vérifié** : écran (aucun navigateur côté Claude web), e-mail/push réels, rappels quotidiens sur la vraie base (à faire par essai annulé après la migration), messages de la base non traduits (seuls titres et formats principaux le sont).
+

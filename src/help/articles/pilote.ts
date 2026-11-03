@@ -46,6 +46,22 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'avis',
+        title: 'Être prévenu : les avis PILOTE',
+        who: 'Tout le monde, dans une entreprise qui a PILOTE.',
+        steps: [
+          { text: 'Ouvre « Notifications » (la cloche en haut) : les avis PILOTE sont dans la famille « PILOTE ».' },
+          { text: 'Clique sur un avis : il s\'ouvre sur « Mes tâches » (ou sur la liste des projets quand on t\'ajoute à une équipe) et il est marqué comme lu.' },
+          { text: 'En haut de la page, « Mes avis PILOTE » : pour chaque événement, coche « Dans l\'application », « E-mail » et/ou « Push ».' },
+        ],
+        result: 'Tu reçois un avis quand on t\'assigne une tâche, quand on t\'ajoute à une équipe, quand les dates d\'un de tes éléments changent (plusieurs changements rapprochés = un seul avis), la veille et le jour d\'une échéance, et les 3 jours qui suivent un retard. Tu ne reçois jamais d\'avis pour ce que tu fais toi-même, ni pour les éléments terminés ou annulés.',
+        problems: [
+          { if: 'Je ne reçois pas d\'e-mail.', then: 'Vérifie que « E-mail » est coché pour cet événement (« dates modifiées » n\'envoie pas d\'e-mail par défaut) et que ton adresse est renseignée dans ta fiche.' },
+          { if: 'Je ne reçois pas de notification push.', then: 'Active d\'abord les notifications sur cet appareil avec le bouton en haut de la page Notifications, puis coche « Push ».' },
+          { if: 'Je ne reçois plus aucun avis d\'un type.', then: 'Tu as décoché « Dans l\'application » pour cet événement : recoche-le.' },
+        ],
+      },
+      {
         id: 'programmes',
         title: 'Regrouper des projets dans un programme',
         who: 'Administrateur et responsable.',

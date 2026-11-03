@@ -20,7 +20,7 @@ const TABLES = [
   // Planning de chantier (module 1) : dans l'ordre des dépendances (chantiers → zones / équipes → interventions → besoins)
   'cp_contractors', 'cp_site_config', 'cp_site_blocked_days', 'cp_site_zones', 'cp_site_phases', 'cp_site_teams', 'cp_site_interventions', 'cp_site_intervention_needs',
   // Projets PILOTE (R2b, R3a) : états et programmes d'abord, puis projets, puis éléments, responsables et listes à cocher
-  'cp_statuses', 'cp_programs', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links',
+  'cp_statuses', 'cp_programs', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links', 'cp_notification_prefs',
   'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const PAGE = 1000;

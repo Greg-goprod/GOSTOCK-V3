@@ -39,7 +39,8 @@ export const ROUTE_ACCESS: Record<string, Permission[]> = {
   '/checkouts': ['scan', 'view_all'],
   '/consommables': ['scan', 'manage_stock'],
   '/commande': ['manage_stock'],
-  '/notifications': ['view_all', 'scan', 'approve', 'manage_stock'],
+  // + les personnes d'une entreprise qui a PILOTE : leurs avis (assignations, échéances) n'ont pas d'autre endroit où se lire
+  '/notifications': ['view_all', 'scan', 'approve', 'manage_stock', 'module:cp.projects'],
   '/tableau-de-bord': ['view_all'],
   '/users': ['manage_people'],
   '/settings': ['settings'],
