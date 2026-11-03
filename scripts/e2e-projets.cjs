@@ -272,6 +272,8 @@ async function step(id, title, fn, page) {
     await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(300);
   }, resp.page);
   await step('P4-chantier-pris', 'Le chantier déjà relié n\'est plus proposé pour un autre projet', async () => {
+    // L'étape précédente (« Mes tâches ») laisse l'onglet « Mes tâches » ouvert : on revient sur « Projets »
+    await open(resp, '/pilote/projets');
     await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(600);
     await resp.page.locator('#prj-type').selectOption('site');
     const options = await resp.page.locator('#prj-site option').allInnerTexts();
