@@ -1,15 +1,15 @@
 # Rapport des tests des projets PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 13:58
-Commit testé : 3f4e21a (PILOTE étape 1 : équipe du projet, Mes tâches, migration 52)
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 14:44
+Commit testé : a09d0ea (Tests PILOTE : correction P4-chantier-pris, e2e-pilote-scenarios complet)
 
-**Synthèse : 28 OK · 0 PARTIEL · 1 KO · 0 NON TESTÉ · 0 INFO**
+**Synthèse : 29 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 
 Nettoyage : {"cp_projects":"9 supprimé(s)","cp_programs":"2 supprimé(s)","cp_statuses":"0 supprimé(s)","sites":"2 supprimé(s)","restants":0}
 
 ## À corriger (KO et PARTIEL)
 
-- **KO** P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet : locator.click: Timeout 30000ms exceeded. ([capture](captures-projets/P4-chantier-pris.png))
+Aucun.
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -64,7 +64,7 @@ Nettoyage : {"cp_projects":"9 supprimé(s)","cp_programs":"2 supprimé(s)","cp_s
 | P4-programme-inline — Formulaire de projet : « Créer un programme » crée et sélectionne le programme, le projet y est rangé | OK |  |
 | P4-equipe-ecran — Fiche du projet : ajouter un membre par l'écran ne défait pas les assignations existantes ; retirer la personne la désassigne | OK |  |
 | P4-mes-taches — Onglet « Mes tâches » : la tâche assignée au responsable s'affiche et ouvre sa fiche | OK |  |
-| P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet | KO | locator.click: Timeout 30000ms exceeded. |
+| P4-chantier-pris — Le chantier déjà relié n'est plus proposé pour un autre projet | OK |  |
 | P4-programmes-etats — Onglets Programmes et États : lignes visibles, états de base non supprimables | OK |  |
 | P4-staff-ecran — staff : l'écran s'ouvre en lecture seule | OK |  |
 | P4-collab-ecran — collab : l'écran s'ouvre en lecture seule | OK |  |

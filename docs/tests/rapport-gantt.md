@@ -1,7 +1,7 @@
 # Rapport des tests du Gantt PILOTE
 
 Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 14:03
-Commit testé : 3f4e21a (PILOTE étape 1 : équipe du projet, Mes tâches, migration 52)
+Commit testé : a09d0ea (Tests PILOTE : correction P4-chantier-pris, e2e-pilote-scenarios complet)
 
 **Synthèse : 35 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 
