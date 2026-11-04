@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MessageSquare, Pencil, RefreshCw, Send, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { confirmAction } from '../../lib/confirm';
 import { formatDateTime } from '../../lib/platformConsole';
 import { addComment, COMMENT_MAX, deleteComment, editComment, loadComments, piloteError, type CpComment } from '../../lib/pilote';
 import Button from '../common/Button';
+import { useProjectRights } from './useProjectRights';
 
 interface Props {
   projectId: string;
@@ -23,8 +23,7 @@ const DiscussionSection: React.FC<Props> = ({ projectId, itemId }) => {
   const { users } = useApp();
   const { profile } = useAuth();
   const [messages, setMessages] = useState<CpComment[] | null>(null);
-  const [canWrite, setCanWrite] = useState(false);
-  const [canModerate, setCanModerate] = useState(false);
+  const { canWrite, canModerate } = useProjectRights(projectId);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
@@ -36,19 +35,6 @@ const DiscussionSection: React.FC<Props> = ({ projectId, itemId }) => {
     try { setMessages(await loadComments(projectId, itemId)); } catch (e) { toast.error(piloteError(e)); setMessages(prev => prev ?? []); }
   }, [projectId, itemId]);
   useEffect(() => { setMessages(null); setDraft(''); setEditing(null); void reload(); }, [reload]);
-  useEffect(() => {
-    let live = true;
-    void (async () => {
-      const [w, m] = await Promise.all([
-        supabase.rpc('cp_can_discuss', { p_project: projectId }),
-        supabase.rpc('rbac_has_any_permission', { p_keys: ['cp.projects:delete'] }),
-      ]);
-      if (!live) return;
-      setCanWrite(!w.error && w.data === true);
-      setCanModerate(!m.error && m.data === true);
-    })();
-    return () => { live = false; };
-  }, [projectId]);
 
   const send = async () => {
     const body = draft.trim();

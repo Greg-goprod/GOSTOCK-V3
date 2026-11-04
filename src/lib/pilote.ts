@@ -167,6 +167,57 @@ export async function deleteComment(id: string): Promise<void> {
   if (!data || data.length === 0) throw new Error('Tu ne peux pas supprimer ce message.');
 }
 
+// Documents d'un projet ou d'un élément (mini-Dropbox) : 50 Mo par fichier, types courants, pas d'exécutables ni de pages web.
+// Les fichiers vivent dans le bucket privé « cp-documents » (« <entreprise>/<projet>/<identifiant>-<nom> ») ; la base décide qui dépose, lit et supprime.
+export const DOC_MAX_BYTES = 52428800;
+export const DOC_BLOCKED = /\.(exe|msi|bat|cmd|com|scr|pif|ps1|psm1|vbs|vbe|js|jse|mjs|wsf|wsh|jar|apk|app|dmg|pkg|deb|rpm|dll|sys|so|hta|lnk|reg|cpl|msc|html|htm|xhtml|svg|php|py|sh|bash)$/i;
+export interface CpDocument { id: string; project_id: string; item_id: string | null; file_name: string; size_bytes: number; mime_type: string | null; storage_path: string; uploaded_by: string | null; created_at: string }
+// Le problème d'un fichier AVANT de l'envoyer (la base et le stockage refusent de toute façon les mêmes) ; null = acceptable
+export function docProblem(file: { name: string; size: number }): string | null {
+  if (file.size <= 0) return `« ${file.name} » est vide`;
+  if (file.size > DOC_MAX_BYTES) return `« ${file.name} » dépasse 50 Mo`;
+  if (DOC_BLOCKED.test(file.name)) return `« ${file.name} » : ce type de fichier n'est pas accepté (exécutable, script ou page web)`;
+  if (file.name.length > 200) return `« ${file.name} » : le nom est trop long (200 caractères au plus)`;
+  return null;
+}
+export const formatSize = (bytes: number): string => (bytes < 1024 ? `${bytes} o` : bytes < 1048576 ? `${(bytes / 1024).toFixed(0)} Ko` : `${(bytes / 1048576).toFixed(1).replace('.', ',')} Mo`);
+// Nom de fichier sûr pour le chemin de stockage (le nom d'origine, lui, est gardé dans la table)
+const safeStorageName = (name: string): string => {
+  const dot = name.lastIndexOf('.');
+  const ext = dot > 0 ? name.slice(dot).replace(/[^A-Za-z0-9.]/g, '').slice(0, 12) : '';
+  const base = (dot > 0 ? name.slice(0, dot) : name).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'fichier';
+  return `${base}${ext}`;
+};
+export async function loadDocuments(projectId: string, itemId: string | null): Promise<CpDocument[]> {
+  let query = supabase.from('cp_documents').select('id, project_id, item_id, file_name, size_bytes, mime_type, storage_path, uploaded_by, created_at').eq('project_id', projectId);
+  query = itemId ? query.eq('item_id', itemId) : query.is('item_id', null);
+  const { data, error } = await query.order('created_at', { ascending: true }).limit(500);
+  if (error) throw error;
+  return (data || []) as CpDocument[];
+}
+// Envoie le fichier, puis enregistre sa ligne ; si la ligne est refusée, le fichier envoyé est retiré (dépôt sans ligne)
+export async function uploadDocument(organizationId: string, projectId: string, itemId: string | null, file: File): Promise<void> {
+  const problem = docProblem(file);
+  if (problem) throw new Error(problem);
+  const path = `${organizationId}/${projectId}/${crypto.randomUUID()}-${safeStorageName(file.name)}`;
+  const up = await supabase.storage.from('cp-documents').upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+  if (up.error) throw new Error(up.error.message);
+  const { error } = await supabase.from('cp_documents').insert({ project_id: projectId, item_id: itemId, file_name: file.name, size_bytes: file.size, mime_type: file.type || null, storage_path: path });
+  if (error) { await supabase.storage.from('cp-documents').remove([path]); throw error; }
+}
+// Lien de téléchargement valable 60 secondes (jamais de lien public)
+export async function documentUrl(doc: CpDocument): Promise<string> {
+  const { data, error } = await supabase.storage.from('cp-documents').createSignedUrl(doc.storage_path, 60, { download: doc.file_name });
+  if (error || !data) throw new Error(error?.message || 'Lien indisponible');
+  return data.signedUrl;
+}
+// On supprime la LIGNE (la base contrôle qui peut) ; le fichier est effacé du stockage par la tâche planifiée
+export async function deleteDocument(id: string): Promise<void> {
+  const { data, error } = await supabase.from('cp_documents').delete().eq('id', id).select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Tu ne peux pas supprimer ce document.');
+}
+
 // Copie un projet (arborescence, dépendances, liste à cocher, dates décalées) en une seule requête ; renvoie l'identifiant de la copie.
 // Les droits et l'isolation entre entreprises sont ceux de la personne : la base refuse ce qu'elle n'a pas le droit de créer.
 export async function duplicateProject(args: { projectId: string; name: string; newStart: string | null; copyTeam: boolean; copyAssignments: boolean }): Promise<string> {

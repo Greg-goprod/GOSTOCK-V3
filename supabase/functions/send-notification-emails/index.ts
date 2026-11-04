@@ -195,9 +195,10 @@ Deno.serve(async (req) => {
   const pushed = await sendPush(supabase);
   const sms = await sendSms(supabase);
   const backup = await autoBackup(supabase).catch((e) => `erreur : ${(e as Error).message}`);
+  const documents = await purgeDocuments(supabase).catch((e) => `erreur : ${(e as Error).message}`);
 
   // Sans secrets SMTP, les e-mails restent en attente (visibles dans l'app) ; le reste a tourné
-  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed, sms, backup });
+  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed, sms, backup, documents });
 
   const { data: pending, error } = await supabase.rpc('claim_notification_emails', { p_limit: 50 });
   if (error) return json({ error: error.message, push: pushed, sms, backup }, 500);
@@ -228,7 +229,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup });
+  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup, documents });
 });
 
 interface PendingPush {
@@ -292,6 +293,19 @@ async function sendSms(supabase: Client) {
   return { notifications: data?.length ?? 0, delivered, errors };
 }
 
+// Documents PILOTE dont la ligne a été supprimée (par l'utilisateur, ou en cascade avec un projet ou un élément) : la base met leur chemin dans
+// la corbeille, on efface ici les fichiers du stockage (supprimer une ligne de storage.objects par SQL n'efface pas le fichier lui-même).
+async function purgeDocuments(supabase: Client) {
+  const { data, error } = await supabase.from('cp_document_trash').select('storage_path').order('queued_at').limit(100);
+  if (error) return `erreur : ${error.message}`;
+  if (!data?.length) return { effaces: 0 };
+  const paths = data.map((r) => r.storage_path as string);
+  const { error: removeError } = await supabase.storage.from('cp-documents').remove(paths);
+  if (removeError) return `erreur : ${removeError.message}`;
+  await supabase.from('cp_document_trash').delete().in('storage_path', paths);
+  return { effaces: paths.length };
+}
+
 // Mêmes tables que la sauvegarde téléchargée (Paramètres), sans codes de badge ni abonnements
 const BACKUP_TABLES = [
   'organizations', 'rbac_roles', 'rbac_role_permissions', 'system_settings', 'depots', 'storage_bins', 'departments', 'role_configs', 'status_configs',
@@ -305,7 +319,7 @@ const BACKUP_TABLES = [
   // Planning de chantier (module 1) : dans l'ordre des dépendances (chantiers → zones / équipes → interventions → besoins)
   'cp_contractors', 'cp_site_config', 'cp_site_blocked_days', 'cp_site_zones', 'cp_site_phases', 'cp_site_teams', 'cp_site_interventions', 'cp_site_intervention_needs',
   // Projets PILOTE (R2b, R3a) : états d'abord, puis projets, puis éléments, responsables et listes à cocher
-  'cp_statuses', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links', 'cp_comments', 'cp_notification_prefs',
+  'cp_statuses', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links', 'cp_comments', 'cp_documents', 'cp_notification_prefs',
   'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const KEEP_BACKUPS = 12;

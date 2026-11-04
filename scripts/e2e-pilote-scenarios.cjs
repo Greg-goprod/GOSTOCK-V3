@@ -255,6 +255,65 @@ async function step(id, title, fn, page) {
     accepts(await api(resp, 'DELETE', `/rest/v1/cp_projects?id=eq.${p}`), 'suppression du projet');
     ok(await count(resp, 'cp_comments', `project_id=eq.${p}`) === 0, 'la discussion devrait partir avec le projet');
   });
+  await step('A-documents', 'Documents : l\'équipe et les responsables déposent (jusqu\'à 12 Mo), les autres lisent et téléchargent ; 51 Mo, exécutables et lecteurs refusés ; ligne supprimée = fichier illisible', async () => {
+    const p = await proj(resp, { name: `${M} Documents` });
+    const org = (await get(resp, `/rest/v1/cp_projects?select=organization_id&id=eq.${p}`))[0].organization_id;
+    accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', [{ project_id: p, user_id: S.u_resp, role: 'lead' }, { project_id: p, user_id: S.u_collab, role: 'member' }]), 'équipe');
+    // Stockage : appels directs au service de fichiers, avec la session de la personne
+    const storage = (c, method, route, opts = {}) => c.page.evaluate(async ({ base, key, method, route, opts }) => {
+      const tk = Object.keys(localStorage).find(k => /^sb-.*-auth-token$/.test(k));
+      const token = tk ? JSON.parse(localStorage.getItem(tk) || '{}').access_token : key;
+      const headers = { apikey: key, Authorization: `Bearer ${token}`, ...(opts.headers || {}) };
+      let body;
+      if (opts.json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(opts.json); }
+      else if (opts.text !== undefined) body = opts.text;
+      else if (opts.size !== undefined) body = new Uint8Array(opts.size);
+      let res;
+      try { res = await fetch(base + route, { method, headers, body }); } catch (e) { return { status: 0, text: `requête bloquée (${e.message})` }; }
+      const text = await res.text();
+      return { status: res.status, text: text.slice(0, 300), length: text.length };
+    }, { base: c.base, key: c.key, method, route, opts });
+    const path = name => `${org}/${p}/${crypto.randomUUID()}-${name}`;
+    const row = (c, path, name, size, extra = {}) => api(c, 'POST', '/rest/v1/cp_documents?select=id,uploaded_by', { project_id: p, file_name: name, size_bytes: size, storage_path: path, ...extra }, REP);
+
+    // Un membre de l'équipe dépose un petit fichier texte, puis sa ligne
+    const p1 = path('note.txt'); const contenu = `${M} contenu du document`;
+    const up1 = await storage(collab, 'POST', `/storage/v1/object/cp-documents/${p1}`, { text: contenu, headers: { 'Content-Type': 'text/plain', 'x-upsert': 'false' } });
+    ok(up1.status === 200, `dépôt par un membre de l'équipe : HTTP ${up1.status} ${up1.text}`);
+    const r1 = await row(collab, p1, 'note.txt', contenu.length);
+    accepts(r1, 'ligne du document');
+    ok(rows(r1)[0].uploaded_by === S.u_collab, 'le déposant doit être celui qui dépose');
+    // Un lecteur hors équipe lit et télécharge (lien signé de 60 s), mais ne dépose pas
+    const sg = await storage(staff, 'POST', `/storage/v1/object/sign/cp-documents/${p1}`, { json: { expiresIn: 60 } });
+    ok(sg.status === 200, `lien signé pour un lecteur : HTTP ${sg.status} ${sg.text}`);
+    const url = JSON.parse(sg.text).signedURL;
+    const dl = await storage(staff, 'GET', `/storage/v1${url}`);
+    ok(dl.status === 200 && dl.text === contenu, `téléchargement par le lecteur : HTTP ${dl.status} « ${dl.text} »`);
+    const upS = await storage(staff, 'POST', `/storage/v1/object/cp-documents/${path('piraté.txt')}`, { text: 'x', headers: { 'Content-Type': 'text/plain', 'x-upsert': 'false' } });
+    ok(upS.status >= 400, `un lecteur hors équipe a pu déposer un fichier : HTTP ${upS.status}`);
+    refuses(await row(staff, path('piraté.txt'), 'piraté.txt', 1), null, 'ligne par un lecteur hors équipe');
+    // Contrôles de ligne
+    refuses(await row(resp, path('setup.exe'), 'setup.exe', 10), /pas accepté/i, 'exécutable');
+    refuses(await row(resp, path('page.html'), 'page.html', 10), /pas accepté/i, 'page web');
+    refuses(await row(resp, path('trop.zip'), 'trop.zip', 52428801), null, 'plus de 50 Mo déclarés');
+    refuses(await row(resp, `${crypto.randomUUID()}/${p}/x.pdf`, 'x.pdf', 1), /dossier de ce projet/i, 'chemin d\'une autre entreprise');
+    // Un fichier de 12 Mo (au-delà des 6 Mo « simples » recommandés) passe ; 51 Mo sont refusés par le stockage lui-même
+    const p12 = path('gros.bin');
+    const up12 = await storage(resp, 'POST', `/storage/v1/object/cp-documents/${p12}`, { size: 12 * 1024 * 1024, headers: { 'Content-Type': 'application/octet-stream', 'x-upsert': 'false' } });
+    ok(up12.status === 200, `dépôt de 12 Mo : HTTP ${up12.status} ${up12.text}`);
+    const r12 = await row(resp, p12, 'gros.bin', 12 * 1024 * 1024); accepts(r12, 'ligne du fichier de 12 Mo');
+    const up51 = await storage(resp, 'POST', `/storage/v1/object/cp-documents/${path('enorme.bin')}`, { size: 51 * 1024 * 1024, headers: { 'Content-Type': 'application/octet-stream', 'x-upsert': 'false' } });
+    ok(up51.status >= 400, `un fichier de 51 Mo a été accepté par le stockage : HTTP ${up51.status}`);
+    // Suppression : la ligne part (le déposant, ou le droit de suppression) et le fichier n'est plus lisible par les lecteurs, tout de suite
+    await api(staff, 'DELETE', `/rest/v1/cp_documents?id=eq.${rows(r1)[0].id}`);   // un lecteur n'atteint aucune ligne : la base répond « 0 ligne », sans erreur
+    ok((await get(resp, `/rest/v1/cp_documents?select=id&project_id=eq.${p}`)).length === 2, 'un lecteur a pu supprimer un document');
+    accepts(await api(collab, 'DELETE', `/rest/v1/cp_documents?id=eq.${rows(r1)[0].id}`), 'le déposant supprime son document');
+    const apres = await storage(staff, 'POST', `/storage/v1/object/sign/cp-documents/${p1}`, { json: { expiresIn: 60 } });
+    ok(apres.status >= 400, `après suppression de la ligne, un lecteur obtient encore un lien : HTTP ${apres.status}`);
+    accepts(await api(resp, 'DELETE', `/rest/v1/cp_projects?id=eq.${p}`), 'suppression du projet');
+    ok(await count(resp, 'cp_documents', `project_id=eq.${p}`) === 0, 'les documents devraient partir avec le projet');
+    return INFO('les fichiers (note, 12 Mo) sont effacés du stockage par la fonction d\'e-mails dans les 5 minutes qui suivent (corbeille) : non vérifié ici');
+  });
   await step('A-suppression-cascade', 'Supprimer un projet supprime ses éléments, son équipe, ses assignations, ses dépendances et sa liste à cocher', async () => {
     const p = await proj(resp, { name: `${M} À supprimer` });
     accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: p, user_id: S.u_resp, role: 'lead' }), 'équipe');

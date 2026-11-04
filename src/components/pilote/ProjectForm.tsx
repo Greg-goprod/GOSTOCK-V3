@@ -9,6 +9,7 @@ import Button from '../common/Button';
 import Modal from '../common/Modal';
 import StatusPicker from './StatusPicker';
 import DiscussionSection from './DiscussionSection';
+import DocumentsSection from './DocumentsSection';
 import { DateRangeInput } from '../common/DateInput';
 
 // Création : l'état ou le type peuvent être préremplis (création depuis un groupe du Gantt)
@@ -211,6 +212,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
             </fieldset>
             </fieldset>
           )}
+          {editedRow && <DocumentsSection projectId={editedRow.id} itemId={null} />}
           {editedRow && <DiscussionSection projectId={editedRow.id} itemId={null} />}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <div>{editedRow && onDuplicate && !readOnly && <Button variant="outline" icon={<Copy size={14} />} onClick={() => onDuplicate(editedRow)}>Dupliquer…</Button>}</div>

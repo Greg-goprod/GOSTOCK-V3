@@ -10,6 +10,7 @@ import Modal from '../common/Modal';
 import MenuButton from '../common/MenuButton';
 import StatusPicker from './StatusPicker';
 import DiscussionSection from './DiscussionSection';
+import DocumentsSection from './DocumentsSection';
 import DateInput, { DateRangeInput } from '../common/DateInput';
 
 export type ItemTarget = { mode: 'edit'; itemId: string } | { mode: 'new'; projectId?: string; parentId?: string | null; kind?: ItemKind };
@@ -390,6 +391,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
             </div>
           )}
 
+          {edited && <DocumentsSection projectId={edited.project_id} itemId={edited.id} />}
           {edited && <DiscussionSection projectId={edited.project_id} itemId={edited.id} />}
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">

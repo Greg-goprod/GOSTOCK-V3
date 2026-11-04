@@ -16,4 +16,5 @@ psql -q -f team.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f notifications_pilote.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f duplicate.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f comments.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
+psql -q -f documents.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f platform.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true

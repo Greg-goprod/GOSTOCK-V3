@@ -365,6 +365,43 @@ async function step(id, title, fn, page) {
     ok(await resp.page.locator('#itm-name').count() === 0, 'la fiche ne se referme pas');
   }, resp.page);
 
+  await step('U7b-documents', 'Fiche d\'un élément : section Documents — déposer (un exécutable est refusé), télécharger, supprimer ; un lecteur télécharge sans pouvoir déposer', async () => {
+    const id = await create(resp, 'cp_items', { project_id: S.proj, kind: 'task', name: `${M} Documents`, starts_on: '2027-05-24', ends_on: '2027-05-28' });
+    await open(resp, '/pilote/gantt'); await expandAll(resp);
+    await resp.page.locator('.group\\/row button', { hasText: `${M} Documents` }).first().click(); await resp.page.waitForTimeout(1500);
+    ok(await resp.page.locator('section[aria-label="Documents"]').count() === 1, 'section Documents absente de la fiche');
+    ok(await resp.page.locator('#doc-file').count() === 1, 'zone de dépôt absente pour le responsable');
+    // Un exécutable est refusé par l'écran, sans rien envoyer
+    await resp.page.locator('#doc-file').setInputFiles({ name: 'virus.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ') }); await resp.page.waitForTimeout(800);
+    ok(rows(await api(resp, 'GET', `/rest/v1/cp_documents?select=id&item_id=eq.${id}`)).length === 0, 'un exécutable a été enregistré');
+    ok(await resp.page.getByText(/ce type de fichier n'est pas accepté/).first().isVisible().catch(() => false), 'message de refus de l\'exécutable absent');
+    // Un fichier texte est déposé : le fichier ET sa ligne, sans enregistrer la fiche
+    const texte = `${M} contenu écrit à l'écran`;
+    await resp.page.locator('#doc-file').setInputFiles({ name: `${M} compte-rendu.txt`, mimeType: 'text/plain', buffer: Buffer.from(texte) }); await resp.page.waitForTimeout(2500);
+    ok(await resp.page.locator('#itm-name').count() === 1, 'le dépôt a enregistré ou fermé la fiche');
+    const d = rows(await api(resp, 'GET', `/rest/v1/cp_documents?select=id,file_name,size_bytes,item_id,storage_path&item_id=eq.${id}`));
+    ok(d.length === 1 && d[0].file_name === `${M} compte-rendu.txt` && d[0].size_bytes === Buffer.byteLength(texte) && d[0].item_id === id, `document en base = ${JSON.stringify(d)}`);
+    ok(await resp.page.locator('section[aria-label="Documents"]').getByText(`${M} compte-rendu.txt`).first().isVisible(), 'le document n\'apparaît pas dans la liste');
+    if (process.env.E2E_SHOTS) await resp.page.screenshot({ path: path.join(SHOTS, 'U7b-documents-ecrivain.png') });
+    // Téléchargement par un lecteur (magasinier) : le contenu est identique ; pas de zone de dépôt
+    await open(staff, '/pilote/gantt'); await expandAll(staff);
+    await staff.page.locator('.group\\/row button', { hasText: `${M} Documents` }).first().click(); await staff.page.waitForTimeout(1500);
+    ok(await staff.page.locator('#doc-file').count() === 0, 'zone de dépôt présente pour un lecteur');
+    ok(/Seuls l'équipe du projet et les responsables ajoutent des documents/.test(await staff.page.locator('section[aria-label="Documents"]').innerText()), 'mention « lecture seule » absente');
+    const [dl] = await Promise.all([staff.page.waitForEvent('download', { timeout: 20000 }), staff.page.getByRole('button', { name: `Télécharger le document « ${M} compte-rendu.txt »` }).click()]);
+    const flux = await dl.createReadStream(); const parts = []; for await (const c of flux) parts.push(c);
+    ok(Buffer.concat(parts).toString('utf8') === texte, 'le contenu téléchargé est différent');
+    ok(dl.suggestedFilename() === `${M} compte-rendu.txt`, `nom du fichier téléchargé : ${dl.suggestedFilename()}`);
+    if (process.env.E2E_SHOTS) await staff.page.screenshot({ path: path.join(SHOTS, 'U7b-documents-lecteur.png') });
+    await staff.page.keyboard.press('Escape'); await staff.page.waitForTimeout(400);
+    // Suppression avec confirmation, puis on referme la fiche
+    await resp.page.getByRole('button', { name: `Supprimer le document « ${M} compte-rendu.txt »` }).click(); await resp.page.waitForTimeout(500);
+    await resp.page.getByRole('button', { name: 'Confirmer' }).click(); await resp.page.waitForTimeout(1500);
+    ok(rows(await api(resp, 'GET', `/rest/v1/cp_documents?select=id&item_id=eq.${id}`)).length === 0, 'le document n\'est pas supprimé');
+    await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(600);
+    ok(await resp.page.locator('#itm-name').count() === 0, 'la fiche ne se referme pas');
+  }, resp.page);
+
   /* ============ P3 Fiche ============ */
   group = 'P3 Fiche';
   await step('P3-ouvrir', 'Clic sur la tâche : fiche avec le type en sous-titre, propriétés clés visibles, parent dans les détails', async () => {
