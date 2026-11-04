@@ -475,8 +475,10 @@ async function step(id, title, fn, page) {
     const name = `${M} <b>gras</b><img src=x onerror="window.__xss=1">`;
     await proj(resp, { name });
     await open(resp, '/pilote/projets');
+    // On attend que le projet soit affiché (le chargement peut dépasser le délai fixe de open() quand la base contient beaucoup de projets de test)
+    await resp.page.getByText(`${M} <b>gras</b>`, { exact: false }).first().waitFor({ state: 'attached', timeout: 15000 }).catch(() => {});
     const txt = await resp.page.locator('main').innerText();
-    ok(txt.includes('<b>gras</b>'), 'le HTML n\'est pas affiché en texte brut');
+    ok(txt.includes('<b>gras</b>'), `le HTML n'est pas affiché en texte brut ; texte lu (début) : ${txt.replace(/\s+/g, ' ').slice(0, 220)}`);
     ok(await resp.page.evaluate(() => window.__xss === undefined), 'un script injecté s\'est exécuté');
     ok(await resp.page.locator('main b', { hasText: 'gras' }).count() === 0, 'une balise <b> a été interprétée');
   }, resp.page);
@@ -583,7 +585,10 @@ async function step(id, title, fn, page) {
           await edit.click(); await resp.page.waitForTimeout(900);
           opened = true;
           const legends = await resp.page.locator('form legend').allInnerTexts();
-          const options = await resp.page.locator('form fieldset select').first().locator('option').allInnerTexts();
+          // Le select du rôle d'une personne de l'équipe : on attend que la liste des personnes soit chargée (sinon on lisait un autre select du formulaire)
+          const teamSelect = resp.page.locator('form fieldset').filter({ has: resp.page.locator('legend', { hasText: new RegExp(`^${want('Équipe')}$`, 'i') }) }).locator('select').first();
+          await teamSelect.waitFor({ state: 'attached', timeout: 15000 }).catch(() => {});
+          const options = await teamSelect.locator('option').allInnerTexts().catch(() => []);
           // innerText applique la mise en majuscules du titre (CSS text-transform) : « TEAM » est bien la traduction de « Team »
           if (!legends.some(t => t.trim().toLocaleLowerCase() === want('Équipe').toLocaleLowerCase())) missing.push(`titre « ${want('Équipe')} » (lu : ${JSON.stringify(legends)})`);
           for (const k of ['Pas dans l\'équipe', 'Membre', 'Responsable']) if (!options.some(t => t.trim().toLocaleLowerCase() === want(k).toLocaleLowerCase())) missing.push(`option « ${want(k)} » (lues : ${JSON.stringify(options)})`);
