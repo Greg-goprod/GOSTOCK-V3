@@ -74,6 +74,12 @@ const KIND_LABEL: Record<string, { label: string; path: string; action: string }
   warranty_end: { label: 'Garantie', path: '/atelier', action: "Ouvrir l'atelier" },
   repair_late: { label: 'Réparation', path: '/atelier', action: "Ouvrir l'atelier" },
   battery_end: { label: 'Batterie', path: '/atelier', action: "Ouvrir l'atelier" },
+  // PILOTE (étape 2) : les avis s'ouvrent sur « Mes tâches » (ou sur les projets quand on est ajouté à une équipe)
+  cp_assigned: { label: 'PILOTE · Assignation', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
+  cp_team_added: { label: 'PILOTE · Équipe', path: '/pilote/projets', action: 'Voir les projets' },
+  cp_dates_changed: { label: 'PILOTE · Dates modifiées', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
+  cp_due_soon: { label: 'PILOTE · Échéance proche', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
+  cp_overdue: { label: 'PILOTE · En retard', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
 };
 
 interface PendingEmail {

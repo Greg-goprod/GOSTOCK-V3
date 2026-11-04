@@ -143,3 +143,6 @@ On ne sait pas encore s'il s'agit de vraies régressions ou de tests trop press�
 - Déclarés « testés » par Greg, sans détail des constats : à ne pas compter comme vérifiés par un script. 
 - Point factuel vérifié le même jour sur Supabase : la fonction `send-notification-emails` déployée est toujours en **v21** (elle ne contient pas l'appel à `check_cp_deadlines` ni la sauvegarde de `cp_notification_prefs`). Les rappels d'échéance ne peuvent donc pas partir tout seuls tant que la v22 n'est pas déployée ; un test des rappels n'a pu se faire qu'en appelant `check_cp_deadlines()` à la main.
 
+### Fonction d'envoi déployée en v22 (go de Greg, 2026-11-04)
+- `send-notification-emails` v22 : appelle `check_cp_deadlines` à chaque passage (toutes les 5 min), sauvegarde `cp_notification_prefs`, et les e-mails/push PILOTE ont un libellé et un lien propres (« PILOTE · Assignation » → Mes tâches, etc.). Seul changement par rapport à la v21 : ces trois points. À vérifier : premier passage de la tâche planifiée, puis l'essai réel avec Claude local (`rapport-reel.md`).
+
