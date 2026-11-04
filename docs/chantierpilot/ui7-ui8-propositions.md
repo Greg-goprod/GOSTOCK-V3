@@ -21,7 +21,7 @@ Aujourd'hui la fiche d'un élément a : propriétés, description, détails (ran
 
 ### 7b — Documents
 - **Base** : table `cp_documents` (entreprise, projet, élément facultatif, nom, chemin, taille, type, déposé par, date) + **bucket de stockage privé** `cp-documents`, rangé par entreprise ; les droits du stockage reprennent ceux de la table.
-- **Limites proposées** : 25 Mo par fichier ; extensions courantes (PDF, images, Office, texte, zip) ; pas d'exécutables ; téléchargement par lien signé de 60 secondes (jamais de lien public).
+- **Limites retenues** : 50 Mo par fichier ; extensions courantes (PDF, images, Office, texte, zip) ; pas d'exécutables ; téléchargement par lien signé de 60 secondes (jamais de lien public).
 - **Droits proposés** : lecture = toute personne qui voit le projet ; dépôt = l'équipe et les responsables ; suppression = celui qui l'a déposé et les responsables.
 - **Écran** : zone de dépôt (le composant `MxDropzone` de la charte existe déjà), liste, téléchargement, suppression avec confirmation.
 - **Inclus dans la sauvegarde** : la table (liste des fichiers) oui ; **les fichiers eux-mêmes restent dans le stockage Supabase** (comme les photos et PV).
@@ -43,7 +43,7 @@ Aujourd'hui la fiche d'un élément a : propriétés, description, détails (ran
 ## À décider (par Greg) avant UI-7
 
 1. **Qui peut écrire** (discussion et documents) : (A) toute personne qui voit le projet ; (B) l'équipe du projet et les responsables. *Recommandé : B* — la notion d'équipe existe déjà, et les documents sont plus sensibles qu'un tableau de dates.
-2. **Fichiers** : 25 Mo par fichier, types courants, pas d'exécutables : d'accord ? un plafond total par entreprise (1 Go ?) maintenant ou plus tard ?
+2. **Fichiers** (proposition initiale, remplacée par la décision ci-dessous : 50 Mo) : types courants, pas d'exécutables : d'accord ? un plafond total par entreprise (1 Go ?) maintenant ou plus tard ?
 3. **Vocabulaire** : « Équipe » / « Assignés » ou « Intervenants » (et « intervenant externe sans compte » : hors périmètre pour l'instant) ?
 4. **Notifications de discussion** : actives par défaut pour tous, e-mail désactivé par défaut (comme « dates modifiées ») ?
 
