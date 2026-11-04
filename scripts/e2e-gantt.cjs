@@ -288,6 +288,30 @@ async function step(id, title, fn, page) {
     ok(it && it.status_id === done.id, `état en base = ${it && it.status_id} (attendu : ${done.id})`);
   }, resp.page);
 
+  await step('U5c-conflit', 'Deux sessions : la seconde à enregistrer une fiche modifiée entre-temps est refusée, rien n\'est écrasé ; après rechargement, l\'enregistrement passe', async () => {
+    const id = await create(resp, 'cp_items', { project_id: S.proj, kind: 'task', name: `${M} Conflit`, description: 'initiale', starts_on: '2027-05-03', ends_on: '2027-05-07' });
+    await open(resp, '/pilote/gantt'); await expandAll(resp);
+    await resp.page.locator('.group\\/row button', { hasText: `${M} Conflit` }).first().click(); await resp.page.waitForTimeout(1200);
+    ok(await resp.page.locator('#itm-name').inputValue() === `${M} Conflit`, 'fiche non ouverte sur le bon élément');
+    // Une autre personne modifie le même élément pendant que la fiche est ouverte
+    const other = await login(browser, 'resp');
+    ok(!refused(await api(other, 'PATCH', `/rest/v1/cp_items?id=eq.${id}`, { description: 'écrite par B' })), 'la seconde session n\'a pas pu écrire');
+    await other.ctx.close();
+    await resp.page.locator('#itm-name').fill(`${M} Conflit A`);
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
+    ok(await resp.page.getByText(/modifiée par quelqu'un d'autre/).first().isVisible().catch(() => false), 'message de conflit absent');
+    ok(await resp.page.locator('#itm-name').count() === 0, 'la fiche devrait être fermée (et rechargée) après un conflit');
+    const after = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=name,description&id=eq.${id}`))[0];
+    ok(after.name === `${M} Conflit` && after.description === 'écrite par B', `rien ne devait être écrasé : ${JSON.stringify(after)}`);
+    // La fiche rouverte repart de la version à jour : l'enregistrement passe et garde le travail de l'autre
+    await resp.page.locator('.group\\/row button', { hasText: `${M} Conflit` }).first().click(); await resp.page.waitForTimeout(1200);
+    ok(await resp.page.locator('#itm-desc').inputValue() === 'écrite par B', 'la fiche rouverte ne montre pas la modification de l\'autre');
+    await resp.page.locator('#itm-name').fill(`${M} Conflit A`);
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
+    const fin = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=name,description&id=eq.${id}`))[0];
+    ok(fin.name === `${M} Conflit A` && fin.description === 'écrite par B', `après rechargement : ${JSON.stringify(fin)}`);
+  }, resp.page);
+
   /* ============ P3 Fiche ============ */
   group = 'P3 Fiche';
   await step('P3-ouvrir', 'Clic sur la tâche : fiche avec le type en sous-titre, propriétés clés visibles, parent dans les détails', async () => {

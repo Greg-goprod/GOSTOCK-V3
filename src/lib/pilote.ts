@@ -14,7 +14,7 @@ export interface CpStatus { id: string; name: string; family: StatusFamily; colo
 export interface CpProject {
   id: string; site_id: string | null; type: ProjectType; name: string; description: string | null;
   status_id: string; priority: ProjectPriority | null; color: string; starts_on: string | null; ends_on: string | null;
-  link_mode: LinkMode; link_skip_weekends: boolean;
+  link_mode: LinkMode; link_skip_weekends: boolean; updated_at?: string;
 }
 // Équipe d'un projet : « responsable » (lead) ou « membre ». Une tâche ne s'assigne qu'à quelqu'un de l'équipe.
 export type TeamRole = 'lead' | 'member';
@@ -26,6 +26,7 @@ export type ItemKind = 'phase' | 'task' | 'milestone' | 'subtask';
 export interface CpItem {
   id: string; project_id: string; parent_id: string | null; kind: ItemKind; name: string; description: string | null;
   status_id: string; priority: ProjectPriority | null; starts_on: string | null; ends_on: string | null; position: number;
+  updated_at?: string;   // sert à repérer une modification faite entre-temps par quelqu'un d'autre (voir updateIfUnchanged)
 }
 export interface CpItemMember { item_id: string; user_id: string }
 // « Le successeur commence après la fin du prédécesseur »
@@ -121,6 +122,24 @@ export const piloteError = (error: unknown): string => {
   if (e?.code === '23505') return e.message?.includes('cp_projects_site_key') ? 'Ce chantier a déjà un projet' : 'Ce nom existe déjà';
   return e?.message || 'Une erreur est survenue';
 };
+
+// Deux personnes ouvrent la même fiche : la seconde à enregistrer ne doit pas écraser en silence les changements de la première.
+// On enregistre « seulement si la ligne n'a pas changé depuis l'ouverture » (même updated_at) : c'est la base qui tranche, en une seule
+// requête, sans course possible. Sinon rien n'est modifié et on le dit.
+export const CONFLICT_MESSAGE = 'Cette fiche a été modifiée par quelqu\'un d\'autre depuis son ouverture. Elle vient d\'être rechargée : rouvre-la, regarde ses changements, puis refais ta modification.';
+export const GONE_MESSAGE = 'Cette fiche n\'existe plus (supprimée par quelqu\'un d\'autre).';
+// Vrai si l'erreur est un conflit (ou une suppression) : l'appelant ferme la fiche et recharge les données, sinon on rouvrirait la même version périmée
+export const isConflict = (error: unknown): boolean => error instanceof Error && (error.message === CONFLICT_MESSAGE || error.message === GONE_MESSAGE);
+export async function updateIfUnchanged(table: 'cp_items' | 'cp_projects', id: string, version: string | null | undefined, payload: Record<string, unknown>): Promise<void> {
+  let query = supabase.from(table).update(payload).eq('id', id);
+  if (version) query = query.eq('updated_at', version);
+  const { data, error } = await query.select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    const still = await supabase.from(table).select('id').eq('id', id).maybeSingle();
+    throw new Error(still.data ? CONFLICT_MESSAGE : GONE_MESSAGE);
+  }
+}
 
 // Copie un projet (arborescence, dépendances, liste à cocher, dates décalées) en une seule requête ; renvoie l'identifiant de la copie.
 // Les droits et l'isolation entre entreprises sont ceux de la personne : la base refuse ce qu'elle n'a pas le droit de créer.

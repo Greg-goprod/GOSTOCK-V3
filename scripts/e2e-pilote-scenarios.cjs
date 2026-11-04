@@ -638,7 +638,7 @@ async function step(id, title, fn, page) {
     await api(second, 'PATCH', `/rest/v1/cp_items?id=eq.${id}`, { description: 'écrite par B' });
     const r = (await get(resp, `/rest/v1/cp_items?select=name,description&id=eq.${id}`))[0];
     await second.ctx.close();
-    return INFO(`Modifications PARTIELLES (champs différents) : les deux sont conservées = ${r.name.endsWith('A') && r.description === 'écrite par B'}. ATTENTION : la fiche de l'écran enregistre l'élément ENTIER (voir ItemDrawer.tsx, fonction d'enregistrement) : si deux personnes ouvrent la même fiche, la dernière à enregistrer écrase les champs de l'autre sans avertissement (« dernier gagnant »).`);
+    return INFO(`Modifications PARTIELLES (champs différents) : les deux sont conservées = ${r.name.endsWith('A') && r.description === 'écrite par B'}. NB : ceci décrit les écritures DIRECTES par l'API (dernier gagnant, champ par champ). L'ÉCRAN est protégé depuis la fiche versionnée (updateIfUnchanged) : une fiche modifiée entre-temps est refusée ; voir l'étape U5c-conflit de e2e-gantt.`);
   });
 
   /* ============ N Notifications PILOTE (étape 2, migration 53) ============ */

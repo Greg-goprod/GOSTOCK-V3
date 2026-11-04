@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
-import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, saveTeam, TEAM_ROLE_LABEL, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType, type TeamRole } from '../../lib/pilote';
+import { LINK_MODE_LABEL, piloteError, isConflict, PRIORITY_LABEL, saveTeam, TEAM_ROLE_LABEL, updateIfUnchanged, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType, type TeamRole } from '../../lib/pilote';
 import { ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -40,6 +40,8 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
   const [saving, setSaving] = useState(false);
   // « Afficher les détails » : chantier lié, couleur, dépendances (repliés par défaut, comme la fiche d'un élément)
   const [showDetails, setShowDetails] = useState(false);
+  // Version du projet à l'ouverture de la fiche : on n'enregistre que si personne ne l'a modifié depuis (voir updateIfUnchanged)
+  const version = useRef<string | null>(null);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
   const editedRow = target?.mode === 'edit' ? target.row : null;
 
@@ -48,6 +50,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
     const base = data.statuses.find(s => s.is_system && s.family === 'not_started')?.id ?? data.statuses[0]?.id ?? '';
     if (target.mode === 'edit') {
       const r = target.row;
+      version.current = r.updated_at ?? null;
       setForm({
         name: r.name, type: r.type, status_id: r.status_id, priority: r.priority ?? '', starts_on: r.starts_on ?? '', ends_on: r.ends_on ?? '',
         color: r.color, description: r.description ?? '', site_id: r.site_id ?? '', team: Object.fromEntries(data.members.filter(m => m.project_id === r.id).map(m => [m.user_id, m.role])),
@@ -97,8 +100,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
         if (error) throw error;
         id = row.id as string;
       } else {
-        const { error } = await supabase.from('cp_projects').update(payload).eq('id', id);
-        if (error) throw error;
+        await updateIfUnchanged('cp_projects', id, version.current, payload);
       }
       await saveTeam(id, form.team);
       toast.success(target.mode === 'new' ? 'Projet créé' : 'Projet modifié');
@@ -106,6 +108,8 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
       await onSaved();
     } catch (error) {
       toast.error(piloteError(error));
+      // Conflit : on ferme et on recharge, sinon la fiche rouverte montrerait la même version périmée
+      if (isConflict(error)) { onClose(); await onSaved(); }
     } finally {
       setSaving(false);
     }

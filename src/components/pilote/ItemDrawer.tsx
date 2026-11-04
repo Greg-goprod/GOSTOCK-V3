@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
 import { confirmAction } from '../../lib/confirm';
-import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL, parentKindsFor, piloteError, removeLink, PRIORITY_LABEL, saveItemMembers, TEAM_ROLE_LABEL, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
+import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL, parentKindsFor, piloteError, removeLink, PRIORITY_LABEL, isConflict, saveItemMembers, TEAM_ROLE_LABEL, updateIfUnchanged, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import MenuButton from '../common/MenuButton';
@@ -45,6 +45,10 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
   const [showDetails, setShowDetails] = useState(false);
   const detailsAutoOpened = useRef(false);
   const datesTouched = useRef(false);
+  // Version de l'élément à l'ouverture de la fiche : on n'enregistre que si personne ne l'a modifié depuis (voir updateIfUnchanged)
+  const version = useRef<string | null>(null);
+  // Une dépendance ajoutée ou retirée DEPUIS cette fiche modifie l'élément elle-même : au prochain enregistrement, on repart de la version rechargée
+  const versionStale = useRef(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
   // Seules les personnes de l'équipe du projet peuvent être assignées (règle de la base) ; responsables en premier
   const team = useMemo(() => {
@@ -63,9 +67,11 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
     setShowDetails(false);
     detailsAutoOpened.current = false;
     datesTouched.current = false;
+    versionStale.current = false;
     if (target.mode === 'edit') {
       const it = data.items.find(i => i.id === target.itemId);
       if (!it) return;
+      version.current = it.updated_at ?? null;
       setForm({
         projectId: it.project_id, kind: it.kind, parentId: it.parent_id ?? '', name: it.name, status_id: it.status_id, priority: it.priority ?? '',
         starts_on: it.starts_on ?? '', ends_on: it.ends_on ?? '', description: it.description ?? '',
@@ -143,6 +149,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.items, data.links, edited]);
   const changeLink = async (action: () => Promise<void>) => {
+    versionStale.current = true;
     try { await action(); await onSaved(); } catch (error) { toast.error(piloteError(error)); }
   };
 
@@ -166,8 +173,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
         if (error) throw error;
         id = row.id as string;
       } else {
-        const { error } = await supabase.from('cp_items').update(payload).eq('id', id);
-        if (error) throw error;
+        await updateIfUnchanged('cp_items', id, versionStale.current ? edited?.updated_at : version.current, payload);
       }
       await saveItemMembers(id, form.members);
       // Liste à cocher : on applique la différence avec ce qui était enregistré
@@ -187,6 +193,8 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
       await onSaved();
     } catch (error) {
       toast.error(piloteError(error));
+      // Conflit : on ferme et on recharge, sinon la fiche rouverte montrerait la même version périmée
+      if (isConflict(error)) { onClose(); await onSaved(); }
     } finally {
       setSaving(false);
     }
