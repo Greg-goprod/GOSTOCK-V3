@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
 import { confirmAction } from '../../lib/confirm';
-import { FAMILY_LABEL, FAMILY_ORDER, formatPeriod, PRIORITY_LABEL, piloteError, TYPE_LABEL, TYPE_ORDER, type CpProject, type PiloteData, type PiloteRights, type ProjectType, type StatusFamily } from '../../lib/pilote';
+import { FAMILY_LABEL, FAMILY_ORDER, formatPeriod, PRIORITY_LABEL, piloteError, SHOW_PROGRAMS, TYPE_LABEL, TYPE_ORDER, type CpProject, type PiloteData, type PiloteRights, type ProjectType, type StatusFamily } from '../../lib/pilote';
 import { formatDay } from '../../lib/zurichTime';
 import Button from '../common/Button';
 import { EntityTable } from '../common/EntityTable';
@@ -80,7 +80,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
   const cardOf = (p: CpProject) => {
     const status = statusById.get(p.status_id);
     return {
-      status, program: p.program_id ? programById.get(p.program_id)?.name ?? null : null,
+      status, program: SHOW_PROGRAMS && p.program_id ? programById.get(p.program_id)?.name ?? null : null,
       members: teamNode(p.id, 'Aucune équipe'), site: p.site_id ? siteById.get(p.site_id)?.name ?? null : null,
     };
   };
@@ -107,6 +107,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
               {TYPE_ORDER.map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
             </select>
           </label>
+{SHOW_PROGRAMS && (
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Programme
             <select value={programFilter} onChange={e => setProgramFilter(e.target.value)} className={`${inputClass} mt-1 min-w-44`}>
               <option value="">Tous</option>
@@ -114,6 +115,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
               {data.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </label>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <MxEntityViewToggle value={viewMode} onChange={setViewMode} aria-label="Affichage des projets" />
@@ -137,7 +139,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
               const s = statusById.get(p.status_id);
               return <MxBadge tone={TONE[s?.family ?? 'not_started']}>{s?.name ?? '—'}</MxBadge>;
             } },
-            { id: 'program', label: 'Programme', hideOnMobile: true, render: p => (p.program_id ? programById.get(p.program_id)?.name ?? '—' : '—') },
+            ...(SHOW_PROGRAMS ? [{ id: 'program', label: 'Programme', hideOnMobile: true, render: (p: CpProject) => (p.program_id ? programById.get(p.program_id)?.name ?? '—' : '—') }] : []),
             { id: 'period', label: 'Période', hideOnMobile: true, render: p => <span className="whitespace-nowrap">{formatPeriod(p.starts_on, p.ends_on, fmt)}</span> },
             { id: 'members', label: 'Équipe', hideOnMobile: true, render: p => teamNode(p.id, '—') },
             { id: 'actions', label: 'Actions', render: p => (

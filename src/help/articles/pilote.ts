@@ -17,7 +17,7 @@ export const PILOTE: HelpArticle[] = [
         steps: [
           { text: 'Ouvre « PILOTE », puis « Projets », et clique sur « Nouveau projet ».' },
           { text: 'Donne un « Nom du projet » et choisis son « Type » : Chantier, R&D, Conception, Recrutement, Administratif ou Évènement.' },
-          { text: 'Choisis l\'« État » (« Pas commencé » par défaut), le « Programme » si le projet en fait partie, la « Priorité » et les dates « Début » et « Fin ».' },
+          { text: 'Choisis l\'« État » (« Pas commencé » par défaut), la « Priorité » et les dates « Début » et « Fin ».' },
           { text: 'Compose l\'« Équipe » : pour chaque personne, choisis « Responsable » ou « Membre » (« Pas dans l\'équipe » par défaut). Tu peux en choisir plusieurs.' },
           { text: 'Pour un projet de type Chantier, « Chantier de Logistique » le relie au chantier déjà suivi dans Logistique (un chantier n\'a qu\'un projet).' },
           { text: 'Clique sur « Enregistrer ».' },
@@ -62,16 +62,6 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
-        id: 'programmes',
-        title: 'Regrouper des projets dans un programme',
-        who: 'Administrateur et responsable.',
-        steps: [
-          { text: 'Onglet « Programmes », puis « Nouveau programme » : un nom (« Festivals 2027 »), une description, une période et une couleur.' },
-          { text: 'Dans un projet, choisis ce programme dans « Programme », ou clique sur « + Créer un programme » sous la liste pour en créer un sans quitter le formulaire. Le filtre « Programme » de la liste regroupe ensuite ses projets.' },
-        ],
-        result: 'Supprimer un programme garde ses projets : ils passent simplement « Sans programme ».',
-      },
-      {
         id: 'etats',
         title: 'Ajouter un état d\'avancement',
         who: 'Administrateur et responsable.',
@@ -99,13 +89,13 @@ export const PILOTE: HelpArticle[] = [
         title: 'Lire le Gantt',
         steps: [
           { text: 'Ouvre « PILOTE », « Projets », puis l\'onglet « Gantt ». La liste est à gauche, les barres à droite ; la ligne rouge verticale est aujourd\'hui et les week-ends sont grisés.' },
-          { text: 'Les projets sont rangés par « Programme » (par défaut) ; choisis « État » ou « Type » pour regrouper autrement. Un groupe se plie et se déplie avec sa flèche.' },
-          { text: 'Au départ, seuls les groupes et les projets sont visibles. Clique sur la flèche d\'un projet pour voir ses phases et tâches, ou sur « Tout déplier ». « Replier » revient à l\'ouverture de départ.' },
-          { text: 'Choisis la période affichée : « 1 jour », « 1 semaine », « 2 semaines », « 1 mois », « 3 mois », « 6 mois » ou « 1 année » (le plan annuel), ou une période libre avec le sélecteur de dates (1er clic = début, 2e clic = fin). Les flèches et « Aujourd\'hui » déplacent la fenêtre.' },
+          { text: 'Les projets sont rangés par « État » (par défaut) : ouvre « Grouper » pour choisir « Type ». Un groupe se plie et se déplie avec sa flèche.' },
+          { text: 'Au départ, seuls les groupes et les projets sont visibles. Clique sur la flèche d\'un projet pour voir ses phases et tâches, ou ouvre le menu « … » : « Tout déplier » puis « Replier » (retour à l\'ouverture de départ).' },
+          { text: 'Ouvre « Échelle » pour choisir la période affichée : 1 jour, 1 semaine, 2 semaines, 1 mois, 3 mois, 6 mois ou 1 année (le plan annuel), ou « Période libre… » avec le sélecteur de dates (1er clic = début, 2e clic = fin). Les flèches et « Aujourd\'hui » déplacent la fenêtre.' },
           { text: 'Un losange est un jalon. La partie pleine d\'une barre est l\'avancement : la part d\'éléments terminés en dessous (un élément annulé ne compte pas). Une phase ou un projet sans dates propres prend celles de ses éléments.' },
         ],
         problems: [
-          { if: 'Je ne vois aucune barre.', then: 'Les barres sont peut-être hors de l\'écran : clique sur « Aujourd\'hui », ou fais défiler vers la date du projet. Un élément sans date apparaît dans « Sans date » sous le Gantt.' },
+          { if: 'Je ne vois aucune barre.', then: 'Les barres sont peut-être hors de l\'écran : clique sur « Aujourd\'hui », ou fais défiler vers la date du projet. Un élément sans date se trouve dans le menu « Sans date (n) » en haut à droite.' },
         ],
       },
       {
@@ -146,14 +136,14 @@ export const PILOTE: HelpArticle[] = [
         title: 'Créer et modifier des phases, tâches, jalons et sous-tâches',
         who: 'Administrateur et responsable (les autres consultent les fiches).',
         steps: [
-          { text: 'Clique sur « Nouvel élément », ou sur le « + » qui apparaît quand tu survoles un projet, une phase ou une tâche : le nouvel élément se range alors directement dessous.' },
+          { text: 'Ouvre « Nouveau » (en haut à droite) et choisis « Nouvelle tâche », « Nouvelle phase » ou « Nouveau jalon », ou clique sur le « + » qui apparaît quand tu survoles un projet, une phase ou une tâche : le nouvel élément se range alors directement dessous.' },
           { text: 'Choisis le « Type » : une phase se range sous le projet ; une tâche ou un jalon sous une phase ou directement sous le projet ; une sous-tâche sous une tâche.' },
-          { text: 'Remplis le nom, l\'état, la priorité, les dates (un jalon n\'a qu\'une date), les responsables (plusieurs possibles) et la description.' },
-          { text: 'Dans « Liste à cocher », ajoute des mini-étapes sans date ni responsable et coche-les au fur et à mesure.' },
+          { text: 'Remplis le nom, l\'état, la priorité, les dates (un jalon n\'a qu\'une date), les personnes « Assignées » (plusieurs possibles, prises dans l\'équipe du projet) et la description.' },
+          { text: 'Clique sur « Afficher les détails » : dans « Liste à cocher », ajoute des mini-étapes sans date ni responsable et coche-les au fur et à mesure.' },
           { text: 'Clique sur « Enregistrer ». Pour modifier, clique sur la ligne ou la barre. « Supprimer » indique combien d\'éléments en dessous disparaîtront avec lui.' },
         ],
         problems: [
-          { if: 'Un élément n\'a pas de date.', then: 'Il apparaît dans « Sans date » : « Placer aujourd\'hui » lui donne une semaine à partir d\'aujourd\'hui (un jour pour un jalon), ou ouvre sa fiche pour choisir les dates.' },
+          { if: 'Un élément n\'a pas de date.', then: 'Il se trouve dans le menu « Sans date (n) » : clique dessus pour le placer aujourd\'hui (une semaine, un jour pour un jalon), ou ouvre sa fiche pour choisir les dates.' },
           { if: 'Le type ou le projet d\'un élément ne se change pas.', then: 'C\'est voulu : supprime-le et recrée-le. Son parent, lui, peut changer.' },
         ],
       },

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Layers, ListChecks } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, type CpProgram, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
+import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, SHOW_PROGRAMS, type CpProgram, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
 import { formatDay } from '../lib/zurichTime';
 import PageTitle from '../components/common/PageTitle';
 import { MxBadge } from '../components/mx/MxBadge';
@@ -37,14 +37,14 @@ const PiloteProjects: React.FC = () => {
       <div>
         <PageTitle>Projets</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
-          Tes projets de toute nature (chantier, R&amp;D, conception, recrutement, administratif, évènement), regroupés en programmes, avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.
+          Tes projets de toute nature (chantier, R&amp;D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.
         </p>
       </div>
 
       <MxSegmented aria-label="Sections des projets" value={section} onChange={v => setSection(v as Section)} options={[
         { value: 'projects', label: `Projets (${data.projects.length})` },
         { value: 'mytasks', label: 'Mes tâches' },
-        { value: 'programs', label: `Programmes (${data.programs.length})` },
+        ...(SHOW_PROGRAMS ? [{ value: 'programs', label: `Programmes (${data.programs.length})` }] : []),
         { value: 'statuses', label: `États (${data.statuses.length})` },
       ]} />
 
@@ -52,7 +52,7 @@ const PiloteProjects: React.FC = () => {
 
       {section === 'mytasks' && <MyTasks rights={rights} />}
 
-      {section === 'programs' && (
+      {SHOW_PROGRAMS && section === 'programs' && (
         <CrudSection<CpProgram>
           title="Programmes" addLabel="Nouveau programme" table="cp_programs" rights={rights} onChanged={reload} errorText={piloteError}
           rows={data.programs} emptyIcon={Layers} emptyTitle="Aucun programme" emptyText="Un programme regroupe plusieurs projets : une année, une gamme, un client…"

@@ -205,34 +205,34 @@ async function step(id, title, fn, page) {
     ok(await resp.page.locator('table').count(), 'tableau absent en vue liste');
     await resp.page.locator('[aria-label="Affichage des projets"] [role="radio"]').nth(0).click(); await resp.page.waitForTimeout(300);
   }, resp.page);
-  await step('P4-creation', 'Création d\'un projet par le formulaire (type, programme, responsable)', async () => {
+  await step('P4-creation', 'Création d\'un projet par le formulaire (type, responsable) ; plus de champ « Programme »', async () => {
     await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(700);
     await resp.page.locator('#prj-name').fill(`${M} Par l'écran`);
     await resp.page.locator('#prj-type').selectOption('design');
-    await resp.page.locator('#prj-program').selectOption({ label: `${M} Festivals` });
+    ok(await resp.page.locator('#prj-program').count() === 0, 'le champ « Programme » ne devrait plus être proposé');
     await resp.page.getByLabel(/^Rôle de /).first().selectOption('lead');
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
     const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id,type,program_id&name=eq.${encodeURIComponent(M + " Par l'écran")}`))[0];
-    ok(r && r.type === 'design' && r.program_id === S.prog, `projet enregistré = ${JSON.stringify(r)}`);
+    ok(r && r.type === 'design' && r.program_id === null, `projet enregistré = ${JSON.stringify(r)}`);
     const m = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id&project_id=eq.${r.id}`));
     ok(m.length === 1, `responsables enregistrés = ${m.length}`);
     const role = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=role&project_id=eq.${r.id}`))[0]?.role;
     ok(role === 'lead', `rôle enregistré = ${role}`);
   }, resp.page);
-  await step('P4-programme-inline', 'Formulaire de projet : « Créer un programme » crée et sélectionne le programme, le projet y est rangé', async () => {
-    const name = `${M} Programme express`;
-    await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(700);
-    await resp.page.locator('#prj-name').fill(`${M} Avec programme express`);
-    await resp.page.getByRole('button', { name: /Créer un programme/ }).click();
-    await resp.page.getByLabel('Nom du nouveau programme').fill(name);
-    await resp.page.getByRole('button', { name: 'Ajouter', exact: true }).click(); await resp.page.waitForTimeout(1500);
-    const prog = rows(await api(resp, 'GET', `/rest/v1/cp_programs?select=id&name=eq.${encodeURIComponent(name)}`))[0];
-    ok(prog, 'programme non créé en base');
-    ok((await resp.page.locator('#prj-name').inputValue()) === `${M} Avec programme express`, 'le nom saisi du projet a été perdu');
-    ok((await resp.page.locator('#prj-program').inputValue()) === prog.id, 'programme créé non sélectionné');
+  await step('P4-programme-masque', 'Le « programme » n\'est plus proposé (formulaire, onglets) et modifier un projet déjà rangé dans un programme ne le défait pas', async () => {
+    await open(resp, '/pilote/projets');
+    ok(await resp.page.getByRole('radio', { name: /^Programmes/ }).count() === 0, 'l\'onglet « Programmes » ne devrait plus être proposé');
+    ok(await resp.page.getByText('Programme', { exact: true }).count() === 0, 'le mot « Programme » apparaît encore comme filtre ou colonne');
+    // Le projet « Festival » de test est rangé dans un programme (créé par l'API) : un enregistrement par l'écran ne doit pas le lui retirer
+    const card = resp.page.locator('div', { has: resp.page.locator('h3', { hasText: `${M} Festival` }) }).filter({ has: resp.page.getByRole('button', { name: 'Modifier' }) }).last();
+    await card.getByRole('button', { name: 'Modifier' }).click(); await resp.page.waitForTimeout(800);
+    ok(await resp.page.locator('#prj-program').count() === 0, 'le champ « Programme » ne devrait plus être proposé dans la fiche');
+    ok(await resp.page.getByRole('button', { name: /Créer un programme/ }).count() === 0, 'le lien « Créer un programme » ne devrait plus être proposé');
+    await resp.page.locator('#prj-desc').fill('Description modifiée par l\'écran');
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
-    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=program_id&name=eq.${encodeURIComponent(M + ' Avec programme express')}`))[0];
-    ok(r && r.program_id === prog.id, `projet rangé dans = ${r && r.program_id}`);
+    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=program_id,description&id=eq.${S.p1}`))[0];
+    ok(r && r.description === 'Description modifiée par l\'écran', `description en base = ${r && r.description}`);
+    ok(r.program_id === S.prog, `le programme du projet a été retiré par l'enregistrement : ${r.program_id}`);
   }, resp.page);
   await step('P4-equipe-ecran', 'Fiche du projet : ajouter un membre par l\'écran ne défait pas les assignations existantes ; retirer la personne la désassigne', async () => {
     await open(resp, '/pilote/projets');
@@ -281,9 +281,7 @@ async function step(id, title, fn, page) {
     ok(options.some(o => o.includes(`${M} Autre chantier`)), 'chantier libre non proposé');
     await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(300);
   }, resp.page);
-  await step('P4-programmes-etats', 'Onglets Programmes et États : lignes visibles, états de base non supprimables', async () => {
-    await resp.page.getByRole('radio', { name: /^Programmes/ }).click(); await resp.page.waitForTimeout(600);
-    ok(await resp.page.getByText(`${M} Festivals`).first().isVisible(), 'programme de test absent');
+  await step('P4-programmes-etats', 'Onglet États : lignes visibles, états de base non supprimables', async () => {
     await resp.page.getByRole('radio', { name: /^États/ }).click(); await resp.page.waitForTimeout(600);
     const txt = await resp.page.locator('main').innerText();
     ok(/De base/.test(txt), 'mention « De base » absente');

@@ -501,7 +501,7 @@ async function step(id, title, fn, page) {
     ok(rowsShown > 0, 'aucune ligne dans le Gantt');
     // L'arbre s'ouvre replié (quelques lignes) : on mesure aussi l'arbre DÉPLIÉ, avec les 200 éléments à l'écran
     const t1 = Date.now();
-    await resp.page.getByRole('button', { name: 'Tout déplier' }).click();
+    await resp.page.locator('button[aria-label="Plus d\'options d\'affichage"]').click(); await resp.page.getByRole('menuitem', { name: 'Tout déplier' }).click();
     await resp.page.waitForFunction(() => document.querySelectorAll('.group\\/row').length >= 200, null, { timeout: 20000 }).catch(() => {});
     const msExpand = Date.now() - t1;
     const rowsExpanded = await resp.page.locator('.group\\/row').count();

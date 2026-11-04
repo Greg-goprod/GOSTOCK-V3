@@ -95,13 +95,21 @@ async function step(id, title, fn, page) {
   const create = async (c, table, row) => { const r = await api(c, 'POST', `/rest/v1/${table}?select=id`, row, REP); ok(!refused(r), `${table} : ${msg(r)}`); return rows(r)[0]?.id; };
   const open = async (c, url) => { await c.page.goto(`${BASE}${url}`); await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await c.page.waitForTimeout(3000); };
   const rowLocator = c => c.page.locator('.group\\/row');
+  // Barre d'outils allégée : échelle, regroupement, « sans date » et « Nouveau » sont des MENUS (boutons qui ouvrent un menu)
+  const menuButton = (c, text) => c.page.locator('button[aria-haspopup="menu"]').filter({ hasText: text }).first();
+  const pickMenu = async (c, text, item, role) => { await menuButton(c, text).click(); await c.page.getByRole(role, { name: item, exact: true }).click(); await c.page.waitForTimeout(350); };
+  const setScale = (c, label) => pickMenu(c, /Échelle/, label, 'menuitemradio');
+  const setGrouping = (c, label) => pickMenu(c, /Grouper/, label, 'menuitemradio');
+  const newMenu = (c, label) => pickMenu(c, /^\s*Nouveau\s*$/, label, 'menuitem');
+  // Les détails (rangé sous, liste à cocher, dépendances) sont repliés dans la fiche : on les ouvre au besoin
+  const openDetails = async c => { const b = c.page.getByRole('button', { name: 'Afficher les détails' }); if (await b.count()) { await b.click(); await c.page.waitForTimeout(300); } };
   // Le Gantt s'ouvre sur aujourd'hui s'il est dans le plan (par exemple dès qu'un vrai projet daté existe), sinon sur le plan : on ne suppose
   // jamais la fenêtre de départ. On passe en « 1 année » et on avance d'une année à la fois jusqu'à voir la barre cherchée.
   const showBar = async (c, label) => {
-    await c.page.getByRole('radio', { name: '1 année', exact: true }).click(); await c.page.waitForTimeout(400);
+    await setScale(c, '1 année');
     for (let i = 0; i < 24 && !(await c.page.locator(`[role="button"][aria-label*="${label}"]`).count()); i++) { await c.page.getByRole('button', { name: 'Période suivante' }).click(); await c.page.waitForTimeout(250); }
   };
-  const expandAll = async c => { await c.page.getByRole('button', { name: 'Tout déplier' }).click(); await c.page.waitForTimeout(500); };
+  const expandAll = async c => { await c.page.locator('button[aria-label="Plus d\'options d\'affichage"]').click(); await c.page.getByRole('menuitem', { name: 'Tout déplier' }).click(); await c.page.waitForTimeout(500); };
 
   /* ============ P0 Prérequis ============ */
   group = 'P0 Prérequis';
@@ -136,12 +144,14 @@ async function step(id, title, fn, page) {
 
   /* ============ P2 Écran ============ */
   group = 'P2 Écran';
-  await step('P2-ouverture', 'PILOTE › Gantt s\'ouvre : groupe « Programme » et projet visibles, éléments repliés', async () => {
+  await step('P2-ouverture', 'PILOTE › Gantt s\'ouvre : groupes par état, projet visible, éléments repliés', async () => {
     await open(resp, '/pilote/gantt');
-    ok(await resp.page.getByRole('radio', { name: '3 mois', exact: true }).count(), 'écran du Gantt inaccessible');
+    ok(await menuButton(resp, /Échelle/).count(), 'écran du Gantt inaccessible (menu « Échelle » absent)');
+    ok(await menuButton(resp, /Grouper/).count(), 'menu « Grouper » absent');
     // Les titres de groupe sont affichés en majuscules par le style (innerText rend la majuscule) : on compare sans tenir compte de la casse
     const names = (await rowLocator(resp).allInnerTexts()).map(t => t.toLowerCase());
-    ok(names.some(t => t.includes(`${M} Programme`.toLowerCase())), 'programme de test absent');
+    ok(names.some(t => t.includes('pas commencé')), 'groupe « Pas commencé » absent (regroupement par état par défaut)');
+    ok(!names.some(t => t.includes(`${M} Programme`.toLowerCase())), 'le programme ne devrait plus apparaître dans le Gantt');
     ok(names.some(t => t.includes(`${M} Projet`.toLowerCase())), 'projet de test absent');
     ok(!names.some(t => t.includes(`${M} Tâche`.toLowerCase())), 'les tâches devraient être repliées à l\'ouverture');
   }, resp.page);
@@ -155,30 +165,41 @@ async function step(id, title, fn, page) {
     ok(await resp.page.locator(`[role="button"][aria-label*="${M} Tâche"]`).count() >= 1, 'barre de la tâche absente');
     ok(await resp.page.locator(`[role="button"][aria-label*="${M} Jalon"]`).count() >= 1, 'losange du jalon absent');
   }, resp.page);
-  await step('P2-sans-date', 'L\'élément sans date est dans le bac « Sans date »', async () => {
-    const t = await resp.page.locator('section[aria-label="Sans date"]').innerText();
-    ok(t.includes(`${M} À dater`), 'élément sans date absent du bac');
+  await step('P2-sans-date', 'L\'élément sans date est dans le menu « Sans date (n) »', async () => {
+    await menuButton(resp, /Sans date/).click(); await resp.page.waitForTimeout(300);
+    const t = await resp.page.getByRole('menu').innerText();
+    await resp.page.keyboard.press('Escape'); await resp.page.waitForTimeout(200);
+    ok(t.includes(`${M} À dater`), `élément sans date absent du menu : ${t.slice(0, 200)}`);
   }, resp.page);
-  await step('P2-zoom-regroupement', 'Périodes affichées et regroupements sans erreur', async () => {
-    for (const z of ['1 jour', '1 semaine', '2 semaines', '1 mois', '6 mois', '1 année', '3 mois']) { await resp.page.getByRole('radio', { name: z, exact: true }).click(); await resp.page.waitForTimeout(300); }
-    await resp.page.getByRole('radio', { name: 'État', exact: true }).click(); await resp.page.waitForTimeout(400);
-    ok((await rowLocator(resp).count()) > 0, 'aucune ligne par état');
-    await resp.page.getByRole('radio', { name: 'Type', exact: true }).click(); await resp.page.waitForTimeout(400);
+  await step('P2-zoom-regroupement', 'Échelles, période libre et regroupements sans erreur', async () => {
+    for (const z of ['1 jour', '1 semaine', '2 semaines', '1 mois', '6 mois', '1 année', '3 mois']) await setScale(resp, z);
+    await menuButton(resp, /Échelle/).click(); await resp.page.getByRole('menuitem', { name: /Période libre/ }).click(); await resp.page.waitForTimeout(400);
+    ok(await resp.page.locator('main').getByText(/–/).count() >= 1, 'le sélecteur de plage n\'apparaît pas en période libre');
+    await setScale(resp, '3 mois');
+    await setGrouping(resp, 'Type'); await resp.page.waitForTimeout(300);
     ok((await resp.page.locator('.group\\/row button.uppercase', { hasText: 'R&D' }).count()) >= 1, 'groupe « R&D » absent');
-    await resp.page.getByRole('radio', { name: 'Programme', exact: true }).click(); await resp.page.waitForTimeout(400);
+    await setGrouping(resp, 'État'); await resp.page.waitForTimeout(300);
+    ok((await rowLocator(resp).count()) > 0, 'aucune ligne par état');
+    await menuButton(resp, /Grouper/).click();
+    ok((await resp.page.getByRole('menuitemradio').allInnerTexts()).join('/') === 'État/Type', 'le regroupement par programme ne devrait plus être proposé');
+    await resp.page.keyboard.press('Escape');
   }, resp.page);
 
   /* ============ P3 Fiche ============ */
   group = 'P3 Fiche';
-  await step('P3-ouvrir', 'Clic sur la tâche : fiche avec type verrouillé et parent', async () => {
+  await step('P3-ouvrir', 'Clic sur la tâche : fiche avec le type en sous-titre, propriétés clés visibles, parent dans les détails', async () => {
     await expandAll(resp);
     await resp.page.locator('.group\\/row button', { hasText: `${M} Tâche` }).first().click(); await resp.page.waitForTimeout(1200);
-    ok(await resp.page.locator('#itm-kind').inputValue() === 'task', 'type de la tâche incorrect');
-    ok(await resp.page.locator('#itm-kind').isDisabled(), 'le type devrait être verrouillé');
+    ok((await resp.page.locator('[role="dialog"]').innerText()).includes(`Tâche · ${M} Projet`), 'sous-titre « Tâche · projet » absent');
+    ok(await resp.page.locator('#itm-kind').count() === 0, 'le type ne se change pas : il ne doit pas être proposé en modification');
+    for (const id of ['#itm-status', '#itm-priority', '#itm-period', '#itm-desc', '#itm-assign']) ok(await resp.page.locator(id).count() === 1, `propriété clé absente : ${id}`);
+    ok(await resp.page.locator('#itm-parent').count() === 0, 'le parent devrait être replié dans les détails');
+    await openDetails(resp);
     ok(await resp.page.locator('#itm-parent').inputValue() === S.phase, 'parent incorrect');
   }, resp.page);
   await step('P3-modifier', 'Modifier le nom, cocher une étape ajoutée, enregistrer : tout est en base', async () => {
     await resp.page.locator('#itm-name').fill(`${M} Tâche (révisée)`);
+    await openDetails(resp);
     await resp.page.getByLabel('Nouvelle ligne').fill('Étape de test');
     await resp.page.getByRole('button', { name: 'Ajouter', exact: true }).click();
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
@@ -188,12 +209,13 @@ async function step(id, title, fn, page) {
     ok(checks.length === 1 && checks[0].label === 'Étape de test', `liste à cocher en base = ${JSON.stringify(checks)}`);
   }, resp.page);
   await step('P3-creer', 'Nouvel élément par la fiche : une sous-tâche sous la tâche, avec un responsable', async () => {
-    await resp.page.getByRole('button', { name: 'Nouvel élément' }).click(); await resp.page.waitForTimeout(800);
+    await newMenu(resp, 'Nouvelle tâche'); await resp.page.waitForTimeout(800);
     await resp.page.locator('#itm-project').selectOption({ label: `${M} Projet` });
     await resp.page.locator('#itm-kind').selectOption('subtask');
     await resp.page.locator('#itm-parent').selectOption(S.task);
     await resp.page.locator('#itm-name').fill(`${M} Créée par la fiche`);
-    await resp.page.locator('fieldset input[type=checkbox]').first().check();
+    // Assignés : un menu à choix multiple (on coche la première personne de l'équipe)
+    await resp.page.locator('#itm-assign').click(); await resp.page.getByRole('menuitemradio').first().click(); await resp.page.keyboard.press('Escape'); await resp.page.waitForTimeout(200);
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
     const it = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=id,kind,parent_id&name=eq.${encodeURIComponent(M + ' Créée par la fiche')}`))[0];
     ok(it && it.kind === 'subtask' && it.parent_id === S.task, `élément créé = ${JSON.stringify(it)}`);
@@ -206,12 +228,14 @@ async function step(id, title, fn, page) {
     await resp.page.getByRole('button', { name: `Ajouter dans ${M} Phase` }).click(); await resp.page.waitForTimeout(800);
     const kinds = await resp.page.locator('#itm-kind option').allInnerTexts();
     ok(kinds.join('/') === 'Tâche/Jalon', `types proposés = ${kinds.join('/')}`);
+    await openDetails(resp);
     ok(await resp.page.locator('#itm-parent').isDisabled(), 'le parent devrait être figé');
     await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(300);
   }, resp.page);
   await step('P3-placer', '« Placer aujourd\'hui » date l\'élément sans date', async () => {
-    // La ligne de l'élément visé (le bac contient aussi la sous-tâche créée à l'étape précédente, sans date) : on clique SON bouton
-    await resp.page.locator('section[aria-label="Sans date"] li', { hasText: `${M} À dater` }).getByRole('button', { name: "Placer aujourd'hui" }).click(); await resp.page.waitForTimeout(1500);
+    // Le menu contient aussi la sous-tâche créée à l'étape précédente (sans date) : on choisit SON entrée ; cliquer un élément le place aujourd'hui
+    await menuButton(resp, /Sans date/).click(); await resp.page.waitForTimeout(300);
+    await resp.page.getByRole('menuitemradio').filter({ hasText: `${M} À dater` }).click(); await resp.page.waitForTimeout(1500);
     const it = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=starts_on,ends_on&id=eq.${S.undated}`))[0];
     ok(it && it.starts_on && it.ends_on, `dates en base = ${JSON.stringify(it)}`);
   }, resp.page);
@@ -337,17 +361,19 @@ async function step(id, title, fn, page) {
     await resp.page.goto(`${BASE}/pilote/gantt`); await resp.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }); await resp.page.waitForTimeout(3000);
     await expandAll(resp);
     // Fenêtre : on affiche mars 2027 avec la période libre « 1 mois » ancrée sur le plan ; les barres de test sont en 2027
-    await resp.page.getByRole('radio', { name: '1 année', exact: true }).click(); await resp.page.waitForTimeout(500);
+    await setScale(resp, '1 année');
     for (let i = 0; i < 24 && !(await resp.page.locator(`[role="button"][aria-label*="${M} L-A"]`).count()); i++) { await resp.page.getByRole('button', { name: 'Période suivante' }).click(); await resp.page.waitForTimeout(250); }
     ok(await resp.page.locator(`[role="button"][aria-label*="${M} L-A"]`).count(), 'barre de L-A absente de la fenêtre');
     ok((await resp.page.locator('svg path[data-link]').count()) >= 1, 'aucune flèche de dépendance');
   }, resp.page);
   await step('P3c-fiche', 'Fiche de B : « Commence après » liste A ; ajout de A → C par la fiche de C, puis retrait', async () => {
     await resp.page.locator(`[role="button"][aria-label*="${M} L-B"]`).first().click(); await resp.page.waitForTimeout(1200);
+    await openDetails(resp);
     const txt = await resp.page.locator('fieldset:has(legend:text("Dépendances"))').innerText();
     ok(txt.includes(`${M} L-A`), `A absent de « Commence après » : ${txt.slice(0, 160)}`);
     await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(400);
     await resp.page.locator(`[role="button"][aria-label*="${M} L-C"]`).first().click(); await resp.page.waitForTimeout(1200);
+    await openDetails(resp);
     await resp.page.locator('select[aria-label="Commence après l\'élément"]').selectOption({ label: `Tâche · ${M} L-A` });
     await resp.page.getByRole('button', { name: 'Ajouter la dépendance' }).click(); await resp.page.waitForTimeout(1800);
     const l = rows(await api(resp, 'GET', `/rest/v1/cp_item_links?select=id&predecessor_id=eq.${S.lA}&successor_id=eq.${S.lC}`));
@@ -385,12 +411,13 @@ async function step(id, title, fn, page) {
   for (const c of readers) {
     await step(`P4-${c.who}`, `${c.who} : voit le Gantt, aucune création, fiche en lecture seule`, async () => {
       await open(c, '/pilote/gantt');
-      ok(await c.page.getByRole('radio', { name: '3 mois', exact: true }).count(), 'écran inaccessible');
-      ok((await c.page.getByRole('button', { name: 'Nouvel élément' }).count()) === 0, 'bouton « Nouvel élément » présent');
+      ok(await menuButton(c, /Échelle/).count(), 'écran inaccessible (menu « Échelle » absent)');
+      ok((await menuButton(c, /^\s*Nouveau\s*$/).count()) === 0, 'menu « Nouveau » présent pour un lecteur');
       ok((await c.page.locator('button[aria-label^="Ajouter dans"]').count()) === 0, 'boutons « + » présents');
       await expandAll(c);
       await c.page.locator('.group\\/row button', { hasText: `${M} Projet` }).first().click().catch(() => {});
-      ok((await c.page.getByRole('button', { name: "Placer aujourd'hui" }).count()) === 0, 'bouton « Placer » présent');
+      // Un lecteur ouvre un élément sans date, il ne le place pas : l'en-tête du menu le dit
+      if (await menuButton(c, /Sans date/).count()) { await menuButton(c, /Sans date/).click(); ok(!(await c.page.getByRole('menu').innerText()).includes('pour le placer'), 'un lecteur peut placer un élément'); await c.page.keyboard.press('Escape'); }
       ok((await c.page.locator('[data-handle]').count()) === 0 && (await c.page.getByRole('button', { name: 'Nouveau', exact: true }).count()) === 0, 'poignées ou lignes « + Nouveau » présentes pour un lecteur');
     }, c.page);
     await step(`P4-${c.who}-ecriture`, `${c.who} : la base refuse toute écriture sur les éléments`, async () => {

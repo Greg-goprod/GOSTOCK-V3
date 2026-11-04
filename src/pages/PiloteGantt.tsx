@@ -1,17 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarCheck, ChevronsDownUp, ChevronsUpDown, Plus } from 'lucide-react';
+import { CalendarCheck, ChevronsDownUp, ChevronsUpDown, MoreHorizontal, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { getLanguage } from '../i18n/translator';
 import { buildGantt, defaultExpanded, undatedRows, visibleRows, withAddRows, type Grouping, type GanttRow } from '../lib/ganttModel';
 import { isPreset, makePeriod, type ViewPeriod } from '../lib/viewPeriod';
-import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, TYPE_LABEL, type GanttData, type ItemKind, type PiloteRights } from '../lib/pilote';
+import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import PageTitle from '../components/common/PageTitle';
-import Button from '../components/common/Button';
 import { MxEmpty } from '../components/mx/MxEmpty';
-import { MxSegmented } from '../components/mx/MxSegmented';
 import PeriodControls from '../components/common/PeriodControls';
+import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
@@ -19,13 +18,16 @@ import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectFor
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const LOCALES = { fr: 'fr-CH', de: 'de-CH', it: 'it-CH', en: 'en-GB' } as const;
 const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
+// Regroupements proposés (le programme n'est plus proposé : voir SHOW_PROGRAMS)
+const GROUPING_CHOICES: Grouping[] = ['status', 'type'];
+const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type', program: 'Programme' };
 const EMPTY: GanttData = { statuses: [], programs: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [] };
 
 // PILOTE › Gantt (module payant) : programmes, projets et leurs éléments sur une échelle de temps
 const PiloteGantt: React.FC = () => {
   const [data, setData] = useState<GanttData | null>(null);
   const [rights, setRights] = useState<PiloteRights>(NO_RIGHTS);
-  const [grouping, setGrouping] = useState<Grouping>('program');
+  const [grouping, setGrouping] = useState<Grouping>('status');
   const [period, setPeriod] = useState<ViewPeriod | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [itemTarget, setItemTarget] = useState<ItemTarget | null>(null);
@@ -114,20 +116,44 @@ const PiloteGantt: React.FC = () => {
       <div>
         <PageTitle>Gantt</PageTitle>
         <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
-          Tous tes projets et leurs phases, tâches et jalons sur une même échelle de temps. Clique sur une ligne ou une barre pour ouvrir sa fiche.
+          Tes projets, leurs phases, tâches et jalons sur une échelle de temps. Clique sur une barre pour ouvrir sa fiche.
         </p>
       </div>
 
+      {/* Une seule ligne d'outils, comme Notion : regroupement et échelle en menus, « sans date » et « nouveau » à droite */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <MxSegmented aria-label="Regroupement" value={grouping} onChange={v => setGrouping(v as Grouping)} options={[
-            { value: 'program', label: 'Programme' }, { value: 'status', label: 'État' }, { value: 'type', label: 'Type' },
-          ]} />
-          {period && <PeriodControls value={period} today={today} onChange={changePeriod} />}
-          <Button size="sm" variant="outline" icon={<ChevronsUpDown size={14} />} onClick={() => setExpanded(new Set(model.expandable))}>Tout déplier</Button>
-          <Button size="sm" variant="outline" icon={<ChevronsDownUp size={14} />} onClick={() => setExpanded(defaultExpanded(model))}>Replier</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <MenuButton id="gantt-group" menuLabel="Regroupement" prefix="Grouper :" value={GROUPING_LABEL[grouping]}
+            groups={[{ id: 'grouping', items: GROUPING_CHOICES.map(g => ({ id: g, label: GROUPING_LABEL[g], checked: grouping === g, onSelect: () => setGrouping(g) })) }]} />
+          {period && <PeriodControls compact value={period} today={today} onChange={changePeriod} />}
         </div>
-        {rights.create && <Button icon={<Plus size={16} />} onClick={() => setItemTarget({ mode: 'new' })} disabled={data.projects.length === 0}>Nouvel élément</Button>}
+        <div className="flex flex-wrap items-center gap-2">
+          {undated.length > 0 && (
+            <MenuButton id="gantt-undated" menuLabel="Éléments sans date" value={`Sans date (${undated.length})`}
+              header={<p className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400">{rights.update ? 'Clique sur un élément pour le placer aujourd\'hui' : 'Éléments qui n\'ont pas encore de dates'}</p>}
+              groups={[{ id: 'undated', items: undated.map(r => ({
+                id: r.key,
+                label: `${r.name} · ${kindName(r)}${r.kind !== 'project' && r.projectId ? ` · ${projectName.get(r.projectId) ?? ''}` : ''}`,
+                onSelect: () => { if (rights.update) void place(r); else openRow(r); },
+              })) }]} />
+          )}
+          <MenuButton id="gantt-more" menuLabel="Affichage de l'arbre" iconOnly ariaLabel="Plus d'options d'affichage" icon={<MoreHorizontal size={16} />}
+            actions={[
+              { id: 'expand', label: 'Tout déplier', icon: ChevronsUpDown, onSelect: () => setExpanded(new Set(model.expandable)) },
+              { id: 'collapse', label: 'Replier', icon: ChevronsDownUp, onSelect: () => setExpanded(defaultExpanded(model)) },
+            ]} />
+          {rights.create && (
+            <MenuButton id="gantt-new" menuLabel="Créer" variant="primary" icon={<Plus size={14} />} value="Nouveau"
+              actions={[
+                { id: 'project', label: 'Nouveau projet', onSelect: () => setProjectTarget({ mode: 'new' }) },
+                ...(data.projects.length > 0 ? [
+                  { id: 'task', label: 'Nouvelle tâche', onSelect: () => setItemTarget({ mode: 'new', kind: 'task' }) },
+                  { id: 'phase', label: 'Nouvelle phase', onSelect: () => setItemTarget({ mode: 'new', kind: 'phase' }) },
+                  { id: 'milestone', label: 'Nouveau jalon', onSelect: () => setItemTarget({ mode: 'new', kind: 'milestone' }) },
+                ] : []),
+              ]} />
+          )}
+        </div>
       </div>
 
       {!period ? null : rows.length === 0 ? (
@@ -135,22 +161,6 @@ const PiloteGantt: React.FC = () => {
       ) : (
         <GanttChart rows={rows} links={data.links} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
           onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline} />
-      )}
-
-      {undated.length > 0 && (
-        <section aria-label="Sans date" className="rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
-          <h2 className="mb-2 text-sm font-bold text-gray-900 dark:text-white">{`Sans date (${undated.length})`}</h2>
-          <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-            {undated.map(r => (
-              <li key={r.key} className="flex flex-wrap items-center gap-2 py-1.5 text-sm">
-                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: r.color }} />
-                <button type="button" onClick={() => openRow(r)} className="font-medium text-gray-900 hover:underline dark:text-white">{r.name}</button>
-                <span className="text-gray-600 dark:text-gray-400">{kindName(r)}{r.kind !== 'project' && r.projectId ? ` · ${projectName.get(r.projectId) ?? ''}` : r.kind === 'project' && data ? ` · ${TYPE_LABEL[data.projects.find(p => p.id === r.id)?.type ?? 'site']}` : ''}</span>
-                {rights.update && <Button size="sm" variant="outline" onClick={() => void place(r)} className="ml-auto">Placer aujourd'hui</Button>}
-              </li>
-            ))}
-          </ul>
-        </section>
       )}
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />

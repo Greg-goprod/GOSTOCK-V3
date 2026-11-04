@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
-import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, saveTeam, TEAM_ROLE_LABEL, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType, type TeamRole } from '../../lib/pilote';
+import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, SHOW_PROGRAMS, saveTeam, TEAM_ROLE_LABEL, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType, type TeamRole } from '../../lib/pilote';
 import { ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -94,7 +94,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
     event.preventDefault();
     if (saving || !form || !target) return;
     const payload = {
-      name: form.name.trim(), type: form.type, program_id: form.program_id || null, status_id: form.status_id, priority: form.priority || null,
+      name: form.name.trim(), type: form.type, ...(SHOW_PROGRAMS ? { program_id: form.program_id || null } : {}), status_id: form.status_id, priority: form.priority || null,
       starts_on: form.starts_on || null, ends_on: form.ends_on || null, color: form.color, description: form.description.trim() || null,
       site_id: form.type === 'site' && form.site_id ? form.site_id : null,
       link_mode: form.link_mode, link_skip_weekends: form.link_skip_weekends,
@@ -143,6 +143,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
                 {data.statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
+            {SHOW_PROGRAMS && (
             <div>
               <label htmlFor="prj-program" className={labelClass}>Programme</label>
               <select id="prj-program" className={inputClass} value={form.program_id} onChange={e => set({ program_id: e.target.value })}>
@@ -160,6 +161,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
                 </div>
               )}
             </div>
+            )}
             <div>
               <label htmlFor="prj-priority" className={labelClass}>Priorité</label>
               <select id="prj-priority" className={inputClass} value={form.priority} onChange={e => set({ priority: e.target.value as FormState['priority'] })}>

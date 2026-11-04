@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
@@ -7,6 +7,7 @@ import { confirmAction } from '../../lib/confirm';
 import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL, parentKindsFor, piloteError, removeLink, PRIORITY_LABEL, saveItemMembers, TEAM_ROLE_LABEL, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
+import MenuButton from '../common/MenuButton';
 import DateInput, { DateRangeInput } from '../common/DateInput';
 
 export type ItemTarget = { mode: 'edit'; itemId: string } | { mode: 'new'; projectId?: string; parentId?: string | null; kind?: ItemKind };
@@ -39,6 +40,9 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
   const [newCheck, setNewCheck] = useState('');
   const [saving, setSaving] = useState(false);
   const [newPred, setNewPred] = useState('');
+  // « Afficher les détails » : parent, liste à cocher, dépendances (repliés par défaut, comme le panneau de Notion)
+  const [showDetails, setShowDetails] = useState(false);
+  const detailsAutoOpened = useRef(false);
   const datesTouched = useRef(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
   // Seules les personnes de l'équipe du projet peuvent être assignées (règle de la base) ; responsables en premier
@@ -55,6 +59,8 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
     const notStarted = data.statuses.find(s => s.is_system && s.family === 'not_started')?.id ?? data.statuses[0]?.id ?? '';
     setNewCheck('');
     setNewPred('');
+    setShowDetails(false);
+    detailsAutoOpened.current = false;
     datesTouched.current = false;
     if (target.mode === 'edit') {
       const it = data.items.find(i => i.id === target.itemId);
@@ -116,6 +122,11 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
   const projectOfItem = edited ? data.projects.find(p => p.id === edited.project_id) ?? null : null;
   const predLinks = edited ? data.links.filter(l => l.successor_id === edited.id) : [];
   const succLinks = edited ? data.links.filter(l => l.predecessor_id === edited.id) : [];
+  // Si l'élément a déjà une liste à cocher ou des dépendances, les détails s'ouvrent d'eux-mêmes (une fois par ouverture de fiche)
+  useEffect(() => {
+    if (detailsAutoOpened.current || !edited) return;
+    if (checks.length > 0 || predLinks.length > 0 || succLinks.length > 0) { detailsAutoOpened.current = true; setShowDetails(true); }
+  }, [edited, checks.length, predLinks.length, succLinks.length]);
   const itemName = (id: string) => data.items.find(i => i.id === id)?.name ?? '—';
   // Éléments proposables comme prédécesseur : du même projet, ni lui-même, ni déjà lié ; la base refuse parenté et boucles avec un message clair
   const predOptions = useMemo(() => {
@@ -201,41 +212,48 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
 
   const title = isNew ? 'Nouvel élément' : readOnly ? (edited?.name ?? 'Élément') : 'Modifier l\'élément';
   const project = form ? data.projects.find(p => p.id === form.projectId) : null;
+  const personName = (id: string) => { const u = people.find(x => x.id === id); return u ? `${u.first_name} ${u.last_name}`.trim() : '—'; };
+  const toggleMember = (id: string) => set({ members: form?.members.includes(id) ? (form?.members ?? []).filter(x => x !== id) : [...(form?.members ?? []), id] });
 
   return (
     <Modal isOpen={!!target} onClose={onClose} title={title} size="lg">
       {form && (
-        <form onSubmit={save} className="space-y-3">
-          {isNew && !presetParent && (
-            <div>
-              <label htmlFor="itm-project" className={labelClass}>Projet</label>
-              <select id="itm-project" className={inputClass} value={form.projectId} onChange={e => set({ projectId: e.target.value, parentId: '', members: [] })} required>
-                {data.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-          )}
-          {(!isNew || presetParent) && project && <p className="text-sm text-gray-600 dark:text-gray-400">{`Projet : ${project.name}`}</p>}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="itm-kind" className={labelClass}>Type</label>
-              <select id="itm-kind" className={inputClass} value={form.kind} disabled={!isNew || readOnly} onChange={e => changeKind(e.target.value as ItemKind)}>
-                {(isNew ? kindChoices : [form.kind]).map(k => <option key={k} value={k}>{ITEM_KIND_LABEL[k]}</option>)}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="itm-parent" className={labelClass}>Rangé sous</label>
-              <select id="itm-parent" className={inputClass} value={form.parentId} disabled={readOnly || (isNew && !!presetParent) || form.kind === 'phase'} required={needsParent} onChange={e => set({ parentId: e.target.value })}>
-                {!needsParent && <option value="">Directement sous le projet</option>}
-                {needsParent && <option value="">— Choisis une tâche</option>}
-                {parentOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </div>
-          </div>
+        <form onSubmit={save} className="space-y-4">
+          {/* Titre en grand, puis une ligne de contexte : « Tâche · Projet X » */}
           <div>
-            <label htmlFor="itm-name" className={labelClass}>Nom</label>
-            <input id="itm-name" className={inputClass} required value={form.name} disabled={readOnly} onChange={e => set({ name: e.target.value })} />
+            <label htmlFor="itm-name" className="sr-only">Nom</label>
+            <input id="itm-name" required value={form.name} disabled={readOnly} placeholder="Nom de l'élément" onChange={e => set({ name: e.target.value })}
+              className={`${inputClass} text-base font-semibold`} />
+            {(!isNew || presetParent) && project && <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{`${ITEM_KIND_LABEL[form.kind]} · ${project.name}`}</p>}
           </div>
+
+          {/* Les propriétés qui comptent : à la création le projet, le type (et la tâche parente d'une sous-tâche) ; puis état, priorité, période, assignés */}
           <div className="grid gap-3 sm:grid-cols-2">
+            {isNew && !presetParent && (
+              <div className="sm:col-span-2">
+                <label htmlFor="itm-project" className={labelClass}>Projet</label>
+                <select id="itm-project" className={inputClass} value={form.projectId} onChange={e => set({ projectId: e.target.value, parentId: '', members: [] })} required>
+                  {data.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            )}
+            {isNew && (
+              <div className={needsParent ? '' : 'sm:col-span-2'}>
+                <label htmlFor="itm-kind" className={labelClass}>Type</label>
+                <select id="itm-kind" className={inputClass} value={form.kind} onChange={e => changeKind(e.target.value as ItemKind)}>
+                  {kindChoices.map(k => <option key={k} value={k}>{ITEM_KIND_LABEL[k]}</option>)}
+                </select>
+              </div>
+            )}
+            {needsParent && (
+              <div>
+                <label htmlFor="itm-parent" className={labelClass}>Rangé sous</label>
+                <select id="itm-parent" className={inputClass} value={form.parentId} disabled={readOnly || (isNew && !!presetParent)} required onChange={e => set({ parentId: e.target.value })}>
+                  <option value="">— Choisis une tâche</option>
+                  {parentOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label htmlFor="itm-status" className={labelClass}>État</label>
               <select id="itm-status" className={inputClass} value={form.status_id} disabled={readOnly} onChange={e => set({ status_id: e.target.value })}>
@@ -255,94 +273,115 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
                 <DateInput id="itm-start" className={inputClass} value={form.starts_on} disabled={readOnly} onChange={e => { datesTouched.current = true; set({ starts_on: e.target.value }); }} />
               </div>
             ) : (
-              <>
-                <div className="sm:col-span-2">
-                  <label htmlFor="itm-period" className={labelClass}>Période (début et fin)</label>
-                  <DateRangeInput id="itm-period" className={inputClass} start={form.starts_on} end={form.ends_on} disabled={readOnly} onChange={(a, b) => { datesTouched.current = true; set({ starts_on: a, ends_on: b }); }} placeholder="Choisir le début et la fin" />
-                </div>
-              </>
-            )}
-          </div>
-          <fieldset disabled={readOnly}>
-            <legend className={labelClass}>Assignés</legend>
-            {team.length === 0 ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">L'équipe de ce projet est vide : ajoute d'abord des personnes à l'équipe (Projets › Modifier le projet) pour pouvoir leur assigner des tâches.</p>
-            ) : (
-              <ul className="grid max-h-40 gap-1 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 p-2 sm:grid-cols-2">
-                {team.map(u => (
-                  <li key={u.id}>
-                    <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
-                      <input type="checkbox" checked={form.members.includes(u.id)} onChange={() => set({ members: form.members.includes(u.id) ? form.members.filter(x => x !== u.id) : [...form.members, u.id] })} />
-                      {u.first_name} {u.last_name}{u.role === 'lead' && <span className="text-xs text-gray-500 dark:text-gray-400"> · {TEAM_ROLE_LABEL.lead.toLowerCase()}</span>}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </fieldset>
-          <div>
-            <label htmlFor="itm-desc" className={labelClass}>Description</label>
-            <textarea id="itm-desc" rows={3} className={inputClass} value={form.description} disabled={readOnly} onChange={e => set({ description: e.target.value })} />
-          </div>
-          <fieldset disabled={readOnly}>
-            <legend className={labelClass}>Liste à cocher</legend>
-            <ul className="space-y-1">
-              {checks.map((c, i) => (
-                <li key={c.id ?? `n${i}`} className="flex items-center gap-2">
-                  <input type="checkbox" aria-label={`Fait : ${c.label}`} checked={c.done} onChange={e => setChecks(list => list.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)))} />
-                  <input aria-label={`Ligne ${i + 1}`} className={`${inputClass} ${c.done ? 'line-through text-gray-500' : ''}`} value={c.label} onChange={e => setChecks(list => list.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
-                  {!readOnly && <button type="button" aria-label={`Supprimer la ligne ${i + 1}`} onClick={() => setChecks(list => list.filter((_, j) => j !== i))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
-                </li>
-              ))}
-            </ul>
-            {!readOnly && (
-              <div className="mt-2 flex gap-2">
-                <input aria-label="Nouvelle ligne" className={inputClass} placeholder="Ajouter une étape" value={newCheck} onChange={e => setNewCheck(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCheck(); } }} />
-                <Button variant="outline" size="sm" icon={<Plus size={14} />} onClick={addCheck}>Ajouter</Button>
+              <div className="sm:col-span-2">
+                <label htmlFor="itm-period" className={labelClass}>Période (début et fin)</label>
+                <DateRangeInput id="itm-period" className={inputClass} start={form.starts_on} end={form.ends_on} disabled={readOnly} onChange={(a, b) => { datesTouched.current = true; set({ starts_on: a, ends_on: b }); }} placeholder="Choisir le début et la fin" />
               </div>
             )}
-          </fieldset>
-          {edited && (
-            <fieldset disabled={!canCreate && !canDelete}>
-              <legend className={labelClass}>Dépendances</legend>
-              <p className="mb-2 text-xs text-gray-600 dark:text-gray-400">
-                {projectOfItem && <>Un élément qui « commence après » un autre est décalé automatiquement. Réglage du projet : <span>{LINK_MODE_LABEL[projectOfItem.link_mode ?? 'overlap']}</span>.</>}
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Commence après</p>
-              {predLinks.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucun élément.</p> : (
+            <div className="sm:col-span-2">
+              <label htmlFor="itm-assign" className={labelClass}>Assignés</label>
+              {team.length === 0 && form.members.length === 0 ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400">L'équipe de ce projet est vide : ajoute d'abord des personnes à l'équipe (Projets › Modifier le projet) pour pouvoir leur assigner des tâches.</p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  {form.members.map(id => <span key={id} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-100">{personName(id)}</span>)}
+                  {form.members.length === 0 && <span className="text-sm text-gray-500 dark:text-gray-400">Personne</span>}
+                  {!readOnly && team.length > 0 && (
+                    <MenuButton id="itm-assign-menu" buttonId="itm-assign" menuLabel="Assigner des personnes" icon={<Plus size={14} />} value={form.members.length ? 'Modifier' : 'Assigner'}
+                      groups={[{ id: 'team', items: team.map(u => ({
+                        id: u.id, closeOnSelect: false, checked: form.members.includes(u.id), onSelect: () => toggleMember(u.id),
+                        label: `${u.first_name} ${u.last_name}${u.role === 'lead' ? ` · ${TEAM_ROLE_LABEL.lead.toLowerCase()}` : ''}`,
+                      })) }]} />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="itm-desc" className={labelClass}>Description</label>
+            <textarea id="itm-desc" rows={3} className={inputClass} value={form.description} disabled={readOnly} placeholder="Ajouter une description…" onChange={e => set({ description: e.target.value })} />
+          </div>
+
+          <button type="button" aria-expanded={showDetails} onClick={() => setShowDetails(v => !v)}
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">
+            {showDetails ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+            {showDetails ? 'Masquer les détails' : 'Afficher les détails'}
+          </button>
+
+          {showDetails && (
+            <div className="space-y-4 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+              {!needsParent && form.kind !== 'phase' && (
+                <div>
+                  <label htmlFor="itm-parent" className={labelClass}>Rangé sous</label>
+                  <select id="itm-parent" className={inputClass} value={form.parentId} disabled={readOnly || (isNew && !!presetParent)} onChange={e => set({ parentId: e.target.value })}>
+                    <option value="">Directement sous le projet</option>
+                    {parentOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  </select>
+                </div>
+              )}
+              <fieldset disabled={readOnly}>
+                <legend className={labelClass}>Liste à cocher</legend>
                 <ul className="space-y-1">
-                  {predLinks.map(l => (
-                    <li key={l.id} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
-                      <span className="min-w-0 flex-1 truncate">{itemName(l.predecessor_id)}</span>
-                      {canDelete && <button type="button" aria-label={`Retirer la dépendance avec ${itemName(l.predecessor_id)}`} onClick={() => void changeLink(() => removeLink(l.id))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
+                  {checks.map((c, i) => (
+                    <li key={c.id ?? `n${i}`} className="flex items-center gap-2">
+                      <input type="checkbox" aria-label={`Fait : ${c.label}`} checked={c.done} onChange={e => setChecks(list => list.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)))} />
+                      <input aria-label={`Ligne ${i + 1}`} className={`${inputClass} ${c.done ? 'line-through text-gray-500' : ''}`} value={c.label} onChange={e => setChecks(list => list.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
+                      {!readOnly && <button type="button" aria-label={`Supprimer la ligne ${i + 1}`} onClick={() => setChecks(list => list.filter((_, j) => j !== i))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
                     </li>
                   ))}
                 </ul>
+                {!readOnly && (
+                  <div className="mt-2 flex gap-2">
+                    <input aria-label="Nouvelle ligne" className={inputClass} placeholder="Ajouter une étape" value={newCheck} onChange={e => setNewCheck(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCheck(); } }} />
+                    <Button variant="outline" size="sm" icon={<Plus size={14} />} onClick={addCheck}>Ajouter</Button>
+                  </div>
+                )}
+              </fieldset>
+              {edited && (
+                <fieldset disabled={!canCreate && !canDelete}>
+                  <legend className={labelClass}>Dépendances</legend>
+                  <p className="mb-2 text-xs text-gray-600 dark:text-gray-400">
+                    {projectOfItem && <>Un élément qui « commence après » un autre est décalé automatiquement. Réglage du projet : <span>{LINK_MODE_LABEL[projectOfItem.link_mode ?? 'overlap']}</span>.</>}
+                  </p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Commence après</p>
+                  {predLinks.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucun élément.</p> : (
+                    <ul className="space-y-1">
+                      {predLinks.map(l => (
+                        <li key={l.id} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                          <span className="min-w-0 flex-1 truncate">{itemName(l.predecessor_id)}</span>
+                          {canDelete && <button type="button" aria-label={`Retirer la dépendance avec ${itemName(l.predecessor_id)}`} onClick={() => void changeLink(() => removeLink(l.id))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {canCreate && (
+                    <div className="mt-2 flex gap-2">
+                      <select aria-label="Commence après l'élément" className={inputClass} value={newPred} onChange={e => setNewPred(e.target.value)}>
+                        <option value="">— Choisis un élément</option>
+                        {predOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                      </select>
+                      <Button variant="outline" size="sm" ariaLabel="Ajouter la dépendance" icon={<Plus size={14} />} disabled={!newPred} onClick={() => void changeLink(async () => { await addLink(newPred, edited.id); setNewPred(''); })}>Ajouter</Button>
+                    </div>
+                  )}
+                  {succLinks.length > 0 && (
+                    <>
+                      <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">Débloque (commencent après lui)</p>
+                      <ul className="space-y-1">
+                        {succLinks.map(l => (
+                          <li key={l.id} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                            <span className="min-w-0 flex-1 truncate">{itemName(l.successor_id)}</span>
+                            {canDelete && <button type="button" aria-label={`Retirer la dépendance avec ${itemName(l.successor_id)}`} onClick={() => void changeLink(() => removeLink(l.id))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </fieldset>
               )}
-              {canCreate && (
-                <div className="mt-2 flex gap-2">
-                  <select aria-label="Commence après l'élément" className={inputClass} value={newPred} onChange={e => setNewPred(e.target.value)}>
-                    <option value="">— Choisis un élément</option>
-                    {predOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-                  </select>
-                  <Button variant="outline" size="sm" ariaLabel="Ajouter la dépendance" icon={<Plus size={14} />} disabled={!newPred} onClick={() => void changeLink(async () => { await addLink(newPred, edited.id); setNewPred(''); })}>Ajouter</Button>
-                </div>
-              )}
-              {succLinks.length > 0 && (
-                <>
-                  <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">Débloque (commencent après lui)</p>
-                  <ul className="space-y-1">
-                    {succLinks.map(l => (
-                      <li key={l.id} className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
-                        <span className="min-w-0 flex-1 truncate">{itemName(l.successor_id)}</span>
-                        {canDelete && <button type="button" aria-label={`Retirer la dépendance avec ${itemName(l.successor_id)}`} onClick={() => void changeLink(() => removeLink(l.id))} className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={14} aria-hidden /></button>}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </fieldset>
+            </div>
           )}
+
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <div>{edited && canDelete && <Button variant="outline" icon={<Trash2 size={14} />} onClick={() => void remove()}>Supprimer</Button>}</div>
             <div className="flex gap-2">

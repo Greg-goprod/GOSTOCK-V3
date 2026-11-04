@@ -10,6 +10,10 @@ export const LINK_MODE_LABEL: Record<LinkMode, string> = {
   overlap: 'Seulement si les dates se chevauchent', keep_gap: 'Garder l\'intervalle entre les éléments', none: 'Ne pas décaler automatiquement',
 };
 
+// Le « programme » (regroupement de projets) n'est plus proposé à l'écran : notion peu claire, à redéfinir avec Greg.
+// Les données et la base sont conservées ; remettre ce drapeau à true réaffiche tout (formulaire, filtres, onglet).
+export const SHOW_PROGRAMS = false;
+
 export interface CpStatus { id: string; name: string; family: StatusFamily; color: string; position: number; is_system: boolean }
 export interface CpProgram { id: string; name: string; description: string | null; color: string; starts_on: string | null; ends_on: string | null }
 export interface CpProject {
