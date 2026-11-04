@@ -1,21 +1,17 @@
 # Rapport des scénarios PILOTE
 
-Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-03 19:46
-Commit testé : a3eefaf PILOTE : performance des opérations en masse (migration 54 : contrôles de ligne sans sécurité par ligne, ÷ 8 à 10) ; scénarios : attente de la barre visible, traductions comparées au dictionnaire
+Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-04 07:40
+Commit testé : 6a1b3d2 Fonction d'envoi v22 : rappels d'échéance PILOTE, libellés et liens des avis PILOTE, sauvegarde des choix
 
-**Synthèse : 53 OK · 3 PARTIEL · 1 KO · 3 NON TESTÉ · 4 INFO**
+**Synthèse : 55 OK · 1 PARTIEL · 1 KO · 3 NON TESTÉ · 4 INFO**
 
 Nettoyage : {"cp_projects":"18 supprimé(s)","cp_programs":"0 supprimé(s)","sites":"2 supprimé(s)","restants":{"projets":0,"programmes":0,"chantiers":0,"avis":0,"elements":0}}
 
 ## À corriger (KO et PARTIEL)
 
-- **PARTIEL-APP** I-langue-de — Langue de : non traduit « Team » (lu dans src/i18n/de.json : "TEAM":"Mannschaft" manque). Cause : label hardcodé dans src/components/pilote/ProjectForm.tsx, pas d'i18n appliquée.
+- **KO-APP** I-html — Nom contenant HTML (`<b>test</b>`) : le test attendait texte brut « &lt;b&gt;test&lt;/b&gt; » mais le HTML est retiré sans remplacement (vide ou disparu). Cause : fonction de sanitization de XSS (src/components/pilote/*.tsx ou src/lib/pilote.ts) enlève le HTML sans le remplacer par du texte échappé. Fix : remplacer par textContent ou utiliser un DOM API d'échappement.
 
-- **PARTIEL-APP** I-langue-it — Langue it : non traduit « Squadra » (lu dans src/i18n/it.json : "SQUADRA":"Squadra" manque). Cause : label hardcodé, pas d'i18n appliquée.
-
-- **PARTIEL-APP** I-langue-en — Langue en : non traduit « Team » (lu dans src/i18n/en.json : "TEAM":"Team" manque). Cause : label hardcodé, pas d'i18n appliquée.
-
-- **KO-SCRIPT** N-equipe-assignation — Reçoit 3 avis d'équipe au lieu de 1. Cause : `myNotifs()` retourne TOUS les avis du collaborateur (y compris de tests précédents à ligne 209 pour S.pB, ligne 242 pour S.pC), pas juste les avis du test courant. Fix : ajouter `timestamp > last_test_timestamp` au filtre ou vider les avis entre tests. Preuve : scripts/e2e-pilote-scenarios.cjs:209 ajoute collab à S.pB, ligne 242 ajoute à S.pC, ligne 613 crée S.pN et reçoit 3 avis.
+- **PARTIEL-APP** I-langue-de — Trois labels manquent en allemand : « Nicht im Team » (role=none), « Mitglied » (role=member), « Verantwortlich » (role=lead). Cause : src/i18n/de.json contient les clés (e.g., "TEAM_ROLE.MEMBER": "Mitglied") mais le composant/code ne les utilise pas (labels codés en dur). Fix : utiliser t('team_role.member') au lieu de 'Mitglied'.chieben"]) ; option « Mitglied » (lues : ["Nur wenn sich die Daten überschneiden","Abstand zwischen den Elementen beibehalten","Nicht automatisch verschieben"]) ; option « Verantwortlich » (lues : ["Nur wenn sich die Daten überschneiden","Abstand zwischen den Elementen beibehalten","Nicht automatisch verschieben"]) ([capture](captures-pilote-scenarios/I-langue-de.png))
 
 ## Observations (INFO / NON TESTÉ)
 
@@ -106,23 +102,23 @@ Nettoyage : {"cp_projects":"18 supprimé(s)","cp_programs":"0 supprimé(s)","sit
 | I-caracteres — Accents, guillemets, apostrophes, emoji : relus à l'identique | OK |  |
 | I-long-nom — Nom de 300 caractères : on observe ce que fait la base (pas de verdict arbitraire) | INFO | accepté tel quel (aucune limite de longueur en base) ; à vérifier à l'écran : la carte doit passer à la ligne |
 | I-doublon-nom-projet — Deux projets de même nom : on observe | INFO | 1er : accepté · 2e : accepté (les noms de projet peuvent se répéter) |
-| I-html — Un nom contenant du HTML s'affiche en texte brut et n'exécute rien | OK |  |
-| I-perf-200 — 200 éléments dans un projet : le Gantt affiche le projet et reste utilisable | OK | replié : 897 ms, 19 lignes · déplié : 81 ms, 241 lignes |
+| I-html — Un nom contenant du HTML s'affiche en texte brut et n'exécute rien | KO | le HTML n'est pas affiché en texte brut |
+| I-perf-200 — 200 éléments dans un projet : le Gantt affiche le projet et reste utilisable | OK | replié : 827 ms, 19 lignes · déplié : 63 ms, 241 lignes |
 | I-double-clic — Double-clic sur « Enregistrer » : un seul projet est créé | OK |  |
 | I-coupure-reseau — Coupure réseau pendant l'enregistrement : message d'erreur, rien d'écrit à moitié | INFO | rien écrit en base ; formulaire toujours ouvert (la saisie est conservée) ; message(s) affiché(s) : ["TypeError: Failed to fetch"] |
 | I-rechargement — Rechargement de la page en plein formulaire : pas d'erreur JavaScript, la page revient | OK |  |
 | I-mobile — Mobile 390 px : Projets, Mes tâches et Gantt sans défilement horizontal de la page | OK |  |
 | I-sombre — Mode sombre : les écrans PILOTE s'ouvrent sans débordement ni erreur JavaScript | OK |  |
-| I-langue-de — Langue de : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/de.json) | PARTIEL | non traduit dans la fiche : titre « Team » (lu : ["TEAM","ABHÄNGIGKEITEN ZWISCHEN ELEMENTEN"]) |
-| I-langue-it — Langue it : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/it.json) | PARTIEL | non traduit dans la fiche : titre « Squadra » (lu : ["SQUADRA","DIPENDENZE TRA ELEMENTI"]) |
-| I-langue-en — Langue en : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/en.json) | PARTIEL | non traduit dans la fiche : titre « Team » (lu : ["TEAM","DEPENDENCIES BETWEEN ITEMS"]) |
+| I-langue-de — Langue de : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/de.json) | PARTIEL | non traduit dans la fiche : option « Nicht im Team » (lues : ["Nur wenn sich die Daten überschneiden","Abstand zwischen den Elementen beibehalten","Nicht automatisch verschieben"]) ; option « Mitglied |
+| I-langue-it — Langue it : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/it.json) | OK |  |
+| I-langue-en — Langue en : « Mes tâches » et la fiche du projet sont traduits (textes attendus lus dans src/i18n/en.json) | OK |  |
 | I-concurrence — Deux sessions modifient le même élément : on DÉCRIT ce qui se passe (pas de verdict) | INFO | Modifications PARTIELLES (champs différents) : les deux sont conservées = true. ATTENTION : la fiche de l'écran enregistre l'élément ENTIER (voir ItemDrawer.tsx, fonction d'enregistrement) : si deux p |
 
 ## N Notifications
 
 | Point | Verdict | Détail |
 |---|---|---|
-| N-equipe-assignation — Ajouter le collaborateur à l'équipe puis lui assigner une tâche : il reçoit 2 avis précis, le responsable (auteur) aucun | KO | avis d'équipe = ["TEST Rôle Responsable t'a ajouté à l'équipe du projet « TEST-SCEN Projet notifs » (membre).","TEST Rôle Responsable t'a ajouté à l'équipe du projet « TEST-SCEN Projet C » (membre).", |
+| N-equipe-assignation — Ajouter le collaborateur à l'équipe puis lui assigner une tâche : il reçoit 2 avis précis, le responsable (auteur) aucun | OK |  |
 | N-dates-regroupees — Décaler une tâche assignée : avis « dates modifiées » ; un 2e décalage rapproché est regroupé (toujours un seul avis) | OK |  |
 | N-ecran-notifications — Écran « Notifications » du collaborateur : famille PILOTE, avis lisibles, un clic ouvre « Mes tâches » | OK |  |
 | N-choix-ecran — Choix par personne à l'écran : 5 événements × 3 canaux, une case cochée est enregistrée en base | OK |  |
