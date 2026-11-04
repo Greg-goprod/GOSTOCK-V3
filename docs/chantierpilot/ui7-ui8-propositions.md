@@ -53,7 +53,7 @@ UI-8 d'abord (petite, une migration, aucune question ouverte) → 7a discussion 
 
 ## Décisions de Greg (2026-11-04)
 1. **Qui écrit** : B — l'équipe du projet et les responsables ; les autres lisent.
-2. **Fichiers** : « 500 Mo, types courants, pas d'exécutables » — **à préciser : 500 Mo par fichier ou au total par entreprise ?** (le plafond par fichier dépend aussi de l'offre Supabase : 50 Mo par envoi simple sur l'offre gratuite).
+2. **Fichiers** : **50 Mo par fichier** (correction de Greg : « je me suis trompé, c'est 50 Mo »), types courants, pas d'exécutables. 50 Mo correspond à la limite d'envoi de l'offre gratuite de Supabase : à vérifier au moment de 7b (la limite du bucket doit être réglée à 50 Mo, et un envoi au-delà de 6 Mo demande un envoi en morceaux). Plafond total par entreprise : plus tard.
 3. **Vocabulaire** : on garde « Équipe » / « Assignés » (« Intervenants » = personnes sans compte, autre chantier plus tard).
 4. **Notifications de discussion** : actives par défaut, e-mail désactivé par défaut.
 5. **Écrasement silencieux** : à protéger (refuser l'enregistrement si la fiche a changé entre-temps) — avant UI-7.
