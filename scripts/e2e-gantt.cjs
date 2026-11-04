@@ -57,7 +57,8 @@ async function revive(c) {
   // Le NAVIGATEUR lui-même est mort (tous les onglets plantent ensemble) : on le relance et on reconnecte chaque client encore utile
   if (BROWSER && !BROWSER.isConnected()) {
     console.log('⚠ NAVIGATEUR MORT : relance et reconnexion des clients');
-    BROWSER = await chromium.launch();
+    BROWSER = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
+    BROWSER.on('disconnected', () => console.log('⚠ NAVIGATEUR DÉCONNECTÉ'));
     for (const x of CLIENTS) if (!x.closed) await signIn(x).catch(e => console.log(`  reconnexion de ${x.who} impossible : ${e.message.split('\n')[0]}`));
     return;
   }
@@ -126,7 +127,7 @@ function zurichIso(day, time) {
 
 async function step(id, title, fn, page) {
   const e = { group, id, title, status: 'KO', detail: '', shot: '' };
-  for (const c of CLIENTS) await revive(c).catch(() => {});
+  for (const c of CLIENTS) await revive(c).catch(e => console.log(`⚠ remise en état de ${c.who} impossible : ${String(e.message).split('\n')[0]}`));
   try { const o = await fn(); e.status = (o && o.status) || 'OK'; e.detail = (o && o.detail) || ''; }
   catch (err) { e.status = 'KO'; e.detail = String(err.message).split('\n')[0]; }
   if (CLIENTS.some(c => c.crashed)) e.detail += ' [ENV probable : la page du navigateur a planté pendant cette étape ; elle est remplacée pour la suite]';
@@ -142,8 +143,37 @@ async function step(id, title, fn, page) {
   if (failed) for (const c of CLIENTS) if (!c.closed) await closeOverlays(c);
 }
 
+// Le rapport s'écrit AUSSI quand le script s'arrête de façon anormale (plantage du navigateur, exception hors étape) : sans cela, le rapport précédent
+// restait en place et on croyait relire le nouveau passage.
+function writeReport(clean) {
+  const n = k => results.filter(r => r.status === k).length;
+  const groups = [...new Set(results.map(r => r.group))];
+  const md = [
+    '# Rapport des tests du Gantt PILOTE', '',
+    `Base : GO-MAT · comptes : ${Object.values(ACCOUNTS).join(', ')} · date : ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, 'Commit testé : à renseigner (`git log --oneline -1`).', '',
+    `**Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO**`, '',
+    `Nettoyage : ${JSON.stringify(clean)}`, '',
+    '## À corriger (KO et PARTIEL)', '', ...(results.filter(r => ['KO', 'PARTIEL'].includes(r.status)).map(r => `- **${r.status}** ${r.id} — ${r.title} : ${r.detail}${r.shot ? ` ([capture](${r.shot}))` : ''}`)), ...(results.some(r => ['KO', 'PARTIEL'].includes(r.status)) ? [] : ['Aucun.']), '',
+    '## Observations (INFO / NON TESTÉ)', '', ...results.filter(r => ['INFO', 'NON TESTÉ'].includes(r.status)).map(r => `- **${r.id}** — ${r.title} : ${r.detail}`), '',
+    ...groups.flatMap(g => ['', `## ${g}`, '', '| Point | Verdict | Détail |', '|---|---|---|', ...results.filter(r => r.group === g).map(r => `| ${r.id} — ${r.title.replace(/\|/g, '/')} | ${r.status} | ${r.detail.replace(/\|/g, '/').slice(0, 200)} |`)]),
+    '', '## Erreurs JavaScript', '', jsErrors.length ? [...new Set(jsErrors)].slice(0, 20).map(e => `- ${e}`).join('\n') : 'Aucune.', '',
+  ];
+  fs.writeFileSync(REPORT, md.join('\n'));
+  console.log(`\nRapport : ${path.relative(process.cwd(), REPORT)}`);
+  console.log(`Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO`);
+}
+process.on('unhandledRejection', e => abort(e));
+process.on('uncaughtException', e => abort(e));
+function abort(e) {
+  const detail = String((e && e.message) || e).split('\n')[0];
+  console.log(`⚠ ARRÊT ANORMAL DU SCRIPT : ${detail}`);
+  try { results.push({ group: 'Arrêt', id: 'ARRET', title: 'Le script s\'est arrêté avant la fin (nettoyage non fait : le prochain passage supprime ces restes)', status: 'KO', detail, shot: '' }); writeReport({ arret: detail }); } catch { /* rapport impossible */ }
+  process.exit(2);
+}
+
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
+  browser.on('disconnected', () => console.log('⚠ NAVIGATEUR DÉCONNECTÉ'));
   const resp = await login(browser, 'resp');
   const staff = await login(browser, 'staff');
   const collab = await login(browser, 'collab');
@@ -709,21 +739,7 @@ async function step(id, title, fn, page) {
 
   await browser.close();
 
-  /* ============ Rapport ============ */
   const n = k => results.filter(r => r.status === k).length;
-  const groups = [...new Set(results.map(r => r.group))];
-  const md = [
-    '# Rapport des tests du Gantt PILOTE', '',
-    `Base : GO-MAT · comptes : ${Object.values(ACCOUNTS).join(', ')} · date : ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, 'Commit testé : à renseigner (`git log --oneline -1`).', '',
-    `**Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO**`, '',
-    `Nettoyage : ${JSON.stringify(clean)}`, '',
-    '## À corriger (KO et PARTIEL)', '', ...(results.filter(r => ['KO', 'PARTIEL'].includes(r.status)).map(r => `- **${r.status}** ${r.id} — ${r.title} : ${r.detail}${r.shot ? ` ([capture](${r.shot}))` : ''}`)), ...(results.some(r => ['KO', 'PARTIEL'].includes(r.status)) ? [] : ['Aucun.']), '',
-    '## Observations (INFO / NON TESTÉ)', '', ...results.filter(r => ['INFO', 'NON TESTÉ'].includes(r.status)).map(r => `- **${r.id}** — ${r.title} : ${r.detail}`), '',
-    ...groups.flatMap(g => ['', `## ${g}`, '', '| Point | Verdict | Détail |', '|---|---|---|', ...results.filter(r => r.group === g).map(r => `| ${r.id} — ${r.title.replace(/\|/g, '/')} | ${r.status} | ${r.detail.replace(/\|/g, '/').slice(0, 200)} |`)]),
-    '', '## Erreurs JavaScript', '', jsErrors.length ? [...new Set(jsErrors)].slice(0, 20).map(e => `- ${e}`).join('\n') : 'Aucune.', '',
-  ];
-  fs.writeFileSync(REPORT, md.join('\n'));
-  console.log(`\nRapport : ${path.relative(process.cwd(), REPORT)}`);
-  console.log(`Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO`);
+  writeReport(clean);
   process.exit(n('KO') ? 1 : 0);
 })();
