@@ -177,3 +177,10 @@ Source : analyse de Notion par Claude dans Chrome (`notion-gantt-analyse.zip`). 
 - **Palette de 10 couleurs** pour créer ou modifier un état (`STATE_COLORS`), sans toucher à la palette des zones du planning.
 - **Pas fait** : « état par défaut » (case cochable). Il faudrait une colonne en base (migration) pour un bénéfice faible : l'état de départ reste le premier état de base « Pas commencé ».
 - Vérifié : types, lint ; le menu (4 familles, 5 états, pastilles, état coché, choix, Échap) essayé dans une page de test isolée. Étape e2e `U5-choix-etat` ajoutée (e2e-gantt : 43 étapes attendues), **non exécutée**.
+
+### UI-6 — une seule page « Projets » (2026-11-04)
+
+- **Page unique** (PILOTE › Projets) avec les vues **Gantt**, **Projets** (liste ou cartes, comme avant), **Mes tâches**. L'entrée « Gantt » disparaît de la navigation. L'adresse `/pilote/gantt` reste valable et ouvre la vue Gantt (liens enregistrés, aide) ; `/pilote/projets` s'ouvre sur « Projets » ; `?view=gantt|projects|mytasks` (et l'ancien `?section=mytasks` des notifications) choisit la vue.
+- **Réglages derrière une icône** (engrenage à droite des vues) : « États d'avancement » ouvre l'écran des états, avec un bouton « Retour aux projets ». L'onglet « États » disparaît.
+- **Pas fait** : filtres (rien à filtrer pour l'instant), mémorisation de la vue choisie, état du Gantt (échelle, regroupement) conservé en changeant de vue (la période reste mémorisée dans le navigateur, le reste repart de zéro).
+- Vérifié : types, lint (les fichiers touchés sont propres ; 23 erreurs déjà présentes ailleurs, inchangées), et dans une page de test isolée avec des données simulées : vues, barre d'outils du Gantt dans l'onglet, engrenage, retour, ouverture directe sur le Gantt, aucune erreur JavaScript. **Non vérifié** : droits réels, navigation du rail (entrée retirée), mobile, langues ; e2e : `e2e-projets` adapté + étape `U6-onglets` (30 étapes attendues), `e2e-gantt` 43 étapes attendues — non exécutés.

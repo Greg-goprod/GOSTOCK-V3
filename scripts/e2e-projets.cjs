@@ -284,11 +284,29 @@ async function step(id, title, fn, page) {
     ok(options.some(o => o.includes(`${M} Autre chantier`)), 'chantier libre non proposé');
     await resp.page.getByRole('button', { name: 'Annuler' }).click(); await resp.page.waitForTimeout(300);
   }, resp.page);
-  await step('P4-programmes-etats', 'Onglet États : lignes visibles, états de base non supprimables', async () => {
-    await resp.page.getByRole('radio', { name: /^États/ }).click(); await resp.page.waitForTimeout(600);
+  await step('U6-onglets', 'Page unique : vues Gantt / Projets / Mes tâches, plus d\'entrée « Gantt » dans la navigation, /pilote/gantt ouvre la vue Gantt', async () => {
+    await open(resp, '/pilote/projets');
+    for (const n of [/^Gantt$/, /^Projets/, /^Mes tâches/]) ok(await resp.page.getByRole('radio', { name: n }).count() === 1, `vue absente : ${n}`);
+    ok(await resp.page.getByRole('radio', { name: /^États/ }).count() === 0, 'les états ne devraient plus être un onglet');
+    ok(await resp.page.locator('a[href="/pilote/gantt"]').count() === 0, 'la navigation propose encore une entrée « Gantt »');
+    ok(await resp.page.getByRole('radio', { name: /^Projets/ }).isChecked(), 'la vue « Projets » devrait être celle par défaut');
+    await resp.page.getByRole('radio', { name: /^Gantt$/ }).click(); await resp.page.waitForTimeout(2500);
+    ok(await resp.page.locator('button[aria-haspopup="menu"]').filter({ hasText: /Échelle/ }).first().isVisible(), 'la vue Gantt n\'affiche pas sa barre d\'outils');
+    await resp.page.getByRole('radio', { name: /^Projets/ }).click(); await resp.page.waitForTimeout(800);
+    ok(await resp.page.getByRole('button', { name: 'Nouveau projet' }).first().isVisible(), '« Nouveau projet » absent de la vue Projets');
+    await open(resp, '/pilote/gantt');
+    ok(await resp.page.getByRole('radio', { name: /^Gantt$/ }).isChecked(), '/pilote/gantt devrait ouvrir la vue Gantt');
+  }, resp.page);
+  await step('P4-programmes-etats', 'Réglages : états d\'avancement derrière l\'icône, lignes visibles, états de base non supprimables, retour aux projets', async () => {
+    await open(resp, '/pilote/projets');
+    await resp.page.locator('button[aria-label="Réglages des projets"]').click();
+    await resp.page.getByRole('menuitem', { name: /^États d'avancement/ }).click(); await resp.page.waitForTimeout(800);
+    ok(await resp.page.getByRole('button', { name: 'Retour aux projets' }).isVisible(), 'bouton « Retour aux projets » absent');
     const txt = await resp.page.locator('main').innerText();
     ok(/De base/.test(txt), 'mention « De base » absente');
     ok((await resp.page.locator('table tbody tr', { hasText: 'De base' }).getByRole('button', { name: 'Supprimer' }).count()) === 0, 'bouton Supprimer sur un état de base');
+    await resp.page.getByRole('button', { name: 'Retour aux projets' }).click(); await resp.page.waitForTimeout(500);
+    ok(await resp.page.getByRole('radio', { name: /^Projets/ }).isChecked(), 'le retour ne ramène pas à la vue Projets');
   }, resp.page);
   for (const c of readers) {
     await step(`P4-${c.who}-ecran`, `${c.who} : l\'écran s\'ouvre en lecture seule`, async () => {

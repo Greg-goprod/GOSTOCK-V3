@@ -29,7 +29,6 @@ import AuditLog from './pages/AuditLog';
 import Sites from './pages/Sites';
 import SitePlanning from './pages/SitePlanning';
 import PiloteProjects from './pages/PiloteProjects';
-import PiloteGantt from './pages/PiloteGantt';
 import SiteMap from './pages/SiteMap';
 import Kits from './pages/Kits';
 import Trainings from './pages/Trainings';
@@ -109,8 +108,8 @@ function App() {
         <Route path="/pilotage" element={<Guard><Steering /></Guard>} />
         <Route path="/journal" element={<Guard><AuditLog /></Guard>} />
         <Route path="/chantiers" element={<Guard><Sites /></Guard>} />
-        <Route path="/pilote/projets" element={<Guard><PiloteProjects /></Guard>} />
-        <Route path="/pilote/gantt" element={<Guard><PiloteGantt /></Guard>} />
+        <Route path="/pilote/projets" element={<Guard><PiloteProjects key="projets" /></Guard>} />
+        <Route path="/pilote/gantt" element={<Guard><PiloteProjects key="gantt" initialView="gantt" /></Guard>} />
         <Route path="/pilote/planning" element={<Guard><SitePlanning /></Guard>} />
         {/* Ancienne adresse (liens enregistrés, aide) : même page, rangée sous PILOTE */}
         <Route path="/planning-chantier" element={<MovedTo to="/pilote/planning" />} />

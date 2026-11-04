@@ -24,7 +24,8 @@ const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type'
 const EMPTY: GanttData = { statuses: [], programs: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [] };
 
 // PILOTE › Gantt (module payant) : programmes, projets et leurs éléments sur une échelle de temps
-const PiloteGantt: React.FC = () => {
+// `embedded` : affiché comme onglet de la page Projets, qui porte déjà le titre et l'introduction
+const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const [data, setData] = useState<GanttData | null>(null);
   const [rights, setRights] = useState<PiloteRights>(NO_RIGHTS);
   const [grouping, setGrouping] = useState<Grouping>('status');
@@ -129,12 +130,14 @@ const PiloteGantt: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <PageTitle>Gantt</PageTitle>
-        <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
-          Tes projets, leurs phases, tâches et jalons sur une échelle de temps. Clique sur une barre pour ouvrir sa fiche.
-        </p>
-      </div>
+      {!embedded && (
+        <div>
+          <PageTitle>Gantt</PageTitle>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
+            Tes projets, leurs phases, tâches et jalons sur une échelle de temps. Clique sur une barre pour ouvrir sa fiche.
+          </p>
+        </div>
+      )}
 
       {/* Une seule ligne d'outils, comme Notion : regroupement et échelle en menus, « sans date » et « nouveau » à droite */}
       <div className="flex flex-wrap items-center justify-between gap-3">
