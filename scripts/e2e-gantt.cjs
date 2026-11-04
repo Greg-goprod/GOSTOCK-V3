@@ -236,6 +236,40 @@ async function step(id, title, fn, page) {
     ok(await rowLocator(resp).count() > 0, 'la liste n\'est pas revenue');
   }, resp.page);
 
+  /* ============ UI-4 création rapide ============ */
+  group = 'UI-4 Création rapide';
+  const focusedId = c => c.page.evaluate(() => document.activeElement && document.activeElement.id);
+  const addInGroup = async (c, groupName) => {
+    const row = rowLocator(c).filter({ has: c.page.locator('button.uppercase', { hasText: groupName }) }).first();
+    ok(await row.count() === 1, `ligne de groupe « ${groupName} » absente`);
+    await row.hover(); await row.locator('button[aria-label^="Ajouter dans"]').click(); await c.page.waitForTimeout(800);
+  };
+  await step('U4-groupe-etat', 'Le « + » d\'un groupe d\'état crée un projet qui reprend cet état ; titre en focus, détails repliés', async () => {
+    await open(resp, '/pilote/gantt'); await setGrouping(resp, 'État');
+    const pr = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=status_id&id=eq.${S.proj}`))[0];
+    const st = rows(await api(resp, 'GET', `/rest/v1/cp_statuses?select=name&id=eq.${pr.status_id}`))[0];
+    await addInGroup(resp, st.name);
+    ok(await focusedId(resp) === 'prj-name', `focus sur « ${await focusedId(resp)} » au lieu du nom du projet`);
+    ok(await resp.page.locator('#prj-status').inputValue() === pr.status_id, 'état non prérempli par le groupe');
+    ok(await resp.page.locator('#prj-site').count() === 0 && await resp.page.locator('#prj-linkmode').count() === 0, 'les détails devraient être repliés à la création');
+    await resp.page.locator('#prj-name').fill(`${M} Depuis groupe`);
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
+    const p = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=status_id&name=eq.${encodeURIComponent(M + ' Depuis groupe')}`))[0];
+    ok(p && p.status_id === pr.status_id, `projet créé = ${JSON.stringify(p)} (attendu l'état ${pr.status_id})`);
+  }, resp.page);
+  await step('U4-groupe-type', 'Le « + » d\'un groupe de type crée un projet de ce type', async () => {
+    await setGrouping(resp, 'Type');
+    await addInGroup(resp, 'R&D');
+    ok(await resp.page.locator('#prj-type').inputValue() === 'rd', `type prérempli = ${await resp.page.locator('#prj-type').inputValue()}`);
+    await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(500);
+    await setGrouping(resp, 'État');
+  }, resp.page);
+  await step('U4-focus-fiche', '« Nouveau › Nouvelle tâche » : le curseur est dans le nom de l\'élément', async () => {
+    await newMenu(resp, 'Nouvelle tâche'); await resp.page.waitForTimeout(800);
+    ok(await focusedId(resp) === 'itm-name', `focus sur « ${await focusedId(resp)} » au lieu du nom de l'élément`);
+    await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(500);
+  }, resp.page);
+
   /* ============ P3 Fiche ============ */
   group = 'P3 Fiche';
   await step('P3-ouvrir', 'Clic sur la tâche : fiche avec le type en sous-titre, propriétés clés visibles, parent dans les détails', async () => {

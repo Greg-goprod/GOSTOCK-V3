@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
@@ -8,7 +9,8 @@ import Button from '../common/Button';
 import Modal from '../common/Modal';
 import { DateRangeInput } from '../common/DateInput';
 
-export type ProjectTarget = { mode: 'edit'; row: CpProject } | { mode: 'new' };
+// Création : l'état ou le type peuvent être préremplis (création depuis un groupe du Gantt)
+export type ProjectTarget = { mode: 'edit'; row: CpProject } | { mode: 'new'; status_id?: string; type?: ProjectType };
 
 interface Props {
   data: PiloteData;
@@ -31,6 +33,8 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
+  // « Afficher les détails » : chantier lié, couleur, dépendances (repliés par défaut, comme la fiche d'un élément)
+  const [showDetails, setShowDetails] = useState(false);
   // Création d'un programme sans quitter le formulaire (champ qui s'ouvre sous la liste)
   const [newProgram, setNewProgram] = useState<string | null>(null);
   const [creatingProgram, setCreatingProgram] = useState(false);
@@ -39,7 +43,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
 
   useEffect(() => {
     setNewProgram(null);
-    if (!target) { setForm(null); return; }
+    if (!target) { setForm(null); setShowDetails(false); return; }
     const base = data.statuses.find(s => s.is_system && s.family === 'not_started')?.id ?? data.statuses[0]?.id ?? '';
     if (target.mode === 'edit') {
       const r = target.row;
@@ -48,8 +52,12 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
         color: r.color, description: r.description ?? '', site_id: r.site_id ?? '', team: Object.fromEntries(data.members.filter(m => m.project_id === r.id).map(m => [m.user_id, m.role])),
         link_mode: r.link_mode ?? 'overlap', link_skip_weekends: r.link_skip_weekends ?? true,
       });
+      // Les détails s'ouvrent d'eux-mêmes si un réglage n'est pas celui par défaut
+      setShowDetails(!!r.site_id || (r.link_mode ?? 'overlap') !== 'overlap' || (r.link_skip_weekends ?? true) !== true);
     } else {
-      setForm({ name: '', type: 'site', program_id: '', status_id: base, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', team: {}, link_mode: 'overlap', link_skip_weekends: true });
+      setShowDetails(false);
+      const presetStatus = target.status_id && data.statuses.some(s => s.id === target.status_id) ? target.status_id : base;
+      setForm({ name: '', type: target.type ?? 'site', program_id: '', status_id: presetStatus, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', team: {}, link_mode: 'overlap', link_skip_weekends: true });
     }
     // Le formulaire repart de zéro à chaque ouverture
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,16 +182,6 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
               <DateRangeInput id="prj-period" className={inputClass} start={form.starts_on} end={form.ends_on} onChange={(a, b) => set({ starts_on: a, ends_on: b })} placeholder="Choisir le début et la fin" />
             </div>
           </div>
-          {form.type === 'site' && (
-            <div>
-              <label htmlFor="prj-site" className={labelClass}>Chantier de Logistique (facultatif)</label>
-              <select id="prj-site" className={inputClass} value={form.site_id} onChange={e => set({ site_id: e.target.value })}>
-                <option value="">— Aucun</option>
-                {freeSites.map(s => <option key={s.id} value={s.id}>{s.status === 'closed' ? `${s.name} (clôturé)` : s.name}</option>)}
-              </select>
-              <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Relie ce projet au chantier déjà suivi dans Logistique. Un chantier n'a qu'un projet.</p>
-            </div>
-          )}
           <fieldset>
             <legend className={labelClass}>Équipe</legend>
             {people.length === 0 ? <p className="text-sm text-gray-600 dark:text-gray-400">Aucune personne active.</p> : (
@@ -204,29 +202,48 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Les tâches ne s'assignent qu'aux personnes de l'équipe. Retirer quelqu'un de l'équipe le désassigne aussi de toutes les tâches du projet.</p>
           </fieldset>
           <div>
-            <span className={labelClass}>Couleur</span>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Couleur">
-              {ZONE_COLORS.map(c => (
-                <button key={c} type="button" role="radio" aria-checked={form.color === c} aria-label={c} onClick={() => set({ color: c })}
-                  className={`h-7 w-7 rounded-full border-2 ${form.color === c ? 'border-gray-900 dark:border-white' : 'border-transparent'}`} style={{ background: c }} />
-              ))}
-            </div>
-          </div>
-          <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-            <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Dépendances entre éléments</legend>
-            <label htmlFor="prj-linkmode" className={labelClass}>Décalage automatique du successeur</label>
-            <select id="prj-linkmode" className={inputClass} value={form.link_mode} onChange={e => set({ link_mode: e.target.value as LinkMode })}>
-              {(Object.keys(LINK_MODE_LABEL) as LinkMode[]).map(m => <option key={m} value={m}>{LINK_MODE_LABEL[m]}</option>)}
-            </select>
-            <label className="mt-2 flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
-              <input type="checkbox" checked={form.link_skip_weekends} onChange={e => set({ link_skip_weekends: e.target.checked })} />
-              Éviter les week-ends (un élément décalé automatiquement ne commence pas un samedi ou un dimanche)
-            </label>
-          </fieldset>
-          <div>
             <label htmlFor="prj-desc" className={labelClass}>Description</label>
             <textarea id="prj-desc" rows={3} className={inputClass} value={form.description} onChange={e => set({ description: e.target.value })} />
           </div>
+          <button type="button" aria-expanded={showDetails} onClick={() => setShowDetails(v => !v)}
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">
+            {showDetails ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+            {showDetails ? 'Masquer les détails' : 'Afficher les détails'}
+          </button>
+          {showDetails && (
+            <div className="space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+            {form.type === 'site' && (
+              <div>
+                <label htmlFor="prj-site" className={labelClass}>Chantier de Logistique (facultatif)</label>
+                <select id="prj-site" className={inputClass} value={form.site_id} onChange={e => set({ site_id: e.target.value })}>
+                  <option value="">— Aucun</option>
+                  {freeSites.map(s => <option key={s.id} value={s.id}>{s.status === 'closed' ? `${s.name} (clôturé)` : s.name}</option>)}
+                </select>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Relie ce projet au chantier déjà suivi dans Logistique. Un chantier n'a qu'un projet.</p>
+              </div>
+            )}
+            <div>
+              <span className={labelClass}>Couleur</span>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Couleur">
+                {ZONE_COLORS.map(c => (
+                  <button key={c} type="button" role="radio" aria-checked={form.color === c} aria-label={c} onClick={() => set({ color: c })}
+                    className={`h-7 w-7 rounded-full border-2 ${form.color === c ? 'border-gray-900 dark:border-white' : 'border-transparent'}`} style={{ background: c }} />
+                ))}
+              </div>
+            </div>
+            <fieldset className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
+              <legend className="px-1 text-sm font-medium text-gray-700 dark:text-gray-300">Dépendances entre éléments</legend>
+              <label htmlFor="prj-linkmode" className={labelClass}>Décalage automatique du successeur</label>
+              <select id="prj-linkmode" className={inputClass} value={form.link_mode} onChange={e => set({ link_mode: e.target.value as LinkMode })}>
+                {(Object.keys(LINK_MODE_LABEL) as LinkMode[]).map(m => <option key={m} value={m}>{LINK_MODE_LABEL[m]}</option>)}
+              </select>
+              <label className="mt-2 flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                <input type="checkbox" checked={form.link_skip_weekends} onChange={e => set({ link_skip_weekends: e.target.checked })} />
+                Éviter les week-ends (un élément décalé automatiquement ne commence pas un samedi ou un dimanche)
+              </label>
+            </fieldset>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" onClick={onClose}>Annuler</Button>
             <Button type="submit" loading={saving}>Enregistrer</Button>

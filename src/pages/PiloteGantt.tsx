@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { getLanguage } from '../i18n/translator';
 import { buildGantt, defaultExpanded, undatedRows, visibleRows, withAddRows, type ColorBy, type Grouping, type GanttRow } from '../lib/ganttModel';
 import { isPreset, makePeriod, periodDays, type ViewPeriod } from '../lib/viewPeriod';
-import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights } from '../lib/pilote';
+import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights, type ProjectType } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import PageTitle from '../components/common/PageTitle';
 import { MxEmpty } from '../components/mx/MxEmpty';
@@ -73,7 +73,9 @@ const PiloteGantt: React.FC = () => {
     else if (row.id) setItemTarget({ mode: 'edit', itemId: row.id });
   };
   const addIn = (row: GanttRow) => {
-    if (row.kind === 'project') setItemTarget({ mode: 'new', projectId: row.id ?? undefined, parentId: null });
+    // Depuis un groupe : un projet qui reprend l'état (ou le type) du groupe
+    if (row.kind === 'group') setProjectTarget(grouping === 'status' ? { mode: 'new', status_id: row.id ?? undefined } : { mode: 'new', type: (row.id ?? undefined) as ProjectType | undefined });
+    else if (row.kind === 'project') setItemTarget({ mode: 'new', projectId: row.id ?? undefined, parentId: null });
     else if (row.id) setItemTarget({ mode: 'new', parentId: row.id });
   };
 

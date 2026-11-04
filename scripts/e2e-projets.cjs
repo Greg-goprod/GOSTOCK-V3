@@ -276,6 +276,9 @@ async function step(id, title, fn, page) {
     await open(resp, '/pilote/projets');
     await resp.page.getByRole('button', { name: 'Nouveau projet' }).click(); await resp.page.waitForTimeout(600);
     await resp.page.locator('#prj-type').selectOption('site');
+    // Le chantier lié fait partie des détails, repliés à la création
+    ok(await resp.page.locator('#prj-site').count() === 0, 'le chantier lié devrait être dans les détails repliés');
+    await resp.page.getByRole('button', { name: 'Afficher les détails' }).click(); await resp.page.waitForTimeout(300);
     const options = await resp.page.locator('#prj-site option').allInnerTexts();
     ok(!options.some(o => o.includes(`${M} Chantier`)), `chantier déjà relié proposé : ${options.join(' | ')}`);
     ok(options.some(o => o.includes(`${M} Autre chantier`)), 'chantier libre non proposé');

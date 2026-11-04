@@ -37,7 +37,8 @@ interface Props {
 
 const BAR_H: Record<GanttRow['kind'], number> = { group: 8, program: 10, project: 22, phase: 18, task: 20, subtask: 14, milestone: 14, add: 0 };
 const kindLabel = (r: GanttRow) => (r.kind === 'add' ? 'Nouveau' : r.kind === 'group' ? 'Groupe' : r.kind === 'program' ? 'Programme' : r.kind === 'project' ? 'Projet' : ITEM_KIND_LABEL[r.kind as ItemKind]);
-const canAddTo = (r: GanttRow) => r.kind === 'project' || r.kind === 'phase' || r.kind === 'task';
+// Un groupe (état ou type) accepte aussi un « + » : il crée un projet rangé dans ce groupe
+const canAddTo = (r: GanttRow) => r.kind === 'project' || r.kind === 'phase' || r.kind === 'task' || r.kind === 'group';
 
 // Diagramme de Gantt : liste en arbre à gauche (fixe), barres à droite. Une seule zone de défilement pour que la liste et les barres restent alignées.
 // Ce qu'un geste peut faire d'une ligne : tout se déplace (avec son contenu) ; seules les barres à dates propres complètes se redimensionnent

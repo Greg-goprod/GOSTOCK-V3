@@ -162,3 +162,11 @@ Source : analyse de Notion par Claude dans Chrome (`notion-gantt-analyse.zip`). 
 - Vérifié : types, lint, tests du modèle ; comportements (survol, barre fantôme, clic, flèche, liste masquée, changement de couleur) essayés dans une page de test isolée, sans erreur JavaScript. **Non vérifié** : écran réel avec données ; nouvelles étapes de `e2e-gantt` (`P2b-couleur`, `P2b-fantome`, `P2b-fleche-hors-zone`, `P2b-liste-masquee`) écrites mais non exécutées.
 - Reste : UI-4 création rapide (« Nouveau » → fiche, titre en focus, création depuis un groupe), UI-5b sélecteur d'état groupé avec pastilles et palette, UI-6 page unique à onglets, UI-7 fiche en sections (discussion, documents), UI-8 dupliquer un projet.
 
+
+### UI-4 — création rapide (2026-11-04)
+
+- **Formulaire projet allégé** : visibles, le nom, le type, l'état, la priorité, la période, l'équipe et la description ; **chantier lié, couleur et dépendances** passent derrière « Afficher les détails » (comme la fiche d'un élément). À la modification, les détails s'ouvrent d'eux-mêmes si un réglage n'est pas celui par défaut (chantier lié, mode de décalage ≠ chevauchement, week-ends non évités).
+- **Création depuis un groupe du Gantt** : une ligne de groupe (état ou type) a un « + » qui ouvre « Nouveau projet » avec l'état (ou le type) du groupe déjà choisi. Limite : un groupe n'existe à l'écran que s'il contient au moins un projet ; pour un état vide, on passe par « Nouveau › Nouveau projet ».
+- **Titre en focus** : le panneau de la charte met déjà le curseur dans le premier champ ; c'est le nom pour le projet comme pour l'élément. Vérifié dans une page de test isolée (projet) ; testé en vrai par les étapes `U4-*` de `e2e-gantt` (à lancer).
+- **Pas fait volontairement** : création d'un élément *avec dates* en tirant sur la frise (le « + Nouveau » de la liste et la barre fantôme d'un élément sans date couvrent déjà le besoin) ; « Sans date » reste le menu qui place un élément existant.
+- **Tests** : `e2e-gantt` 42 étapes attendues (+ `U4-groupe-etat`, `U4-groupe-type`, `U4-focus-fiche`) ; `e2e-projets` adapté (le chantier lié est dans les détails). Aucun de ces scripts n'a été exécuté contre la vraie base depuis ce changement.
