@@ -11,6 +11,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { chromium } = require('playwright');
 
 const BASE = process.env.BASE || 'http://localhost:5173';
@@ -41,27 +42,58 @@ function attach(c, page) {
   page.on('crash', () => { c.crashed = true; console.log(`⚠ PAGE PLANTÉE (${c.who}) — dernière adresse : ${page.url()}`); });
   page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
 }
+async function signIn(c) {
+  c.ctx = await BROWSER.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
+  c.page = await c.ctx.newPage();
+  c.crashed = false;
+  attach(c, c.page);
+  await c.page.goto(BASE);
+  await c.page.getByRole('button', { name: /J'ai un mot de passe/ }).click();
+  await c.page.locator('#login-email-pw').fill(ACCOUNTS[c.who]);
+  await c.page.locator('#login-password').fill(PASSWORD);
+  await c.page.getByRole('button', { name: /Se connecter/ }).click();
+  await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 });
+  await c.page.waitForTimeout(1500);
+}
 async function revive(c) {
-  if (!c.crashed) return;
+  // Le NAVIGATEUR lui-même est mort (tous les onglets plantent ensemble) : on le relance et on reconnecte chaque client encore utile
+  if (BROWSER && !BROWSER.isConnected()) {
+    console.log('⚠ NAVIGATEUR MORT : relance et reconnexion des clients');
+    BROWSER = await chromium.launch();
+    for (const x of CLIENTS) if (!x.closed) await signIn(x).catch(e => console.log(`  reconnexion de ${x.who} impossible : ${e.message.split('\n')[0]}`));
+    return;
+  }
+  if (!c.crashed || c.closed) return;
   c.page = await c.ctx.newPage();
   c.crashed = false;
   attach(c, c.page);
   await c.page.goto(BASE);
   await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }).catch(() => {});
 }
+// Ferme un client qui ne sert plus (deuxième session d'un test) : revive() ne doit pas le reconnecter
+async function closeClient(c) { c.closed = true; await c.ctx.close().catch(() => {}); }
+// Après une étape en échec, une fiche ou une fenêtre laissée ouverte fait échouer TOUTES les suivantes : on les referme (jamais après une étape réussie :
+// certaines étapes s'appuient sur la fiche ouverte par la précédente)
+async function closeOverlays(c) {
+  try { for (let i = 0; i < 3 && (await c.page.locator('[role="dialog"][aria-modal="true"]').count()) > 0; i++) { await c.page.keyboard.press('Escape'); await c.page.waitForTimeout(400); } } catch { /* page indisponible */ }
+}
+// Restes d'un passage précédent (arrêté avant son nettoyage) : ils créent des doublons qui font échouer les étapes ; on les supprime en début de passage
+async function purgeLeftovers(c) {
+  const mine = encodeURIComponent(M + '*'); let n = 0;
+  for (const table of ['cp_projects', 'sites', 'cp_statuses']) {
+    const r = await api(c, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, { Prefer: 'return=representation' });
+    if (r.status < 400 && Array.isArray(r.body)) n += r.body.length;
+  }
+  if (n) console.log(`ℹ ${n} reste(s) d'un passage précédent supprimé(s) (${M}*)`);
+  return n;
+}
+
+let BROWSER = null;
 async function login(browser, who) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
-  const page = await ctx.newPage();
-  const c = { who, ctx, page, base: '', key: '', crashed: false };
+  BROWSER = browser;
+  const c = { who, ctx: null, page: null, base: '', key: '', crashed: false, closed: false };
   CLIENTS.push(c);
-  attach(c, page);
-  await page.goto(BASE);
-  await page.getByRole('button', { name: /J'ai un mot de passe/ }).click();
-  await page.locator('#login-email-pw').fill(ACCOUNTS[who]);
-  await page.locator('#login-password').fill(PASSWORD);
-  await page.getByRole('button', { name: /Se connecter/ }).click();
-  await page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 });
-  await page.waitForTimeout(1500);
+  await signIn(c);
   return c;
 }
 async function api(c, method, route, body, extra = {}) {
@@ -100,9 +132,16 @@ async function step(id, title, fn, page) {
   try { const o = await fn(); e.status = (o && o.status) || 'OK'; e.detail = (o && o.detail) || ''; }
   catch (err) { e.status = 'KO'; e.detail = String(err.message).split('\n')[0]; }
   if (CLIENTS.some(c => c.crashed)) e.detail += ' [ENV probable : la page du navigateur a planté pendant cette étape ; elle est remplacée pour la suite]';
+  if (process.env.E2E_MEM) {
+    const parts = [];
+    for (const c of CLIENTS) { if (c.closed) continue; try { const h = await c.page.evaluate(() => (performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : -1)); parts.push(`${c.who} ${h} Mo`); } catch { parts.push(`${c.who} ?`); } }
+    e.detail += ` [mémoire : ${parts.join(' · ')} · libre ${(os.freemem() / 1073741824).toFixed(1)} Go]`;
+  }
+  const failed = ['KO', 'PARTIEL'].includes(e.status);
   if (page && ['KO', 'PARTIEL'].includes(e.status)) { const f = `${id.replace(/[^\w-]/g, '_')}.png`; try { await page.screenshot({ path: path.join(SHOTS, f) }); e.shot = `captures-pilote-scenarios/${f}`; } catch { /* page fermée */ } }
   console.log(`${e.status.padEnd(11)} ${id}  ${title}${e.detail ? ' — ' + e.detail.slice(0, 170) : ''}`);
   results.push(e);
+  if (failed) for (const c of CLIENTS) if (!c.closed) await closeOverlays(c);
 }
 
 (async () => {
@@ -151,8 +190,10 @@ async function step(id, title, fn, page) {
     ok(st.length === 4, `états de base : ${st.length}`);
     S.st = Object.fromEntries(st.map(x => [x.family, x.id]));
   });
-  await step('S-propre', 'Aucun reste d\'un test précédent (préfixe ' + M + ')', async () => {
-    ok(await count(resp, 'cp_projects', `name=like.${mine}`) === 0, 'projets TEST-SCEN déjà présents : un test précédent n\'a pas nettoyé');
+  await step('S-propre', 'Aucun reste d\'un test précédent (préfixe ' + M + ') : les restes d\'un passage arrêté sont supprimés d\'abord', async () => {
+    const purged = await purgeLeftovers(resp);
+    ok(await count(resp, 'cp_projects', `name=like.${mine}`) === 0, 'projets TEST-SCEN encore présents après le nettoyage de début');
+    if (purged) return INFO(`${purged} reste(s) d'un passage précédent supprimé(s)`);
   });
 
   /* ============ A Vie d'un projet chantier ============ */
@@ -581,7 +622,7 @@ async function step(id, title, fn, page) {
     ok(await count(other, 'cp_projects', `name=like.${mine}`) === 0 && await count(other, 'cp_items', `name=like.${mine}`) === 0, 'projets ou éléments TEST-SCEN visibles depuis une autre entreprise');
     ok(await blocked(other, 'POST', '/rest/v1/cp_item_members', { item_id: S.tB, user_id: S.u_resp }), 'assignation inter-entreprises acceptée');
     ok(await blocked(other, 'PATCH', `/rest/v1/cp_items?id=eq.${S.A}`, { name: `${M} Piraté` }), 'modification inter-entreprises acceptée');
-    await other.ctx.close();
+    await closeClient(other);
   });
 
   /* ============ I Cas limites ============ */
@@ -739,7 +780,7 @@ async function step(id, title, fn, page) {
     await api(resp, 'PATCH', `/rest/v1/cp_items?id=eq.${id}`, { name: `${M} Concurrence A` });
     await api(second, 'PATCH', `/rest/v1/cp_items?id=eq.${id}`, { description: 'écrite par B' });
     const r = (await get(resp, `/rest/v1/cp_items?select=name,description&id=eq.${id}`))[0];
-    await second.ctx.close();
+    await closeClient(second);
     return INFO(`Modifications PARTIELLES (champs différents) : les deux sont conservées = ${r.name.endsWith('A') && r.description === 'écrite par B'}. NB : ceci décrit les écritures DIRECTES par l'API (dernier gagnant, champ par champ). L'ÉCRAN est protégé depuis la fiche versionnée (updateIfUnchanged) : une fiche modifiée entre-temps est refusée ; voir l'étape U5c-conflit de e2e-gantt.`);
   });
 
