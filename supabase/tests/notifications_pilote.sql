@@ -176,9 +176,15 @@ SELECT public.mark_all_notifications_read() AS marked \gset
 SELECT zz.check('« tout marquer comme lu » vaut pour U', (SELECT count(*) FROM public.my_notifications(500) WHERE kind LIKE 'cp\_%' AND NOT is_read) = 0);
 SELECT zz.check('U ne lit, dans la table des avis, que ceux qui le concernent', (SELECT count(*) FROM public.notifications WHERE recipient_user_id IS NOT NULL AND recipient_user_id <> :'uu'::uuid) = 0 AND (SELECT count(*) FROM public.notifications WHERE recipient_user_id = :'uu'::uuid) > 0);
 RESET ROLE;
+INSERT INTO public.notifications (organization_id, kind, title, message, recipient_user_id) VALUES (:ORG1::uuid, 'tool_found', 'Témoin 57', 'avis personnel non PILOTE', :'uu'::uuid);
 SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
--- NB : la règle d'accès existante de la table (notifications_open_access, antérieure à PILOTE) laisse le personnel (view_all / scan / approve / manage_stock)
--- LIRE directement toute la table de son entreprise, avis personnels compris ; l'application, elle, passe par my_notifications() qui filtre. On vérifie ce que l'application voit.
+-- La règle d'accès historique de la table (notifications_open_access) laisse le personnel (view_all / scan / approve / manage_stock) lire toute la table de son entreprise ;
+-- depuis la migration 57, les avis PILOTE (type « cp_… ») ne se lisent que par leur destinataire, même en accès direct à la table. Les autres types ne changent pas.
+SELECT zz.check('A (administrateur) lit directement la table : AUCUN avis PILOTE adressé à d''autres', (SELECT count(*) FROM public.notifications WHERE kind LIKE 'cp\_%' AND recipient_user_id IS DISTINCT FROM :'ua'::uuid) = 0
+  AND (SELECT count(*) FROM public.notifications WHERE kind LIKE 'cp\_%' AND recipient_user_id = :'ua'::uuid) >= 0);
+SELECT zz.check('A ne peut ni modifier ni supprimer les avis PILOTE d''autrui (une ligne invisible ne se cible pas)', zz.affected($$UPDATE public.notifications SET title = 'Piraté' WHERE kind LIKE 'cp\_%' AND recipient_user_id <> (SELECT public.app_user_id())$$) = 0
+  AND zz.affected($$DELETE FROM public.notifications WHERE kind LIKE 'cp\_%' AND recipient_user_id <> (SELECT public.app_user_id())$$) = 0);
+SELECT zz.check('les autres types d''avis ne changent pas : A lit toujours un avis personnel non PILOTE adressé à U', (SELECT count(*) FROM public.notifications WHERE kind = 'tool_found' AND recipient_user_id = :'uu'::uuid AND title = 'Témoin 57') = 1);
 SELECT zz.check('A (responsable de ces projets) ne voit, dans l''application (my_notifications), aucun des avis PILOTE adressés à U', (SELECT count(*) FROM public.my_notifications(500) WHERE kind LIKE 'cp\_%') = 0);
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', :B, false); SET ROLE authenticated;
@@ -223,7 +229,7 @@ SELECT zz.check('supprimer le projet supprime ses avis (il y en avait ' || :n_n2
 
 SELECT set_config('app.org_guard_off', 'on', false);
 DELETE FROM public.cp_projects WHERE name LIKE 'N%';
-DELETE FROM public.notifications WHERE kind LIKE 'cp\_%';
+DELETE FROM public.notifications WHERE kind LIKE 'cp\_%' OR title = 'Témoin 57';
 DELETE FROM public.cp_notification_prefs;
 SELECT set_config('app.org_guard_off', '', false);
 DELETE FROM public.organization_modules WHERE module_key = 'cp.projects';
