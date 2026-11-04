@@ -181,6 +181,8 @@ async function step(id, title, fn, page) {
     await setGrouping(resp, 'État'); await resp.page.waitForTimeout(300);
     ok((await rowLocator(resp).count()) > 0, 'aucune ligne par état');
     await menuButton(resp, /Grouper/).click();
+    // allInnerTexts() n'attend rien : on attend d'abord que les choix soient affichés (sinon la liste lue est vide)
+    await resp.page.getByRole('menu').getByRole('menuitemradio').first().waitFor({ timeout: 5000 });
     // On lit uniquement le menu ouvert, sans tenir compte de la casse (innerText applique le text-transform du CSS)
     const choices = (await resp.page.getByRole('menu').getByRole('menuitemradio').allInnerTexts()).map(x => x.trim().toLowerCase());
     ok(choices.join('/') === 'état/type', `choix de regroupement lus : « ${choices.join(' / ')} » (attendu : État / Type, sans Programme)`);
