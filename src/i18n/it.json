@@ -3241,5 +3241,18 @@
 "Vues des projets": "Viste dei progetti",
 "Réglages des projets": "Impostazioni dei progetti",
 "Retour aux projets": "Torna ai progetti",
-"États d'avancement ({0})": "Stati di avanzamento ({0})"
+"États d'avancement ({0})": "Stati di avanzamento ({0})",
+"Dupliquer…": "Duplica…",
+"Dupliquer": "Duplica",
+"Dupliquer le projet": "Duplica il progetto",
+"Nom de la copie": "Nome della copia",
+"Nouveau début": "Nuovo inizio",
+"À copier aussi": "Da copiare anche",
+"L'équipe du projet": "Il team del progetto",
+"Les assignations des tâches (avec l'équipe)": "Le assegnazioni delle attività (con il team)",
+"Projet copié": "Progetto copiato",
+"Toutes les dates sont décalées du même nombre de jours. Vide : les dates sont gardées telles quelles.": "Tutte le date vengono spostate dello stesso numero di giorni. Vuoto: le date restano invariate.",
+"Ce projet n'a pas de date de début : le décalage part de son premier élément daté. Vide : les dates sont gardées telles quelles.": "Questo progetto non ha una data di inizio: lo spostamento parte dal primo elemento datato. Vuoto: le date restano invariate.",
+"Le décalage n'est pas un multiple de 7 jours : les week-ends changent de place.": "Lo spostamento non è un multiplo di 7 giorni: i fine settimana cambiano posto.",
+"Sont copiés : les phases, tâches, jalons et sous-tâches, leurs dépendances et leur liste à cocher (remise à zéro). L'état repart de « Pas commencé ». Ne sont pas copiés : le chantier lié, la discussion et les documents. Personne ne reçoit d'avis pour cette copie.": "Vengono copiati: fasi, attività, milestone e sottoattività, le loro dipendenze e la loro lista di controllo (azzerata). Lo stato riparte da «Non iniziato». Non vengono copiati: il cantiere collegato, la discussione e i documenti. Nessuno riceve notifiche per questa copia."
 }

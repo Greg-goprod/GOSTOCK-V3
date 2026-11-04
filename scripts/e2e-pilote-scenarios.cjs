@@ -176,6 +176,42 @@ async function step(id, title, fn, page) {
     refuses(await api(resp, 'GET', '/rest/v1/cp_programs?select=id'), /cp_programs|find|relation/i, 'table cp_programs');
     refuses(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.pA}`, { program_id: null }), /program_id|column|colonne/i, 'colonne program_id');
   });
+  await step('A-dupliquer', 'Dupliquer un projet : arborescence, dates décalées, liste remise à zéro, dépendance, équipe ; assignations seulement sur demande ; aucun avis ; un lecteur ne copie pas', async () => {
+    const p = await proj(resp, { name: `${M} Modèle`, starts_on: '2027-03-01', ends_on: '2027-03-31' });
+    accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', [{ project_id: p, user_id: S.u_resp, role: 'lead' }, { project_id: p, user_id: S.u_collab, role: 'member' }]), 'équipe');
+    const ph = await item(resp, { project_id: p, kind: 'phase', name: `${M} Mod Phase` });
+    const t1 = await item(resp, { project_id: p, parent_id: ph, name: `${M} Mod T1`, starts_on: '2027-03-01', ends_on: '2027-03-05' });
+    const t2 = await item(resp, { project_id: p, parent_id: ph, name: `${M} Mod T2`, starts_on: '2027-03-08', ends_on: '2027-03-12' });
+    accepts(await api(resp, 'POST', '/rest/v1/cp_item_links', { predecessor_id: t1, successor_id: t2, project_id: p }), 'dépendance');
+    accepts(await api(resp, 'POST', '/rest/v1/cp_item_checks', { item_id: t1, label: 'faite', done: true }), 'ligne à cocher');
+    accepts(await api(resp, 'POST', '/rest/v1/cp_item_members', { item_id: t1, user_id: S.u_collab }), 'assignation');
+    // (myNotifs est défini plus bas dans le fichier : on a besoin de la même lecture ici)
+    const avis = async c => rows(await rpc(c, 'my_notifications', { p_limit: 500 })).filter(n => /^cp_/.test(n.kind) && (n.message || '').includes(M));
+    const avisAvant = (await avis(collab)).length;
+    const r = await rpc(resp, 'cp_duplicate_project', { p_project: p, p_name: `${M} Modèle copie`, p_new_start: '2027-03-15' });
+    accepts(r, 'copie');
+    const c = r.body;
+    const its = await get(resp, `/rest/v1/cp_items?select=id,name,kind,parent_id,starts_on,ends_on&project_id=eq.${c}&order=name`);
+    ok(its.length === 3, `éléments copiés : ${its.length} (attendu 3)`);
+    const byName = Object.fromEntries(its.map(x => [x.name, x]));
+    ok(byName[`${M} Mod T1`].parent_id === byName[`${M} Mod Phase`].id, 'les tâches ne sont pas rangées sous la COPIE de la phase');
+    ok(byName[`${M} Mod T1`].starts_on === '2027-03-15' && byName[`${M} Mod T2`].ends_on === '2027-03-26', `dates décalées de 14 jours : ${JSON.stringify([byName[`${M} Mod T1`].starts_on, byName[`${M} Mod T2`].ends_on])}`);
+    const cp = (await get(resp, `/rest/v1/cp_projects?select=starts_on,ends_on,status_id&id=eq.${c}`))[0];
+    ok(cp.starts_on === '2027-03-15' && cp.ends_on === '2027-04-14', `dates du projet : ${JSON.stringify(cp)}`);
+    const checks = await get(resp, `/rest/v1/cp_item_checks?select=label,done&item_id=eq.${byName[`${M} Mod T1`].id}`);
+    ok(checks.length === 1 && checks[0].done === false, `liste à cocher copiée et remise à zéro : ${JSON.stringify(checks)}`);
+    ok(await count(resp, 'cp_item_links', `project_id=eq.${c}`) === 1, 'la dépendance n\'est pas copiée');
+    ok(await count(resp, 'cp_project_members', `project_id=eq.${c}`) === 2, 'l\'équipe n\'est pas copiée');
+    ok(await count(resp, 'cp_item_members', `item_id=in.(${its.map(x => x.id).join(',')})`) === 0, 'les assignations ne devraient pas être copiées par défaut');
+    ok(await count(resp, 'cp_items', `project_id=eq.${p}`) === 3 && (await get(resp, `/rest/v1/cp_items?select=starts_on&id=eq.${t1}`))[0].starts_on === '2027-03-01', 'la source a changé');
+    ok((await avis(collab)).length === avisAvant, 'le collaborateur a reçu un avis pour la copie');
+    const r2 = await rpc(resp, 'cp_duplicate_project', { p_project: p, p_name: `${M} Modèle copie 2`, p_copy_team: true, p_copy_assignments: true });
+    accepts(r2, 'copie avec assignations');
+    ok(await count(resp, 'cp_item_members', `item_id=in.(${(await get(resp, `/rest/v1/cp_items?select=id&project_id=eq.${r2.body}`)).map(x => x.id).join(',')})`) === 1, 'l\'assignation n\'est pas copiée sur demande');
+    refuses(await rpc(resp, 'cp_duplicate_project', { p_project: p, p_name: 'x', p_copy_team: false, p_copy_assignments: true }), /assignations/i, 'assignations sans équipe');
+    refuses(await rpc(collab, 'cp_duplicate_project', { p_project: p, p_name: `${M} Piraté` }), null, 'copie par un lecteur');
+    ok(await count(resp, 'cp_projects', `name=eq.${encodeURIComponent(M + ' Piraté')}`) === 0, 'un lecteur a créé une copie');
+  });
   await step('A-suppression-cascade', 'Supprimer un projet supprime ses éléments, son équipe, ses assignations, ses dépendances et sa liste à cocher', async () => {
     const p = await proj(resp, { name: `${M} À supprimer` });
     accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: p, user_id: S.u_resp, role: 'lead' }), 'équipe');

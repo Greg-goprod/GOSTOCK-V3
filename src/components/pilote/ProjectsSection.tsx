@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Copy, FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
@@ -15,6 +15,7 @@ import { MxEntityViewToggle } from '../mx/MxEntityViewToggle';
 import { readMxViewMode, writeMxViewMode } from '../mx/mxViewModeStorage';
 import { ProjectCard } from './ProjectCard';
 import ProjectForm, { type ProjectTarget } from './ProjectForm';
+import DuplicateProjectForm from './DuplicateProjectForm';
 
 interface Props {
   data: PiloteData;
@@ -33,6 +34,14 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
   const [typeFilter, setTypeFilter] = useState<'' | ProjectType>('');
   const [familyFilter, setFamilyFilter] = useState<'' | StatusFamily>('');
   const [target, setTarget] = useState<ProjectTarget | null>(null);
+  // Copie d'un projet : la fenêtre « Dupliquer », puis la copie s'ouvre dès que la liste rechargée la contient
+  const [duplicating, setDuplicating] = useState<CpProject | null>(null);
+  const [openAfter, setOpenAfter] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openAfter) return;
+    const row = data.projects.find(p => p.id === openAfter);
+    if (row) { setOpenAfter(null); setTarget({ mode: 'edit', row }); }
+  }, [data.projects, openAfter]);
 
   const statusById = useMemo(() => new Map(data.statuses.map(s => [s.id, s])), [data.statuses]);
   const siteById = useMemo(() => new Map(data.sites.map(s => [s.id, s])), [data.sites]);
@@ -132,6 +141,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
             { id: 'actions', label: 'Actions', render: p => (
               <span className="inline-flex gap-2">
                 {rights.update && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setTarget({ mode: 'edit', row: p })}>Modifier</Button>}
+                {rights.create && <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={() => setDuplicating(p)}>Dupliquer</Button>}
                 {rights.delete && <Button size="sm" variant="outline" icon={<Trash2 size={14} />} onClick={() => void remove(p)}>Supprimer</Button>}
               </span>
             ) },
@@ -148,14 +158,16 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
                 name={p.name} typeLabel={TYPE_LABEL[p.type]} color={p.color} statusName={c.status?.name ?? '—'} statusTone={TONE[c.status?.family ?? 'not_started']}
                 period={formatPeriod(p.starts_on, p.ends_on, fmt)} members={c.members} site={c.site}
                 priority={p.priority ? PRIORITY_LABEL[p.priority] : null} description={p.description}
-                onEdit={rights.update ? () => setTarget({ mode: 'edit', row: p }) : undefined} onDelete={rights.delete ? () => void remove(p) : undefined}
+                onEdit={rights.update ? () => setTarget({ mode: 'edit', row: p }) : undefined} onDuplicate={rights.create ? () => setDuplicating(p) : undefined} onDelete={rights.delete ? () => void remove(p) : undefined}
               />
             );
           }}
         />
       )}
 
-      <ProjectForm data={data} target={target} onClose={() => setTarget(null)} onSaved={onChanged} />
+      <ProjectForm data={data} target={target} onClose={() => setTarget(null)} onSaved={onChanged}
+        onDuplicate={rights.create ? row => { setTarget(null); setDuplicating(row); } : undefined} />
+      <DuplicateProjectForm project={duplicating} onClose={() => setDuplicating(null)} onDone={id => { setDuplicating(null); setOpenAfter(id); void onChanged(); }} />
     </div>
   );
 };

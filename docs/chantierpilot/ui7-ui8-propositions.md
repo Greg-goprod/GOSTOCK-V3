@@ -49,3 +49,16 @@ Aujourd'hui la fiche d'un élément a : propriétés, description, détails (ran
 
 ## Ordre proposé
 UI-8 d'abord (petite, une migration, aucune question ouverte) → 7a discussion → 7b documents → 7c fiche en sections et liens directs.
+
+
+## Décisions de Greg (2026-11-04)
+1. **Qui écrit** : B — l'équipe du projet et les responsables ; les autres lisent.
+2. **Fichiers** : « 500 Mo, types courants, pas d'exécutables » — **à préciser : 500 Mo par fichier ou au total par entreprise ?** (le plafond par fichier dépend aussi de l'offre Supabase : 50 Mo par envoi simple sur l'offre gratuite).
+3. **Vocabulaire** : on garde « Équipe » / « Assignés » (« Intervenants » = personnes sans compte, autre chantier plus tard).
+4. **Notifications de discussion** : actives par défaut, e-mail désactivé par défaut.
+5. **Écrasement silencieux** : à protéger (refuser l'enregistrement si la fiche a changé entre-temps) — avant UI-7.
+6. **Table `notifications`** : restreindre les avis PILOTE à leur destinataire.
+7. **Page Notifications** ouverte à tous les utilisateurs PILOTE : gardée (chacun ne voit que ses avis).
+8. `npm run dev` : problème réglé.
+
+Ordre : UI-8 (fait, voir STATUT) → 5 (anti-écrasement) → 6 (avis privés) → UI-7a, 7b, 7c.

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
@@ -20,6 +20,8 @@ interface Props {
   onSaved: () => Promise<void>;
   // Lecteur : la fiche s'ouvre pour consulter, sans pouvoir rien modifier (la base refuse de toute façon l'écriture)
   readOnly?: boolean;
+  // Modification d'un projet existant : propose « Dupliquer… » (le parent ouvre la fenêtre de copie)
+  onDuplicate?: (row: CpProject) => void;
 }
 
 interface FormState {
@@ -32,7 +34,7 @@ const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-60
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 // Création / modification d'un projet : type, état, dates, équipe (responsables et membres), chantier de Logistique (type chantier)
-const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly = false }) => {
+const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly = false, onDuplicate }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -204,9 +206,12 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
             </fieldset>
             </fieldset>
           )}
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div>{editedRow && onDuplicate && !readOnly && <Button variant="outline" icon={<Copy size={14} />} onClick={() => onDuplicate(editedRow)}>Dupliquer…</Button>}</div>
+            <div className="flex gap-2">
             <Button variant="secondary" onClick={onClose}>{readOnly ? 'Fermer' : 'Annuler'}</Button>
             {!readOnly && <Button type="submit" loading={saving}>Enregistrer</Button>}
+            </div>
           </div>
         </form>
       )}

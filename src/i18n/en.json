@@ -3241,5 +3241,18 @@
 "Vues des projets": "Project views",
 "Réglages des projets": "Project settings",
 "Retour aux projets": "Back to projects",
-"États d'avancement ({0})": "Progress states ({0})"
+"États d'avancement ({0})": "Progress states ({0})",
+"Dupliquer…": "Duplicate…",
+"Dupliquer": "Duplicate",
+"Dupliquer le projet": "Duplicate project",
+"Nom de la copie": "Name of the copy",
+"Nouveau début": "New start",
+"À copier aussi": "Also copy",
+"L'équipe du projet": "The project team",
+"Les assignations des tâches (avec l'équipe)": "Task assignments (with the team)",
+"Projet copié": "Project copied",
+"Toutes les dates sont décalées du même nombre de jours. Vide : les dates sont gardées telles quelles.": "All dates are shifted by the same number of days. Empty: dates are kept as they are.",
+"Ce projet n'a pas de date de début : le décalage part de son premier élément daté. Vide : les dates sont gardées telles quelles.": "This project has no start date: the shift starts from its first dated item. Empty: dates are kept as they are.",
+"Le décalage n'est pas un multiple de 7 jours : les week-ends changent de place.": "The shift is not a multiple of 7 days: weekends move.",
+"Sont copiés : les phases, tâches, jalons et sous-tâches, leurs dépendances et leur liste à cocher (remise à zéro). L'état repart de « Pas commencé ». Ne sont pas copiés : le chantier lié, la discussion et les documents. Personne ne reçoit d'avis pour cette copie.": "Copied: phases, tasks, milestones and subtasks, their dependencies and their checklist (reset). The status starts again at “Not started”. Not copied: the linked site, the discussion and the documents. Nobody receives a notification for this copy."
 }

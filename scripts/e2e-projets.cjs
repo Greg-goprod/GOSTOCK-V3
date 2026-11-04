@@ -227,6 +227,26 @@ async function step(id, title, fn, page) {
     const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=description&id=eq.${S.p1}`))[0];
     ok(r && r.description === 'Description modifiée par l\'écran', `description en base = ${r && r.description}`);
   }, resp.page);
+  await step('U8-dupliquer', 'Écran : « Dupliquer » sur la carte d\'un projet ouvre la fenêtre, crée la copie (éléments, équipe) et l\'ouvre', async () => {
+    const ph = await create(resp, 'cp_items', { project_id: S.p1, kind: 'phase', name: `${M} Dup Phase`, starts_on: '2027-06-01', ends_on: '2027-06-10' });
+    await create(resp, 'cp_items', { project_id: S.p1, parent_id: ph, kind: 'task', name: `${M} Dup Tâche`, starts_on: '2027-06-02', ends_on: '2027-06-05' });
+    await open(resp, '/pilote/projets');
+    const card = resp.page.locator('div', { has: resp.page.locator('h3', { hasText: new RegExp(`^${M} Festival$`) }) }).filter({ has: resp.page.getByRole('button', { name: 'Dupliquer' }) }).last();
+    await card.getByRole('button', { name: 'Dupliquer' }).click(); await resp.page.waitForTimeout(900);
+    ok(await resp.page.evaluate(() => document.activeElement && document.activeElement.id) === 'dup-name', 'le curseur n\'est pas dans le nom de la copie');
+    ok((await resp.page.locator('#dup-name').inputValue()) === `Copie de ${M} Festival`, `nom proposé : ${await resp.page.locator('#dup-name').inputValue()}`);
+    ok(await resp.page.locator('#dup-team').isChecked() && !(await resp.page.locator('#dup-assign').isChecked()), 'options par défaut : équipe cochée, assignations décochées');
+    await resp.page.locator('#dup-name').fill(`${M} Copie festival`);
+    await resp.page.getByRole('button', { name: 'Dupliquer', exact: true }).last().click(); await resp.page.waitForTimeout(2500);
+    const c = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id,type,status_id&name=eq.${encodeURIComponent(M + ' Copie festival')}`))[0];
+    ok(c && c.type === 'site', `copie absente ou mauvais type : ${JSON.stringify(c)}`);
+    const n = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=id&project_id=eq.${c.id}`)).length;
+    const src = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=id&project_id=eq.${S.p1}`)).length;
+    ok(n === src && n >= 2, `éléments copiés : ${n} (source : ${src})`);
+    ok(rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id&project_id=eq.${c.id}`)).length === rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id&project_id=eq.${S.p1}`)).length, 'équipe non copiée');
+    ok((await resp.page.locator('#prj-name').inputValue().catch(() => '')) === `${M} Copie festival`, 'la copie ne s\'est pas ouverte dans la fiche du projet');
+    await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(400);
+  }, resp.page);
   await step('P4-equipe-ecran', 'Fiche du projet : ajouter un membre par l\'écran ne défait pas les assignations existantes ; retirer la personne la désassigne', async () => {
     await open(resp, '/pilote/projets');
     const card = () => resp.page.locator('div', { has: resp.page.locator('h3', { hasText: `${M} Festival` }) }).filter({ has: resp.page.getByRole('button', { name: 'Modifier' }) }).last();

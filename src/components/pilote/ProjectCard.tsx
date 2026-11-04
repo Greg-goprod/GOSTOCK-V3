@@ -1,5 +1,5 @@
 import type React from 'react';
-import { CalendarRange, FolderKanban, Link2, Pencil, Trash2, Users } from 'lucide-react';
+import { CalendarRange, Copy, FolderKanban, Link2, Pencil, Trash2, Users } from 'lucide-react';
 import { MxBadge } from '../mx/MxBadge';
 import Button from '../common/Button';
 
@@ -15,11 +15,12 @@ interface Props {
   priority: string | null;
   description: string | null;
   onEdit?: () => void;
+  onDuplicate?: () => void;
   onDelete?: () => void;
 }
 
 // Carte d'un projet : état, type, période et responsables lisibles en entier (la couleur du projet borde la carte)
-export function ProjectCard({ name, typeLabel, color, statusName, statusTone, period, members, site, priority, description, onEdit, onDelete }: Props) {
+export function ProjectCard({ name, typeLabel, color, statusName, statusTone, period, members, site, priority, description, onEdit, onDuplicate, onDelete }: Props) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 'var(--mx-space-8)', minWidth: 0, width: '100%', padding: 'var(--mx-space-12)',
@@ -36,9 +37,10 @@ export function ProjectCard({ name, typeLabel, color, statusName, statusTone, pe
         {site && <li style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><Link2 size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} /> <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span>Chantier :</span> <span>{site}</span></span></li>}
       </ul>
       {description && <p style={{ margin: 0, fontSize: 'calc(12px * var(--mx-scale, 1))', color: 'var(--mx-text3)', whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{description}</p>}
-      {(onEdit || onDelete) && (
+      {(onEdit || onDuplicate || onDelete) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--mx-space-8)', marginTop: 'auto' }}>
           {onEdit && <Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={onEdit}>Modifier</Button>}
+          {onDuplicate && <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={onDuplicate}>Dupliquer</Button>}
           {onDelete && <Button size="sm" variant="outline" icon={<Trash2 size={14} />} onClick={onDelete}>Supprimer</Button>}
         </div>
       )}

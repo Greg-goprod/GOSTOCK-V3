@@ -3241,5 +3241,18 @@
 "Vues des projets": "Ansichten der Projekte",
 "Réglages des projets": "Projekteinstellungen",
 "Retour aux projets": "Zurück zu den Projekten",
-"États d'avancement ({0})": "Fortschrittsstatus ({0})"
+"États d'avancement ({0})": "Fortschrittsstatus ({0})",
+"Dupliquer…": "Duplizieren…",
+"Dupliquer": "Duplizieren",
+"Dupliquer le projet": "Projekt duplizieren",
+"Nom de la copie": "Name der Kopie",
+"Nouveau début": "Neuer Beginn",
+"À copier aussi": "Auch kopieren",
+"L'équipe du projet": "Das Projektteam",
+"Les assignations des tâches (avec l'équipe)": "Die Zuweisungen der Aufgaben (mit dem Team)",
+"Projet copié": "Projekt kopiert",
+"Toutes les dates sont décalées du même nombre de jours. Vide : les dates sont gardées telles quelles.": "Alle Termine werden um dieselbe Anzahl Tage verschoben. Leer: Die Termine bleiben unverändert.",
+"Ce projet n'a pas de date de début : le décalage part de son premier élément daté. Vide : les dates sont gardées telles quelles.": "Dieses Projekt hat kein Startdatum: Die Verschiebung geht vom ersten datierten Element aus. Leer: Die Termine bleiben unverändert.",
+"Le décalage n'est pas un multiple de 7 jours : les week-ends changent de place.": "Die Verschiebung ist kein Vielfaches von 7 Tagen: Die Wochenenden verschieben sich.",
+"Sont copiés : les phases, tâches, jalons et sous-tâches, leurs dépendances et leur liste à cocher (remise à zéro). L'état repart de « Pas commencé ». Ne sont pas copiés : le chantier lié, la discussion et les documents. Personne ne reçoit d'avis pour cette copie.": "Kopiert werden: Phasen, Aufgaben, Meilensteine und Unteraufgaben, ihre Abhängigkeiten und ihre Checkliste (zurückgesetzt). Der Status beginnt wieder bei «Nicht begonnen». Nicht kopiert werden: die verknüpfte Baustelle, die Diskussion und die Dokumente. Niemand erhält eine Benachrichtigung für diese Kopie."
 }

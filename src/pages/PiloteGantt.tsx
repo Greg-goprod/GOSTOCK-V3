@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { getLanguage } from '../i18n/translator';
 import { buildGantt, defaultExpanded, undatedRows, visibleRows, withAddRows, type ColorBy, type Grouping, type GanttRow } from '../lib/ganttModel';
 import { isPreset, makePeriod, periodDays, type ViewPeriod } from '../lib/viewPeriod';
-import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights, type ProjectType } from '../lib/pilote';
+import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights, type ProjectType, type CpProject } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import PageTitle from '../components/common/PageTitle';
 import { MxEmpty } from '../components/mx/MxEmpty';
@@ -14,6 +14,7 @@ import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
+import DuplicateProjectForm from '../components/pilote/DuplicateProjectForm';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const LOCALES = { fr: 'fr-CH', de: 'de-CH', it: 'it-CH', en: 'en-GB' } as const;
@@ -38,12 +39,21 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [itemTarget, setItemTarget] = useState<ItemTarget | null>(null);
   const [projectTarget, setProjectTarget] = useState<ProjectTarget | null>(null);
+  // Copie d'un projet : la fenêtre « Dupliquer », puis la copie s'ouvre dès que les données rechargées la contiennent
+  const [duplicating, setDuplicating] = useState<CpProject | null>(null);
+  const [openAfter, setOpenAfter] = useState<string | null>(null);
   const today = todayZurich();
 
   const reload = useCallback(async () => {
     try { setData(await loadGantt()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? EMPTY); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+
+  useEffect(() => {
+    if (!openAfter || !data) return;
+    const row = data.projects.find(p => p.id === openAfter);
+    if (row) { setOpenAfter(null); setProjectTarget({ mode: 'edit', row }); }
+  }, [data, openAfter]);
 
   const model = useMemo(() => buildGantt(data ?? EMPTY, grouping, colorBy), [data, grouping, colorBy]);
   // Ouverture sur 2 niveaux, à chaque changement de regroupement
@@ -189,7 +199,9 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
       )}
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />
-      <ProjectForm data={data} target={projectTarget} readOnly={projectTarget?.mode === 'edit' && !rights.update} onClose={() => setProjectTarget(null)} onSaved={reload} />
+      <ProjectForm data={data} target={projectTarget} readOnly={projectTarget?.mode === 'edit' && !rights.update} onClose={() => setProjectTarget(null)} onSaved={reload}
+        onDuplicate={rights.create ? row => { setProjectTarget(null); setDuplicating(row); } : undefined} />
+      <DuplicateProjectForm project={duplicating} onClose={() => setDuplicating(null)} onDone={id => { setDuplicating(null); setOpenAfter(id); void reload(); }} />
     </div>
   );
 };

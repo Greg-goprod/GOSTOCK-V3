@@ -122,6 +122,16 @@ export const piloteError = (error: unknown): string => {
   return e?.message || 'Une erreur est survenue';
 };
 
+// Copie un projet (arborescence, dépendances, liste à cocher, dates décalées) en une seule requête ; renvoie l'identifiant de la copie.
+// Les droits et l'isolation entre entreprises sont ceux de la personne : la base refuse ce qu'elle n'a pas le droit de créer.
+export async function duplicateProject(args: { projectId: string; name: string; newStart: string | null; copyTeam: boolean; copyAssignments: boolean }): Promise<string> {
+  const { data, error } = await supabase.rpc('cp_duplicate_project', {
+    p_project: args.projectId, p_name: args.name, p_new_start: args.newStart, p_copy_team: args.copyTeam, p_copy_assignments: args.copyAssignments,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
 // Met à jour l'équipe d'un projet par différence : seules les personnes retirées sont supprimées (la base les désassigne alors
 // de ses tâches), les rôles changés sont modifiés sur place, les nouvelles personnes sont ajoutées. Les autres ne bougent pas.
 export async function saveTeam(projectId: string, team: Record<string, TeamRole>): Promise<void> {
