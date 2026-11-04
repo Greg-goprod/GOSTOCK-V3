@@ -581,7 +581,8 @@ async function step(id, title, fn, page) {
           opened = true;
           const legends = await resp.page.locator('form legend').allInnerTexts();
           // Le select du rôle d'une personne de l'équipe : on attend que la liste des personnes soit chargée (sinon on lisait un autre select du formulaire)
-          const teamSelect = resp.page.locator('form fieldset').filter({ has: resp.page.locator('legend', { hasText: new RegExp(`^${want('Équipe')}$`, 'i') }) }).locator('select').first();
+          // On part de la LÉGENDE puis on remonte à son fieldset : un filtre « fieldset qui contient la légende » attrape aussi les fieldset englobants (lecture seule) et lisait le select du type
+          const teamSelect = resp.page.locator('form legend', { hasText: new RegExp(`^${want('Équipe')}$`, 'i') }).locator('xpath=..').locator('select').first();
           await teamSelect.waitFor({ state: 'attached', timeout: 15000 }).catch(() => {});
           const options = await teamSelect.locator('option').allInnerTexts().catch(() => []);
           // innerText applique la mise en majuscules du titre (CSS text-transform) : « TEAM » est bien la traduction de « Team »
