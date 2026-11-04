@@ -80,6 +80,7 @@ const KIND_LABEL: Record<string, { label: string; path: string; action: string }
   cp_dates_changed: { label: 'PILOTE · Dates modifiées', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
   cp_due_soon: { label: 'PILOTE · Échéance proche', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
   cp_overdue: { label: 'PILOTE · En retard', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
+  cp_comment: { label: 'PILOTE · Discussion', path: '/pilote/projets', action: 'Voir les projets' },
 };
 
 interface PendingEmail {
@@ -304,7 +305,7 @@ const BACKUP_TABLES = [
   // Planning de chantier (module 1) : dans l'ordre des dépendances (chantiers → zones / équipes → interventions → besoins)
   'cp_contractors', 'cp_site_config', 'cp_site_blocked_days', 'cp_site_zones', 'cp_site_phases', 'cp_site_teams', 'cp_site_interventions', 'cp_site_intervention_needs',
   // Projets PILOTE (R2b, R3a) : états d'abord, puis projets, puis éléments, responsables et listes à cocher
-  'cp_statuses', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links', 'cp_notification_prefs',
+  'cp_statuses', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links', 'cp_comments', 'cp_notification_prefs',
   'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const KEEP_BACKUPS = 12;

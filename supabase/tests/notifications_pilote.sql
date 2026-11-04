@@ -200,7 +200,7 @@ RESET ROLE;
 
 -- 8. Choix : chacun les siens, types connus seulement
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
-SELECT zz.check('U relit ses choix avec les valeurs par défaut pour le reste (5 types, dont le sien)', (SELECT count(*) FROM public.my_cp_notification_prefs()) = 5
+SELECT zz.check('U relit ses choix avec les valeurs par défaut pour le reste (6 types, dont le sien)', (SELECT count(*) FROM public.my_cp_notification_prefs()) = 6
   AND (SELECT NOT email AND NOT push AND in_app FROM public.my_cp_notification_prefs() WHERE kind = 'cp_assigned')
   AND (SELECT in_app AND email AND push FROM public.my_cp_notification_prefs() WHERE kind = 'cp_due_soon')
   AND (SELECT in_app AND NOT email AND push FROM public.my_cp_notification_prefs() WHERE kind = 'cp_dates_changed'));

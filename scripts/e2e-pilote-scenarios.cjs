@@ -212,6 +212,31 @@ async function step(id, title, fn, page) {
     refuses(await rpc(collab, 'cp_duplicate_project', { p_project: p, p_name: `${M} Piraté` }), null, 'copie par un lecteur');
     ok(await count(resp, 'cp_projects', `name=eq.${encodeURIComponent(M + ' Piraté')}`) === 0, 'un lecteur a créé une copie');
   });
+  await step('A-discussion', 'Discussion : l\'équipe et les responsables écrivent, les autres lisent ; auteur imposé ; un seul avis regroupé pour l\'équipe, jamais pour l\'auteur ; chacun supprime les siens', async () => {
+    const p = await proj(resp, { name: `${M} Discussion` });
+    accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', [{ project_id: p, user_id: S.u_resp, role: 'lead' }, { project_id: p, user_id: S.u_collab, role: 'member' }]), 'équipe');
+    const t = await item(resp, { project_id: p, name: `${M} Disc T1` });
+    const avis = async c => rows(await rpc(c, 'my_notifications', { p_limit: 500 })).filter(n => n.kind === 'cp_comment' && (n.message || '').includes(`${M} Discussion`));
+    const w1 = await api(resp, 'POST', '/rest/v1/cp_comments?select=id,author_id', { project_id: p, author_id: S.u_staff, body: `${M} premier message` }, REP);
+    accepts(w1, 'le responsable écrit');
+    ok(rows(w1)[0].author_id === S.u_resp, `l'auteur doit être celui qui écrit, pas celui que le client annonce : ${rows(w1)[0].author_id}`);
+    accepts(await api(collab, 'POST', '/rest/v1/cp_comments', { project_id: p, item_id: t, body: `${M} réponse du collaborateur (membre de l'équipe)` }), 'un membre de l\'équipe écrit');
+    refuses(await api(staff, 'POST', '/rest/v1/cp_comments', { project_id: p, body: `${M} piraté par le magasinier` }), null, 'hors équipe, sans droit de modification');
+    ok((await get(staff, `/rest/v1/cp_comments?select=id&project_id=eq.${p}`)).length === 2, 'le magasinier doit lire la discussion');
+    refuses(await api(resp, 'POST', '/rest/v1/cp_comments', { project_id: p, body: '   ' }), null, 'message vide');
+    refuses(await api(resp, 'POST', '/rest/v1/cp_comments', { project_id: p, body: 'x'.repeat(4001) }), null, 'message trop long');
+    ok((await avis(collab)).length === 1, `avis du collaborateur après le 1er message : ${(await avis(collab)).length} (attendu 1)`);
+    accepts(await api(resp, 'POST', '/rest/v1/cp_comments', { project_id: p, body: `${M} deuxième message rapproché` }), 'deuxième message');
+    const apres = await avis(collab);
+    ok(apres.length === 1 && /Plusieurs nouveaux messages/.test(apres[0].message), `messages rapprochés : ${JSON.stringify(apres.map(a => a.message))}`);
+    ok((await avis(resp)).length === 0, 'l\'auteur reçoit un avis pour ses propres messages');
+    await api(staff, 'DELETE', `/rest/v1/cp_comments?project_id=eq.${p}`);
+    ok((await get(resp, `/rest/v1/cp_comments?select=id&project_id=eq.${p}`)).length === 3, 'un lecteur a pu supprimer des messages');
+    accepts(await api(collab, 'DELETE', `/rest/v1/cp_comments?project_id=eq.${p}&author_id=eq.${S.u_collab}`), 'chacun supprime les siens');
+    ok((await get(resp, `/rest/v1/cp_comments?select=id&project_id=eq.${p}`)).length === 2, 'le message du collaborateur n\'est pas supprimé (ou trop de messages le sont)');
+    accepts(await api(resp, 'DELETE', `/rest/v1/cp_projects?id=eq.${p}`), 'suppression du projet');
+    ok(await count(resp, 'cp_comments', `project_id=eq.${p}`) === 0, 'la discussion devrait partir avec le projet');
+  });
   await step('A-suppression-cascade', 'Supprimer un projet supprime ses éléments, son équipe, ses assignations, ses dépendances et sa liste à cocher', async () => {
     const p = await proj(resp, { name: `${M} À supprimer` });
     accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: p, user_id: S.u_resp, role: 'lead' }), 'équipe');

@@ -312,6 +312,35 @@ async function step(id, title, fn, page) {
     ok(fin.name === `${M} Conflit A` && fin.description === 'écrite par B', `après rechargement : ${JSON.stringify(fin)}`);
   }, resp.page);
 
+  await step('U7-discussion', 'Fiche d\'un élément : section Discussion — écrire (Ctrl+Entrée) sans enregistrer la fiche, modifier, supprimer ; un lecteur lit sans pouvoir écrire', async () => {
+    const id = await create(resp, 'cp_items', { project_id: S.proj, kind: 'task', name: `${M} Discussion`, starts_on: '2027-05-10', ends_on: '2027-05-14' });
+    await open(resp, '/pilote/gantt'); await expandAll(resp);
+    await resp.page.locator('.group\\/row button', { hasText: `${M} Discussion` }).first().click(); await resp.page.waitForTimeout(1500);
+    ok(await resp.page.locator('section[aria-label="Discussion"]').count() === 1, 'section Discussion absente de la fiche');
+    ok(await resp.page.locator('#cmt-body').count() === 1, 'zone de saisie absente pour le responsable');
+    await resp.page.locator('#cmt-body').fill(`${M} message écrit à l'écran`); await resp.page.keyboard.press('Control+Enter'); await resp.page.waitForTimeout(1500);
+    ok(await resp.page.locator('#itm-name').count() === 1, 'Ctrl+Entrée a enregistré ou fermé la fiche au lieu d\'envoyer le message');
+    let m = rows(await api(resp, 'GET', `/rest/v1/cp_comments?select=id,body,author_id,item_id&item_id=eq.${id}`));
+    ok(m.length === 1 && m[0].body === `${M} message écrit à l'écran` && m[0].item_id === id, `message en base = ${JSON.stringify(m)}`);
+    ok(await resp.page.locator('section[aria-label="Discussion"]').getByText(`${M} message écrit à l'écran`).isVisible(), 'le message n\'apparaît pas dans la discussion');
+    await resp.page.getByRole('button', { name: 'Modifier ce message' }).first().click();
+    await resp.page.getByLabel('Modifier le message').fill(`${M} message corrigé`);
+    await resp.page.getByRole('button', { name: 'Enregistrer le message' }).click(); await resp.page.waitForTimeout(1300);
+    m = rows(await api(resp, 'GET', `/rest/v1/cp_comments?select=body,edited_at&item_id=eq.${id}`));
+    ok(m.length === 1 && m[0].body === `${M} message corrigé` && m[0].edited_at, `message corrigé en base = ${JSON.stringify(m)}`);
+    // Un lecteur (magasinier) lit la discussion, sans zone de saisie
+    await open(staff, '/pilote/gantt'); await expandAll(staff);
+    await staff.page.locator('.group\\/row button', { hasText: `${M} Discussion` }).first().click(); await staff.page.waitForTimeout(1500);
+    ok(await staff.page.locator('section[aria-label="Discussion"]').getByText(`${M} message corrigé`).isVisible(), 'le lecteur ne voit pas le message');
+    ok(await staff.page.locator('#cmt-body').count() === 0, 'zone de saisie présente pour un lecteur');
+    ok(/Seuls l'équipe du projet et les responsables écrivent ici/.test(await staff.page.locator('section[aria-label="Discussion"]').innerText()), 'mention « lecture seule » absente');
+    await staff.page.keyboard.press('Escape'); await staff.page.waitForTimeout(400);
+    // Suppression avec confirmation
+    await resp.page.getByRole('button', { name: 'Supprimer ce message' }).first().click(); await resp.page.waitForTimeout(500);
+    await resp.page.getByRole('button', { name: 'Confirmer' }).click(); await resp.page.waitForTimeout(1300);
+    ok(rows(await api(resp, 'GET', `/rest/v1/cp_comments?select=id&item_id=eq.${id}`)).length === 0, 'le message n\'est pas supprimé');
+  }, resp.page);
+
   /* ============ P3 Fiche ============ */
   group = 'P3 Fiche';
   await step('P3-ouvrir', 'Clic sur la tâche : fiche avec le type en sous-titre, propriétés clés visibles, parent dans les détails', async () => {

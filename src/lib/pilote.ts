@@ -141,6 +141,32 @@ export async function updateIfUnchanged(table: 'cp_items' | 'cp_projects', id: s
   }
 }
 
+// Discussion d'un projet (item = null) ou d'un élément : texte seulement, 4 000 caractères au plus. Les droits sont ceux de la base
+// (l'équipe du projet et les responsables écrivent ; chacun modifie et supprime les siens ; le droit de suppression modère).
+export const COMMENT_MAX = 4000;
+export interface CpComment { id: string; project_id: string; item_id: string | null; author_id: string | null; body: string; created_at: string; edited_at: string | null }
+export async function loadComments(projectId: string, itemId: string | null): Promise<CpComment[]> {
+  let query = supabase.from('cp_comments').select('id, project_id, item_id, author_id, body, created_at, edited_at').eq('project_id', projectId);
+  query = itemId ? query.eq('item_id', itemId) : query.is('item_id', null);
+  const { data, error } = await query.order('created_at', { ascending: true }).limit(500);
+  if (error) throw error;
+  return (data || []) as CpComment[];
+}
+export async function addComment(projectId: string, itemId: string | null, body: string): Promise<void> {
+  const { error } = await supabase.from('cp_comments').insert({ project_id: projectId, item_id: itemId, body });
+  if (error) throw error;
+}
+export async function editComment(id: string, body: string): Promise<void> {
+  const { data, error } = await supabase.from('cp_comments').update({ body }).eq('id', id).select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Tu ne peux plus modifier ce message.');
+}
+export async function deleteComment(id: string): Promise<void> {
+  const { data, error } = await supabase.from('cp_comments').delete().eq('id', id).select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Tu ne peux pas supprimer ce message.');
+}
+
 // Copie un projet (arborescence, dépendances, liste à cocher, dates décalées) en une seule requête ; renvoie l'identifiant de la copie.
 // Les droits et l'isolation entre entreprises sont ceux de la personne : la base refuse ce qu'elle n'a pas le droit de créer.
 export async function duplicateProject(args: { projectId: string; name: string; newStart: string | null; copyTeam: boolean; copyAssignments: boolean }): Promise<string> {

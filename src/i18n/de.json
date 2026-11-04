@@ -3256,5 +3256,22 @@
 "Le décalage n'est pas un multiple de 7 jours : les week-ends changent de place.": "Die Verschiebung ist kein Vielfaches von 7 Tagen: Die Wochenenden verschieben sich.",
 "Sont copiés : les phases, tâches, jalons et sous-tâches, leurs dépendances et leur liste à cocher (remise à zéro). L'état repart de « Pas commencé ». Ne sont pas copiés : le chantier lié, la discussion et les documents. Personne ne reçoit d'avis pour cette copie.": "Kopiert werden: Phasen, Aufgaben, Meilensteine und Unteraufgaben, ihre Abhängigkeiten und ihre Checkliste (zurückgesetzt). Der Status beginnt wieder bei «Nicht begonnen». Nicht kopiert werden: die verknüpfte Baustelle, die Diskussion und die Dokumente. Niemand erhält eine Benachrichtigung für diese Kopie.",
 "Cette fiche a été modifiée par quelqu'un d'autre depuis son ouverture. Elle vient d'être rechargée : rouvre-la, regarde ses changements, puis refais ta modification.": "Dieses Blatt wurde seit dem Öffnen von jemand anderem geändert. Es wurde soeben neu geladen: Öffne es erneut, sieh dir die Änderungen an und wiederhole dann deine Änderung.",
-"Cette fiche n'existe plus (supprimée par quelqu'un d'autre).": "Dieses Blatt existiert nicht mehr (von jemand anderem gelöscht)."
+"Cette fiche n'existe plus (supprimée par quelqu'un d'autre).": "Dieses Blatt existiert nicht mehr (von jemand anderem gelöscht).",
+"Discussion": "Diskussion",
+"Discussion ({0})": "Diskussion ({0})",
+"Actualiser la discussion": "Diskussion aktualisieren",
+"Aucun message pour l'instant.": "Noch keine Nachricht.",
+"Modifier ce message": "Diese Nachricht bearbeiten",
+"Supprimer ce message": "Diese Nachricht löschen",
+"Modifier le message": "Nachricht bearbeiten",
+"Enregistrer le message": "Nachricht speichern",
+"Écrire un message": "Eine Nachricht schreiben",
+"Écrire un message… (Ctrl+Entrée pour envoyer)": "Eine Nachricht schreiben… (Strg+Eingabe zum Senden)",
+"Supprimer ce message ?": "Diese Nachricht löschen?",
+"· modifié": "· bearbeitet",
+"Tu ne peux plus modifier ce message.": "Du kannst diese Nachricht nicht mehr bearbeiten.",
+"Tu ne peux pas supprimer ce message.": "Du kannst diese Nachricht nicht löschen.",
+"Seuls l'équipe du projet et les responsables écrivent ici. Tu peux lire la discussion.": "Nur das Projektteam und die Verantwortlichen schreiben hier. Du kannst die Diskussion lesen.",
+"Un nouveau message dans une discussion": "Eine neue Nachricht in einer Diskussion",
+"Sur un projet de ton équipe, ou sur un élément qui t'est assigné. Plusieurs messages rapprochés font un seul avis.": "In einem Projekt deines Teams oder bei einem Element, das dir zugewiesen ist. Mehrere kurz aufeinanderfolgende Nachrichten ergeben nur eine Benachrichtigung."
 }

@@ -3256,5 +3256,22 @@
 "Le décalage n'est pas un multiple de 7 jours : les week-ends changent de place.": "The shift is not a multiple of 7 days: weekends move.",
 "Sont copiés : les phases, tâches, jalons et sous-tâches, leurs dépendances et leur liste à cocher (remise à zéro). L'état repart de « Pas commencé ». Ne sont pas copiés : le chantier lié, la discussion et les documents. Personne ne reçoit d'avis pour cette copie.": "Copied: phases, tasks, milestones and subtasks, their dependencies and their checklist (reset). The status starts again at “Not started”. Not copied: the linked site, the discussion and the documents. Nobody receives a notification for this copy.",
 "Cette fiche a été modifiée par quelqu'un d'autre depuis son ouverture. Elle vient d'être rechargée : rouvre-la, regarde ses changements, puis refais ta modification.": "This sheet was changed by someone else since you opened it. It has just been reloaded: reopen it, look at the changes, then redo your edit.",
-"Cette fiche n'existe plus (supprimée par quelqu'un d'autre).": "This sheet no longer exists (deleted by someone else)."
+"Cette fiche n'existe plus (supprimée par quelqu'un d'autre).": "This sheet no longer exists (deleted by someone else).",
+"Discussion": "Discussion",
+"Discussion ({0})": "Discussion ({0})",
+"Actualiser la discussion": "Refresh the discussion",
+"Aucun message pour l'instant.": "No messages yet.",
+"Modifier ce message": "Edit this message",
+"Supprimer ce message": "Delete this message",
+"Modifier le message": "Edit the message",
+"Enregistrer le message": "Save the message",
+"Écrire un message": "Write a message",
+"Écrire un message… (Ctrl+Entrée pour envoyer)": "Write a message… (Ctrl+Enter to send)",
+"Supprimer ce message ?": "Delete this message?",
+"· modifié": "· edited",
+"Tu ne peux plus modifier ce message.": "You can no longer edit this message.",
+"Tu ne peux pas supprimer ce message.": "You cannot delete this message.",
+"Seuls l'équipe du projet et les responsables écrivent ici. Tu peux lire la discussion.": "Only the project team and the managers write here. You can read the discussion.",
+"Un nouveau message dans une discussion": "A new message in a discussion",
+"Sur un projet de ton équipe, ou sur un élément qui t'est assigné. Plusieurs messages rapprochés font un seul avis.": "On a project of your team, or on an item assigned to you. Several messages close together make a single notification."
 }

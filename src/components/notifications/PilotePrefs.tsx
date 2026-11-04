@@ -11,6 +11,7 @@ const LABEL: Record<string, { title: string; hint: string }> = {
   cp_team_added: { title: 'On m\'ajoute à l\'équipe d\'un projet', hint: 'Comme responsable ou comme membre.' },
   cp_dates_changed: { title: 'Les dates d\'un de mes éléments changent', hint: 'Plusieurs changements rapprochés font un seul avis.' },
   cp_due_soon: { title: 'Échéance proche', hint: 'Un élément à toi se termine aujourd\'hui ou demain (un avis par jour).' },
+  cp_comment: { title: 'Un nouveau message dans une discussion', hint: 'Sur un projet de ton équipe, ou sur un élément qui t\'est assigné. Plusieurs messages rapprochés font un seul avis.' },
   cp_overdue: { title: 'Élément en retard', hint: 'Un élément à toi est en retard de 1 à 3 jours (un avis par jour, puis on arrête).' },
 };
 const CHANNELS: { id: Channel; label: string }[] = [{ id: 'in_app', label: 'Dans l\'application' }, { id: 'email', label: 'E-mail' }, { id: 'push', label: 'Push' }];
