@@ -31,12 +31,28 @@ const S = {};
 let group = '';
 
 /* ------------------------------------------------------------------ outils */
+// Les clients connectés (une page chacun). Une page peut PLANTER (« Target crashed » : mémoire du navigateur) : on le détecte, on le dit,
+// et on remplace la page dans le même contexte (la session reste ouverte) pour que les étapes suivantes ne soient pas toutes perdues.
+const CLIENTS = [];
+function attach(c, page) {
+  page.on('pageerror', e => jsErrors.push(`${c.who}: ${e.message}`));
+  page.on('crash', () => { c.crashed = true; console.log(`⚠ PAGE PLANTÉE (${c.who}) — dernière adresse : ${page.url()}`); });
+  page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
+}
+async function revive(c) {
+  if (!c.crashed) return;
+  c.page = await c.ctx.newPage();
+  c.crashed = false;
+  attach(c, c.page);
+  await c.page.goto(BASE);
+  await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }).catch(() => {});
+}
 async function login(browser, who) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
   const page = await ctx.newPage();
-  const c = { who, ctx, page, base: '', key: '' };
-  page.on('pageerror', e => jsErrors.push(`${who}: ${e.message}`));
-  page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
+  const c = { who, ctx, page, base: '', key: '', crashed: false };
+  CLIENTS.push(c);
+  attach(c, page);
   await page.goto(BASE);
   await page.getByRole('button', { name: /J'ai un mot de passe/ }).click();
   await page.locator('#login-email-pw').fill(ACCOUNTS[who]);
@@ -78,8 +94,10 @@ function zurichIso(day, time) {
 
 async function step(id, title, fn, page) {
   const e = { group, id, title, status: 'KO', detail: '', shot: '' };
+  for (const c of CLIENTS) await revive(c).catch(() => {});
   try { const o = await fn(); e.status = (o && o.status) || 'OK'; e.detail = (o && o.detail) || ''; }
   catch (err) { e.status = 'KO'; e.detail = String(err.message).split('\n')[0]; }
+  if (CLIENTS.some(c => c.crashed)) e.detail += ' [ENV probable : la page du navigateur a planté pendant cette étape ; elle est remplacée pour la suite]';
   if (page && ['KO', 'PARTIEL'].includes(e.status)) { const f = `${id.replace(/[^\w-]/g, '_')}.png`; try { await page.screenshot({ path: path.join(SHOTS, f) }); e.shot = `captures-gantt/${f}`; } catch { /* page fermée */ } }
   console.log(`${e.status.padEnd(11)} ${id}  ${title}${e.detail ? ' — ' + e.detail.slice(0, 170) : ''}`);
   results.push(e);
@@ -323,6 +341,8 @@ async function step(id, title, fn, page) {
     let m = rows(await api(resp, 'GET', `/rest/v1/cp_comments?select=id,body,author_id,item_id&item_id=eq.${id}`));
     ok(m.length === 1 && m[0].body === `${M} message écrit à l'écran` && m[0].item_id === id, `message en base = ${JSON.stringify(m)}`);
     ok(await resp.page.locator('section[aria-label="Discussion"]').getByText(`${M} message écrit à l'écran`).isVisible(), 'le message n\'apparaît pas dans la discussion');
+    // Captures facultatives (E2E_SHOTS=1) : la section Discussion vue par celui qui écrit, puis par un lecteur (non commitées)
+    if (process.env.E2E_SHOTS) await resp.page.screenshot({ path: path.join(SHOTS, 'U7-discussion-ecrivain.png') });
     await resp.page.getByRole('button', { name: 'Modifier ce message' }).first().click();
     await resp.page.getByLabel('Modifier le message').fill(`${M} message corrigé`);
     await resp.page.getByRole('button', { name: 'Enregistrer le message' }).click(); await resp.page.waitForTimeout(1300);
@@ -334,11 +354,15 @@ async function step(id, title, fn, page) {
     ok(await staff.page.locator('section[aria-label="Discussion"]').getByText(`${M} message corrigé`).isVisible(), 'le lecteur ne voit pas le message');
     ok(await staff.page.locator('#cmt-body').count() === 0, 'zone de saisie présente pour un lecteur');
     ok(/Seuls l'équipe du projet et les responsables écrivent ici/.test(await staff.page.locator('section[aria-label="Discussion"]').innerText()), 'mention « lecture seule » absente');
+    if (process.env.E2E_SHOTS) await staff.page.screenshot({ path: path.join(SHOTS, 'U7-discussion-lecteur.png') });
     await staff.page.keyboard.press('Escape'); await staff.page.waitForTimeout(400);
     // Suppression avec confirmation
     await resp.page.getByRole('button', { name: 'Supprimer ce message' }).first().click(); await resp.page.waitForTimeout(500);
     await resp.page.getByRole('button', { name: 'Confirmer' }).click(); await resp.page.waitForTimeout(1300);
     ok(rows(await api(resp, 'GET', `/rest/v1/cp_comments?select=id&item_id=eq.${id}`)).length === 0, 'le message n\'est pas supprimé');
+    // On referme la fiche : une fiche laissée ouverte masque la barre d\'outils et fait échouer toutes les étapes suivantes
+    await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(600);
+    ok(await resp.page.locator('#itm-name').count() === 0, 'la fiche ne se referme pas');
   }, resp.page);
 
   /* ============ P3 Fiche ============ */
@@ -595,6 +619,7 @@ async function step(id, title, fn, page) {
 
   /* ============ Nettoyage ============ */
   group = 'Nettoyage';
+  for (const c of CLIENTS) await revive(c).catch(() => {});
   const clean = {};
   try {
     const mine = encodeURIComponent(M + '*');

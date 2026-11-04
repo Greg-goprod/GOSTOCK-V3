@@ -31,12 +31,28 @@ const S = {};
 let group = '';
 
 /* ------------------------------------------------------------------ outils */
+// Les clients connectés (une page chacun). Une page peut PLANTER (« Target crashed » : mémoire du navigateur) : on le détecte, on le dit,
+// et on remplace la page dans le même contexte (la session reste ouverte) pour que les étapes suivantes ne soient pas toutes perdues.
+const CLIENTS = [];
+function attach(c, page) {
+  page.on('pageerror', e => jsErrors.push(`${c.who}: ${e.message}`));
+  page.on('crash', () => { c.crashed = true; console.log(`⚠ PAGE PLANTÉE (${c.who}) — dernière adresse : ${page.url()}`); });
+  page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
+}
+async function revive(c) {
+  if (!c.crashed) return;
+  c.page = await c.ctx.newPage();
+  c.crashed = false;
+  attach(c, c.page);
+  await c.page.goto(BASE);
+  await c.page.waitForSelector('nav[aria-label="Navigation principale"]', { timeout: 30000 }).catch(() => {});
+}
 async function login(browser, who) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
   const page = await ctx.newPage();
-  const c = { who, ctx, page, base: '', key: '' };
-  page.on('pageerror', e => jsErrors.push(`${who}: ${e.message}`));
-  page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
+  const c = { who, ctx, page, base: '', key: '', crashed: false };
+  CLIENTS.push(c);
+  attach(c, page);
   await page.goto(BASE);
   await page.getByRole('button', { name: /J'ai un mot de passe/ }).click();
   await page.locator('#login-email-pw').fill(ACCOUNTS[who]);
@@ -78,8 +94,10 @@ function zurichIso(day, time) {
 
 async function step(id, title, fn, page) {
   const e = { group, id, title, status: 'KO', detail: '', shot: '' };
+  for (const c of CLIENTS) await revive(c).catch(() => {});
   try { const o = await fn(); e.status = (o && o.status) || 'OK'; e.detail = (o && o.detail) || ''; }
   catch (err) { e.status = 'KO'; e.detail = String(err.message).split('\n')[0]; }
+  if (CLIENTS.some(c => c.crashed)) e.detail += ' [ENV probable : la page du navigateur a planté pendant cette étape ; elle est remplacée pour la suite]';
   if (page && ['KO', 'PARTIEL'].includes(e.status)) { const f = `${id.replace(/[^\w-]/g, '_')}.png`; try { await page.screenshot({ path: path.join(SHOTS, f) }); e.shot = `captures-projets/${f}`; } catch { /* page fermée */ } }
   console.log(`${e.status.padEnd(11)} ${id}  ${title}${e.detail ? ' — ' + e.detail.slice(0, 170) : ''}`);
   results.push(e);
@@ -332,6 +350,7 @@ async function step(id, title, fn, page) {
 
   /* ============ Nettoyage ============ */
   group = 'Nettoyage';
+  for (const c of CLIENTS) await revive(c).catch(() => {});
   const clean = {};
   try {
     const mine = encodeURIComponent(M + '*');
