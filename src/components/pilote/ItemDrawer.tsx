@@ -8,6 +8,7 @@ import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL,
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import MenuButton from '../common/MenuButton';
+import StatusPicker from './StatusPicker';
 import DateInput, { DateRangeInput } from '../common/DateInput';
 
 export type ItemTarget = { mode: 'edit'; itemId: string } | { mode: 'new'; projectId?: string; parentId?: string | null; kind?: ItemKind };
@@ -256,9 +257,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
             )}
             <div>
               <label htmlFor="itm-status" className={labelClass}>État</label>
-              <select id="itm-status" className={inputClass} value={form.status_id} disabled={readOnly} onChange={e => set({ status_id: e.target.value })}>
-                {data.statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <StatusPicker id="itm-status" statuses={data.statuses} value={form.status_id} disabled={readOnly} onChange={v => set({ status_id: v })} />
             </div>
             <div>
               <label htmlFor="itm-priority" className={labelClass}>Priorité</label>

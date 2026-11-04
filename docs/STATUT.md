@@ -170,3 +170,10 @@ Source : analyse de Notion par Claude dans Chrome (`notion-gantt-analyse.zip`). 
 - **Titre en focus** : le panneau de la charte met déjà le curseur dans le premier champ ; c'est le nom pour le projet comme pour l'élément. Vérifié dans une page de test isolée (projet) ; testé en vrai par les étapes `U4-*` de `e2e-gantt` (à lancer).
 - **Pas fait volontairement** : création d'un élément *avec dates* en tirant sur la frise (le « + Nouveau » de la liste et la barre fantôme d'un élément sans date couvrent déjà le besoin) ; « Sans date » reste le menu qui place un élément existant.
 - **Tests** : `e2e-gantt` 42 étapes attendues (+ `U4-groupe-etat`, `U4-groupe-type`, `U4-focus-fiche`) ; `e2e-projets` adapté (le chantier lié est dans les détails). Aucun de ces scripts n'a été exécuté contre la vraie base depuis ce changement.
+
+### UI-5b — choix de l'état (2026-11-04)
+
+- **Sélecteur d'état** (`StatusPicker`) dans la fiche d'un élément et le formulaire d'un projet : un menu groupé par famille (Pas commencé, En cours, Terminé, Annulé), chaque état avec sa pastille de couleur ; le bouton montre la pastille et le nom de l'état choisi. Il remplace la liste déroulante simple. Échap ferme le menu sans fermer la fiche.
+- **Palette de 10 couleurs** pour créer ou modifier un état (`STATE_COLORS`), sans toucher à la palette des zones du planning.
+- **Pas fait** : « état par défaut » (case cochable). Il faudrait une colonne en base (migration) pour un bénéfice faible : l'état de départ reste le premier état de base « Pas commencé ».
+- Vérifié : types, lint ; le menu (4 familles, 5 états, pastilles, état coché, choix, Échap) essayé dans une page de test isolée. Étape e2e `U5-choix-etat` ajoutée (e2e-gantt : 43 étapes attendues), **non exécutée**.

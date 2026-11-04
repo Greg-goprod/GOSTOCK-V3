@@ -14,6 +14,8 @@ export interface FieldDef {
   key: string;
   label: string;
   type: 'text' | 'textarea' | 'color' | 'select' | 'date' | 'daterange' | 'checkbox';
+  // Pour une couleur : palette proposée (par défaut, celle des zones du planning)
+  palette?: string[];
   required?: boolean;
   options?: { value: string; label: string }[];
   hint?: string;
@@ -64,7 +66,7 @@ export function CrudSection<T extends { id: string }>({
     for (const f of fields) {
       const current = row === 'new' ? undefined : (row as unknown as Record<string, unknown>)[f.key];
       if (f.type === 'checkbox') next[f.key] = row === 'new' ? true : Boolean(current);
-      else if (f.type === 'color') next[f.key] = typeof current === 'string' ? current : ZONE_COLORS[0];
+      else if (f.type === 'color') next[f.key] = typeof current === 'string' ? current : (f.palette ?? ZONE_COLORS)[0];
       else next[f.key] = typeof current === 'string' ? current : '';
       if (f.type === 'daterange' && f.endKey) { const e = row === 'new' ? undefined : (row as unknown as Record<string, unknown>)[f.endKey]; next[f.endKey] = typeof e === 'string' ? e : ''; }
     }
@@ -146,7 +148,7 @@ export function CrudSection<T extends { id: string }>({
                     <DateInput id={`crud-${f.key}`} className={inputClass} value={String(values[f.key] ?? '')} onChange={e => setValues({ ...values, [f.key]: e.target.value })} />
                   ) : f.type === 'color' ? (
                     <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={f.label}>
-                      {ZONE_COLORS.map(c => (
+                      {(f.palette ?? ZONE_COLORS).map(c => (
                         <button key={c} type="button" role="radio" aria-checked={values[f.key] === c} aria-label={c} onClick={() => setValues({ ...values, [f.key]: c })}
                           className={`h-7 w-7 rounded-full border-2 ${values[f.key] === c ? 'border-gray-900 dark:border-white' : 'border-transparent'}`} style={{ background: c }} />
                       ))}

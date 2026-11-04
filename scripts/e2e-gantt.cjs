@@ -252,7 +252,7 @@ async function step(id, title, fn, page) {
     const st = rows(await api(resp, 'GET', `/rest/v1/cp_statuses?select=name&id=eq.${pr.status_id}`))[0];
     await addInGroup(resp, st.name);
     ok(await focusedId(resp) === 'prj-name', `focus sur « ${await focusedId(resp)} » au lieu du nom du projet`);
-    ok(await resp.page.locator('#prj-status').inputValue() === pr.status_id, 'état non prérempli par le groupe');
+    ok((await resp.page.locator('#prj-status').innerText()).trim().toLowerCase() === st.name.trim().toLowerCase(), `état affiché = « ${(await resp.page.locator('#prj-status').innerText()).trim()} » (attendu : ${st.name})`);
     ok(await resp.page.locator('#prj-site').count() === 0 && await resp.page.locator('#prj-linkmode').count() === 0, 'les détails devraient être repliés à la création');
     await resp.page.locator('#prj-name').fill(`${M} Depuis groupe`);
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
@@ -270,6 +270,24 @@ async function step(id, title, fn, page) {
     await newMenu(resp, 'Nouvelle tâche'); await resp.page.waitForTimeout(800);
     ok(await focusedId(resp) === 'itm-name', `focus sur « ${await focusedId(resp)} » au lieu du nom de l'élément`);
     await resp.page.getByRole('button', { name: 'Annuler' }).last().click(); await resp.page.waitForTimeout(500);
+  }, resp.page);
+
+  await step('U5-choix-etat', 'Choix de l\'état : menu groupé par famille avec pastilles ; l\'état choisi est enregistré', async () => {
+    const done = rows(await api(resp, 'GET', '/rest/v1/cp_statuses?select=id,name&is_system=eq.true&family=eq.done'))[0];
+    await newMenu(resp, 'Nouvelle tâche'); await resp.page.waitForTimeout(800);
+    await resp.page.locator('#itm-status').click();
+    const menu = resp.page.getByRole('menu'); await menu.getByRole('menuitemradio').first().waitFor({ timeout: 5000 });
+    const groups = (await menu.getByRole('group').allInnerTexts()).length;
+    ok(groups >= 4, `familles affichées : ${groups} (attendu : au moins 4)`);
+    const text = (await menu.innerText()).toLowerCase();
+    const order = ['pas commencé', 'en cours', 'terminé', 'annulé'].map(x => text.indexOf(x));
+    ok(order.every(i => i >= 0) && order.every((v, i) => i === 0 || v > order[i - 1]), `familles absentes ou dans le désordre : ${JSON.stringify(order)}`);
+    await menu.getByRole('menuitemradio', { name: done.name, exact: true }).click(); await resp.page.waitForTimeout(300);
+    await resp.page.locator('#itm-project').selectOption({ label: `${M} Projet` });
+    await resp.page.locator('#itm-name').fill(`${M} État choisi`);
+    await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1800);
+    const it = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=status_id&name=eq.${encodeURIComponent(M + ' État choisi')}`))[0];
+    ok(it && it.status_id === done.id, `état en base = ${it && it.status_id} (attendu : ${done.id})`);
   }, resp.page);
 
   /* ============ P3 Fiche ============ */

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Layers, ListChecks } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, SHOW_PROGRAMS, type CpProgram, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
+import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, SHOW_PROGRAMS, STATE_COLORS, type CpProgram, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
 import { formatDay } from '../lib/zurichTime';
 import PageTitle from '../components/common/PageTitle';
 import { MxBadge } from '../components/mx/MxBadge';
@@ -81,7 +81,7 @@ const PiloteProjects: React.FC = () => {
             { key: 'name', label: 'Nom', type: 'text', required: true },
             { key: 'family', label: 'Famille', type: 'select', required: true, lockedOnEdit: true, options: FAMILY_ORDER.map(f => ({ value: f, label: FAMILY_LABEL[f] })),
               hint: 'La famille décide du calcul d\'avancement et des filtres ; elle ne change plus après la création.' },
-            { key: 'color', label: 'Couleur', type: 'color' },
+            { key: 'color', label: 'Couleur', type: 'color', palette: STATE_COLORS },
           ]}
           columns={[
             { id: 'name', label: 'État', render: s => <span className="inline-flex items-center gap-2"><Dot color={s.color} /><span className="font-medium">{s.name}</span>{s.is_system && <MxBadge tone="neutral">De base</MxBadge>}</span> },

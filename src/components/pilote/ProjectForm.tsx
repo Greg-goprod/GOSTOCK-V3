@@ -7,6 +7,7 @@ import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, SHOW_PROGRAMS, saveTeam, 
 import { ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
+import StatusPicker from './StatusPicker';
 import { DateRangeInput } from '../common/DateInput';
 
 // Création : l'état ou le type peuvent être préremplis (création depuis un groupe du Gantt)
@@ -147,9 +148,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
             </div>
             <div>
               <label htmlFor="prj-status" className={labelClass}>État</label>
-              <select id="prj-status" className={inputClass} value={form.status_id} onChange={e => set({ status_id: e.target.value })}>
-                {data.statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <StatusPicker id="prj-status" statuses={data.statuses} value={form.status_id} onChange={v => set({ status_id: v })} />
             </div>
             {SHOW_PROGRAMS && (
             <div>

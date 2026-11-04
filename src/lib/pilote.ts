@@ -56,6 +56,8 @@ export const FAMILY_LABEL: Record<StatusFamily, string> = {
   not_started: 'Pas commencé', in_progress: 'En cours', done: 'Terminé', cancelled: 'Annulé',
 };
 export const FAMILY_ORDER: StatusFamily[] = ['not_started', 'in_progress', 'done', 'cancelled'];
+// Palette proposée pour la couleur d'un état : 10 teintes lisibles sur fond clair comme sombre
+export const STATE_COLORS = ['#6b7280', '#3b82f6', '#0ea5e9', '#10b981', '#84cc16', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#a16207'];
 export const TYPE_LABEL: Record<ProjectType, string> = {
   site: 'Chantier', rd: 'R&D', design: 'Conception', recruitment: 'Recrutement', admin: 'Administratif', event: 'Évènement',
 };
