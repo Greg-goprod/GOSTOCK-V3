@@ -3229,5 +3229,13 @@
 "Assigner": "Assegna",
 "Assigner des personnes": "Assegna delle persone",
 "Tes projets, leurs phases, tâches et jalons sur une échelle de temps. Clique sur une barre pour ouvrir sa fiche.": "I tuoi progetti, con fasi, attività e pietre miliari, su una scala temporale. Clicca su una barra per aprire la sua scheda.",
-"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "I tuoi progetti di ogni tipo (cantiere, R&S, progettazione, reclutamento, amministrativo, evento), con stato e team. «Le mie attività» raccoglie ciò che ti è assegnato."
+"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "I tuoi progetti di ogni tipo (cantiere, R&S, progettazione, reclutamento, amministrativo, evento), con stato e team. «Le mie attività» raccoglie ciò che ti è assegnato.",
+"Couleur des barres": "Colore delle barre",
+"Par état": "Per stato",
+"Par projet": "Per progetto",
+"Masquer la liste": "Nascondi l'elenco",
+"Afficher la liste": "Mostra l'elenco",
+"Placer ici": "Colloca qui",
+"Aller à {0}": "Vai a {0}",
+"Dates ajoutées": "Date aggiunte"
 }

@@ -3229,5 +3229,13 @@
 "Assigner": "Zuweisen",
 "Assigner des personnes": "Personen zuweisen",
 "Tes projets, leurs phases, tâches et jalons sur une échelle de temps. Clique sur une barre pour ouvrir sa fiche.": "Deine Projekte mit Phasen, Aufgaben und Meilensteinen auf einer Zeitachse. Klicke auf einen Balken, um sein Blatt zu öffnen.",
-"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "Deine Projekte jeder Art (Baustelle, F&E, Konzeption, Rekrutierung, Verwaltung, Veranstaltung) mit Status und Team. «Meine Aufgaben» sammelt, was dir zugewiesen ist."
+"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "Deine Projekte jeder Art (Baustelle, F&E, Konzeption, Rekrutierung, Verwaltung, Veranstaltung) mit Status und Team. «Meine Aufgaben» sammelt, was dir zugewiesen ist.",
+"Couleur des barres": "Farbe der Balken",
+"Par état": "Nach Status",
+"Par projet": "Nach Projekt",
+"Masquer la liste": "Liste ausblenden",
+"Afficher la liste": "Liste anzeigen",
+"Placer ici": "Hier platzieren",
+"Aller à {0}": "Gehe zu {0}",
+"Dates ajoutées": "Termine hinzugefügt"
 }

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarCheck, ChevronsDownUp, ChevronsUpDown, MoreHorizontal, Plus } from 'lucide-react';
+import { CalendarCheck, ChevronsDownUp, ChevronsUpDown, MoreHorizontal, PanelLeft, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { getLanguage } from '../i18n/translator';
-import { buildGantt, defaultExpanded, undatedRows, visibleRows, withAddRows, type Grouping, type GanttRow } from '../lib/ganttModel';
-import { isPreset, makePeriod, type ViewPeriod } from '../lib/viewPeriod';
+import { buildGantt, defaultExpanded, undatedRows, visibleRows, withAddRows, type ColorBy, type Grouping, type GanttRow } from '../lib/ganttModel';
+import { isPreset, makePeriod, periodDays, type ViewPeriod } from '../lib/viewPeriod';
 import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import PageTitle from '../components/common/PageTitle';
@@ -29,6 +29,11 @@ const PiloteGantt: React.FC = () => {
   const [rights, setRights] = useState<PiloteRights>(NO_RIGHTS);
   const [grouping, setGrouping] = useState<Grouping>('status');
   const [period, setPeriod] = useState<ViewPeriod | null>(null);
+  // Préférences d'affichage mémorisées dans le navigateur : couleur des barres (par état, par défaut) et liste des noms (affichée ou masquée)
+  const [colorBy, setColorByState] = useState<ColorBy>(() => { try { return localStorage.getItem('gomat-gantt-colorby') === 'project' ? 'project' : 'status'; } catch { return 'status'; } });
+  const [showNames, setShowNamesState] = useState<boolean>(() => { try { return localStorage.getItem('gomat-gantt-names') !== 'hidden'; } catch { return true; } });
+  const setColorBy = (v: ColorBy) => { setColorByState(v); try { localStorage.setItem('gomat-gantt-colorby', v); } catch { /* préférence facultative */ } };
+  const setShowNames = (v: boolean) => { setShowNamesState(v); try { localStorage.setItem('gomat-gantt-names', v ? 'shown' : 'hidden'); } catch { /* préférence facultative */ } };
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [itemTarget, setItemTarget] = useState<ItemTarget | null>(null);
   const [projectTarget, setProjectTarget] = useState<ProjectTarget | null>(null);
@@ -39,7 +44,7 @@ const PiloteGantt: React.FC = () => {
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
 
-  const model = useMemo(() => buildGantt(data ?? EMPTY, grouping), [data, grouping]);
+  const model = useMemo(() => buildGantt(data ?? EMPTY, grouping, colorBy), [data, grouping, colorBy]);
   // Ouverture sur 2 niveaux, à chaque changement de regroupement
   useEffect(() => { setExpanded(defaultExpanded(model)); }, [grouping]); // eslint-disable-line react-hooks/exhaustive-deps
   // Première arrivée des données : même ouverture
@@ -97,6 +102,15 @@ const PiloteGantt: React.FC = () => {
     return true;
   };
 
+  // Flèche ← / → d'une ligne hors de la fenêtre : on amène la période sur elle (même durée pour une période libre)
+  const jumpTo = (row: GanttRow) => {
+    if (!row.start || !period) return;
+    if (period.preset === 'custom') changePeriod({ preset: 'custom', start: row.start, end: dayFromNumber(dayNumberOf(row.start) + periodDays(period) - 1) });
+    else changePeriod(makePeriod(period.preset, row.start));
+  };
+  // Barre fantôme : un clic sur une ligne sans date lui donne la plage survolée
+  const placeAt = (row: GanttRow, start: string, end: string) => run(() => setDates(row.kind === 'project' ? 'project' : 'item', row.id as string, start, end), 'Dates ajoutées');
+
   // « Placer » : donne une date à un élément ou à un projet sans date (aujourd'hui ; une semaine pour tout sauf un jalon)
   const place = async (row: GanttRow) => {
     if (!row.id) return;
@@ -137,10 +151,15 @@ const PiloteGantt: React.FC = () => {
                 onSelect: () => { if (rights.update) void place(r); else openRow(r); },
               })) }]} />
           )}
-          <MenuButton id="gantt-more" menuLabel="Affichage de l'arbre" iconOnly ariaLabel="Plus d'options d'affichage" icon={<MoreHorizontal size={16} />}
+          <MenuButton id="gantt-more" menuLabel="Affichage" iconOnly ariaLabel="Plus d'options d'affichage" icon={<MoreHorizontal size={16} />}
+            groups={[{ id: 'colorby', label: 'Couleur des barres', items: [
+              { id: 'status', label: 'Par état', checked: colorBy === 'status', onSelect: () => setColorBy('status') },
+              { id: 'project', label: 'Par projet', checked: colorBy === 'project', onSelect: () => setColorBy('project') },
+            ] }]}
             actions={[
               { id: 'expand', label: 'Tout déplier', icon: ChevronsUpDown, onSelect: () => setExpanded(new Set(model.expandable)) },
               { id: 'collapse', label: 'Replier', icon: ChevronsDownUp, onSelect: () => setExpanded(defaultExpanded(model)) },
+              { id: 'names', label: showNames ? 'Masquer la liste' : 'Afficher la liste', icon: PanelLeft, onSelect: () => setShowNames(!showNames) },
             ]} />
           {rights.create && (
             <MenuButton id="gantt-new" menuLabel="Créer" variant="primary" icon={<Plus size={14} />} value="Nouveau"
@@ -160,7 +179,8 @@ const PiloteGantt: React.FC = () => {
         <MxEmpty icon={CalendarCheck} title="Rien à afficher" description="Crée d'abord un projet dans PILOTE › Projets : il apparaîtra ici avec ses phases, tâches et jalons." />
       ) : (
         <GanttChart rows={rows} links={data.links} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
-          onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline} />
+          onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline}
+          showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} />
       )}
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />

@@ -3229,5 +3229,13 @@
 "Assigner": "Assign",
 "Assigner des personnes": "Assign people",
 "Tes projets, leurs phases, tâches et jalons sur une échelle de temps. Clique sur une barre pour ouvrir sa fiche.": "Your projects, with their phases, tasks and milestones, on a timeline. Click a bar to open its sheet.",
-"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "Your projects of every kind (site, R&D, design, recruitment, admin, event), with their status and team. \"My tasks\" gathers what is assigned to you."
+"Tes projets de toute nature (chantier, R&D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.": "Your projects of every kind (site, R&D, design, recruitment, admin, event), with their status and team. \"My tasks\" gathers what is assigned to you.",
+"Couleur des barres": "Bar colour",
+"Par état": "By status",
+"Par projet": "By project",
+"Masquer la liste": "Hide the list",
+"Afficher la liste": "Show the list",
+"Placer ici": "Place here",
+"Aller à {0}": "Go to {0}",
+"Dates ajoutées": "Dates added"
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { dayFromNumber, dayNumberOf } from '../../lib/ganttModel';
 import { clipBar, isWeekend, linkPaths, makeHeader, makeScale, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
@@ -27,6 +27,12 @@ interface Props {
   onResize: (row: GanttRow, start: string, end: string) => Promise<void>;
   // Création directe dans la liste (ligne « + Nouveau »)
   onCreate: (row: GanttRow, name: string, kind: ItemKind) => Promise<boolean>;
+  // Liste des noms à gauche : affichée (défaut) ou masquée pour donner toute la largeur à la frise
+  showNames?: boolean;
+  // Une ligne hors de la période affichée a une flèche ← / → au bord : un clic amène la fenêtre sur elle
+  onJump?: (row: GanttRow) => void;
+  // Barre fantôme : survoler la frise sur une ligne SANS date propose une plage, un clic la donne à l'élément (droit de modification requis)
+  onPlace?: (row: GanttRow, start: string, end: string) => Promise<void>;
 }
 
 const BAR_H: Record<GanttRow['kind'], number> = { group: 8, program: 10, project: 22, phase: 18, task: 20, subtask: 14, milestone: 14, add: 0 };
@@ -77,7 +83,7 @@ const InlineAdd: React.FC<{ row: GanttRow; onCreate: Props['onCreate'] }> = ({ r
   );
 };
 
-const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate }) => {
+const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate, showNames = true, onJump, onPlace }) => {
   const box = useRef<HTMLDivElement>(null);
   // Colonne des noms plus étroite sur téléphone, pour laisser de la place aux barres
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
@@ -87,7 +93,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
     q.addEventListener('change', update);
     return () => q.removeEventListener('change', update);
   }, []);
-  const NAME_W = narrow ? NAME_W_NARROW : NAME_W_WIDE;
+  const NAME_W = !showNames ? 0 : narrow ? NAME_W_NARROW : NAME_W_WIDE;
   // La période affichée tient dans la largeur : on mesure la zone, un jour = largeur disponible / nombre de jours
   const [width, setWidth] = useState(0);
   useLayoutEffect(() => {
@@ -105,6 +111,15 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
   const totalW = scale.days * scale.px;
   const arrows = useMemo(() => linkPaths(rows, links, scale, ROW_H), [rows, links, scale]);
   const bodyH = rows.length * ROW_H;
+  // Survol d'une barre : sa plage de dates s'éclaire dans l'en-tête ; survol d'une ligne sans date : barre fantôme (plage proposée : 7 jours, 1 pour un jalon)
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  const [ghost, setGhost] = useState<{ key: string; day: number } | null>(null);
+  const hoverRow = hoverKey ? rows.find(r => r.key === hoverKey) ?? null : null;
+  const ghostRow = ghost ? rows.find(r => r.key === ghost.key) ?? null : null;
+  const ghostLen = ghostRow?.kind === 'milestone' ? 1 : 7;
+  const bandOf = (start: string, end: string) => { const c = clipBar(scale, start, end); return c ? { left: c.left, width: c.width } : null; };
+  const headBand = ghostRow && ghost ? { left: ghost.day * scale.px, width: Math.min(ghostLen, scale.days - ghost.day) * scale.px }
+    : hoverRow?.start && hoverRow.end ? bandOf(hoverRow.start, hoverRow.end) : null;
   const todayInside = today >= period.start && today <= period.end;
   const todayX = xOfDay(scale, today) + scale.px / 2;
 
@@ -168,9 +183,9 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
 
   return (
     <div ref={box} className="relative overflow-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ maxHeight: 'calc(100vh - 300px)', minHeight: 220 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: `${NAME_W}px ${totalW}px`, width: NAME_W + totalW }}>
+      <div style={{ display: 'grid', gridTemplateColumns: showNames ? `${NAME_W}px ${totalW}px` : `${totalW}px`, width: NAME_W + totalW }}>
         {/* En-tête : coin fixe + deux étages de dates */}
-        <div className="sticky left-0 top-0 z-30 flex items-end border-b border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 pb-1 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" style={{ height: HEAD_H * 2 }}>Nom</div>
+        {showNames && <div className="sticky left-0 top-0 z-30 flex items-end border-b border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 pb-1 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" style={{ height: HEAD_H * 2 }}>Nom</div>}
         <div className="sticky top-0 z-20 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900" style={{ height: HEAD_H * 2 }}>
           <div className="relative" style={{ height: HEAD_H }}>
             {header.top.map((c, i) => (
@@ -178,6 +193,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
             ))}
           </div>
           <div className="relative" style={{ height: HEAD_H }}>
+            {headBand && <div aria-hidden data-range-highlight className="pointer-events-none absolute inset-y-0 z-[1] bg-primary-500/25" style={{ left: headBand.left, width: headBand.width }} />}
             {header.bottom.map((c, i) => {
               const n = scale.startDay + Math.round(c.left / scale.px);
               return (
@@ -188,6 +204,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
         </div>
 
         {/* Liste en arbre */}
+        {showNames && (
         <div className="sticky left-0 z-10 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ height: bodyH }}>
           {rows.map(r => {
             const isOpen = expanded.has(r.key);
@@ -221,6 +238,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
             );
           })}
         </div>
+        )}
 
         {/* Barres */}
         <div className="relative" style={{ height: bodyH, backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H}px)` }}>
@@ -235,6 +253,38 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
             </svg>
           )}
           {todayInside && <div aria-hidden className="absolute top-0 z-[5] w-px bg-danger-500" style={{ left: todayX, height: bodyH }} />}
+          {/* Barre fantôme : une ligne sans date, survolée, propose une plage ; un clic la donne à l'élément */}
+          {canEdit && onPlace && rows.map((r, i) => {
+            if (!['project', 'phase', 'task', 'subtask', 'milestone'].includes(r.kind) || r.start) return null;
+            const len = r.kind === 'milestone' ? 1 : 7;
+            return (
+              <div key={`ghost:${r.key}`} data-ghost-zone={r.key} className="absolute left-0 z-[4] cursor-copy" style={{ top: i * ROW_H, height: ROW_H, width: totalW }}
+                onMouseMove={e => { const day = Math.max(0, Math.min(scale.days - 1, Math.floor((e.nativeEvent.offsetX) / scale.px))); setGhost(g => (g && g.key === r.key && g.day === day ? g : { key: r.key, day })); }}
+                onMouseLeave={() => setGhost(null)}
+                onClick={e => { const day = Math.max(0, Math.min(scale.days - 1, Math.floor((e.nativeEvent.offsetX) / scale.px))); const start = dayFromNumber(scale.startDay + day); void onPlace(r, start, dayFromNumber(scale.startDay + day + len - 1)); setGhost(null); }}>
+                {ghost?.key === r.key && (
+                  <div aria-hidden data-ghost-bar className="pointer-events-none absolute flex items-center rounded border border-dashed border-primary-500 bg-primary-500/10 px-1.5 text-[11px] font-medium text-primary-700 dark:text-primary-300"
+                    style={{ left: ghost.day * scale.px, top: (ROW_H - 20) / 2, height: 20, width: Math.min(len, scale.days - ghost.day) * scale.px }}>
+                    <span className="truncate">Placer ici</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {/* Flèches ← / → : une ligne datée mais hors de la période affichée ; un clic amène la fenêtre sur elle */}
+          {onJump && rows.map((r, i) => {
+            if (!['project', 'phase', 'task', 'subtask', 'milestone'].includes(r.kind) || !r.start || !r.end || clipBar(scale, r.start, r.end)) return null;
+            const before = r.end < period.start;
+            return (
+              <button key={`jump:${r.key}`} type="button" data-jump={before ? 'left' : 'right'} aria-label={`Aller à ${r.name}`} title={`${r.name} · ${datesOf(r)}`} onClick={() => onJump(r)}
+                className="absolute z-[9] flex h-6 max-w-[240px] items-center gap-1 rounded bg-gray-100 px-1 text-[11px] text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                style={{ top: i * ROW_H + (ROW_H - 24) / 2, ...(before ? { left: 4 } : { right: 4 }) }}>
+                {before && <ChevronLeft size={14} aria-hidden />}
+                {!showNames && <span className="truncate">{r.name}</span>}
+                {!before && <ChevronRight size={14} aria-hidden />}
+              </button>
+            );
+          })}
           {rows.map((r, i) => {
             if (r.kind === 'add' || !r.start || !r.end) return null;
             const top = i * ROW_H;
@@ -273,7 +323,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
             }
             const summary = r.kind === 'group' || r.kind === 'program';
             return (
-              <div key={r.key} className={`absolute flex items-center ${view ? 'z-[8]' : 'z-[6]'}`} style={{ left, top: top + (ROW_H - h) / 2, height: h }}>
+              <div key={r.key} onMouseEnter={() => setHoverKey(r.key)} onMouseLeave={() => setHoverKey(k => (k === r.key ? null : k))} className={`absolute flex items-center ${view ? 'z-[8]' : 'z-[6]'}`} style={{ left, top: top + (ROW_H - h) / 2, height: h }}>
                 <div {...common} {...handle}
                   className={`group/bar relative select-none overflow-hidden ${draggable ? 'cursor-grab active:cursor-grabbing' : clickable ? 'cursor-pointer' : ''} ${clickable ? 'outline-offset-2 focus-visible:outline focus-visible:outline-2' : ''} ${view ? 'ring-2 ring-white/70 shadow-md' : ''}`}
                   style={{ touchAction: draggable ? 'none' : undefined, width: barW, height: h, background: `${r.color}${summary ? '66' : '40'}`, border: `1px solid ${r.color}`, opacity: r.family === 'cancelled' ? 0.45 : 1, borderRadius: `${clipped.clippedLeft ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedLeft ? 0 : 6}px` }}>
@@ -287,7 +337,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
                     <span aria-hidden data-handle="end" onPointerDown={e => press(e, r, 'end')} onPointerMove={dragMove} onPointerUp={e => void dragEnd(e)} className="absolute inset-y-0 right-0 z-[2] w-1.5 cursor-ew-resize bg-black/0 hover:bg-black/20" style={{ touchAction: 'none' }} />
                   )}
                 </div>
-                {!summary && barW < 90 && !clipped.clippedRight && <span className="ml-1.5 whitespace-nowrap text-[11px] text-gray-700 dark:text-gray-300">{r.name}</span>}
+                {((!summary && barW < 90) || (!showNames && summary)) && !clipped.clippedRight && <span className="ml-1.5 whitespace-nowrap text-[11px] text-gray-700 dark:text-gray-300">{r.name}</span>}
               </div>
             );
           })}

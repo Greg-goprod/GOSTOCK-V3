@@ -185,6 +185,55 @@ async function step(id, title, fn, page) {
     await resp.page.keyboard.press('Escape');
   }, resp.page);
 
+  // Finitions de la frise (inspirées de Notion) : couleur par état, barre fantôme, flèches hors zone, liste masquable
+  const hexToRgb = h => { const n = parseInt(h.replace('#', ''), 16); return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`; };
+  await step('P2b-couleur', 'Couleur des barres : par état (défaut), puis par projet', async () => {
+    const st = rows(await api(resp, 'GET', '/rest/v1/cp_statuses?select=id,color&is_system=eq.true'));
+    const pr = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=color,status_id&id=eq.${S.proj}`))[0];
+    const stColor = st.find(x => x.id === pr.status_id).color;
+    await expandAll(resp); await showBar(resp, `${M} Tâche`);
+    const borderOf = async () => resp.page.locator(`[role="button"][aria-label*="${M} Tâche"]`).first().evaluate(e => getComputedStyle(e).borderTopColor);
+    const task = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=status_id&id=eq.${S.task}`))[0];
+    const taskStateColor = st.find(x => x.id === task.status_id).color;
+    ok(await borderOf() === hexToRgb(taskStateColor), `couleur de la tâche (par état) = ${await borderOf()} attendu ${hexToRgb(taskStateColor)}`);
+    await resp.page.locator('button[aria-label="Plus d\'options d\'affichage"]').click();
+    await resp.page.getByRole('menuitemradio', { name: 'Par projet', exact: true }).click(); await resp.page.waitForTimeout(400);
+    ok(await borderOf() === hexToRgb(pr.color), `couleur de la tâche (par projet) = ${await borderOf()} attendu ${hexToRgb(pr.color)}`);
+    await resp.page.locator('button[aria-label="Plus d\'options d\'affichage"]').click();
+    await resp.page.getByRole('menuitemradio', { name: 'Par état', exact: true }).click(); await resp.page.waitForTimeout(300);
+    void stColor;
+  }, resp.page);
+  await step('P2b-fantome', 'Barre fantôme : survoler une ligne sans date propose une plage ; un clic la donne à l\'élément', async () => {
+    S.ghostItem = await create(resp, 'cp_items', { project_id: S.proj, kind: 'task', name: `${M} Fantôme` });
+    await open(resp, '/pilote/gantt'); await expandAll(resp); await setScale(resp, '1 année');
+    const zone = resp.page.locator(`[data-ghost-zone="i:${S.ghostItem}"]`);
+    ok(await zone.count() === 1, 'zone de survol absente pour la ligne sans date');
+    await zone.scrollIntoViewIfNeeded();
+    const box = await zone.boundingBox();
+    await resp.page.mouse.move(box.x + box.width / 3, box.y + box.height / 2); await resp.page.waitForTimeout(250);
+    ok(await resp.page.locator('[data-ghost-bar]').count() === 1, 'barre fantôme absente au survol');
+    ok(await resp.page.locator('[data-range-highlight]').count() === 1, 'plage non éclairée dans l\'en-tête');
+    await resp.page.mouse.click(box.x + box.width / 3, box.y + box.height / 2); await resp.page.waitForTimeout(1800);
+    const it = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=starts_on,ends_on&id=eq.${S.ghostItem}`))[0];
+    ok(it && it.starts_on && it.ends_on && (new Date(it.ends_on) - new Date(it.starts_on)) / 86400000 === 6, `dates en base = ${JSON.stringify(it)} (attendu : 7 jours)`);
+  }, resp.page);
+  await step('P2b-fleche-hors-zone', 'Une ligne hors de la période affichée a une flèche ; un clic amène la fenêtre sur sa barre', async () => {
+    await setScale(resp, '1 jour');
+    const jump = resp.page.getByRole('button', { name: `Aller à ${M} Tâche`, exact: true });
+    ok(await jump.count() === 1, 'flèche absente pour une tâche hors période');
+    await jump.click(); await resp.page.waitForTimeout(500);
+    ok(await resp.page.locator(`[role="button"][aria-label*="${M} Tâche"]`).count() >= 1, 'la fenêtre ne s\'est pas amenée sur la tâche');
+    await setScale(resp, '3 mois');
+  }, resp.page);
+  await step('P2b-liste-masquee', 'Masquer la liste des noms : la frise prend toute la largeur ; la réafficher', async () => {
+    const menu = () => resp.page.locator('button[aria-label="Plus d\'options d\'affichage"]').click();
+    await menu(); await resp.page.getByRole('menuitem', { name: 'Masquer la liste' }).click(); await resp.page.waitForTimeout(400);
+    ok(await rowLocator(resp).count() === 0, 'la liste des noms est encore affichée');
+    ok(await resp.page.locator(`[role="button"][aria-label*="${M} Tâche"]`).count() >= 1 || await resp.page.locator('[data-jump]').count() >= 1, 'plus de barres ni de flèches une fois la liste masquée');
+    await menu(); await resp.page.getByRole('menuitem', { name: 'Afficher la liste' }).click(); await resp.page.waitForTimeout(400);
+    ok(await rowLocator(resp).count() > 0, 'la liste n\'est pas revenue');
+  }, resp.page);
+
   /* ============ P3 Fiche ============ */
   group = 'P3 Fiche';
   await step('P3-ouvrir', 'Clic sur la tâche : fiche avec le type en sous-titre, propriétés clés visibles, parent dans les détails', async () => {

@@ -4,6 +4,8 @@ import { TYPE_LABEL, TYPE_ORDER, type CpItem, type GanttData, type ItemKind, typ
 // Modèle du Gantt (sans affichage) : arbre programme → projet → phase → tâche → sous-tâche, regroupement, dates des parents
 // calculées à partir de leurs enfants, avancement (éléments terminés / éléments comptés), éléments sans date.
 export type Grouping = 'program' | 'status' | 'type';
+// Couleur des barres : celle de l'ÉTAT de la ligne (par défaut, comme Notion) ou celle de son projet
+export type ColorBy = 'status' | 'project';
 export type RowKind = 'group' | 'program' | 'project' | ItemKind | 'add';
 
 export interface GanttRow {
@@ -59,8 +61,11 @@ function sum(node: Node) {
 // Une feuille compte pour 1 (terminée si sa famille est « Terminé ») ; un élément annulé ne compte pas
 const leafCount = (family: StatusFamily | null) => ({ done: family === 'done' ? 1 : 0, total: family === 'cancelled' ? 0 : 1 });
 
-export function buildGantt(data: GanttData, grouping: Grouping): GanttModel {
+export function buildGantt(data: GanttData, grouping: Grouping, colorBy: ColorBy = 'status'): GanttModel {
   const family = new Map(data.statuses.map(s => [s.id, s.family]));
+  const statusColor = new Map(data.statuses.map(s => [s.id, s.color]));
+  // Couleur d'une ligne : celle de son état (si le mode le demande et que l'état est connu), sinon celle de son projet
+  const colorOf = (statusId: string, projectColor: string) => (colorBy === 'status' ? statusColor.get(statusId) ?? projectColor : projectColor);
   const itemsByProject = new Map<string, CpItem[]>();
   for (const it of data.items) { const l = itemsByProject.get(it.project_id) ?? []; l.push(it); itemsByProject.set(it.project_id, l); }
   const orderItems = (a: CpItem, b: CpItem) => a.position - b.position || cmpDate(a.starts_on, b.starts_on) || byText(a.name, b.name);
@@ -69,7 +74,7 @@ export function buildGantt(data: GanttData, grouping: Grouping): GanttModel {
     pool.filter(i => i.parent_id === parentId).sort(orderItems).map(it => {
       const key = `i:${it.id}`;
       const node: Node = { row: {
-        key, kind: it.kind, id: it.id, projectId, parentId: it.parent_id, level, name: it.name, color, start: null, end: null, ownStart: null, ownEnd: null, partial: false,
+        key, kind: it.kind, id: it.id, projectId, parentId: it.parent_id, level, name: it.name, color: colorOf(it.status_id, color), start: null, end: null, ownStart: null, ownEnd: null, partial: false,
         family: family.get(it.status_id) ?? 'not_started', done: 0, total: 0, hasChildren: false, parentKey,
       }, children: [] };
       node.children = itemNodes(projectId, color, it.id, level + 1, key, pool);
@@ -85,7 +90,7 @@ export function buildGantt(data: GanttData, grouping: Grouping): GanttModel {
     const key = `p:${p.id}`;
     const pool = itemsByProject.get(p.id) ?? [];
     const node: Node = { row: {
-      key, kind: 'project', id: p.id, projectId: p.id, parentId: null, level, name: p.name, color: p.color, start: null, end: null, ownStart: p.starts_on, ownEnd: p.ends_on, partial: false,
+      key, kind: 'project', id: p.id, projectId: p.id, parentId: null, level, name: p.name, color: colorOf(p.status_id, p.color), start: null, end: null, ownStart: p.starts_on, ownEnd: p.ends_on, partial: false,
       family: family.get(p.status_id) ?? 'not_started', done: 0, total: 0, hasChildren: false, parentKey,
     }, children: itemNodes(p.id, p.color, null, level + 1, key, pool) };
     node.row.hasChildren = node.children.length > 0;

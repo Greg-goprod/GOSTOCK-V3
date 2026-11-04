@@ -99,6 +99,13 @@ eq('flèche : entièrement hors de la fenêtre : pas de flèche', linkPaths(rows
 
 eq('regroupement par état : un groupe par état utilisé', buildGantt(data, 'status').rows.filter(x => x.kind === 'group').map(x => x.name), ['Pas commencé', 'En cours', 'Terminé']);
 eq('regroupement par type', buildGantt(data, 'type').rows.filter(x => x.kind === 'group').map(x => x.name), ['Chantier', 'R&D', 'Administratif']);
+// Couleur des barres : par état (défaut) ou par projet
+const colorsOf = (by?: 'status' | 'project') => Object.fromEntries(buildGantt(data, 'status', by).rows.filter(x => x.kind === 'project').map(x => [x.name, x.color]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
+eq('couleur par état (défaut) : un projet prend la couleur de son état', colorsOf(), { Festival: '#39f', Prototype: '#0a0', 'Sans élément': '#999' });
+eq('couleur par projet : un projet garde sa propre couleur', colorsOf('project'), { Festival: '#0ea5e9', Prototype: '#10b981', 'Sans élément': '#f00' });
+const itemColors = (by?: 'status' | 'project') => buildGantt(data, 'program', by).rows.filter(x => x.kind === 'task' || x.kind === 'phase').map(x => [x.name, x.color]);
+eq('couleur par état : un élément prend la couleur de SON état, pas celle du projet', itemColors().every(([, c]) => ['#999', '#39f', '#0a0', '#d00'].includes(c as string)), true);
+eq('couleur par projet : les éléments héritent de la couleur du projet', itemColors('project').every(([, c]) => ['#0ea5e9', '#10b981', '#f00'].includes(c as string)), true);
 eq('sans données : modèle vide', buildGantt({ ...data, projects: [], items: [], programs: [] }, 'program'), { rows: [], expandable: [], range: null });
 
 // Échelle : la période tient dans la largeur
