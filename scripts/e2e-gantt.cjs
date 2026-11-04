@@ -181,7 +181,9 @@ async function step(id, title, fn, page) {
     await setGrouping(resp, 'État'); await resp.page.waitForTimeout(300);
     ok((await rowLocator(resp).count()) > 0, 'aucune ligne par état');
     await menuButton(resp, /Grouper/).click();
-    ok((await resp.page.getByRole('menuitemradio').allInnerTexts()).join('/') === 'État/Type', 'le regroupement par programme ne devrait plus être proposé');
+    // On lit uniquement le menu ouvert, sans tenir compte de la casse (innerText applique le text-transform du CSS)
+    const choices = (await resp.page.getByRole('menu').getByRole('menuitemradio').allInnerTexts()).map(x => x.trim().toLowerCase());
+    ok(choices.join('/') === 'état/type', `choix de regroupement lus : « ${choices.join(' / ')} » (attendu : État / Type, sans Programme)`);
     await resp.page.keyboard.press('Escape');
   }, resp.page);
 
@@ -239,7 +241,10 @@ async function step(id, title, fn, page) {
   await step('P3-ouvrir', 'Clic sur la tâche : fiche avec le type en sous-titre, propriétés clés visibles, parent dans les détails', async () => {
     await expandAll(resp);
     await resp.page.locator('.group\\/row button', { hasText: `${M} Tâche` }).first().click(); await resp.page.waitForTimeout(1200);
-    ok((await resp.page.locator('[role="dialog"]').innerText()).includes(`Tâche · ${M} Projet`), 'sous-titre « Tâche · projet » absent');
+    // Plusieurs éléments portent role="dialog" (la fiche, mais aussi d'autres panneaux) : on cible la fiche, celle qui contient le champ du nom
+    const drawer = resp.page.locator('[role="dialog"]').filter({ has: resp.page.locator('#itm-name') });
+    ok(await drawer.count() === 1, `fiche : ${await drawer.count()} panneau(x) contenant le champ du nom (attendu : 1)`);
+    ok((await drawer.innerText()).includes(`Tâche · ${M} Projet`), 'sous-titre « Tâche · projet » absent');
     ok(await resp.page.locator('#itm-kind').count() === 0, 'le type ne se change pas : il ne doit pas être proposé en modification');
     for (const id of ['#itm-status', '#itm-priority', '#itm-period', '#itm-desc', '#itm-assign']) ok(await resp.page.locator(id).count() === 1, `propriété clé absente : ${id}`);
     ok(await resp.page.locator('#itm-parent').count() === 0, 'le parent devrait être replié dans les détails');
