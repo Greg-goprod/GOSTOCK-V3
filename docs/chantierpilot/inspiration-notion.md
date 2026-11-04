@@ -54,3 +54,33 @@ Notre frise actuelle est faite pour des heures dans une journée. Le Gantt deman
 2. **États** : 4 états de base fixes (Pas commencé / En cours / Terminé / Annulé) **et** possibilité d'en ajouter dans les Paramètres. Un état ajouté se range dans l'une des 4 familles (comme les groupes de Notion), pour que l'avancement et les filtres restent calculables.
 3. **Dépendances** : juste après le Gantt.
 4. **Responsables** : **plusieurs** personnes par élément (table de liaison élément ↔ personne).
+
+---
+
+## Analyse de la création d'un projet dans Notion (complément du 2026-11-04) et plan mis à jour
+
+Sources : `RAPPORT-ANALYSE-GANTT-NOTION.md` et `RAPPORT-CREATION-PROJET.md` (captures S01 à S46), faits par Claude dans Chrome.
+
+### Ce qu'on retient
+1. **Création en un geste** : « Nouveau » ouvre tout de suite la fiche en panneau latéral, titre sélectionné (on tape le nom), propriétés épinglées sous le titre (État déjà « Pas commencé », personne assignée, priorité, date), le reste sous « Afficher les détails ».
+2. **Une fiche = des sections** : propriétés, « À propos » (notre description), « Tâches à accomplir » (notre liste à cocher), « Documents », commentaires/discussion. C'est là que viennent se brancher le chat et les documents demandés par Greg.
+3. **États groupés en 3 familles fixes** (À faire / En cours / Terminé), options libres dans chaque famille, une couleur parmi 10, une option « par défaut » ; la couleur de l'état colore la ligne et la barre du Gantt. Notre modèle (4 familles, états ajoutables) est le même principe.
+4. **Créer depuis le contexte** : « + Nouveau » en bas d'un groupe (état prérempli), barre fantôme sur la frise (dates préremplies), menu « Aucune date ».
+5. **Modèles de projet** : valeurs préremplies + corps de page, option « Vide », répétition possible.
+6. **Mise en page configurable** (propriétés épinglées, onglets), menu « … » de la page (dupliquer, copier le lien, historique, verrouiller, supprimer).
+
+### Défauts relevés chez Notion (à ne pas copier)
+- Date de fin épinglée mais date de début cachée : on crée des projets sans début, absents du Gantt (→ chez nous un seul sélecteur de plage, déjà en place).
+- Aucun champ obligatoire et création immédiate : des projets vides s'accumulent (→ chez nous le nom est obligatoire et on enregistre explicitement).
+- « Progrès » mal calculé (départ ÷ finale, sans plafond) ; budget en dollars ; options génériques ; langue mélangée (« Done »).
+- Les tâches sont de simples cases à cocher, sans lien avec le Gantt (→ chez nous de vraies tâches avec dépendances, et l'avancement se calcule tout seul).
+
+### Plan (mis à jour)
+UI-1 barre d'outils du Gantt, UI-2 fiche d'élément : faits.
+UI-3 frise (barre fantôme, titre débordant, flèches hors zone, table masquable, plage éclairée au survol).
+UI-4 création rapide : « Nouveau » → fiche latérale, titre en focus, propriétés épinglées, formulaire projet allégé ; création depuis un groupe (état prérempli), depuis la frise (dates), depuis « Sans date ».
+UI-5 états : choix groupé par famille avec pastilles de couleur, palette de 10, option par défaut, couleur des barres par état.
+UI-6 une seule page « Projets » à onglets (Gantt / Liste / Cartes / Mes tâches), réglages (états, filtres) derrière une icône.
+UI-7 fiche en sections : Description, Liste à cocher, Discussion (chat), Documents (mini-dropbox) — le chat et les documents deviennent des sections de la fiche (projet et élément).
+UI-8 « Dupliquer un projet » (avec décalage des dates) comme premier modèle, répétition annuelle plus tard ; lien direct vers un élément (`?item=`), menu « … » de la fiche (dupliquer, copier le lien, supprimer), navigation ↑ ↓ entre éléments.
+Non retenu : mise en page configurable, catalogue de types de propriété, formules, automatisations, IA, création immédiate d'un brouillon.
