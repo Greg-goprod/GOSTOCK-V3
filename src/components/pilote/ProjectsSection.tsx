@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
 import { confirmAction } from '../../lib/confirm';
-import { FAMILY_LABEL, FAMILY_ORDER, formatPeriod, PRIORITY_LABEL, piloteError, SHOW_PROGRAMS, TYPE_LABEL, TYPE_ORDER, type CpProject, type PiloteData, type PiloteRights, type ProjectType, type StatusFamily } from '../../lib/pilote';
+import { FAMILY_LABEL, FAMILY_ORDER, formatPeriod, PRIORITY_LABEL, piloteError, TYPE_LABEL, TYPE_ORDER, type CpProject, type PiloteData, type PiloteRights, type ProjectType, type StatusFamily } from '../../lib/pilote';
 import { formatDay } from '../../lib/zurichTime';
 import Button from '../common/Button';
 import { EntityTable } from '../common/EntityTable';
@@ -32,11 +32,9 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'' | ProjectType>('');
   const [familyFilter, setFamilyFilter] = useState<'' | StatusFamily>('');
-  const [programFilter, setProgramFilter] = useState('');
   const [target, setTarget] = useState<ProjectTarget | null>(null);
 
   const statusById = useMemo(() => new Map(data.statuses.map(s => [s.id, s])), [data.statuses]);
-  const programById = useMemo(() => new Map(data.programs.map(p => [p.id, p])), [data.programs]);
   const siteById = useMemo(() => new Map(data.sites.map(s => [s.id, s])), [data.sites]);
   const userName = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   // Responsables en clair, puis le nombre de membres de l'équipe (morceaux séparés pour que chacun soit traduit)
@@ -62,11 +60,10 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
     return data.projects.filter(p => {
       if (typeFilter && p.type !== typeFilter) return false;
       if (familyFilter && statusById.get(p.status_id)?.family !== familyFilter) return false;
-      if (programFilter === '_none' ? p.program_id !== null : programFilter && p.program_id !== programFilter) return false;
       if (q && !`${p.name} ${p.description ?? ''}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [data.projects, search, typeFilter, familyFilter, programFilter, statusById]);
+  }, [data.projects, search, typeFilter, familyFilter, statusById]);
 
   const remove = async (row: CpProject) => {
     if (!(await confirmAction(`Supprimer le projet « ${row.name} » ? Ses responsables seront détachés.`))) return;
@@ -80,7 +77,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
   const cardOf = (p: CpProject) => {
     const status = statusById.get(p.status_id);
     return {
-      status, program: SHOW_PROGRAMS && p.program_id ? programById.get(p.program_id)?.name ?? null : null,
+      status,
       members: teamNode(p.id, 'Aucune équipe'), site: p.site_id ? siteById.get(p.site_id)?.name ?? null : null,
     };
   };
@@ -107,15 +104,6 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
               {TYPE_ORDER.map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
             </select>
           </label>
-{SHOW_PROGRAMS && (
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Programme
-            <select value={programFilter} onChange={e => setProgramFilter(e.target.value)} className={`${inputClass} mt-1 min-w-44`}>
-              <option value="">Tous</option>
-              <option value="_none">Sans programme</option>
-              {data.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
-          )}
         </div>
         <div className="flex items-center gap-3">
           <MxEntityViewToggle value={viewMode} onChange={setViewMode} aria-label="Affichage des projets" />
@@ -139,7 +127,6 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
               const s = statusById.get(p.status_id);
               return <MxBadge tone={TONE[s?.family ?? 'not_started']}>{s?.name ?? '—'}</MxBadge>;
             } },
-            ...(SHOW_PROGRAMS ? [{ id: 'program', label: 'Programme', hideOnMobile: true, render: (p: CpProject) => (p.program_id ? programById.get(p.program_id)?.name ?? '—' : '—') }] : []),
             { id: 'period', label: 'Période', hideOnMobile: true, render: p => <span className="whitespace-nowrap">{formatPeriod(p.starts_on, p.ends_on, fmt)}</span> },
             { id: 'members', label: 'Équipe', hideOnMobile: true, render: p => teamNode(p.id, '—') },
             { id: 'actions', label: 'Actions', render: p => (
@@ -159,7 +146,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
             return (
               <ProjectCard
                 name={p.name} typeLabel={TYPE_LABEL[p.type]} color={p.color} statusName={c.status?.name ?? '—'} statusTone={TONE[c.status?.family ?? 'not_started']}
-                program={c.program} period={formatPeriod(p.starts_on, p.ends_on, fmt)} members={c.members} site={c.site}
+                period={formatPeriod(p.starts_on, p.ends_on, fmt)} members={c.members} site={c.site}
                 priority={p.priority ? PRIORITY_LABEL[p.priority] : null} description={p.description}
                 onEdit={rights.update ? () => setTarget({ mode: 'edit', row: p }) : undefined} onDelete={rights.delete ? () => void remove(p) : undefined}
               />

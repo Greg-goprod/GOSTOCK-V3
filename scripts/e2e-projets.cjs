@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// PILOTE › Projets (R2b) : états, programmes, projets, responsables — contrôles de la base, droits par rôle, écran.
+// PILOTE › Projets (R2b) : états, projets, responsables — contrôles de la base, droits par rôle, écran.
 //
 //   BASE=http://localhost:5173 E2E_PASSWORD='…' node scripts/e2e-projets.cjs
 //
 // Prérequis : migrations 47 et 48 appliquées ; le module « Plan annuel et projets » (cp.projects) activé pour l'entreprise des comptes de test
 // (Console de la plateforme › Modules). Comptes : E2E_RESP (écrit : droit « cp.projects »), E2E_STAFF et E2E_COLLAB (lisent
 // seulement) ; par défaut test.responsable@ / test.magasinier@ / test.collaborateur@example.com. Mot de passe UNIQUEMENT par E2E_PASSWORD.
-// Tout ce qui est créé porte « TEST-PROJ » et est supprimé à la fin (projets, programmes, états ajoutés, chantiers de test).
+// Tout ce qui est créé porte « TEST-PROJ » et est supprimé à la fin (projets, états ajoutés, chantiers de test).
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
@@ -113,11 +113,10 @@ async function step(id, title, fn, page) {
 
   /* ============ P1 Données ============ */
   group = 'P1 Données';
-  await step('P1-prepa', 'Programme, chantier de test, projets de plusieurs types, responsables', async () => {
+  await step('P1-prepa', 'Chantiers de test, projets de plusieurs types, responsables', async () => {
     S.site = await create(resp, 'sites', { name: `${M} Chantier` });
     S.site2 = await create(resp, 'sites', { name: `${M} Autre chantier` });
-    S.prog = await create(resp, 'cp_programs', { name: `${M} Festivals`, starts_on: '2027-01-01', ends_on: '2027-12-31' });
-    S.p1 = await create(resp, 'cp_projects', { name: `${M} Festival`, type: 'site', program_id: S.prog, site_id: S.site, starts_on: '2027-06-01', ends_on: '2027-06-30', priority: 'high' });
+    S.p1 = await create(resp, 'cp_projects', { name: `${M} Festival`, type: 'site', site_id: S.site, starts_on: '2027-06-01', ends_on: '2027-06-30', priority: 'high' });
     S.p2 = await create(resp, 'cp_projects', { name: `${M} Prototype`, type: 'rd', starts_on: '2027-02-01', ends_on: '2027-09-30' });
     for (const [i, t] of ['design', 'recruitment', 'admin', 'event'].entries()) await create(resp, 'cp_projects', { name: `${M} Type ${i}`, type: t });
     S.me = rows(await api(resp, 'GET', `/rest/v1/users?select=id&email=eq.${encodeURIComponent(ACCOUNTS.resp)}`))[0]?.id;
@@ -137,7 +136,6 @@ async function step(id, title, fn, page) {
   await must('doublon-chantier : deux projets sur le même chantier refusé', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} Doublon`, type: 'site', site_id: S.site }));
   await must('dates : fin avant début refusée', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} Inversé`, type: 'admin', starts_on: '2027-05-01', ends_on: '2027-04-01' }));
   await must('type-inconnu : type inconnu refusé', () => api(resp, 'POST', '/rest/v1/cp_projects', { name: `${M} Bizarre`, type: 'autre' }));
-  await must('programme-doublon : programme de même nom refusé', () => api(resp, 'POST', '/rest/v1/cp_programs', { name: ` ${M.toLowerCase()} festivals ` }));
   await must('responsable-doublon : même responsable deux fois refusé', () => api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: S.p1, user_id: S.me }));
   await step('P2-equipe', 'Équipe : rôle inconnu refusé ; une tâche ne s\'assigne qu\'à l\'équipe ; quitter l\'équipe désassigne', async () => {
     S.collab = rows(await api(resp, 'GET', `/rest/v1/users?select=id&email=eq.${encodeURIComponent(ACCOUNTS.collab)}`))[0]?.id;
@@ -164,25 +162,22 @@ async function step(id, title, fn, page) {
     ok(!refused(await api(resp, 'DELETE', `/rest/v1/cp_statuses?id=eq.${S.stCustom}`)), 'état libre non supprimable');
     S.stCustom = null;
   });
-  await step('P2-programme-supprime', 'Supprimer un programme garde ses projets, sans programme', async () => {
-    const tmp = await create(resp, 'cp_programs', { name: `${M} Temporaire` });
-    const pid = await create(resp, 'cp_projects', { name: `${M} Orphelin`, type: 'admin', program_id: tmp });
-    ok(!refused(await api(resp, 'DELETE', `/rest/v1/cp_programs?id=eq.${tmp}`)), 'programme non supprimé');
-    const p = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=program_id&id=eq.${pid}`))[0];
-    ok(p && p.program_id === null, 'le projet a perdu son existence ou garde son programme');
+  await step('P2-programme-absent', 'Le programme n\'existe plus : ni table, ni colonne (migration 55)', async () => {
+    const t = await api(resp, 'GET', '/rest/v1/cp_programs?select=id');
+    ok(refused(t) && /cp_programs|find|relation/i.test(msg(t)), `table cp_programs encore accessible ou refus inattendu : ${msg(t)}`);
+    const c = await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.p1}`, { program_id: null });
+    ok(refused(c) && /program_id|column|colonne/i.test(msg(c)), `colonne program_id encore acceptée ou refus inattendu : ${msg(c)}`);
   });
 
   /* ============ P3 Droits par rôle ============ */
   group = 'P3 Droits par rôle';
   for (const c of readers) {
-    await step(`P3-${c.who}-lecture`, `${c.who} : lit programmes, projets, états et responsables`, async () => {
+    await step(`P3-${c.who}-lecture`, `${c.who} : lit projets, états et responsables`, async () => {
       ok(rows(await api(c, 'GET', `/rest/v1/cp_projects?select=id&name=like.${encodeURIComponent(M + '*')}`)).length >= 6, 'projets illisibles');
       ok(rows(await api(c, 'GET', '/rest/v1/cp_statuses?select=id')).length >= 4, 'états illisibles');
-      ok(rows(await api(c, 'GET', `/rest/v1/cp_programs?select=id&name=like.${encodeURIComponent(M + '*')}`)).length >= 1, 'programmes illisibles');
     });
     await step(`P3-${c.who}-ecriture`, `${c.who} : ne crée, ne modifie, ne supprime rien`, async () => {
       ok(refused(await api(c, 'POST', '/rest/v1/cp_projects', { name: `${M} Piraté`, type: 'admin' })), 'création de projet acceptée');
-      ok(refused(await api(c, 'POST', '/rest/v1/cp_programs', { name: `${M} Piraté` })), 'création de programme acceptée');
       ok(refused(await api(c, 'POST', '/rest/v1/cp_statuses', { name: `${M} Piraté`, family: 'done' })), 'création d\'état acceptée');
       const patch = await api(c, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.p1}`, { name: `${M} Piraté` }, REP);
       ok(refused(patch) || rows(patch).length === 0, 'modification acceptée');
@@ -196,7 +191,7 @@ async function step(id, title, fn, page) {
   await step('P4-ouverture', 'Responsable : PILOTE › Projets s\'ouvre, les projets de test s\'affichent, compteurs par état', async () => {
     await open(resp, '/pilote/projets');
     ok(await resp.page.getByRole('radio', { name: /^Projets/ }).count(), 'écran des projets inaccessible');
-    // Le titre d'une carte (h3) : un simple getByText tomberait d'abord sur l'option « TEST-PROJ Festivals » (invisible) du filtre Programme
+    // Le titre d'une carte (h3) : un simple getByText tomberait d'abord sur une option invisible d'un filtre
     ok(await resp.page.locator('h3', { hasText: `${M} Festival` }).first().isVisible(), 'projet de test absent');
     ok(await resp.page.locator('[aria-label="Projets par état"] button').count() === 4, 'compteurs par famille absents');
   }, resp.page);
@@ -212,27 +207,25 @@ async function step(id, title, fn, page) {
     ok(await resp.page.locator('#prj-program').count() === 0, 'le champ « Programme » ne devrait plus être proposé');
     await resp.page.getByLabel(/^Rôle de /).first().selectOption('lead');
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
-    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id,type,program_id&name=eq.${encodeURIComponent(M + " Par l'écran")}`))[0];
-    ok(r && r.type === 'design' && r.program_id === null, `projet enregistré = ${JSON.stringify(r)}`);
+    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id,type&name=eq.${encodeURIComponent(M + " Par l'écran")}`))[0];
+    ok(r && r.type === 'design', `projet enregistré = ${JSON.stringify(r)}`);
     const m = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=user_id&project_id=eq.${r.id}`));
     ok(m.length === 1, `responsables enregistrés = ${m.length}`);
     const role = rows(await api(resp, 'GET', `/rest/v1/cp_project_members?select=role&project_id=eq.${r.id}`))[0]?.role;
     ok(role === 'lead', `rôle enregistré = ${role}`);
   }, resp.page);
-  await step('P4-programme-masque', 'Le « programme » n\'est plus proposé (formulaire, onglets) et modifier un projet déjà rangé dans un programme ne le défait pas', async () => {
+  await step('P4-programme-masque', 'Le « programme » n\'existe plus (formulaire, onglets) ; modifier un projet par l\'écran enregistre sa description', async () => {
     await open(resp, '/pilote/projets');
     ok(await resp.page.getByRole('radio', { name: /^Programmes/ }).count() === 0, 'l\'onglet « Programmes » ne devrait plus être proposé');
     ok(await resp.page.getByText('Programme', { exact: true }).count() === 0, 'le mot « Programme » apparaît encore comme filtre ou colonne');
-    // Le projet « Festival » de test est rangé dans un programme (créé par l'API) : un enregistrement par l'écran ne doit pas le lui retirer
     const card = resp.page.locator('div', { has: resp.page.locator('h3', { hasText: `${M} Festival` }) }).filter({ has: resp.page.getByRole('button', { name: 'Modifier' }) }).last();
     await card.getByRole('button', { name: 'Modifier' }).click(); await resp.page.waitForTimeout(800);
     ok(await resp.page.locator('#prj-program').count() === 0, 'le champ « Programme » ne devrait plus être proposé dans la fiche');
     ok(await resp.page.getByRole('button', { name: /Créer un programme/ }).count() === 0, 'le lien « Créer un programme » ne devrait plus être proposé');
     await resp.page.locator('#prj-desc').fill('Description modifiée par l\'écran');
     await resp.page.getByRole('button', { name: 'Enregistrer' }).last().click(); await resp.page.waitForTimeout(1500);
-    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=program_id,description&id=eq.${S.p1}`))[0];
+    const r = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=description&id=eq.${S.p1}`))[0];
     ok(r && r.description === 'Description modifiée par l\'écran', `description en base = ${r && r.description}`);
-    ok(r.program_id === S.prog, `le programme du projet a été retiré par l'enregistrement : ${r.program_id}`);
   }, resp.page);
   await step('P4-equipe-ecran', 'Fiche du projet : ajouter un membre par l\'écran ne défait pas les assignations existantes ; retirer la personne la désassigne', async () => {
     await open(resp, '/pilote/projets');
@@ -322,7 +315,7 @@ async function step(id, title, fn, page) {
   const clean = {};
   try {
     const mine = encodeURIComponent(M + '*');
-    for (const table of ['cp_projects', 'cp_programs']) { const r = await api(resp, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, REP); clean[table] = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
+    for (const table of ['cp_projects']) { const r = await api(resp, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, REP); clean[table] = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
     { const r = await api(resp, 'DELETE', `/rest/v1/cp_statuses?name=like.${mine}`, undefined, REP); clean.cp_statuses = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
     { const r = await api(resp, 'DELETE', `/rest/v1/sites?name=like.${mine}`, undefined, REP); clean.sites = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
     clean.restants = rows(await api(resp, 'GET', `/rest/v1/cp_projects?select=id&name=like.${mine}`)).length;

@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Layers, ListChecks, Settings } from 'lucide-react';
+import { ArrowLeft, ListChecks, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, SHOW_PROGRAMS, STATE_COLORS, type CpProgram, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
-import { formatDay } from '../lib/zurichTime';
+import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, STATE_COLORS, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
 import PageTitle from '../components/common/PageTitle';
 import { MxBadge } from '../components/mx/MxBadge';
 import { MxSegmented } from '../components/mx/MxSegmented';
@@ -13,7 +12,7 @@ import MyTasks from '../components/pilote/MyTasks';
 import MenuButton from '../components/common/MenuButton';
 import PiloteGantt from './PiloteGantt';
 
-type Section = 'gantt' | 'projects' | 'mytasks' | 'programs' | 'statuses';
+type Section = 'gantt' | 'projects' | 'mytasks' | 'statuses';
 const VIEWS: Section[] = ['gantt', 'projects', 'mytasks'];
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
@@ -31,7 +30,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
   const [section, setSection] = useState<Section>(initialView ?? (VIEWS.includes(asked as Section) ? (asked as Section) : 'projects'));
 
   const reload = useCallback(async () => {
-    try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], programs: [], projects: [], members: [], sites: [] }); }
+    try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], projects: [], members: [], sites: [] }); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
 
@@ -58,7 +57,6 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
             { value: 'gantt', label: 'Gantt' },
             { value: 'projects', label: `Projets (${data.projects.length})` },
             { value: 'mytasks', label: 'Mes tâches' },
-            ...(SHOW_PROGRAMS ? [{ value: 'programs', label: `Programmes (${data.programs.length})` }] : []),
           ]} />
           <MenuButton id="pilote-settings" menuLabel="Réglages des projets" iconOnly ariaLabel="Réglages des projets" icon={<Settings size={16} />}
             actions={[{ id: 'statuses', label: `États d'avancement (${data.statuses.length})`, icon: ListChecks, onSelect: () => setSection('statuses') }]} />
@@ -70,25 +68,6 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
       {section === 'projects' && <ProjectsSection data={data} rights={rights} onChanged={reload} />}
 
       {section === 'mytasks' && <MyTasks rights={rights} />}
-
-      {SHOW_PROGRAMS && section === 'programs' && (
-        <CrudSection<CpProgram>
-          title="Programmes" addLabel="Nouveau programme" table="cp_programs" rights={rights} onChanged={reload} errorText={piloteError}
-          rows={data.programs} emptyIcon={Layers} emptyTitle="Aucun programme" emptyText="Un programme regroupe plusieurs projets : une année, une gamme, un client…"
-          deleteMessage={p => `Supprimer le programme « ${p.name} » ? Ses projets sont conservés, sans programme.`}
-          fields={[
-            { key: 'name', label: 'Nom', type: 'text', required: true },
-            { key: 'description', label: 'Description', type: 'textarea' },
-            { key: 'starts_on', endKey: 'ends_on', label: 'Période (début et fin)', type: 'daterange' },
-            { key: 'color', label: 'Couleur', type: 'color' },
-          ]}
-          columns={[
-            { id: 'name', label: 'Programme', render: p => <span className="inline-flex items-center gap-2"><Dot color={p.color} /><span className="font-medium">{p.name}</span></span> },
-            { id: 'period', label: 'Période', hideOnMobile: true, render: p => (p.starts_on || p.ends_on ? `${formatDay(p.starts_on)} → ${formatDay(p.ends_on)}` : '—') },
-            { id: 'projects', label: 'Projets', render: p => data.projects.filter(x => x.program_id === p.id).length },
-          ]}
-        />
-      )}
 
       {section === 'statuses' && (
         <CrudSection<CpStatus>

@@ -172,13 +172,9 @@ async function step(id, title, fn, page) {
     accepts(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.pA}`, { starts_on: '2027-05-10', ends_on: '2027-05-10' }), 'même jour');
     accepts(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.pA}`, { starts_on: null, ends_on: null }), 'sans dates');
   });
-  await step('A-programme', 'Programme : rattacher, doublon de nom à la casse près refusé, supprimer garde le projet', async () => {
-    S.prog = await create(resp, 'cp_programs', { name: `${M} Programme` });
-    accepts(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.pA}`, { program_id: S.prog }), 'rattacher');
-    refuses(await api(resp, 'POST', '/rest/v1/cp_programs', { name: ` ${M.toLowerCase()} PROGRAMME ` }), /duplicate|unique/i, 'doublon de programme');
-    accepts(await api(resp, 'DELETE', `/rest/v1/cp_programs?id=eq.${S.prog}`), 'supprimer le programme');
-    const r = (await get(resp, `/rest/v1/cp_projects?select=program_id&id=eq.${S.pA}`))[0];
-    ok(r && r.program_id === null, `le projet devait rester, sans programme : ${JSON.stringify(r)}`);
+  await step('A-programme-supprime', 'Le programme n\'existe plus : ni table, ni colonne (migration 55)', async () => {
+    refuses(await api(resp, 'GET', '/rest/v1/cp_programs?select=id'), /cp_programs|find|relation/i, 'table cp_programs');
+    refuses(await api(resp, 'PATCH', `/rest/v1/cp_projects?id=eq.${S.pA}`, { program_id: null }), /program_id|column|colonne/i, 'colonne program_id');
   });
   await step('A-suppression-cascade', 'Supprimer un projet supprime ses éléments, son équipe, ses assignations, ses dépendances et sa liste à cocher', async () => {
     const p = await proj(resp, { name: `${M} À supprimer` });
@@ -452,10 +448,9 @@ async function step(id, title, fn, page) {
 
   /* ============ I Cas limites ============ */
   group = 'I Cas limites';
-  await step('I-noms-vides', 'Noms vides ou d\'espaces refusés (projet, programme)', async () => {
+  await step('I-noms-vides', 'Noms vides ou d\'espaces refusés (projet)', async () => {
     refuses(await api(resp, 'POST', '/rest/v1/cp_projects', { name: '', type: 'admin' }), /check|violates|nom/i, 'projet sans nom');
     refuses(await api(resp, 'POST', '/rest/v1/cp_projects', { name: '     ', type: 'admin' }), /check|violates|nom/i, 'projet d\'espaces');
-    refuses(await api(resp, 'POST', '/rest/v1/cp_programs', { name: ' ' }), /check|violates|nom/i, 'programme d\'espaces');
   });
   await step('I-caracteres', 'Accents, guillemets, apostrophes, emoji : relus à l\'identique', async () => {
     const name = `${M} Été "à" l'école 🎪 & <co>`;
@@ -684,10 +679,10 @@ async function step(id, title, fn, page) {
   group = 'Nettoyage';
   const clean = {};
   try {
-    for (const table of ['cp_projects', 'cp_programs']) { const r = await api(resp, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, REP); clean[table] = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
+    for (const table of ['cp_projects']) { const r = await api(resp, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, REP); clean[table] = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
     { const r = await api(resp, 'DELETE', `/rest/v1/sites?name=like.${mine}`, undefined, REP); clean.sites = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
     clean.restants = {
-      projets: await count(resp, 'cp_projects', `name=like.${mine}`), programmes: await count(resp, 'cp_programs', `name=like.${mine}`),
+      projets: await count(resp, 'cp_projects', `name=like.${mine}`),
       chantiers: await count(resp, 'sites', `name=like.${mine}`), avis: await count(resp, 'notifications', `message=like.${encodeURIComponent('*' + M + '*')}`), elements: await count(resp, 'cp_items', `name=like.${mine}`),
     };
   } catch (e) { clean.err = e.message; }

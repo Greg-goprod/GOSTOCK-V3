@@ -1,17 +1,17 @@
 import { dayToNumber, numberToDay } from './timelineMath';
 import { TYPE_LABEL, TYPE_ORDER, type CpItem, type GanttData, type ItemKind, type ProjectType, type StatusFamily } from './pilote';
 
-// Modèle du Gantt (sans affichage) : arbre programme → projet → phase → tâche → sous-tâche, regroupement, dates des parents
+// Modèle du Gantt (sans affichage) : arbre groupe (état ou type) → projet → phase → tâche → sous-tâche, regroupement, dates des parents
 // calculées à partir de leurs enfants, avancement (éléments terminés / éléments comptés), éléments sans date.
-export type Grouping = 'program' | 'status' | 'type';
+export type Grouping = 'status' | 'type';
 // Couleur des barres : celle de l'ÉTAT de la ligne (par défaut, comme Notion) ou celle de son projet
 export type ColorBy = 'status' | 'project';
-export type RowKind = 'group' | 'program' | 'project' | ItemKind | 'add';
+export type RowKind = 'group' | 'project' | ItemKind | 'add';
 
 export interface GanttRow {
   key: string;
   kind: RowKind;
-  id: string | null;            // identifiant du programme, du projet ou de l'élément (null pour un groupe)
+  id: string | null;            // identifiant du projet ou de l'élément (null pour un groupe)
   projectId: string | null;     // projet de la ligne (projet et éléments)
   parentId: string | null;      // parent de l'élément (null : directement sous le projet)
   level: number;
@@ -99,7 +99,7 @@ export function buildGantt(data: GanttData, grouping: Grouping, colorBy: ColorBy
     return node;
   };
 
-  const group = (key: string, kind: 'group' | 'program', id: string | null, name: string, color: string, ownStart: string | null, ownEnd: string | null, children: Node[]): Node => {
+  const group = (key: string, kind: 'group', id: string | null, name: string, color: string, ownStart: string | null, ownEnd: string | null, children: Node[]): Node => {
     const node: Node = { row: {
       key, kind, id, projectId: null, parentId: null, level: 0, name, color, start: null, end: null, ownStart: ownStart, ownEnd: ownEnd, partial: false, family: null, done: 0, total: 0,
       hasChildren: children.length > 0, parentKey: null,
@@ -113,14 +113,7 @@ export function buildGantt(data: GanttData, grouping: Grouping, colorBy: ColorBy
   const projectNodes = (list: GanttData['projects'], parentKey: string): Node[] =>
     list.map(p => projectNode(p, 1, parentKey)).sort((a, b) => cmpDate(a.row.start, b.row.start) || byText(a.row.name, b.row.name));
   const roots: Node[] = [];
-  if (grouping === 'program') {
-    for (const pg of [...data.programs].sort((a, b) => byText(a.name, b.name))) {
-      const projects = data.projects.filter(p => p.program_id === pg.id);
-      if (projects.length) roots.push(group(`g:${pg.id}`, 'program', pg.id, pg.name, pg.color, pg.starts_on, pg.ends_on, projectNodes(projects, `g:${pg.id}`)));
-    }
-    const free = data.projects.filter(p => !p.program_id);
-    if (free.length) roots.push(group('g:none', 'group', null, 'Sans programme', '#94a3b8', null, null, projectNodes(free, 'g:none')));
-  } else if (grouping === 'status') {
+  if (grouping === 'status') {
     for (const st of [...data.statuses].sort((a, b) => a.position - b.position || byText(a.name, b.name))) {
       const projects = data.projects.filter(p => p.status_id === st.id);
       if (projects.length) roots.push(group(`g:${st.id}`, 'group', st.id, st.name, st.color, null, null, projectNodes(projects, `g:${st.id}`)));
@@ -172,11 +165,11 @@ export function withAddRows(visible: GanttRow[], expanded: ReadonlySet<string>):
   return out;
 }
 
-// Ouverture sur 2 niveaux : les groupes (et programmes) sont dépliés, les projets repliés
-export const defaultExpanded = (model: GanttModel): Set<string> => new Set(model.rows.filter(r => r.kind === 'group' || r.kind === 'program').map(r => r.key));
+// Ouverture sur 2 niveaux : les groupes sont dépliés, les projets repliés
+export const defaultExpanded = (model: GanttModel): Set<string> => new Set(model.rows.filter(r => r.kind === 'group').map(r => r.key));
 
 // Éléments et projets sans aucune date (bac « Sans date »)
-export const undatedRows = (model: GanttModel): GanttRow[] => model.rows.filter(r => (r.kind !== 'group' && r.kind !== 'program' && r.kind !== 'add') && r.start === null);
+export const undatedRows = (model: GanttModel): GanttRow[] => model.rows.filter(r => (r.kind !== 'group' && r.kind !== 'add') && r.start === null);
 
 export const progressOf = (r: Pick<GanttRow, 'done' | 'total'>): number | null => (r.total > 0 ? r.done / r.total : null);
 

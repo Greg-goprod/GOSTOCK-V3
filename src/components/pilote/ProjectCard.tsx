@@ -9,7 +9,6 @@ interface Props {
   color: string;
   statusName: string;
   statusTone: 'neutral' | 'info' | 'success' | 'danger';
-  program: string | null;
   period: string;
   members: React.ReactNode;
   site: string | null;
@@ -20,7 +19,7 @@ interface Props {
 }
 
 // Carte d'un projet : état, type, période et responsables lisibles en entier (la couleur du projet borde la carte)
-export function ProjectCard({ name, typeLabel, color, statusName, statusTone, program, period, members, site, priority, description, onEdit, onDelete }: Props) {
+export function ProjectCard({ name, typeLabel, color, statusName, statusTone, period, members, site, priority, description, onEdit, onDelete }: Props) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 'var(--mx-space-8)', minWidth: 0, width: '100%', padding: 'var(--mx-space-12)',
@@ -31,7 +30,7 @@ export function ProjectCard({ name, typeLabel, color, statusName, statusTone, pr
         <MxBadge tone={statusTone}>{statusName}</MxBadge>
       </div>
       <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 4, fontSize: 'calc(13px * var(--mx-scale, 1))' }}>
-        <li style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><FolderKanban size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} /> <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span>{typeLabel}</span>{program && <> · <span>{program}</span></>}{priority && <> · <span>Priorité :</span> <span>{priority}</span></>}</span></li>
+        <li style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><FolderKanban size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} /> <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span>{typeLabel}</span>{priority && <> · <span>Priorité :</span> <span>{priority}</span></>}</span></li>
         <li style={{ display: 'flex', gap: 6, alignItems: 'center' }}><CalendarRange size={14} aria-hidden /> <span>{period}</span></li>
         <li style={{ display: 'flex', gap: 6, alignItems: 'center' }}><Users size={14} aria-hidden /> <span>{members}</span></li>
         {site && <li style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><Link2 size={14} aria-hidden style={{ flexShrink: 0, marginTop: 2 }} /> <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span>Chantier :</span> <span>{site}</span></span></li>}

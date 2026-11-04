@@ -6,7 +6,7 @@
 // Prérequis : migrations 47, 48 et 49 appliquées ; le module « Plan annuel et projets » (cp.projects) activé pour l'entreprise des comptes de test
 // (Console de la plateforme › Modules). Comptes : E2E_RESP (écrit : droit « cp.projects »), E2E_STAFF et E2E_COLLAB (lisent
 // seulement) ; par défaut test.responsable@ / test.magasinier@ / test.collaborateur@example.com. Mot de passe UNIQUEMENT par E2E_PASSWORD.
-// Tout ce qui est créé porte « TEST-GANTT » et est supprimé à la fin (projets, programmes, états ajoutés, chantiers de test).
+// Tout ce qui est créé porte « TEST-GANTT » et est supprimé à la fin (projets, états ajoutés, chantiers de test).
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
@@ -123,9 +123,8 @@ async function step(id, title, fn, page) {
 
   /* ============ P1 Données ============ */
   group = 'P1 Données';
-  await step('P1-prepa', 'Programme, projet, phase, tâches, sous-tâche, jalon, élément sans date', async () => {
-    S.prog = await create(resp, 'cp_programs', { name: `${M} Programme` });
-    S.proj = await create(resp, 'cp_projects', { name: `${M} Projet`, type: 'rd', program_id: S.prog, starts_on: '2027-02-01', ends_on: '2027-09-30' });
+  await step('P1-prepa', 'Projet, phase, tâches, sous-tâche, jalon, élément sans date', async () => {
+    S.proj = await create(resp, 'cp_projects', { name: `${M} Projet`, type: 'rd', starts_on: '2027-02-01', ends_on: '2027-09-30' });
     S.phase = await create(resp, 'cp_items', { project_id: S.proj, kind: 'phase', name: `${M} Phase`, starts_on: '2027-02-01', ends_on: '2027-04-30' });
     S.task = await create(resp, 'cp_items', { project_id: S.proj, parent_id: S.phase, kind: 'task', name: `${M} Tâche`, starts_on: '2027-02-08', ends_on: '2027-02-20' });
     S.sub = await create(resp, 'cp_items', { project_id: S.proj, parent_id: S.task, kind: 'subtask', name: `${M} Sous-tâche`, starts_on: '2027-02-10', ends_on: '2027-02-12' });
@@ -151,7 +150,6 @@ async function step(id, title, fn, page) {
     // Les titres de groupe sont affichés en majuscules par le style (innerText rend la majuscule) : on compare sans tenir compte de la casse
     const names = (await rowLocator(resp).allInnerTexts()).map(t => t.toLowerCase());
     ok(names.some(t => t.includes('pas commencé')), 'groupe « Pas commencé » absent (regroupement par état par défaut)');
-    ok(!names.some(t => t.includes(`${M} Programme`.toLowerCase())), 'le programme ne devrait plus apparaître dans le Gantt');
     ok(names.some(t => t.includes(`${M} Projet`.toLowerCase())), 'projet de test absent');
     ok(!names.some(t => t.includes(`${M} Tâche`.toLowerCase())), 'les tâches devraient être repliées à l\'ouverture');
   }, resp.page);
@@ -185,7 +183,7 @@ async function step(id, title, fn, page) {
     await resp.page.getByRole('menu').getByRole('menuitemradio').first().waitFor({ timeout: 5000 });
     // On lit uniquement le menu ouvert, sans tenir compte de la casse (innerText applique le text-transform du CSS)
     const choices = (await resp.page.getByRole('menu').getByRole('menuitemradio').allInnerTexts()).map(x => x.trim().toLowerCase());
-    ok(choices.join('/') === 'état/type', `choix de regroupement lus : « ${choices.join(' / ')} » (attendu : État / Type, sans Programme)`);
+    ok(choices.join('/') === 'état/type', `choix de regroupement lus : « ${choices.join(' / ')} » (attendu : État / Type)`);
     await resp.page.keyboard.press('Escape');
   }, resp.page);
 
@@ -523,7 +521,13 @@ async function step(id, title, fn, page) {
       ok((await menuButton(c, /^\s*Nouveau\s*$/).count()) === 0, 'menu « Nouveau » présent pour un lecteur');
       ok((await c.page.locator('button[aria-label^="Ajouter dans"]').count()) === 0, 'boutons « + » présents');
       await expandAll(c);
-      await c.page.locator('.group\\/row button', { hasText: `${M} Projet` }).first().click().catch(() => {});
+      // Un clic sur le projet ouvre sa fiche en CONSULTATION : aucun bouton « Enregistrer », champs bloqués ; on la referme avant la suite
+      await c.page.locator('.group\\/row button', { hasText: `${M} Projet` }).first().click(); await c.page.waitForTimeout(1000);
+      ok(await c.page.locator('#prj-name').count() === 1, 'la fiche du projet ne s\'ouvre pas pour un lecteur');
+      ok(await c.page.locator('#prj-name').isDisabled(), 'le nom du projet est modifiable par un lecteur');
+      ok(await c.page.getByRole('button', { name: 'Enregistrer' }).count() === 0, 'bouton « Enregistrer » présent pour un lecteur');
+      await c.page.keyboard.press('Escape'); await c.page.waitForTimeout(600);
+      ok(await c.page.locator('#prj-name').count() === 0, 'la fiche ne se referme pas');
       // Un lecteur ouvre un élément sans date, il ne le place pas : l'en-tête du menu le dit
       if (await menuButton(c, /Sans date/).count()) { await menuButton(c, /Sans date/).click(); ok(!(await c.page.getByRole('menu').innerText()).includes('pour le placer'), 'un lecteur peut placer un élément'); await c.page.keyboard.press('Escape'); }
       ok((await c.page.locator('[data-handle]').count()) === 0 && (await c.page.getByRole('button', { name: 'Nouveau', exact: true }).count()) === 0, 'poignées ou lignes « + Nouveau » présentes pour un lecteur');
@@ -541,7 +545,7 @@ async function step(id, title, fn, page) {
   const clean = {};
   try {
     const mine = encodeURIComponent(M + '*');
-    for (const table of ['cp_projects', 'cp_programs']) { const r = await api(resp, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, REP); clean[table] = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
+    for (const table of ['cp_projects']) { const r = await api(resp, 'DELETE', `/rest/v1/${table}?name=like.${mine}`, undefined, REP); clean[table] = refused(r) ? msg(r) : `${rows(r).length} supprimé(s)`; }
     clean.elements_restants = rows(await api(resp, 'GET', `/rest/v1/cp_items?select=id&name=like.${mine}`)).length;
   } catch (e) { clean.err = e.message; }
 

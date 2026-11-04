@@ -1,4 +1,4 @@
--- R2b : programmes, projets, états, responsables (droits, contrôles, isolation). À lancer sur la base locale APRÈS isolation.sql.
+-- R2b : projets, états, responsables (droits, contrôles, isolation). À lancer sur la base locale APRÈS isolation.sql.
 \set ON_ERROR_STOP on
 \set A '''a0000000-0000-0000-0000-00000000000a'''
 \set B '''b0000000-0000-0000-0000-00000000000b'''
@@ -42,7 +42,7 @@ SELECT zz.check('chaque entreprise a ses 4 états de base, une fois par famille'
 -- Sans le module cp.projects : rien n'est lisible ni écrivable, même pour l'administrateur
 SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
 SELECT zz.check('module non activé : A ne lit aucun état', (SELECT count(*) FROM public.cp_statuses) = 0);
-SELECT zz.check('module non activé : A ne crée pas de programme', zz.raises($$INSERT INTO public.cp_programs (name) VALUES ('Sans module')$$) IS NOT NULL);
+SELECT zz.check('module non activé : A ne crée pas de projet', zz.raises($$INSERT INTO public.cp_projects (name, type) VALUES ('Sans module', 'admin')$$) IS NOT NULL);
 RESET ROLE;
 INSERT INTO public.organization_modules (organization_id, module_key) VALUES (:ORG1::uuid, 'cp.projects'), (:ORG2::uuid, 'cp.projects') ON CONFLICT DO NOTHING;
 
@@ -50,16 +50,13 @@ INSERT INTO public.organization_modules (organization_id, module_key) VALUES (:O
 SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
 SELECT zz.check('module activé : A lit ses 4 états', (SELECT count(*) FROM public.cp_statuses) = 4);
 INSERT INTO public.sites (name) VALUES ('Chantier lié'), ('Chantier lié bis');
-INSERT INTO public.cp_programs (name, description, starts_on, ends_on) VALUES ('Festivals 2027', 'Tous les festivals de l''année', '2027-01-01', '2027-12-31');
-SELECT zz.check('A crée un programme', (SELECT count(*) FROM public.cp_programs) = 1);
-SELECT zz.check('deux programmes de même nom refusés', zz.raises($$INSERT INTO public.cp_programs (name) VALUES (' festivals 2027')$$) IS NOT NULL);
-SELECT zz.check('programme dont la fin précède le début refusé', zz.raises($$INSERT INTO public.cp_programs (name, starts_on, ends_on) VALUES ('Inversé', '2027-05-01', '2027-04-01')$$) IS NOT NULL);
-SELECT zz.check('programme sans nom refusé', zz.raises($$INSERT INTO public.cp_programs (name) VALUES ('  ')$$) IS NOT NULL);
+-- Le « programme » a été supprimé (migration 55) : ni table, ni colonne
+SELECT zz.check('la notion de programme n''existe plus (table et colonne supprimées)', to_regclass('public.cp_programs') IS NULL AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'cp_projects' AND column_name = 'program_id'));
 
-INSERT INTO public.cp_projects (name, type, program_id, site_id, starts_on, ends_on, priority)
-SELECT 'Festival Léman', 'site', (SELECT id FROM public.cp_programs LIMIT 1), (SELECT id FROM public.sites WHERE name = 'Chantier lié'), '2027-06-01', '2027-06-30', 'high';
+INSERT INTO public.cp_projects (name, type, site_id, starts_on, ends_on, priority)
+SELECT 'Festival Léman', 'site', (SELECT id FROM public.sites WHERE name = 'Chantier lié'), '2027-06-01', '2027-06-30', 'high';
 INSERT INTO public.cp_projects (name, type, starts_on, ends_on) VALUES ('Prototype X', 'rd', '2027-02-01', '2027-09-30');
-SELECT zz.check('A crée un projet chantier relié à un chantier et à un programme', (SELECT count(*) FROM public.cp_projects WHERE site_id IS NOT NULL AND program_id IS NOT NULL) = 1);
+SELECT zz.check('A crée un projet chantier relié à un chantier', (SELECT count(*) FROM public.cp_projects WHERE site_id IS NOT NULL) = 1);
 SELECT zz.check('sans état précisé, le projet est « Pas commencé »', (SELECT bool_and(s.family = 'not_started' AND s.is_system) FROM public.cp_projects p JOIN public.cp_statuses s ON s.id = p.status_id));
 SELECT zz.check('journal d''audit : le projet y figure', (SELECT count(*) FROM public.audit_log WHERE table_name = 'cp_projects' AND action = 'insert') = 2);
 SELECT zz.check('projet de type R&D relié à un chantier : refusé', zz.raises($$INSERT INTO public.cp_projects (name, type, site_id) SELECT 'R&D lié', 'rd', id FROM public.sites WHERE name = 'Chantier lié bis'$$) IS NOT NULL);
@@ -96,26 +93,23 @@ SELECT zz.check('un état inutilisé se supprime', zz.affected($$DELETE FROM pub
 -- Collaborateur (rôle système « user ») : lit, n'écrit pas
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
-SELECT zz.check('U lit programmes, projets, états et responsables', (SELECT count(*) FROM public.cp_programs) = 1 AND (SELECT count(*) FROM public.cp_projects) = 6 AND (SELECT count(*) FROM public.cp_statuses) = 4 AND (SELECT count(*) FROM public.cp_project_members) = 2);
-SELECT zz.check('U ne crée pas de programme', zz.raises($$INSERT INTO public.cp_programs (name) VALUES ('Piraté')$$) IS NOT NULL);
+SELECT zz.check('U lit projets, états et responsables', (SELECT count(*) FROM public.cp_projects) = 6 AND (SELECT count(*) FROM public.cp_statuses) = 4 AND (SELECT count(*) FROM public.cp_project_members) = 2);
 SELECT zz.check('U ne crée pas de projet', zz.raises($$INSERT INTO public.cp_projects (name, type) VALUES ('Piraté', 'admin')$$) IS NOT NULL);
 SELECT zz.check('U ne crée pas d''état', zz.raises($$INSERT INTO public.cp_statuses (name, family) VALUES ('Piraté', 'done')$$) IS NOT NULL);
 SELECT zz.check('U ne modifie ni ne supprime rien', zz.affected($$UPDATE public.cp_projects SET name = 'Piraté'$$) = 0 AND zz.affected($$DELETE FROM public.cp_projects$$) = 0
-  AND zz.affected($$DELETE FROM public.cp_project_members$$) = 0 AND zz.affected($$UPDATE public.cp_programs SET name = 'Piraté'$$) = 0);
+  AND zz.affected($$DELETE FROM public.cp_project_members$$) = 0);
 RESET ROLE;
 
 -- Isolation : l'entreprise B
-SELECT id AS prog_a FROM public.cp_programs WHERE name = 'Festivals 2027' \gset
 SELECT id AS site_a FROM public.sites WHERE name = 'Chantier lié bis' \gset
 SELECT id AS proj_a FROM public.cp_projects WHERE name = 'Festival Léman' \gset
 SELECT id AS status_a FROM public.cp_statuses WHERE is_system AND family = 'done' AND organization_id = :ORG1::uuid \gset
 SELECT set_config('request.jwt.claim.sub', :B, false); SET ROLE authenticated;
-SELECT zz.check('B ne voit rien des projets de A', (SELECT count(*) FROM public.cp_projects) = 0 AND (SELECT count(*) FROM public.cp_programs) = 0 AND (SELECT count(*) FROM public.cp_project_members) = 0 AND (SELECT count(*) FROM public.cp_statuses WHERE organization_id = :ORG1::uuid) = 0);
+SELECT zz.check('B ne voit rien des projets de A', (SELECT count(*) FROM public.cp_projects) = 0 AND (SELECT count(*) FROM public.cp_project_members) = 0 AND (SELECT count(*) FROM public.cp_statuses WHERE organization_id = :ORG1::uuid) = 0);
 SELECT zz.check('B voit ses 4 états', (SELECT count(*) FROM public.cp_statuses) = 4);
-SELECT zz.check('B ne rattache pas un projet au programme de A', zz.raises(format('INSERT INTO public.cp_projects (name, type, program_id) VALUES (''Volé'', ''admin'', %L)', :'prog_a')) IS NOT NULL);
 SELECT zz.check('B ne rattache pas un projet au chantier de A', zz.raises(format('INSERT INTO public.cp_projects (name, type, site_id) VALUES (''Volé'', ''site'', %L)', :'site_a')) IS NOT NULL);
 SELECT zz.check('B n''utilise pas un état de A', zz.raises(format('INSERT INTO public.cp_projects (name, type, status_id) VALUES (''Volé'', ''admin'', %L)', :'status_a')) IS NOT NULL);
-SELECT zz.check('B ne modifie ni ne supprime rien chez A', zz.affected($$UPDATE public.cp_projects SET name = 'Piraté'$$) = 0 AND zz.affected($$DELETE FROM public.cp_programs$$) = 0);
+SELECT zz.check('B ne modifie ni ne supprime rien chez A', zz.affected($$UPDATE public.cp_projects SET name = 'Piraté'$$) = 0);
 INSERT INTO public.cp_projects (name, type) VALUES ('Projet de B', 'admin');
 SELECT zz.check('B crée son projet, état par défaut de B', (SELECT count(*) FROM public.cp_projects) = 1 AND (SELECT s.organization_id = :ORG2::uuid AND s.family = 'not_started' FROM public.cp_projects p JOIN public.cp_statuses s ON s.id = p.status_id));
 SELECT zz.check('B ne désigne pas un responsable de A', zz.raises(format('INSERT INTO public.cp_project_members (project_id, user_id) SELECT p.id, %L FROM public.cp_projects p', :'uu')) IS NOT NULL);
@@ -124,9 +118,7 @@ RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
 SELECT zz.check('A ne voit pas le projet de B', (SELECT count(*) FROM public.cp_projects WHERE name = 'Projet de B') = 0);
 
--- Suppressions : programme (les projets restent), projet (les responsables partent avec lui)
-DELETE FROM public.cp_programs WHERE name = 'Festivals 2027';
-SELECT zz.check('supprimer un programme garde ses projets, sans programme', (SELECT count(*) FROM public.cp_projects WHERE name = 'Festival Léman' AND program_id IS NULL) = 1);
+-- Suppression d'un projet (les responsables partent avec lui)
 DELETE FROM public.cp_projects WHERE name = 'Festival Léman';
 SELECT zz.check('supprimer un projet supprime ses responsables', (SELECT count(*) FROM public.cp_project_members) = 0);
 RESET ROLE;

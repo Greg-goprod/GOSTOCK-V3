@@ -24,7 +24,7 @@ export const CATEGORIES: { id: HelpCategory; label: string; summary: string }[] 
   { id: 'chantiers', label: 'Chantiers', summary: 'Budget, matériel sur place, carte, planning.' },
   { id: 'personnes', label: 'Personnes', summary: 'Fiches, badges, permis machines, EPI, départs.' },
   { id: 'pilotage', label: 'Suivi', summary: 'Retards, coûts, comptabilité, journal.' },
-  { id: 'pilote', label: 'PILOTE', summary: 'Projets, programmes, planning de chantier (modules payants).' },
+  { id: 'pilote', label: 'PILOTE', summary: 'Projets, planning de chantier (modules payants).' },
   { id: 'reglages', label: 'Réglages', summary: 'Paramètres, alertes, sauvegarde, santé des données.' },
 ];
 

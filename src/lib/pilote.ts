@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-// PILOTE : programmes, projets, états et responsables. Les règles (même entreprise, lien chantier, dates…) sont vérifiées par la base.
+// PILOTE : projets, états et responsables. Les règles (même entreprise, lien chantier, dates…) sont vérifiées par la base.
 export type StatusFamily = 'not_started' | 'in_progress' | 'done' | 'cancelled';
 export type ProjectType = 'site' | 'rd' | 'design' | 'recruitment' | 'admin' | 'event';
 export type ProjectPriority = 'low' | 'medium' | 'high';
@@ -10,14 +10,9 @@ export const LINK_MODE_LABEL: Record<LinkMode, string> = {
   overlap: 'Seulement si les dates se chevauchent', keep_gap: 'Garder l\'intervalle entre les éléments', none: 'Ne pas décaler automatiquement',
 };
 
-// Le « programme » (regroupement de projets) n'est plus proposé à l'écran : notion peu claire, à redéfinir avec Greg.
-// Les données et la base sont conservées ; remettre ce drapeau à true réaffiche tout (formulaire, filtres, onglet).
-export const SHOW_PROGRAMS = false;
-
 export interface CpStatus { id: string; name: string; family: StatusFamily; color: string; position: number; is_system: boolean }
-export interface CpProgram { id: string; name: string; description: string | null; color: string; starts_on: string | null; ends_on: string | null }
 export interface CpProject {
-  id: string; program_id: string | null; site_id: string | null; type: ProjectType; name: string; description: string | null;
+  id: string; site_id: string | null; type: ProjectType; name: string; description: string | null;
   status_id: string; priority: ProjectPriority | null; color: string; starts_on: string | null; ends_on: string | null;
   link_mode: LinkMode; link_skip_weekends: boolean;
 }
@@ -66,7 +61,6 @@ export const PRIORITY_LABEL: Record<ProjectPriority, string> = { low: 'Basse', m
 
 export interface PiloteData {
   statuses: CpStatus[];
-  programs: CpProgram[];
   projects: CpProject[];
   members: CpMember[];
   sites: CpSite[];
@@ -80,18 +74,16 @@ export interface GanttData extends PiloteData {
 }
 
 export async function loadPilote(): Promise<PiloteData> {
-  const [statuses, programs, projects, members, sites] = await Promise.all([
+  const [statuses, projects, members, sites] = await Promise.all([
     supabase.from('cp_statuses').select('*').order('position').order('name'),
-    supabase.from('cp_programs').select('*').order('name'),
     supabase.from('cp_projects').select('*').order('starts_on', { nullsFirst: false }).order('name'),
     supabase.from('cp_project_members').select('project_id, user_id, role'),
     supabase.from('sites').select('id, name, status').order('name'),
   ]);
-  const error = [statuses, programs, projects, members, sites].map(r => r.error).find(Boolean);
+  const error = [statuses, projects, members, sites].map(r => r.error).find(Boolean);
   if (error) throw error;
   return {
     statuses: (statuses.data || []) as CpStatus[],
-    programs: (programs.data || []) as CpProgram[],
     projects: (projects.data || []) as CpProject[],
     members: (members.data || []) as CpMember[],
     sites: (sites.data || []) as CpSite[],

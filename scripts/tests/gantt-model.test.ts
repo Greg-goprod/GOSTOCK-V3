@@ -16,11 +16,10 @@ const item = (id: string, project_id: string, parent_id: string | null, kind: an
   ({ id, project_id, parent_id, kind, name, description: null, status_id, priority: null, starts_on, ends_on, position });
 const data: GanttData = {
   statuses: ST as any, sites: [], members: [], itemMembers: [], links: [],
-  programs: [{ id: 'g1', name: 'Festivals 2027', description: null, color: '#639', starts_on: null, ends_on: null }],
   projects: [
-    { id: 'p1', program_id: 'g1', site_id: null, type: 'site', name: 'Festival', description: null, status_id: 's1', priority: null, color: '#0ea5e9', starts_on: null, ends_on: null, link_mode: 'overlap', link_skip_weekends: true },
-    { id: 'p2', program_id: null, site_id: null, type: 'rd', name: 'Prototype', description: null, status_id: 's2', priority: null, color: '#10b981', starts_on: '2027-02-01', ends_on: '2027-03-31', link_mode: 'overlap', link_skip_weekends: true },
-    { id: 'p3', program_id: 'g1', site_id: null, type: 'admin', name: 'Sans élément', description: null, status_id: 's0', priority: null, color: '#f00', starts_on: '2027-09-01', ends_on: null, link_mode: 'overlap', link_skip_weekends: true },
+    { id: 'p1', site_id: null, type: 'site', name: 'Festival', description: null, status_id: 's1', priority: null, color: '#0ea5e9', starts_on: null, ends_on: null, link_mode: 'overlap', link_skip_weekends: true },
+    { id: 'p2', site_id: null, type: 'rd', name: 'Prototype', description: null, status_id: 's2', priority: null, color: '#10b981', starts_on: '2027-02-01', ends_on: '2027-03-31', link_mode: 'overlap', link_skip_weekends: true },
+    { id: 'p3', site_id: null, type: 'admin', name: 'Sans élément', description: null, status_id: 's0', priority: null, color: '#f00', starts_on: '2027-09-01', ends_on: null, link_mode: 'overlap', link_skip_weekends: true },
   ],
   items: [
     item('a', 'p1', null, 'phase', 'Montage', 's1', null, null, 0),
@@ -34,17 +33,17 @@ const data: GanttData = {
   ],
 };
 
-const m = buildGantt(data, 'program');
+const m = buildGantt(data, 'status');
 const keys = m.rows.map(r => r.key);
-eq('ordre : programme, ses projets, éléments', keys, ['g:g1', 'p:p1', 'i:a', 'i:b', 'i:c', 'i:d', 'i:e', 'i:g', 'i:f', 'i:h', 'p:p3', 'g:none', 'p:p2']);
+eq('ordre : groupe d\'état, ses projets, éléments', keys, ['g:s0', 'p:p3', 'g:s1', 'p:p1', 'i:a', 'i:b', 'i:c', 'i:d', 'i:e', 'i:g', 'i:f', 'i:h', 'g:s2', 'p:p2']);
 const r = (k: string) => m.rows.find(x => x.key === k)!;
-eq('niveaux', m.rows.map(x => x.level), [0, 1, 2, 3, 3, 4, 4, 3, 2, 2, 1, 0, 1]);
+eq('niveaux', m.rows.map(x => x.level), [0, 1, 0, 1, 2, 3, 3, 4, 4, 3, 2, 2, 0, 1]);
 eq('phase sans dates : calculée sur ses enfants', [r('i:a').start, r('i:a').end], ['2027-06-01', '2027-06-10']);
 eq('tâche : dates propres gardées (le sous-élément déborde pas)', [r('i:c').start, r('i:c').end], ['2027-06-04', '2027-06-10']);
 eq('projet sans dates : calculé sur ses éléments (jalon compris)', [r('p:p1').start, r('p:p1').end], ['2027-06-01', '2027-06-20']);
-eq('programme sans dates : calculé sur ses projets (le projet à date unique compte)', [r('g:g1').start, r('g:g1').end], ['2027-06-01', '2027-09-01']);
+eq('groupe : dates calculées sur ses projets', [r('g:s1').start, r('g:s1').end], ['2027-06-01', '2027-06-20']);
 eq('projet avec début seul : repère d\'un jour', [r('p:p3').start, r('p:p3').end, r('p:p3').partial], ['2027-09-01', '2027-09-01', true]);
-eq('programme : le projet partiel étend sa fin', r('g:g1').end, '2027-09-01');
+eq('groupe : le projet à date unique compte (repère d\'un jour)', [r('g:s0').start, r('g:s0').end], ['2027-09-01', '2027-09-01']);
 eq('jalon : un jour', [r('i:f').start, r('i:f').end], ['2027-06-20', '2027-06-20']);
 // Avancement : feuilles Structures(done) Câblage(done) Réglage(annulé, ne compte pas) À dater(0) Ouverture(0) Exploitation(0 : feuille sans enfant)
 eq('avancement tâche Éclairage : Câblage fait, Réglage annulé exclu', [r('i:c').done, r('i:c').total, progressOf(r('i:c'))], [1, 1, 1]);
@@ -52,19 +51,19 @@ eq('avancement phase Montage', [r('i:a').done, r('i:a').total], [2, 3]);
 eq('avancement projet Festival : 5 éléments comptés (Réglage annulé exclu)', [r('p:p1').done, r('p:p1').total], [2, 5]);
 eq('projet sans élément et « Pas commencé » : 0 sur 1', [r('p:p3').done, r('p:p3').total], [0, 1]);
 eq('projet sans élément et « Terminé » : 1 sur 1', [r('p:p2').done, r('p:p2').total], [1, 1]);
-eq('programme : somme de ses projets', [r('g:g1').done, r('g:g1').total], [2, 6]);
+eq('groupe : somme de ses projets', [[r('g:s1').done, r('g:s1').total], [r('g:s0').done, r('g:s0').total], [r('g:s2').done, r('g:s2').total]], [[2, 5], [0, 1], [1, 1]]);
 eq('éléments sans date', undatedRows(m).map(x => x.key), ['i:e', 'i:g', 'i:h']);
 eq('plage de dates', m.range, { min: '2027-02-01', max: '2027-09-01' });
-eq('lignes dépliables', m.expandable, ['g:g1', 'p:p1', 'i:a', 'i:c', 'g:none']);
+eq('lignes dépliables', m.expandable, ['g:s0', 'g:s1', 'p:p1', 'i:a', 'i:c', 'g:s2']);
 
 const exp = defaultExpanded(m);
-eq('ouverture sur 2 niveaux : groupes dépliés, projets repliés', visibleRows(m, exp).map(x => x.key), ['g:g1', 'p:p1', 'p:p3', 'g:none', 'p:p2']);
+eq('ouverture sur 2 niveaux : groupes dépliés, projets repliés', visibleRows(m, exp).map(x => x.key), ['g:s0', 'p:p3', 'g:s1', 'p:p1', 'g:s2', 'p:p2']);
 exp.add('p:p1');
-eq('déplier un projet montre ses phases et ses tâches directes', visibleRows(m, exp).map(x => x.key), ['g:g1', 'p:p1', 'i:a', 'i:f', 'i:h', 'p:p3', 'g:none', 'p:p2']);
+eq('déplier un projet montre ses phases et ses tâches directes', visibleRows(m, exp).map(x => x.key), ['g:s0', 'p:p3', 'g:s1', 'p:p1', 'i:a', 'i:f', 'i:h', 'g:s2', 'p:p2']);
 exp.add('i:a'); exp.add('i:c');
-eq('tout déplier', visibleRows(m, exp).length, 13);
+eq('tout déplier', visibleRows(m, exp).length, 14);
 exp.delete('p:p1');
-eq('replier un projet cache toute sa descendance', visibleRows(m, exp).map(x => x.key), ['g:g1', 'p:p1', 'p:p3', 'g:none', 'p:p2']);
+eq('replier un projet cache toute sa descendance', visibleRows(m, exp).map(x => x.key), ['g:s0', 'p:p3', 'g:s1', 'p:p1', 'g:s2', 'p:p2']);
 
 // Dates propres (gestes) et lignes « + Nouveau »
 eq('dates propres : phase sans dates (calculées), tâche avec dates', [r('i:a').ownStart, r('i:a').ownEnd, r('i:c').ownStart, r('i:c').ownEnd], [null, null, '2027-06-04', '2027-06-12'.replace('2027-06-12', '2027-06-10')]);
@@ -103,10 +102,10 @@ eq('regroupement par type', buildGantt(data, 'type').rows.filter(x => x.kind ===
 const colorsOf = (by?: 'status' | 'project') => Object.fromEntries(buildGantt(data, 'status', by).rows.filter(x => x.kind === 'project').map(x => [x.name, x.color]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
 eq('couleur par état (défaut) : un projet prend la couleur de son état', colorsOf(), { Festival: '#39f', Prototype: '#0a0', 'Sans élément': '#999' });
 eq('couleur par projet : un projet garde sa propre couleur', colorsOf('project'), { Festival: '#0ea5e9', Prototype: '#10b981', 'Sans élément': '#f00' });
-const itemColors = (by?: 'status' | 'project') => buildGantt(data, 'program', by).rows.filter(x => x.kind === 'task' || x.kind === 'phase').map(x => [x.name, x.color]);
+const itemColors = (by?: 'status' | 'project') => buildGantt(data, 'status', by).rows.filter(x => x.kind === 'task' || x.kind === 'phase').map(x => [x.name, x.color]);
 eq('couleur par état : un élément prend la couleur de SON état, pas celle du projet', itemColors().every(([, c]) => ['#999', '#39f', '#0a0', '#d00'].includes(c as string)), true);
 eq('couleur par projet : les éléments héritent de la couleur du projet', itemColors('project').every(([, c]) => ['#0ea5e9', '#10b981', '#f00'].includes(c as string)), true);
-eq('sans données : modèle vide', buildGantt({ ...data, projects: [], items: [], programs: [] }, 'program'), { rows: [], expandable: [], range: null });
+eq('sans données : modèle vide', buildGantt({ ...data, projects: [], items: [] }, 'status'), { rows: [], expandable: [], range: null });
 
 // Échelle : la période tient dans la largeur
 const sc = makeScale({ start: '2027-06-01', end: '2027-06-30' }, 900);

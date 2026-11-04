@@ -18,12 +18,12 @@ import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectFor
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const LOCALES = { fr: 'fr-CH', de: 'de-CH', it: 'it-CH', en: 'en-GB' } as const;
 const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
-// Regroupements proposés (le programme n'est plus proposé : voir SHOW_PROGRAMS)
+// Regroupements proposés
 const GROUPING_CHOICES: Grouping[] = ['status', 'type'];
-const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type', program: 'Programme' };
-const EMPTY: GanttData = { statuses: [], programs: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [] };
+const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type' };
+const EMPTY: GanttData = { statuses: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [] };
 
-// PILOTE › Gantt (module payant) : programmes, projets et leurs éléments sur une échelle de temps
+// PILOTE › Gantt (module payant) : projets et leurs éléments sur une échelle de temps
 // `embedded` : affiché comme onglet de la page Projets, qui porte déjà le titre et l'introduction
 const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const [data, setData] = useState<GanttData | null>(null);
@@ -189,7 +189,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
       )}
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />
-      <ProjectForm data={data} target={projectTarget} onClose={() => setProjectTarget(null)} onSaved={reload} />
+      <ProjectForm data={data} target={projectTarget} readOnly={projectTarget?.mode === 'edit' && !rights.update} onClose={() => setProjectTarget(null)} onSaved={reload} />
     </div>
   );
 };

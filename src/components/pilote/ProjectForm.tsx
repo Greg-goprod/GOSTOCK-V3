@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
-import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, SHOW_PROGRAMS, saveTeam, TEAM_ROLE_LABEL, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType, type TeamRole } from '../../lib/pilote';
+import { LINK_MODE_LABEL, piloteError, PRIORITY_LABEL, saveTeam, TEAM_ROLE_LABEL, TYPE_LABEL, TYPE_ORDER, type CpProject, type LinkMode, type PiloteData, type ProjectPriority, type ProjectType, type TeamRole } from '../../lib/pilote';
 import { ZONE_COLORS } from '../../lib/sitePlanning';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -18,10 +18,12 @@ interface Props {
   target: ProjectTarget | null;
   onClose: () => void;
   onSaved: () => Promise<void>;
+  // Lecteur : la fiche s'ouvre pour consulter, sans pouvoir rien modifier (la base refuse de toute façon l'écriture)
+  readOnly?: boolean;
 }
 
 interface FormState {
-  name: string; type: ProjectType; program_id: string; status_id: string; priority: '' | ProjectPriority;
+  name: string; type: ProjectType; status_id: string; priority: '' | ProjectPriority;
   starts_on: string; ends_on: string; color: string; description: string; site_id: string; team: Record<string, TeamRole>;
   link_mode: LinkMode; link_skip_weekends: boolean;
 }
@@ -29,27 +31,23 @@ interface FormState {
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
-// Création / modification d'un projet : type, état, programme, dates, équipe (responsables et membres), chantier de Logistique (type chantier)
-const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
+// Création / modification d'un projet : type, état, dates, équipe (responsables et membres), chantier de Logistique (type chantier)
+const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly = false }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   // « Afficher les détails » : chantier lié, couleur, dépendances (repliés par défaut, comme la fiche d'un élément)
   const [showDetails, setShowDetails] = useState(false);
-  // Création d'un programme sans quitter le formulaire (champ qui s'ouvre sous la liste)
-  const [newProgram, setNewProgram] = useState<string | null>(null);
-  const [creatingProgram, setCreatingProgram] = useState(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
   const editedRow = target?.mode === 'edit' ? target.row : null;
 
   useEffect(() => {
-    setNewProgram(null);
     if (!target) { setForm(null); setShowDetails(false); return; }
     const base = data.statuses.find(s => s.is_system && s.family === 'not_started')?.id ?? data.statuses[0]?.id ?? '';
     if (target.mode === 'edit') {
       const r = target.row;
       setForm({
-        name: r.name, type: r.type, program_id: r.program_id ?? '', status_id: r.status_id, priority: r.priority ?? '', starts_on: r.starts_on ?? '', ends_on: r.ends_on ?? '',
+        name: r.name, type: r.type, status_id: r.status_id, priority: r.priority ?? '', starts_on: r.starts_on ?? '', ends_on: r.ends_on ?? '',
         color: r.color, description: r.description ?? '', site_id: r.site_id ?? '', team: Object.fromEntries(data.members.filter(m => m.project_id === r.id).map(m => [m.user_id, m.role])),
         link_mode: r.link_mode ?? 'overlap', link_skip_weekends: r.link_skip_weekends ?? true,
       });
@@ -58,7 +56,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
     } else {
       setShowDetails(false);
       const presetStatus = target.status_id && data.statuses.some(s => s.id === target.status_id) ? target.status_id : base;
-      setForm({ name: '', type: target.type ?? 'site', program_id: '', status_id: presetStatus, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', team: {}, link_mode: 'overlap', link_skip_weekends: true });
+      setForm({ name: '', type: target.type ?? 'site', status_id: presetStatus, priority: '', starts_on: '', ends_on: '', color: ZONE_COLORS[1], description: '', site_id: '', team: {}, link_mode: 'overlap', link_skip_weekends: true });
     }
     // Le formulaire repart de zéro à chaque ouverture
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,31 +77,11 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
     return { ...f, team };
   });
 
-  const createProgram = async () => {
-    const name = (newProgram ?? '').trim();
-    if (!name || creatingProgram) return;
-    const existing = data.programs.find(p => p.name.trim().toLowerCase() === name.toLowerCase());
-    if (existing) { set({ program_id: existing.id }); setNewProgram(null); return void toast.success('Ce programme existe déjà : il est sélectionné'); }
-    setCreatingProgram(true);
-    try {
-      const { data: row, error } = await supabase.from('cp_programs').insert({ name }).select('id').single();
-      if (error) throw error;
-      await onSaved();
-      set({ program_id: row.id as string });
-      setNewProgram(null);
-      toast.success('Programme créé');
-    } catch (error) {
-      toast.error(piloteError(error));
-    } finally {
-      setCreatingProgram(false);
-    }
-  };
-
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (saving || !form || !target) return;
+    if (saving || !form || !target || readOnly) return;
     const payload = {
-      name: form.name.trim(), type: form.type, ...(SHOW_PROGRAMS ? { program_id: form.program_id || null } : {}), status_id: form.status_id, priority: form.priority || null,
+      name: form.name.trim(), type: form.type, status_id: form.status_id, priority: form.priority || null,
       starts_on: form.starts_on || null, ends_on: form.ends_on || null, color: form.color, description: form.description.trim() || null,
       site_id: form.type === 'site' && form.site_id ? form.site_id : null,
       link_mode: form.link_mode, link_skip_weekends: form.link_skip_weekends,
@@ -132,9 +110,10 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
   };
 
   return (
-    <Modal isOpen={!!target} onClose={onClose} title={target?.mode === 'edit' ? 'Modifier le projet' : 'Nouveau projet'}>
+    <Modal isOpen={!!target} onClose={onClose} title={target?.mode === 'edit' ? (readOnly ? (editedRow?.name ?? 'Projet') : 'Modifier le projet') : 'Nouveau projet'}>
       {form && (
         <form onSubmit={save} className="space-y-3">
+          <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-3 border-0 p-0">
           <div>
             <label htmlFor="prj-name" className={labelClass}>Nom du projet</label>
             <input id="prj-name" className={inputClass} required value={form.name} onChange={e => set({ name: e.target.value })} />
@@ -148,27 +127,8 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
             </div>
             <div>
               <label htmlFor="prj-status" className={labelClass}>État</label>
-              <StatusPicker id="prj-status" statuses={data.statuses} value={form.status_id} onChange={v => set({ status_id: v })} />
+              <StatusPicker id="prj-status" statuses={data.statuses} value={form.status_id} disabled={readOnly} onChange={v => set({ status_id: v })} />
             </div>
-            {SHOW_PROGRAMS && (
-            <div>
-              <label htmlFor="prj-program" className={labelClass}>Programme</label>
-              <select id="prj-program" className={inputClass} value={form.program_id} onChange={e => set({ program_id: e.target.value })}>
-                <option value="">— Aucun</option>
-                {data.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              {newProgram === null ? (
-                <button type="button" className="mt-1 text-xs font-medium text-primary-600 hover:underline" onClick={() => setNewProgram('')}>+ Créer un programme</button>
-              ) : (
-                <div className="mt-1 flex gap-2">
-                  <input aria-label="Nom du nouveau programme" className={inputClass} autoFocus value={newProgram} placeholder="Nom du programme"
-                    onChange={e => setNewProgram(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void createProgram(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setNewProgram(null); } }} />
-                  <Button type="button" size="sm" loading={creatingProgram} onClick={() => void createProgram()}>Ajouter</Button>
-                </div>
-              )}
-            </div>
-            )}
             <div>
               <label htmlFor="prj-priority" className={labelClass}>Priorité</label>
               <select id="prj-priority" className={inputClass} value={form.priority} onChange={e => set({ priority: e.target.value as FormState['priority'] })}>
@@ -178,7 +138,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="prj-period" className={labelClass}>Période (début et fin)</label>
-              <DateRangeInput id="prj-period" className={inputClass} start={form.starts_on} end={form.ends_on} onChange={(a, b) => set({ starts_on: a, ends_on: b })} placeholder="Choisir le début et la fin" />
+              <DateRangeInput id="prj-period" className={inputClass} start={form.starts_on} end={form.ends_on} disabled={readOnly} onChange={(a, b) => set({ starts_on: a, ends_on: b })} placeholder="Choisir le début et la fin" />
             </div>
           </div>
           <fieldset>
@@ -204,13 +164,14 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
             <label htmlFor="prj-desc" className={labelClass}>Description</label>
             <textarea id="prj-desc" rows={3} className={inputClass} value={form.description} onChange={e => set({ description: e.target.value })} />
           </div>
+          </fieldset>
           <button type="button" aria-expanded={showDetails} onClick={() => setShowDetails(v => !v)}
             className="inline-flex items-center gap-1 text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">
             {showDetails ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
             {showDetails ? 'Masquer les détails' : 'Afficher les détails'}
           </button>
           {showDetails && (
-            <div className="space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+            <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
             {form.type === 'site' && (
               <div>
                 <label htmlFor="prj-site" className={labelClass}>Chantier de Logistique (facultatif)</label>
@@ -241,11 +202,11 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved }) => {
                 Éviter les week-ends (un élément décalé automatiquement ne commence pas un samedi ou un dimanche)
               </label>
             </fieldset>
-            </div>
+            </fieldset>
           )}
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" loading={saving}>Enregistrer</Button>
+            <Button variant="secondary" onClick={onClose}>{readOnly ? 'Fermer' : 'Annuler'}</Button>
+            {!readOnly && <Button type="submit" loading={saving}>Enregistrer</Button>}
           </div>
         </form>
       )}

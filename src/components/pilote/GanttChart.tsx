@@ -35,8 +35,8 @@ interface Props {
   onPlace?: (row: GanttRow, start: string, end: string) => Promise<void>;
 }
 
-const BAR_H: Record<GanttRow['kind'], number> = { group: 8, program: 10, project: 22, phase: 18, task: 20, subtask: 14, milestone: 14, add: 0 };
-const kindLabel = (r: GanttRow) => (r.kind === 'add' ? 'Nouveau' : r.kind === 'group' ? 'Groupe' : r.kind === 'program' ? 'Programme' : r.kind === 'project' ? 'Projet' : ITEM_KIND_LABEL[r.kind as ItemKind]);
+const BAR_H: Record<GanttRow['kind'], number> = { group: 8, project: 22, phase: 18, task: 20, subtask: 14, milestone: 14, add: 0 };
+const kindLabel = (r: GanttRow) => (r.kind === 'add' ? 'Nouveau' : r.kind === 'group' ? 'Groupe' : r.kind === 'project' ? 'Projet' : ITEM_KIND_LABEL[r.kind as ItemKind]);
 // Un groupe (état ou type) accepte aussi un « + » : il crée un projet rangé dans ce groupe
 const canAddTo = (r: GanttRow) => r.kind === 'project' || r.kind === 'phase' || r.kind === 'task' || r.kind === 'group';
 
@@ -209,7 +209,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
         <div className="sticky left-0 z-10 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ height: bodyH }}>
           {rows.map(r => {
             const isOpen = expanded.has(r.key);
-            const clickable = r.kind !== 'group' && r.kind !== 'program' && r.kind !== 'add';
+            const clickable = r.kind !== 'group' && r.kind !== 'add';
             if (r.kind === 'add') {
               return (
                 <div key={r.key} className="flex items-center border-b border-gray-100 dark:border-gray-700/60 pr-2" style={{ height: ROW_H, paddingLeft: 6 + r.level * 16 + 30 }}>
@@ -226,7 +226,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
                 ) : <span className="mr-1 inline-block h-6 w-6 shrink-0" />}
                 <span aria-hidden className="mr-2 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: r.color }} />
                 <button type="button" onClick={() => (clickable ? onOpen(r) : onToggle(r.key))} title={`${kindLabel(r)} · ${r.name}`}
-                  className={`min-w-0 flex-1 truncate text-left text-[13px] ${r.kind === 'group' || r.kind === 'program' ? 'font-bold uppercase tracking-wide text-gray-700 dark:text-gray-200' : r.kind === 'project' ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                  className={`min-w-0 flex-1 truncate text-left text-[13px] ${r.kind === 'group' ? 'font-bold uppercase tracking-wide text-gray-700 dark:text-gray-200' : r.kind === 'project' ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                   {r.name}
                 </button>
                 {r.start === null && clickable && <span className="ml-1 shrink-0 rounded bg-gray-100 dark:bg-gray-700 px-1.5 text-[10px] text-gray-600 dark:text-gray-300">Sans date</span>}
@@ -303,7 +303,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
             }
             const pct = progressOf(r);
             const title = `${kindLabel(r)} · ${r.name} · ${datesOf(r)}${pct === null ? '' : ` · ${Math.round(pct * 100)} %`}`;
-            const clickable = r.kind !== 'group' && r.kind !== 'program';
+            const clickable = r.kind !== 'group';
             const draggable = canEdit && movable(r);
             const common = { 'aria-label': title, title, role: clickable ? 'button' : undefined, tabIndex: clickable ? 0 : undefined } as const;
             // Sans droit de modification : un simple clic ouvre la fiche ; avec le droit, c'est le relâchement du geste qui ouvre (clic sans mouvement) ou déplace
@@ -322,7 +322,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
                 </div>
               );
             }
-            const summary = r.kind === 'group' || r.kind === 'program';
+            const summary = r.kind === 'group';
             return (
               <div key={r.key} onMouseEnter={() => setHoverKey(r.key)} onMouseLeave={() => setHoverKey(k => (k === r.key ? null : k))} className={`absolute flex items-center ${view ? 'z-[8]' : 'z-[6]'}`} style={{ left, top: top + (ROW_H - h) / 2, height: h }}>
                 <div {...common} {...handle}
