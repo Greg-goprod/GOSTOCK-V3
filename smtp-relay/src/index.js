@@ -74,6 +74,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// L'authentification passe AVANT la lecture du corps : un appel sans clé valide ne fait jamais allouer ni analyser 25 Mo
+app.use((req, res, next) => (req.method === 'POST' ? authenticateRequest(req, res, next) : next()));
+
 // JSON parser avec limite de taille (augmentée pour les pièces jointes)
 app.use(express.json({ limit: '25mb' }));
 

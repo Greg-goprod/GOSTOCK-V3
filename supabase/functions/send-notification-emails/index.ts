@@ -5,8 +5,10 @@
 // Chaque canal ne fonctionne que si ses secrets sont saisis ; l'autre continue sans lui.
 // Corps { "test": "adresse@exemple.ch" } : e-mail de test vers un destinataire enregistré.
 //
-// Secrets e-mail : SMTP_RELAY_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
-// SMTP_FROM_EMAIL ; facultatifs : SMTP_RELAY_URL, SMTP_FROM_NAME, APP_URL.
+// Secrets e-mail : SMTP_RELAY_URL, SMTP_RELAY_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
+// SMTP_FROM_EMAIL ; facultatifs : SMTP_FROM_NAME, APP_URL.
+// Qui peut l'appeler : la tâche planifiée de la base (en-tête « x-cron-secret » = secret CRON_SECRET) ou la clé de service ; l'e-mail de test, uniquement
+// une personne connectée qui est administratrice. Sans CRON_SECRET (transition), l'ancien comportement reste : tout appel muni d'une clé du projet est accepté.
 // Secrets téléphone : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (ex. mailto:magasin@exemple.ch).
 // Secrets SMS (Twilio) : TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM (numéro ou nom d'expéditeur) ;
 // les SMS ne partent que si le réglage « SMS » est aussi activé dans Paramètres.
@@ -14,7 +16,10 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 
-const RELAY_URL = Deno.env.get('SMTP_RELAY_URL') ?? 'https://go-prod-smtp-relay.fly.dev';
+// Pas de valeur par défaut : sans relais configuré, les identifiants SMTP ne partent nulle part (ils ne doivent jamais aller chez un autre produit)
+const RELAY_URL = Deno.env.get('SMTP_RELAY_URL');
+const CRON_SECRET = Deno.env.get('CRON_SECRET');
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const RELAY_KEY = Deno.env.get('SMTP_RELAY_API_KEY');
 const SMTP = {
   host: Deno.env.get('SMTP_HOST'),
@@ -99,8 +104,32 @@ const json = (body: unknown, status = 200) =>
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
+// Comparaison en temps constant (un secret ne se devine pas par le temps de réponse)
+const sameSecret = (given: string | null, expected: string | undefined) => {
+  if (!given || !expected || given.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < given.length; i++) diff |= given.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff === 0;
+};
+
+// Appel de la tâche planifiée : secret partagé, ou clé de service
+const isScheduledCall = (req: Request) =>
+  sameSecret(req.headers.get('x-cron-secret'), CRON_SECRET) ||
+  sameSecret((req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, ''), SERVICE_KEY);
+
+// Personne connectée (jeton de personne, pas la clé publique du projet) qui est administratrice active
+async function callerIsAdmin(req: Request, supabase: Client) {
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (!token) return false;
+  const { data } = await supabase.auth.getUser(token);
+  if (!data?.user) return false;
+  const { data: rows } = await supabase.from('users').select('id').eq('auth_user_id', data.user.id).eq('role', 'admin').eq('active', true).limit(1);
+  return !!rows?.length;
+}
+
 const missingConfig = () =>
   [
+    ['SMTP_RELAY_URL', RELAY_URL],
     ['SMTP_RELAY_API_KEY', RELAY_KEY],
     ['SMTP_HOST', SMTP.host],
     ['SMTP_USERNAME', SMTP.username],
@@ -154,8 +183,9 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const body = await req.json().catch(() => ({}));
 
-  // E-mail de test : uniquement vers une adresse déjà enregistrée comme destinataire
+  // E-mail de test : réservé à une personne connectée administratrice, et uniquement vers une adresse déjà enregistrée comme destinataire
   if (typeof body?.test === 'string') {
+    if (!(await callerIsAdmin(req, supabase))) return json({ error: 'Réservé aux administrateurs' }, 403);
     if (missing.length) return json({ error: `Envoi d'e-mails non configuré : secrets manquants (${missing.join(', ')})` }, 500);
     const address = body.test.trim().toLowerCase();
     const { data: recipient } = await supabase
@@ -179,6 +209,9 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Traitement planifié : avec CRON_SECRET, seul un appel de la tâche planifiée (secret ou clé de service) passe ; la clé publique du projet ne suffit plus
+  if (CRON_SECRET && !isScheduledCall(req)) return json({ error: 'Non autorisé' }, 401);
+
   // Les échéances et relances sont créées ici aussi, même si personne n'ouvre l'application
   await Promise.all([
     supabase.rpc('check_vehicle_deadlines'),
@@ -198,7 +231,8 @@ Deno.serve(async (req) => {
   const documents = await purgeDocuments(supabase).catch((e) => `erreur : ${(e as Error).message}`);
 
   // Sans secrets SMTP, les e-mails restent en attente (visibles dans l'app) ; le reste a tourné
-  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed, sms, backup, documents });
+  const auth = CRON_SECRET ? 'secret' : 'ouvert (CRON_SECRET absent)';
+  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed, sms, backup, documents, auth });
 
   const { data: pending, error } = await supabase.rpc('claim_notification_emails', { p_limit: 50 });
   if (error) return json({ error: error.message, push: pushed, sms, backup }, 500);
@@ -229,7 +263,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup, documents });
+  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup, documents, auth });
 });
 
 interface PendingPush {

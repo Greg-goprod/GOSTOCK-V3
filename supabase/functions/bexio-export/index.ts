@@ -4,10 +4,12 @@
 // Corps : { entries: [{ date: 'AAAA-MM-JJ', reference, debit: '6800', credit: '1500', amount, description }] }
 // Les numéros de compte sont traduits en identifiants bexio d'après le plan comptable du compte bexio.
 //
-// Secret : BEXIO_API_TOKEN (jeton personnel bexio avec le droit « accounting »), saisi dans Supabase.
+// Secrets : BEXIO_API_TOKEN (jeton personnel bexio avec le droit « accounting ») et BEXIO_ORGANIZATION_ID (l'entreprise de GO-Mat à qui appartient ce
+// compte bexio : un seul jeton existe pour toute la plateforme, une autre entreprise ne doit pas pouvoir y écrire).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const TOKEN = Deno.env.get('BEXIO_API_TOKEN');
+const BEXIO_ORG = Deno.env.get('BEXIO_ORGANIZATION_ID');
 const API = 'https://api.bexio.com';
 
 const CORS = {
@@ -45,6 +47,9 @@ Deno.serve(async (req) => {
   });
   const { data: me } = await caller.rpc('whoami');
   if (!me || !(me.permissions ?? []).includes('settings')) return json({ error: 'Accès refusé' }, 403);
+  // Un seul compte bexio pour toute la plateforme : seule l'entreprise désignée peut y écrire (sans désignation, personne)
+  if (!BEXIO_ORG) return json({ error: 'bexio non lié à une entreprise : secret BEXIO_ORGANIZATION_ID manquant dans Supabase' }, 500);
+  if (me.organization?.id !== BEXIO_ORG) return json({ error: 'Ce compte bexio n\'est pas celui de ton entreprise' }, 403);
 
   const body = await req.json().catch(() => ({}));
   const entries = (Array.isArray(body?.entries) ? body.entries : []) as Entry[];

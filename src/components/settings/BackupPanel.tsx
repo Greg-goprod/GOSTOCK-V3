@@ -8,6 +8,8 @@ import { confirmAction } from '../../lib/confirm';
 import { getActiveOrganizationId } from '../../lib/organization';
 
 // Toutes les tables de GO-Mat, sauf les abonnements de téléphones et les codes de badge (secrets)
+// Tables de la sauvegarde que la restauration ne touche jamais
+const NOT_RESTORABLE = new Set(['organizations', 'audit_log']);
 const TABLES = [
   'organizations', 'rbac_roles', 'rbac_role_permissions', 'system_settings', 'depots', 'storage_bins', 'departments', 'role_configs', 'status_configs',
   'users', 'user_depots', 'trainings', 'user_trainings', 'ppe_types', 'ppe_issues', 'user_ppe_sizes',
@@ -159,6 +161,8 @@ const BackupPanel: React.FC = () => {
     const log: string[] = [];
     let total = 0;
     for (const [index, table] of TABLES.entries()) {
+      // L'entreprise elle-même et le journal d'audit ne se « remettent » pas (la base refuse ces tables : migration 63)
+      if (NOT_RESTORABLE.has(table)) continue;
       const rows = tables[table];
       if (!Array.isArray(rows) || rows.length === 0) continue;
       setProgress(`${index + 1} / ${TABLES.length} · ${table}`);

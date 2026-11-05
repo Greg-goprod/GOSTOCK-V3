@@ -323,3 +323,21 @@ Décisions de Greg : seuls les documents PILOTE comptent ; limite par défaut **
 - **Fonction e-mails v26 déployée** (25 → 26, `verify_jwt` inchangé, code identique au dépôt ; seul le nettoyage change). Essai réel : un faux fichier orphelin (ligne `storage.objects` vieille de 30 h, sans ligne de document) inséré à 12:54 UTC, listé par `cp_orphan_documents()`, **a disparu avant 13:04 UTC** (bucket `cp-documents` : 0 fichier). C'est la seule tâche qui efface ces fichiers, mais **les journaux d'exécution n'ont pas pu être lus** (la requête de journaux a échoué) : l'effacement est observé, pas tracé dans les journaux.
 - **Non vérifié sur GO-MAT** : un dépôt réel refusé par la limite, la jauge à l'écran (l'écran n'est pas en production tant que la pull request n'est pas fusionnée), l'étape e2e `A-quota`.
 
+
+### Revue de sécurité de la pull request #1 (7 commentaires du robot de revue) — 2026-11-05
+
+Chaque point a été vérifié sur GO-MAT (lecture seule) ou dans le code avant d'agir.
+
+| # | Constat du robot | Vérifié | Traitement |
+|---|---|---|---|
+| 1 | `restore_missing_rows` : un administrateur d'entreprise peut écrire dans `owner_admins` et devenir administrateur de la plateforme | **Réel** (fonction à droits du propriétaire, `authenticated`, deux tables exclues seulement) | Migration 63 : liste fermée de 72 tables, lignes de SON entreprise seulement, lien « compte de connexion » des fiches `users` non restauré ; l'écran saute `organizations` et `audit_log` |
+| 2 | Fonction e-mails appelable avec la clé publique | **Réel** (`verify_jwt` accepte la clé publique ; le cron lui-même utilise un jeton de rôle `anon`) | Code prêt : en-tête `x-cron-secret` (secret `CRON_SECRET`) ou clé de service ; e-mail de test réservé aux administrateurs. **Transition** : sans `CRON_SECRET`, comportement actuel (visible dans la réponse : champ `auth`). **Pas encore déployé** |
+| 3 | `users_guard` ne protège pas `rbac_role_id` | **Réel** (aucun écran ne l'écrit ; le déclencheur de synchronisation le fait) | Migration 63 : seul un administrateur le change directement |
+| 4 | `check_*` appelables par toute personne connectée | **Réel**, mais le contenu n'est pas choisi par l'appelant (chaque avis est créé dans l'entreprise de sa propre donnée) : plutôt un déclenchement non autorisé | Migration 63 : réservées à la clé de service ; l'application ne les appelle plus (8 appels retirés) |
+| 5 | Bexio : un jeton global pour toutes les entreprises | **Réel** ; fonction déployée (v11) | Code prêt : secret `BEXIO_ORGANIZATION_ID`, seule l'entreprise désignée écrit. **Pas encore déployé** (change le comportement actuel) |
+| 6 | Relais SMTP par défaut chez un autre produit | **Conditionnel** (les accès SMTP sont bien configurés ; le secret `SMTP_RELAY_URL` est-il défini ? non visible) | Code prêt : plus de valeur par défaut ; sans URL, rien ne part (signalé dans `missing`). **Pas encore déployé** |
+| 7 | Relais : corps de 25 Mo lu avant l'authentification | **Réel** | Code corrigé (authentification avant la lecture du corps). **Relais (Fly) à redéployer par toi** |
+
+- **Tests** : `supabase/tests/securite.sql` (22 vérifications) ; 4 mutations détectées (liste fermée, rôle de droits, `check_*`, filtre d'entreprise → le script s'arrête sur l'erreur de la garde des écritures). Toute la batterie : 0 échec. `tsc` et lint sans erreur.
+- **Nuance sur le point 1** : sur les tables qui ont la garde des écritures (ex. `depots`), l'insertion d'une ligne d'une autre entreprise était déjà refusée même en restauration ; les vrais trous étaient les tables sans cette garde (`owner_admins`, corbeille des fichiers, modules payants).
+- **Non vérifié** : le comportement réel de `supabase.auth.getUser` avec la clé publique dans la fonction e-mails (la logique « l'e-mail de test refuse la clé publique » n'est pas essayée de bout en bout) ; les secrets de la fonction (non visibles d'ici).

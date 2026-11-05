@@ -142,18 +142,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         throw new Error('Supabase client not initialized');
       }
       
-      // Alertes d'échéance (flotte, entretien, retours, rapport du mois) : une seule par échéance,
-      // sans effet si déjà créées
-      await Promise.all([
-        supabase.rpc('check_vehicle_deadlines'),
-        supabase.rpc('check_maintenance_due'),
-        supabase.rpc('check_due_reminders'),
-        supabase.rpc('check_monthly_report'),
-        supabase.rpc('check_training_rental_deadlines'),
-        supabase.rpc('check_people_deadlines'),
-        supabase.rpc('check_equipment_deadlines'),
-        supabase.rpc('check_backup_reminder'),
-      ]);
+      // Les alertes d'échéance (flotte, entretien, retours, rapport du mois…) sont créées par la tâche planifiée de la base, toutes les
+      // 5 minutes (fonction send-notification-emails, clé de service) : l'application ne les déclenche plus (migration 63).
 
       // Charger toutes les données nécessaires en parallèle
       const [
