@@ -37,9 +37,11 @@ let group = '';
 // Les clients connectés (une page chacun). Une page peut PLANTER (« Target crashed » : mémoire du navigateur) : on le détecte, on le dit,
 // et on remplace la page dans le même contexte (la session reste ouverte) pour que les étapes suivantes ne soient pas toutes perdues.
 const CLIENTS = [];
+const T_DEBUT = Date.now();
+const minutes = () => `${((Date.now() - T_DEBUT) / 60000).toFixed(1)} min`;
 function attach(c, page) {
   page.on('pageerror', e => jsErrors.push(`${c.who}: ${e.message}`));
-  page.on('crash', () => { c.crashed = true; console.log(`⚠ PAGE PLANTÉE (${c.who}) — dernière adresse : ${page.url()}`); });
+  page.on('crash', () => { c.crashed = true; console.log(`⚠ PAGE PLANTÉE (${c.who}) à ${minutes()} — dernière adresse : ${page.url()}`); });
   page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
 }
 async function signIn(c) {
@@ -58,8 +60,9 @@ async function signIn(c) {
 async function revive(c) {
   // Le NAVIGATEUR lui-même est mort (tous les onglets plantent ensemble) : on le relance et on reconnecte chaque client encore utile
   if (BROWSER && !BROWSER.isConnected()) {
-    console.log('⚠ NAVIGATEUR MORT : relance et reconnexion des clients');
-    BROWSER = await chromium.launch();
+    console.log(`⚠ NAVIGATEUR MORT à ${minutes()} : relance et reconnexion des clients`);
+    BROWSER = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
+    BROWSER.on('disconnected', () => console.log(`⚠ NAVIGATEUR DÉCONNECTÉ à ${minutes()}`));
     for (const x of CLIENTS) if (!x.closed) await signIn(x).catch(e => console.log(`  reconnexion de ${x.who} impossible : ${e.message.split('\n')[0]}`));
     return;
   }
@@ -128,7 +131,7 @@ function zurichIso(day, time) {
 
 async function step(id, title, fn, page) {
   const e = { group, id, title, status: 'KO', detail: '', shot: '' };
-  for (const c of CLIENTS) await revive(c).catch(() => {});
+  for (const c of CLIENTS) await revive(c).catch(e => console.log(`⚠ remise en état de ${c.who} impossible : ${String(e.message).split('\n')[0]}`));
   try { const o = await fn(); e.status = (o && o.status) || 'OK'; e.detail = (o && o.detail) || ''; }
   catch (err) { e.status = 'KO'; e.detail = String(err.message).split('\n')[0]; }
   if (CLIENTS.some(c => c.crashed)) e.detail += ' [ENV probable : la page du navigateur a planté pendant cette étape ; elle est remplacée pour la suite]';
@@ -144,8 +147,37 @@ async function step(id, title, fn, page) {
   if (failed) for (const c of CLIENTS) if (!c.closed) await closeOverlays(c);
 }
 
+// Le rapport s'écrit AUSSI quand le script s'arrête de façon anormale (plantage du navigateur, exception hors étape) : sans cela, le rapport précédent
+// restait en place et on croyait relire le nouveau passage.
+function writeReport(clean) {
+  const n = k => results.filter(r => r.status === k).length;
+  const groups = [...new Set(results.map(r => r.group))];
+  const md = [
+    '# Rapport des scénarios PILOTE', '',
+    `Base : GO-MAT · comptes : ${Object.values(ACCOUNTS).join(', ')} · date : ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, `Commit testé : ${(() => { try { return execSync('git log --oneline -1').toString().trim(); } catch { return 'inconnu'; } })()}`, '',
+    `**Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO**`, '',
+    `Nettoyage : ${JSON.stringify(clean)}`, '',
+    '## À corriger (KO et PARTIEL)', '', ...(results.filter(r => ['KO', 'PARTIEL'].includes(r.status)).map(r => `- **${r.status}** ${r.id} — ${r.title} : ${r.detail}${r.shot ? ` ([capture](${r.shot}))` : ''}`)), ...(results.some(r => ['KO', 'PARTIEL'].includes(r.status)) ? [] : ['Aucun.']), '',
+    '## Observations (INFO / NON TESTÉ)', '', ...results.filter(r => ['INFO', 'NON TESTÉ'].includes(r.status)).map(r => `- **${r.id}** — ${r.title} : ${r.detail}`), '',
+    ...groups.flatMap(g => ['', `## ${g}`, '', '| Point | Verdict | Détail |', '|---|---|---|', ...results.filter(r => r.group === g).map(r => `| ${r.id} — ${r.title.replace(/\|/g, '/')} | ${r.status} | ${r.detail.replace(/\|/g, '/').slice(0, 200)} |`)]),
+    '', '## Erreurs JavaScript', '', jsErrors.length ? [...new Set(jsErrors)].slice(0, 20).map(e => `- ${e}`).join('\n') : 'Aucune.', '',
+  ];
+  fs.writeFileSync(REPORT, md.join('\n'));
+  console.log(`\nRapport : ${path.relative(process.cwd(), REPORT)}`);
+  console.log(`Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO`);
+}
+process.on('unhandledRejection', e => abort(e));
+process.on('uncaughtException', e => abort(e));
+function abort(e) {
+  const detail = String((e && e.message) || e).split('\n')[0];
+  console.log(`⚠ ARRÊT ANORMAL DU SCRIPT : ${detail}`);
+  try { results.push({ group: 'Arrêt', id: 'ARRET', title: 'Le script s\'est arrêté avant la fin (nettoyage non fait : le prochain passage supprime ces restes)', status: 'KO', detail, shot: '' }); writeReport({ arret: detail }); } catch { /* rapport impossible */ }
+  process.exit(2);
+}
+
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
+  browser.on('disconnected', () => console.log(`⚠ NAVIGATEUR DÉCONNECTÉ à ${minutes()}`));
   const resp = await login(browser, 'resp');
   const staff = await login(browser, 'staff');
   const collab = await login(browser, 'collab');
@@ -312,7 +344,7 @@ async function step(id, title, fn, page) {
       let res;
       try { res = await fetch(base + route, { method, headers, body }); } catch (e) { return { status: 0, text: `requête bloquée (${e.message})` }; }
       const text = await res.text();
-      return { status: res.status, text: text.slice(0, 300), length: text.length };
+      return { status: res.status, text, length: text.length };
     }, { base: c.base, key: c.key, method, route, opts });
     const path = name => `${org}/${p}/${crypto.randomUUID()}-${name}`;
     const row = (c, path, name, size, extra = {}) => api(c, 'POST', '/rest/v1/cp_documents?select=id,uploaded_by', { project_id: p, file_name: name, size_bytes: size, storage_path: path, ...extra }, REP);
@@ -320,13 +352,13 @@ async function step(id, title, fn, page) {
     // Un membre de l'équipe dépose un petit fichier texte, puis sa ligne
     const p1 = path('note.txt'); const contenu = `${M} contenu du document`;
     const up1 = await storage(collab, 'POST', `/storage/v1/object/cp-documents/${p1}`, { text: contenu, headers: { 'Content-Type': 'text/plain', 'x-upsert': 'false' } });
-    ok(up1.status === 200, `dépôt par un membre de l'équipe : HTTP ${up1.status} ${up1.text}`);
+    ok(up1.status === 200, `dépôt par un membre de l'équipe : HTTP ${up1.status} ${up1.text.slice(0, 200)}`);
     const r1 = await row(collab, p1, 'note.txt', contenu.length);
     accepts(r1, 'ligne du document');
     ok(rows(r1)[0].uploaded_by === S.u_collab, 'le déposant doit être celui qui dépose');
     // Un lecteur hors équipe lit et télécharge (lien signé de 60 s), mais ne dépose pas
     const sg = await storage(staff, 'POST', `/storage/v1/object/sign/cp-documents/${p1}`, { json: { expiresIn: 60 } });
-    ok(sg.status === 200, `lien signé pour un lecteur : HTTP ${sg.status} ${sg.text}`);
+    ok(sg.status === 200, `lien signé pour un lecteur : HTTP ${sg.status} ${sg.text.slice(0, 200)}`);
     const url = JSON.parse(sg.text).signedURL;
     const dl = await storage(staff, 'GET', `/storage/v1${url}`);
     ok(dl.status === 200 && dl.text === contenu, `téléchargement par le lecteur : HTTP ${dl.status} « ${dl.text} »`);
@@ -341,7 +373,7 @@ async function step(id, title, fn, page) {
     // Un fichier de 12 Mo (au-delà des 6 Mo « simples » recommandés) passe ; 51 Mo sont refusés par le stockage lui-même
     const p12 = path('gros.bin');
     const up12 = await storage(resp, 'POST', `/storage/v1/object/cp-documents/${p12}`, { size: 12 * 1024 * 1024, headers: { 'Content-Type': 'application/octet-stream', 'x-upsert': 'false' } });
-    ok(up12.status === 200, `dépôt de 12 Mo : HTTP ${up12.status} ${up12.text}`);
+    ok(up12.status === 200, `dépôt de 12 Mo : HTTP ${up12.status} ${up12.text.slice(0, 200)}`);
     const r12 = await row(resp, p12, 'gros.bin', 12 * 1024 * 1024); accepts(r12, 'ligne du fichier de 12 Mo');
     const up51 = await storage(resp, 'POST', `/storage/v1/object/cp-documents/${path('enorme.bin')}`, { size: 51 * 1024 * 1024, headers: { 'Content-Type': 'application/octet-stream', 'x-upsert': 'false' } });
     ok(up51.status >= 400, `un fichier de 51 Mo a été accepté par le stockage : HTTP ${up51.status}`);
@@ -820,11 +852,13 @@ async function step(id, title, fn, page) {
     ok(/\/pilote\/projets/.test(collab.page.url()) && /section=mytasks/.test(collab.page.url()), `adresse après clic = ${collab.page.url()}`);
     ok(await collab.page.getByRole('button', { name: `${M} Notif T1` }).first().isVisible(), '« Mes tâches » ne s\'est pas ouvert sur la tâche');
   }, collab.page);
-  await step('N-choix-ecran', 'Choix par personne à l\'écran : 5 événements × 3 canaux, une case cochée est enregistrée en base', async () => {
+  await step('N-choix-ecran', 'Choix par personne à l\'écran : un type d\'avis par ligne (6 depuis la migration 58) × 3 canaux, une case cochée est enregistrée en base', async () => {
     await open(collab, '/notifications');
+    const nKinds = rows(await rpc(collab, 'my_cp_notification_prefs')).length;
+    ok(nKinds === 6, `types d'avis PILOTE proposés par la base : ${nKinds} (attendu 6 : assignation, équipe, dates, échéance proche, retard, nouveau message)`);
     const card = collab.page.locator('table', { has: collab.page.getByText('Échéance proche') }).first();
-    ok(await card.locator('tbody tr').count() === 5, 'le tableau des choix n\'a pas 5 lignes');
-    ok(await card.locator('input[type=checkbox]').count() === 15, 'le tableau des choix n\'a pas 15 cases');
+    ok(await card.locator('tbody tr').count() === nKinds, `le tableau des choix a ${await card.locator('tbody tr').count()} ligne(s), la base propose ${nKinds} types`);
+    ok(await card.locator('input[type=checkbox]').count() === nKinds * 3, `le tableau des choix a ${await card.locator('input[type=checkbox]').count()} cases (attendu ${nKinds * 3})`);
     const box = card.locator('input[aria-label*="m\'assigne une tâche"]').first();
     await box.click(); await collab.page.waitForTimeout(1200);
     const p = (await get(collab, `/rest/v1/cp_notification_prefs?select=kind,in_app&kind=eq.cp_assigned`))[0];
@@ -875,21 +909,7 @@ async function step(id, title, fn, page) {
 
   await browser.close();
 
-  /* ============ Rapport ============ */
   const n = k => results.filter(r => r.status === k).length;
-  const groups = [...new Set(results.map(r => r.group))];
-  const md = [
-    '# Rapport des scénarios PILOTE', '',
-    `Base : GO-MAT · comptes : ${Object.values(ACCOUNTS).join(', ')} · date : ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, `Commit testé : ${(() => { try { return execSync('git log --oneline -1').toString().trim(); } catch { return 'inconnu'; } })()}`, '',
-    `**Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO**`, '',
-    `Nettoyage : ${JSON.stringify(clean)}`, '',
-    '## À corriger (KO et PARTIEL)', '', ...(results.filter(r => ['KO', 'PARTIEL'].includes(r.status)).map(r => `- **${r.status}** ${r.id} — ${r.title} : ${r.detail}${r.shot ? ` ([capture](${r.shot}))` : ''}`)), ...(results.some(r => ['KO', 'PARTIEL'].includes(r.status)) ? [] : ['Aucun.']), '',
-    '## Observations (INFO / NON TESTÉ)', '', ...results.filter(r => ['INFO', 'NON TESTÉ'].includes(r.status)).map(r => `- **${r.id}** — ${r.title} : ${r.detail}`), '',
-    ...groups.flatMap(g => ['', `## ${g}`, '', '| Point | Verdict | Détail |', '|---|---|---|', ...results.filter(r => r.group === g).map(r => `| ${r.id} — ${r.title.replace(/\|/g, '/')} | ${r.status} | ${r.detail.replace(/\|/g, '/').slice(0, 200)} |`)]),
-    '', '## Erreurs JavaScript', '', jsErrors.length ? [...new Set(jsErrors)].slice(0, 20).map(e => `- ${e}`).join('\n') : 'Aucune.', '',
-  ];
-  fs.writeFileSync(REPORT, md.join('\n'));
-  console.log(`\nRapport : ${path.relative(process.cwd(), REPORT)}`);
-  console.log(`Synthèse : ${n('OK')} OK · ${n('PARTIEL')} PARTIEL · ${n('KO')} KO · ${n('NON TESTÉ')} NON TESTÉ · ${n('INFO')} INFO`);
+  writeReport(clean);
   process.exit(n('KO') ? 1 : 0);
 })();
