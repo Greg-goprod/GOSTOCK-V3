@@ -1,7 +1,7 @@
 # Rapport du cycle de vie d'un emprunt
 
-Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-02 07:17
-Commit testé : à renseigner (`git log --oneline -1`).
+Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-05 09:22
+Commit testé : d955337 STATUT : migration 61 appliquée et vérifiée sur GO-MAT
 
 **Synthèse : 36 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 13 INFO (comportements à lire)**
 
@@ -18,7 +18,7 @@ Aucun.
 - **E4-decision-casse** — Responsable : décide « déduit du salaire » avec un coût ; le magasin seul ne peut pas : le magasinier seul ne peut pas décider
 - **E5-sortie-echue** — Sortie dont le retour est déjà dépassé (hier) : acceptée ou refusée ? : acceptée (le serveur ne contrôle pas la date de retour passée)
 - **E5-commande-en-retard** — Une personne en retard peut-elle encore commander ? : autorisée (aucun blocage automatique des personnes en retard)
-- **E5-notification-retard** — Une alerte de retard est créée pour le magasin : alerte : TEST Rôle Collaborateur demande de garder « TEST-EMPRUNT Outil K » jusqu'au 10.11.2026 (retour prévu le 07.11.2026) : TEST-EMPRUNT chantier retardé.
+- **E5-notification-retard** — Une alerte de retard est créée pour le magasin : aucune alerte de retard visible pour le magasin : depuis la migration 60, l'avis de retard est ADRESSÉ à la personne en retard et ne se lit que par elle (ce n'est pas une alerte du magasin) ; il est aussi créé par un traitement planifié
 - **E6-perte** — Perte déclarée : sortie « perdue », incident à décider, outil indisponible : disponibilité après perte : 0 (2 sorties, dont 1 perdue)
 - **E6-double-declaration** — Déclarer deux fois la même perte : acceptée (un second incident est créé)
 - **E6-retrouve** — Objet retrouvé : la sortie n'est plus « perdue », l'outil est de nouveau disponible : statut de la sortie après « retrouvé » : returned ; disponibilité 1
@@ -75,7 +75,7 @@ Aucun.
 | E5-dispo-retard — Un outil en retard reste indisponible : 1 sur 2 seulement réservable | OK |  |
 | E5-qui-a-quoi — Le retard est visible : « qui a quoi » et « Mon matériel » | OK |  |
 | E5-commande-en-retard — Une personne en retard peut-elle encore commander ? | INFO | autorisée (aucun blocage automatique des personnes en retard) |
-| E5-notification-retard — Une alerte de retard est créée pour le magasin | INFO | alerte : TEST Rôle Collaborateur demande de garder « TEST-EMPRUNT Outil K » jusqu'au 10.11.2026 (retour prévu le 07.11.2026) : TEST-EMPRUNT chantier retardé. |
+| E5-notification-retard — Une alerte de retard est créée pour le magasin | INFO | aucune alerte de retard visible pour le magasin : depuis la migration 60, l'avis de retard est ADRESSÉ à la personne en retard et ne se lit que par elle (ce n'est pas une alerte du magasin) ; il est aussi créé par un traitement planifié |
 | E5-retour-tardif — Retour tardif : accepté, disponibilité rétablie | OK |  |
 
 ## E6 Perte et vol
