@@ -146,6 +146,9 @@ export interface StockNotification {
   requestId?: string;
   // Avis personnel (sa demande est validée, prête…) ; vide pour les alertes du magasin
   recipientUserId?: string;
+  // Avis PILOTE : le projet et l'élément concernés (un clic ouvre leur fiche)
+  cpProjectId?: string;
+  cpItemId?: string;
   createdAt: string;
   // État « lu » de la personne connectée
   read: boolean;

@@ -109,6 +109,7 @@ RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
 SELECT zz.check('un message sur le projet prévient l''équipe (U), avec l''auteur, la fiche et un extrait', (SELECT count(*) FROM public.my_notifications(500) WHERE kind = 'cp_comment') = 1
   AND (SELECT message LIKE '%a écrit dans « D2 » : « Premier message d''équipe »%' FROM public.my_notifications(500) WHERE kind = 'cp_comment'));
+SELECT zz.check('migration 61 : l''avis d''un message sur le projet renvoie le projet et aucun élément (la fiche du projet s''ouvre)', (SELECT bool_and(cp_project_id = :'d2'::uuid AND cp_item_id IS NULL) FROM public.my_notifications(500) WHERE kind = 'cp_comment'));
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
 SELECT zz.check('l''auteur ne reçoit pas d''avis pour son propre message', (SELECT count(*) FROM public.my_notifications(500) WHERE kind = 'cp_comment') = 0);
@@ -128,6 +129,10 @@ RESET ROLE;
 SELECT zz.check('sur un élément : seule la personne assignée est prévenue, sur CETTE fiche ; sans assigné, personne', (SELECT count(*) FROM public.notifications WHERE kind = 'cp_comment' AND cp_item_id = :'d2t'::uuid AND recipient_user_id = :'uu'::uuid) = 1
   AND (SELECT count(*) FROM public.notifications WHERE kind = 'cp_comment' AND cp_item_id = :'d1t'::uuid) = 0
   AND (SELECT count(*) FROM public.notifications WHERE kind = 'cp_comment' AND recipient_user_id = :'ua'::uuid) = 0);
+SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
+SELECT zz.check('migration 61 : l''avis d''un message sur une tâche renvoie le projet ET la tâche (la fiche de la tâche s''ouvre, sur la discussion)', EXISTS (
+  SELECT 1 FROM public.my_notifications(500) WHERE kind = 'cp_comment' AND cp_item_id = :'d2t'::uuid AND cp_project_id = :'d2'::uuid));
+RESET ROLE;
 -- Préférences : valeurs par défaut (dans l'application et push oui, e-mail non), puis « non » dans l'application
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
 SELECT zz.check('par défaut : « nouveau message » dans l''application et en push, pas par e-mail', (SELECT in_app AND push AND NOT email FROM public.my_cp_notification_prefs() WHERE kind = 'cp_comment'));

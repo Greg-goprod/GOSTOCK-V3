@@ -3293,5 +3293,21 @@
 "« {0} » : ce type de fichier n'est pas accepté (exécutable, script ou page web)": "«{0}»: Dieser Dateityp wird nicht akzeptiert (ausführbare Datei, Skript oder Webseite)",
 "« {0} » : le nom est trop long (200 caractères au plus)": "«{0}»: Der Name ist zu lang (höchstens 200 Zeichen)",
 "Tu ne peux pas supprimer ce document.": "Du kannst dieses Dokument nicht löschen.",
-"Lien indisponible": "Link nicht verfügbar"
+"Lien indisponible": "Link nicht verfügbar",
+"Cet élément n'existe plus, ou tu n'y as plus accès.": "Dieses Element existiert nicht mehr, oder du hast keinen Zugriff mehr darauf.",
+"Ce projet n'existe plus, ou tu n'y as plus accès.": "Dieses Projekt existiert nicht mehr, oder du hast keinen Zugriff mehr darauf.",
+"Clique sur un avis : il ouvre directement la fiche de la tâche (ou du projet) concernée et il est marqué comme lu. Un avis de nouveau message ouvre la fiche sur la discussion.": "Klicke auf eine Meldung: Sie öffnet direkt das Blatt der betreffenden Aufgabe (oder des Projekts) und wird als gelesen markiert. Eine Meldung über eine neue Nachricht öffnet das Blatt auf der Diskussion.",
+"Un clic sur un avis m'affiche « Cet élément n'existe plus ».": "Ein Klick auf eine Meldung zeigt mir «Dieses Element existiert nicht mehr».",
+"L'élément vient d'être supprimé, ou tu n'y as plus accès. Demande au responsable du projet.": "Das Element wurde gerade gelöscht, oder du hast keinen Zugriff mehr darauf. Frage die Projektverantwortlichen.",
+"Discuter et joindre des fichiers": "Diskutieren und Dateien anhängen",
+"L'équipe du projet et les responsables écrivent et ajoutent des fichiers ; les autres personnes lisent et téléchargent.": "Das Projektteam und die Verantwortlichen schreiben und fügen Dateien hinzu; die anderen Personen lesen und laden herunter.",
+"Ouvre la fiche d'un projet (« Modifier » sur sa carte) ou d'une tâche (un clic sur son nom ou sa barre) : en bas, deux sections, « Documents » et « Discussion ».": "Öffne das Blatt eines Projekts («Bearbeiten» auf seiner Karte) oder einer Aufgabe (Klick auf ihren Namen oder Balken): unten findest du zwei Bereiche, «Dokumente» und «Diskussion».",
+"Discussion : écris ton message puis « Envoyer » (Ctrl+Entrée marche aussi). Tu peux modifier ou supprimer tes messages ; les personnes de l'équipe sont prévenues par un avis.": "Diskussion: Schreibe deine Nachricht und klicke auf «Senden» (Strg+Eingabe funktioniert auch). Du kannst deine Nachrichten ändern oder löschen; die Teammitglieder werden per Meldung benachrichtigt.",
+"Documents : « Ajouter des fichiers », ou glisse-les dans le cadre. 50 Mo au plus par fichier ; les exécutables, scripts et pages web sont refusés. Clique sur le nom d'un fichier pour le télécharger.": "Dokumente: «Dateien hinzufügen» oder ziehe sie in den Rahmen. Höchstens 50 MB pro Datei; ausführbare Dateien, Skripte und Webseiten werden abgelehnt. Klicke auf den Namen einer Datei, um sie herunterzuladen.",
+"Un clic sur le titre d'une section la replie ou la déplie ; ton choix est retenu sur cet appareil.": "Ein Klick auf den Titel eines Bereichs klappt ihn zu oder auf; deine Wahl wird auf diesem Gerät gespeichert.",
+"Les messages et les fichiers restent attachés à la tâche ou au projet. Un document supprimé devient aussitôt illisible ; le fichier est effacé du stockage dans les minutes qui suivent.": "Nachrichten und Dateien bleiben der Aufgabe oder dem Projekt zugeordnet. Ein gelöschtes Dokument ist sofort nicht mehr lesbar; die Datei wird in den folgenden Minuten aus dem Speicher entfernt.",
+"Mon fichier est refusé.": "Meine Datei wird abgelehnt.",
+"Vérifie sa taille (50 Mo au plus) et son type : les exécutables, scripts et pages web ne sont pas acceptés.": "Prüfe die Größe (höchstens 50 MB) und den Typ: ausführbare Dateien, Skripte und Webseiten werden nicht akzeptiert.",
+"Je ne peux ni écrire ni ajouter de fichier.": "Ich kann weder schreiben noch Dateien hinzufügen.",
+"Seules les personnes de l'équipe du projet et les responsables le peuvent : demande à un responsable de t'ajouter à l'équipe.": "Das können nur die Personen des Projektteams und die Verantwortlichen: Bitte eine verantwortliche Person, dich zum Team hinzuzufügen."
 }

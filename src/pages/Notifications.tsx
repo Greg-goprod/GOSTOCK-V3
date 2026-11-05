@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { canAccess } from '../lib/access';
+import { piloteNotificationPath } from '../lib/pilote';
 import PilotePrefs from '../components/notifications/PilotePrefs';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -105,8 +106,8 @@ const Notifications: React.FC = () => {
 
   const open = (n: StockNotification) => {
     if (!n.read) void markNotificationsRead([n.id]);
-    // Être ajouté à une équipe mène à la liste des projets ; les autres avis PILOTE, à « Mes tâches »
-    const target = n.kind === 'cp_team_added' ? '/pilote/projets' : GROUPS.find(g => g.id === groupOf(n))?.to;
+    // Avis PILOTE : la fiche de l'élément ou du projet concerné (voir piloteNotificationPath) ; les autres avis, la page de leur famille
+    const target = n.kind.startsWith('cp_') ? piloteNotificationPath(n) : GROUPS.find(g => g.id === groupOf(n))?.to;
     // Une personne sans accès à la page de destination (ex. un collaborateur : « Demandes ») est envoyée à ses commandes du Shop
     if (target && target !== '/notifications') navigate(canAccess(target.split('?')[0], can) ? target : '/shop?vue=commandes');
   };

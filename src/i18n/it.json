@@ -3293,5 +3293,21 @@
 "« {0} » : ce type de fichier n'est pas accepté (exécutable, script ou page web)": "«{0}»: questo tipo di file non è accettato (eseguibile, script o pagina web)",
 "« {0} » : le nom est trop long (200 caractères au plus)": "«{0}»: il nome è troppo lungo (al massimo 200 caratteri)",
 "Tu ne peux pas supprimer ce document.": "Non puoi eliminare questo documento.",
-"Lien indisponible": "Link non disponibile"
+"Lien indisponible": "Link non disponibile",
+"Cet élément n'existe plus, ou tu n'y as plus accès.": "Questo elemento non esiste più, oppure non hai più accesso.",
+"Ce projet n'existe plus, ou tu n'y as plus accès.": "Questo progetto non esiste più, oppure non hai più accesso.",
+"Clique sur un avis : il ouvre directement la fiche de la tâche (ou du projet) concernée et il est marqué comme lu. Un avis de nouveau message ouvre la fiche sur la discussion.": "Fai clic su un avviso: apre direttamente la scheda dell'attività (o del progetto) interessata e viene segnato come letto. Un avviso di nuovo messaggio apre la scheda sulla discussione.",
+"Un clic sur un avis m'affiche « Cet élément n'existe plus ».": "Facendo clic su un avviso compare «Questo elemento non esiste più».",
+"L'élément vient d'être supprimé, ou tu n'y as plus accès. Demande au responsable du projet.": "L'elemento è appena stato eliminato, oppure non hai più accesso. Chiedi al responsabile del progetto.",
+"Discuter et joindre des fichiers": "Discutere e allegare file",
+"L'équipe du projet et les responsables écrivent et ajoutent des fichiers ; les autres personnes lisent et téléchargent.": "Il team del progetto e i responsabili scrivono e aggiungono file; le altre persone leggono e scaricano.",
+"Ouvre la fiche d'un projet (« Modifier » sur sa carte) ou d'une tâche (un clic sur son nom ou sa barre) : en bas, deux sections, « Documents » et « Discussion ».": "Apri la scheda di un progetto («Modifica» sulla sua scheda) o di un'attività (clic sul nome o sulla barra): in basso ci sono due sezioni, «Documenti» e «Discussione».",
+"Discussion : écris ton message puis « Envoyer » (Ctrl+Entrée marche aussi). Tu peux modifier ou supprimer tes messages ; les personnes de l'équipe sont prévenues par un avis.": "Discussione: scrivi il messaggio e poi «Invia» (funziona anche Ctrl+Invio). Puoi modificare o eliminare i tuoi messaggi; i membri del team vengono avvisati con un avviso.",
+"Documents : « Ajouter des fichiers », ou glisse-les dans le cadre. 50 Mo au plus par fichier ; les exécutables, scripts et pages web sont refusés. Clique sur le nom d'un fichier pour le télécharger.": "Documenti: «Aggiungi file», oppure trascinali nel riquadro. Al massimo 50 MB per file; eseguibili, script e pagine web vengono rifiutati. Fai clic sul nome di un file per scaricarlo.",
+"Un clic sur le titre d'une section la replie ou la déplie ; ton choix est retenu sur cet appareil.": "Un clic sul titolo di una sezione la chiude o la apre; la tua scelta viene ricordata su questo dispositivo.",
+"Les messages et les fichiers restent attachés à la tâche ou au projet. Un document supprimé devient aussitôt illisible ; le fichier est effacé du stockage dans les minutes qui suivent.": "I messaggi e i file restano associati all'attività o al progetto. Un documento eliminato diventa subito illeggibile; il file viene cancellato dall'archivio nei minuti successivi.",
+"Mon fichier est refusé.": "Il mio file viene rifiutato.",
+"Vérifie sa taille (50 Mo au plus) et son type : les exécutables, scripts et pages web ne sont pas acceptés.": "Verifica la dimensione (al massimo 50 MB) e il tipo: eseguibili, script e pagine web non sono accettati.",
+"Je ne peux ni écrire ni ajouter de fichier.": "Non posso né scrivere né aggiungere file.",
+"Seules les personnes de l'équipe du projet et les responsables le peuvent : demande à un responsable de t'ajouter à l'équipe.": "Possono farlo solo le persone del team del progetto e i responsabili: chiedi a un responsabile di aggiungerti al team."
 }

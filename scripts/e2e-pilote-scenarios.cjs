@@ -843,14 +843,45 @@ function abort(e) {
     accepts(await api(resp, 'PATCH', `/rest/v1/cp_items?id=eq.${S.tN1}`, { description: 'sans effet sur les dates' }), 'description');
     ok((await datesOfN()).length === 1, 'modifier la description a produit un avis');
   });
-  await step('N-ecran-notifications', 'Écran « Notifications » du collaborateur : famille PILOTE, avis lisibles, un clic ouvre « Mes tâches »', async () => {
+  await step('N-ecran-notifications', 'Écran « Notifications » du collaborateur : famille PILOTE, avis lisibles, un clic sur l\'avis d\'assignation ouvre la FICHE de la tâche (migration 61)', async () => {
     await open(collab, '/notifications');
     ok(await collab.page.getByText(`${M} Projet notifs`, { exact: false }).first().isVisible(), 'avis PILOTE absent de l\'écran');
     ok(await collab.page.getByRole('radio', { name: /^PILOTE/ }).count() > 0, 'famille « PILOTE » absente');
     await collab.page.getByRole('radio', { name: /^PILOTE/ }).click(); await collab.page.waitForTimeout(500);
-    await collab.page.getByText(`${M} Projet notifs`, { exact: false }).first().click(); await collab.page.waitForTimeout(1800);
-    ok(/\/pilote\/projets/.test(collab.page.url()) && /section=mytasks/.test(collab.page.url()), `adresse après clic = ${collab.page.url()}`);
-    ok(await collab.page.getByRole('button', { name: `${M} Notif T1` }).first().isVisible(), '« Mes tâches » ne s\'est pas ouvert sur la tâche');
+    // L'avis d'assignation précis (et non « le premier avis du projet », dont le type varie)
+    const asg = (await myNotifs(collab)).find(n => n.kind === 'cp_assigned' && n.message.includes(`la tâche « ${M} Notif T1 »`));
+    ok(asg, 'avis d\'assignation de T1 introuvable');
+    ok(asg.cp_item_id && asg.cp_project_id, `my_notifications ne renvoie pas le projet et l'élément de l'avis (migration 61 non appliquée ?) : ${JSON.stringify({ p: asg.cp_project_id, i: asg.cp_item_id })}`);
+    ok(asg.cp_item_id === S.tN1 && asg.cp_project_id === S.pN, `l'avis vise ${asg.cp_item_id} (attendu ${S.tN1})`);
+    await collab.page.getByText(asg.message, { exact: false }).first().click();
+    await collab.page.waitForSelector('#itm-name', { timeout: 15000 });
+    ok(await collab.page.locator('#itm-name').inputValue() === `${M} Notif T1`, `fiche ouverte sur « ${await collab.page.locator('#itm-name').inputValue()} »`);
+    ok(/\/pilote\/projets/.test(collab.page.url()) && !/item=/.test(collab.page.url()), `adresse après ouverture = ${collab.page.url()} (le lien doit être effacé)`);
+    ok(await collab.page.getByRole('button', { name: /^Discussion/ }).count() === 1 && await collab.page.getByRole('button', { name: /^Documents/ }).count() === 1, 'sections « Documents » et « Discussion » absentes de la fiche');
+    ok((await myNotifs(collab)).find(n => n.id === asg.id)?.is_read === true, 'l\'avis n\'est pas marqué comme lu');
+  }, collab.page);
+  await step('N-lien-message', 'Un message écrit par le responsable sur la tâche : le collaborateur reçoit un avis ; son clic ouvre la fiche AVEC la discussion visible (même si la section était repliée)', async () => {
+    const texte = `${M} message pour le lien`;
+    accepts(await api(resp, 'POST', '/rest/v1/cp_comments', { project_id: S.pN, item_id: S.tN1, body: texte }), 'message du responsable');
+    const c = (await myNotifs(collab)).find(n => n.kind === 'cp_comment');
+    ok(c, 'aucun avis « nouveau message » pour le collaborateur');
+    ok(c.cp_item_id === S.tN1, `l'avis de message vise ${c.cp_item_id} (attendu ${S.tN1})`);
+    // La section « Discussion » est repliée dans CE navigateur : l'arrivée par l'avis doit l'ouvrir quand même
+    await collab.page.evaluate(() => localStorage.setItem('gomat.pilote.section.discussion', '0'));
+    await open(collab, '/notifications');
+    await collab.page.getByText(c.message, { exact: false }).first().click();
+    await collab.page.waitForSelector('#itm-name', { timeout: 15000 });
+    await collab.page.getByText(texte).first().waitFor({ timeout: 10000 });
+    const vu = await collab.page.getByText(texte).first().evaluate(el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; });
+    ok(vu, 'le message est dans la fiche mais hors de l\'écran (la discussion n\'a pas été amenée à l\'écran)');
+    ok((await collab.page.evaluate(() => localStorage.getItem('gomat.pilote.section.discussion'))) === '0', 'l\'arrivée par l\'avis a modifié le choix retenu (replié)');
+    await collab.page.evaluate(() => localStorage.removeItem('gomat.pilote.section.discussion'));
+  }, collab.page);
+  await step('N-lien-disparu', 'Lien vers un élément qui n\'existe pas (ou plus) : un message clair, aucune fiche vide', async () => {
+    await open(collab, '/pilote/projets?item=00000000-0000-4000-8000-000000000000');
+    await collab.page.getByText('Cet élément n\'existe plus').first().waitFor({ timeout: 15000 });
+    ok(await collab.page.locator('#itm-name').count() === 0, 'une fiche vide s\'est ouverte');
+    ok(!/item=/.test(collab.page.url()), `adresse = ${collab.page.url()} (le lien doit être effacé)`);
   }, collab.page);
   await step('N-choix-ecran', 'Choix par personne à l\'écran : un type d\'avis par ligne (6 depuis la migration 58) × 3 canaux, une case cochée est enregistrée en base', async () => {
     await open(collab, '/notifications');

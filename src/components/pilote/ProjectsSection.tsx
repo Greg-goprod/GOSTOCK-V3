@@ -21,12 +21,16 @@ interface Props {
   data: PiloteData;
   rights: PiloteRights;
   onChanged: () => Promise<void>;
+  // Lien d'un avis (?project=…) : ouvre la fiche de ce projet (en lecture seule sans droit de modification) puis prévient le parent (trouvé ou non)
+  linkedProjectId?: string | null;
+  linkedFocus?: 'discussion';
+  onLinkHandled?: (found: boolean) => void;
 }
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
 const TONE: Record<StatusFamily, 'neutral' | 'info' | 'success' | 'danger'> = { not_started: 'neutral', in_progress: 'info', done: 'success', cancelled: 'danger' };
 
-const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
+const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged, linkedProjectId, linkedFocus, onLinkHandled }) => {
   const { users } = useApp();
   const [viewMode, setViewModeState] = useState<'cards' | 'list'>(() => readMxViewMode('gomat-view-projets', ['cards', 'list'] as const, 'cards'));
   const setViewMode = (mode: 'cards' | 'list') => { setViewModeState(mode); writeMxViewMode('gomat-view-projets', mode); };
@@ -37,6 +41,14 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
   // Copie d'un projet : la fenêtre « Dupliquer », puis la copie s'ouvre dès que la liste rechargée la contient
   const [duplicating, setDuplicating] = useState<CpProject | null>(null);
   const [openAfter, setOpenAfter] = useState<string | null>(null);
+  const [formFocus, setFormFocus] = useState<'discussion' | undefined>(undefined);
+  useEffect(() => {
+    if (!linkedProjectId) return;
+    const row = data.projects.find(p => p.id === linkedProjectId);
+    if (row) { setFormFocus(linkedFocus); setTarget({ mode: 'edit', row }); }
+    onLinkHandled?.(!!row);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- le lien n'est traité qu'une fois (le parent efface ensuite l'adresse)
+  }, [linkedProjectId]);
   useEffect(() => {
     if (!openAfter) return;
     const row = data.projects.find(p => p.id === openAfter);
@@ -165,7 +177,7 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged }) => {
         />
       )}
 
-      <ProjectForm data={data} target={target} onClose={() => setTarget(null)} onSaved={onChanged}
+      <ProjectForm data={data} target={target} onClose={() => { setTarget(null); setFormFocus(undefined); }} onSaved={onChanged} readOnly={!rights.update} focus={formFocus}
         onDuplicate={rights.create ? row => { setTarget(null); setDuplicating(row); } : undefined} />
       <DuplicateProjectForm project={duplicating} onClose={() => setDuplicating(null)} onDone={id => { setDuplicating(null); setOpenAfter(id); void onChanged(); }} />
     </div>

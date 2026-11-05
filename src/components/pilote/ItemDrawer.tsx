@@ -23,6 +23,8 @@ interface Props {
   canDelete: boolean;
   onClose: () => void;
   onSaved: () => Promise<void>;
+  // Arrivée par un avis de message : la discussion s'ouvre et vient à l'écran
+  focus?: 'discussion';
 }
 
 interface CheckLine { id?: string; label: string; done: boolean }
@@ -35,7 +37,7 @@ const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-60
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 // Fiche d'un élément : création, modification, suppression ; personnes assignées (de l'équipe du projet, plusieurs) et liste à cocher
-const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDelete, onClose, onSaved }) => {
+const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDelete, onClose, onSaved, focus }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
   const [checks, setChecks] = useState<CheckLine[]>([]);
@@ -392,7 +394,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
           )}
 
           {edited && <DocumentsSection projectId={edited.project_id} itemId={edited.id} />}
-          {edited && <DiscussionSection projectId={edited.project_id} itemId={edited.id} />}
+          {edited && <DiscussionSection projectId={edited.project_id} itemId={edited.id} autoOpen={focus === 'discussion'} />}
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <div>{edited && canDelete && <Button variant="outline" icon={<Trash2 size={14} />} onClick={() => void remove()}>Supprimer</Button>}</div>

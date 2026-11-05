@@ -288,3 +288,12 @@ export const familyOf = (data: Pick<PiloteData, 'statuses'>, statusId: string): 
 
 export const formatPeriod = (start: string | null, end: string | null, fmt: (d: string | null) => string): string =>
   start && end ? `${fmt(start)} → ${fmt(end)}` : start ? `Dès le ${fmt(start)}` : end ? `Jusqu'au ${fmt(end)}` : 'Sans dates';
+
+// Où mène un clic sur un avis PILOTE : la fiche de l'élément, sinon celle du projet ; un avis de message ouvre en plus la discussion.
+// Sans lien (avis antérieurs à la migration 61, ou avis qui ne vise rien de précis) : « Mes tâches », ou la liste des projets pour « ajouté à l'équipe ».
+export function piloteNotificationPath(n: { kind: string; cpProjectId?: string; cpItemId?: string }): string {
+  const focus = n.kind === 'cp_comment' ? '&focus=discussion' : '';
+  if (n.cpItemId) return `/pilote/projets?item=${encodeURIComponent(n.cpItemId)}${focus}`;
+  if (n.cpProjectId) return `/pilote/projets?project=${encodeURIComponent(n.cpProjectId)}${focus}`;
+  return n.kind === 'cp_team_added' ? '/pilote/projets' : '/pilote/projets?section=mytasks';
+}

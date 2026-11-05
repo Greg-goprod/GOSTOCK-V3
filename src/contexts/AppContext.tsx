@@ -757,6 +757,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       depotId: n.depot_id ?? undefined,
       requestId: n.request_id ?? undefined,
       recipientUserId: n.recipient_user_id ?? undefined,
+      // Absents tant que la migration 61 n'est pas appliquée : l'avis mène alors à « Mes tâches », comme avant
+      cpProjectId: n.cp_project_id ?? undefined,
+      cpItemId: n.cp_item_id ?? undefined,
       createdAt: n.created_at,
       read: Boolean(n.is_read)
     })));

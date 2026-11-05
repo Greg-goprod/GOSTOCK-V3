@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ListChecks, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { FAMILY_LABEL, FAMILY_ORDER, loadPilote, loadPiloteRights, piloteError, STATE_COLORS, type CpStatus, type PiloteData, type PiloteRights } from '../lib/pilote';
+import { FAMILY_LABEL, FAMILY_ORDER, loadGantt, loadPilote, loadPiloteRights, piloteError, STATE_COLORS, type CpStatus, type GanttData, type PiloteData, type PiloteRights } from '../lib/pilote';
 import PageTitle from '../components/common/PageTitle';
 import { MxBadge } from '../components/mx/MxBadge';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import { CrudSection } from '../components/sitePlanning/CrudSection';
 import ProjectsSection from '../components/pilote/ProjectsSection';
+import ItemDrawer from '../components/pilote/ItemDrawer';
 import MyTasks from '../components/pilote/MyTasks';
 import MenuButton from '../components/common/MenuButton';
 import PiloteGantt from './PiloteGantt';
@@ -24,15 +25,50 @@ const TONE = { not_started: 'neutral', in_progress: 'info', done: 'success', can
 const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) => {
   const [data, setData] = useState<PiloteData | null>(null);
   const [rights, setRights] = useState<PiloteRights>(NO_RIGHTS);
-  // Les avis PILOTE ouvrent directement « Mes tâches » (?section=mytasks)
-  const [params] = useSearchParams();
+  // Liens des avis PILOTE : ?item=… ouvre la fiche de l'élément, ?project=… celle du projet (&focus=discussion : sur la discussion) ;
+  // sans lien précis, ?section=mytasks ouvre « Mes tâches ». Les paramètres sont effacés une fois la fiche ouverte (actualiser ne la rouvre pas).
+  const [params, setParams] = useSearchParams();
   const asked = params.get('view') ?? params.get('section');
+  const itemParam = params.get('item');
+  const projectParam = params.get('project');
+  const focus: 'discussion' | undefined = params.get('focus') === 'discussion' ? 'discussion' : undefined;
   const [section, setSection] = useState<Section>(initialView ?? (VIEWS.includes(asked as Section) ? (asked as Section) : 'projects'));
+  const [deepItem, setDeepItem] = useState<{ itemId: string; data: GanttData; focus?: 'discussion' } | null>(null);
 
+  const clearLink = useCallback(() => {
+    setParams(prev => { const next = new URLSearchParams(prev); ['item', 'project', 'focus'].forEach(k => next.delete(k)); return next; }, { replace: true });
+  }, [setParams]);
+  const clearLinkRef = useRef(clearLink);
+  clearLinkRef.current = clearLink;
+  const gone = () => toast("Cet élément n'existe plus, ou tu n'y as plus accès.");
+
+  useEffect(() => {
+    if (!itemParam) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const g = await loadGantt();
+        if (cancelled) return;
+        if (g.items.some(i => i.id === itemParam)) setDeepItem({ itemId: itemParam, data: g, focus });
+        else { gone(); }
+      } catch (e) { if (!cancelled) toast.error(piloteError(e)); }
+      if (!cancelled) clearLinkRef.current();
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seul le changement d'élément demandé relance le chargement
+  }, [itemParam]);
+  useEffect(() => { if (projectParam) setSection('projects'); }, [projectParam]);
   const reload = useCallback(async () => {
     try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], projects: [], members: [], sites: [] }); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+  const closeDeepItem = useCallback(() => setDeepItem(null), []);
+  const refreshDeepItem = useCallback(async () => {
+    const g = await loadGantt();
+    setDeepItem(prev => (prev ? { ...prev, data: g } : prev));
+    await reload();
+  }, [reload]);
+
 
   if (!data) return <p className="text-gray-500 dark:text-gray-400 font-medium">Chargement…</p>;
 
@@ -65,9 +101,17 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
 
       {section === 'gantt' && <PiloteGantt embedded />}
 
-      {section === 'projects' && <ProjectsSection data={data} rights={rights} onChanged={reload} />}
+      {section === 'projects' && (
+        <ProjectsSection data={data} rights={rights} onChanged={reload} linkedProjectId={projectParam} linkedFocus={focus}
+          onLinkHandled={found => { if (!found) toast("Ce projet n'existe plus, ou tu n'y as plus accès."); clearLink(); }} />
+      )}
 
       {section === 'mytasks' && <MyTasks rights={rights} />}
+
+      {deepItem && (
+        <ItemDrawer data={deepItem.data} target={{ mode: 'edit', itemId: deepItem.itemId }} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete}
+          focus={deepItem.focus} onClose={closeDeepItem} onSaved={refreshDeepItem} />
+      )}
 
       {section === 'statuses' && (
         <CrudSection<CpStatus>

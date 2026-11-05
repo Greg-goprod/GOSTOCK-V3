@@ -51,7 +51,7 @@ export const PILOTE: HelpArticle[] = [
         who: 'Tout le monde, dans une entreprise qui a PILOTE.',
         steps: [
           { text: 'Ouvre « Notifications » (la cloche en haut) : les avis PILOTE sont dans la famille « PILOTE ».' },
-          { text: 'Clique sur un avis : il s\'ouvre sur « Mes tâches » (ou sur la liste des projets quand on t\'ajoute à une équipe) et il est marqué comme lu.' },
+          { text: 'Clique sur un avis : il ouvre directement la fiche de la tâche (ou du projet) concernée et il est marqué comme lu. Un avis de nouveau message ouvre la fiche sur la discussion.' },
           { text: 'En haut de la page, « Mes avis PILOTE » : pour chaque événement, coche « Dans l\'application », « E-mail » et/ou « Push ».' },
         ],
         result: 'Tu reçois un avis quand on t\'assigne une tâche, quand on t\'ajoute à une équipe, quand les dates d\'un de tes éléments changent (plusieurs changements rapprochés = un seul avis), la veille et le jour d\'une échéance, et les 3 jours qui suivent un retard. Tu ne reçois jamais d\'avis pour ce que tu fais toi-même, ni pour les éléments terminés ou annulés.',
@@ -59,6 +59,23 @@ export const PILOTE: HelpArticle[] = [
           { if: 'Je ne reçois pas d\'e-mail.', then: 'Vérifie que « E-mail » est coché pour cet événement (« dates modifiées » n\'envoie pas d\'e-mail par défaut) et que ton adresse est renseignée dans ta fiche.' },
           { if: 'Je ne reçois pas de notification push.', then: 'Active d\'abord les notifications sur cet appareil avec le bouton en haut de la page Notifications, puis coche « Push ».' },
           { if: 'Je ne reçois plus aucun avis d\'un type.', then: 'Tu as décoché « Dans l\'application » pour cet événement : recoche-le.' },
+          { if: 'Un clic sur un avis m\'affiche « Cet élément n\'existe plus ».', then: 'L\'élément vient d\'être supprimé, ou tu n\'y as plus accès. Demande au responsable du projet.' },
+        ],
+      },
+      {
+        id: 'echanger',
+        title: 'Discuter et joindre des fichiers',
+        who: 'L\'équipe du projet et les responsables écrivent et ajoutent des fichiers ; les autres personnes lisent et téléchargent.',
+        steps: [
+          { text: 'Ouvre la fiche d\'un projet (« Modifier » sur sa carte) ou d\'une tâche (un clic sur son nom ou sa barre) : en bas, deux sections, « Documents » et « Discussion ».' },
+          { text: 'Discussion : écris ton message puis « Envoyer » (Ctrl+Entrée marche aussi). Tu peux modifier ou supprimer tes messages ; les personnes de l\'équipe sont prévenues par un avis.' },
+          { text: 'Documents : « Ajouter des fichiers », ou glisse-les dans le cadre. 50 Mo au plus par fichier ; les exécutables, scripts et pages web sont refusés. Clique sur le nom d\'un fichier pour le télécharger.' },
+          { text: 'Un clic sur le titre d\'une section la replie ou la déplie ; ton choix est retenu sur cet appareil.' },
+        ],
+        result: 'Les messages et les fichiers restent attachés à la tâche ou au projet. Un document supprimé devient aussitôt illisible ; le fichier est effacé du stockage dans les minutes qui suivent.',
+        problems: [
+          { if: 'Mon fichier est refusé.', then: 'Vérifie sa taille (50 Mo au plus) et son type : les exécutables, scripts et pages web ne sont pas acceptés.' },
+          { if: 'Je ne peux ni écrire ni ajouter de fichier.', then: 'Seules les personnes de l\'équipe du projet et les responsables le peuvent : demande à un responsable de t\'ajouter à l\'équipe.' },
         ],
       },
       {
