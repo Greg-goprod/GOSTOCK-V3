@@ -210,7 +210,7 @@ async function step(id, title, fn, page) {
   await step('E5-notification-retard', 'Une alerte de retard est créée pour le magasin', async () => {
     if (!S.lateOk) return SKIP('pas de sortie échue');
     const n = rows(await api(staff, 'GET', '/rest/v1/notifications?select=kind,message&order=created_at.desc&limit=60')); const hit = n.find(x => /retard|overdue/i.test(`${x.kind} ${x.message}`) && /TEST-EMPRUNT/.test(x.message || ''));
-    return INFO(hit ? `alerte : ${hit.message}` : 'aucune alerte de retard trouvée pour cette sortie (créées par un traitement planifié ?)');
+    return INFO(hit ? `alerte : ${hit.message}` : 'aucune alerte de retard visible pour le magasin : depuis la migration 60, l\'avis de retard est ADRESSÉ à la personne en retard et ne se lit que par elle (ce n\'est pas une alerte du magasin) ; il est aussi créé par un traitement planifié');
   });
   await step('E5-retour-tardif', 'Retour tardif : accepté, disponibilité rétablie', async () => {
     if (!S.lateOk) return SKIP('pas de sortie échue'); const l = await lines(S.noteF); ok(!refused(await ret(l[0].id)), 'retour d\'une sortie en retard refusé'); ok((await avail(S.F)) === 2, `disponibilité ${await avail(S.F)}`);

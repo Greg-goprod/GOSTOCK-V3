@@ -92,7 +92,9 @@ async function step(id, title, fn, page) {
   const count = async c => Number((await rpc(c, 'unread_notification_count')).body);
   const unreadTest = async c => (await mine(c)).filter(n => !n.is_read).length;
   // Les dates « envoyé » sont posées d'avance : ni e-mail, ni notification push, ni SMS ne partent pour ces avis de test
-  const post = async (c, row) => { const now = new Date().toISOString(); return api(c, 'POST', '/rest/v1/notifications?select=id', { title: `${M} ${row.title || 'avis'}`, ...row, message: `${M} ${row.message}`, emailed_at: now, pushed_at: now, sms_sent_at: now }, { Prefer: 'return=representation' }); };
+  // Depuis la migration 60, l'auteur ne peut pas RELIRE l'avis personnel qu'il crée pour quelqu'un d'autre (« return=representation » serait refusé) :
+  // l'identifiant est donc choisi ici et la réponse du serveur est minimale ; cette création directe n'existe que pour ce test (l'application passe par des fonctions de la base).
+  const post = async (c, row) => { const now = new Date().toISOString(); const id = require('node:crypto').randomUUID(); const r = await api(c, 'POST', '/rest/v1/notifications', { id, title: `${M} ${row.title || 'avis'}`, ...row, message: `${M} ${row.message}`, emailed_at: now, pushed_at: now, sms_sent_at: now }, { Prefer: 'return=minimal' }); return refused(r) ? r : { status: r.status, body: [{ id }] }; };
   const bell = async c => {
     const l = c.page.locator('header a[aria-label^="Notifications"]').first();
     const label = (await l.getAttribute('aria-label')) || '';
