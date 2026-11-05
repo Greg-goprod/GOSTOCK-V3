@@ -171,6 +171,13 @@ UPDATE public.users SET active = true WHERE id = :'uu'::uuid;
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
 SELECT zz.check('U voit ses avis PILOTE dans la liste', (SELECT count(*) FROM public.my_notifications(500) WHERE kind LIKE 'cp\_%') >= 6);
 SELECT count(*) AS unread_u FROM public.my_notifications(500) WHERE kind LIKE 'cp\_%' AND NOT is_read \gset
+-- Migration 61 : my_notifications() renvoie le projet et l'élément de l'avis (le clic ouvre la bonne fiche)
+SELECT zz.check('migration 61 : un avis d''assignation renvoie le projet ET l''élément de la tâche T1', EXISTS (
+  SELECT 1 FROM public.my_notifications(500) m JOIN public.cp_items i ON i.id = m.cp_item_id
+  WHERE m.kind = 'cp_assigned' AND i.name = 'T1' AND m.cp_project_id = i.project_id));
+SELECT zz.check('migration 61 : tout avis PILOTE renvoie au moins le projet', (SELECT bool_and(cp_project_id IS NOT NULL) FROM public.my_notifications(500) WHERE kind LIKE 'cp\_%'));
+SELECT zz.check('migration 61 : un avis qui n''est pas PILOTE ne renvoie ni projet ni élément', (SELECT COALESCE(bool_and(cp_project_id IS NULL AND cp_item_id IS NULL), true) FROM public.my_notifications(500) WHERE kind NOT LIKE 'cp\_%'));
+SELECT zz.check('migration 61 : la fonction reste fermée aux anonymes', NOT has_function_privilege('anon', 'public.my_notifications(integer)', 'execute') AND has_function_privilege('authenticated', 'public.my_notifications(integer)', 'execute'));
 SELECT zz.check('la pastille compte ces avis non lus', public.unread_notification_count() >= :unread_u::int);
 SELECT public.mark_all_notifications_read() AS marked \gset
 SELECT zz.check('« tout marquer comme lu » vaut pour U', (SELECT count(*) FROM public.my_notifications(500) WHERE kind LIKE 'cp\_%' AND NOT is_read) = 0);
