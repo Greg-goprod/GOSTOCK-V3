@@ -59,7 +59,7 @@ async function revive(c) {
   // Le NAVIGATEUR lui-même est mort (tous les onglets plantent ensemble) : on le relance et on reconnecte chaque client encore utile
   if (BROWSER && !BROWSER.isConnected()) {
     console.log(`⚠ NAVIGATEUR MORT à ${minutes()} : relance et reconnexion des clients`);
-    BROWSER = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
+    BROWSER = await chromium.launch({ args: ['--disable-dev-shm-usage', '--disable-gpu'] });
     BROWSER.on('disconnected', () => console.log(`⚠ NAVIGATEUR DÉCONNECTÉ à ${minutes()}`));
     for (const x of CLIENTS) if (!x.closed) await signIn(x).catch(e => console.log(`  reconnexion de ${x.who} impossible : ${e.message.split('\n')[0]}`));
     return;
@@ -174,7 +174,7 @@ function abort(e) {
 }
 
 (async () => {
-  const browser = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
+  const browser = await chromium.launch({ args: ['--disable-dev-shm-usage', '--disable-gpu'] });
   browser.on('disconnected', () => console.log(`⚠ NAVIGATEUR DÉCONNECTÉ à ${minutes()}`));
   const resp = await login(browser, 'resp');
   const staff = await login(browser, 'staff');

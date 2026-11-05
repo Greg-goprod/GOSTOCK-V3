@@ -267,3 +267,10 @@ Source : analyse de Notion par Claude dans Chrome (`notion-gantt-analyse.zip`). 
 - `N-choix-respecte` KO « un avis a été créé malgré le choix » : **conséquence en cascade** (vérifié dans le code du script) : cette étape suppose que `N-choix-ecran` a décoché « Dans l'application » ; l'ancien script s'arrêtait AVANT de cliquer, la case restait cochée, l'avis était donc normal. Pas un défaut de l'application, mais **non revérifié** sur le bon commit.
 - `e2e-gantt` : plantage à `P3c-creer` (étape purement API, aucun écran en jeu) ; le premier passage plantait à `P3c-cascade` (même type). Les trois pages plantent ensemble. L'exécutant dit « entre 35 et 55 minutes » sans fournir d'heure : **non vérifié**. Les journaux de plantage indiquent maintenant le temps écoulé (« à N min »).
 - L'exécutant a sauté le diagnostic `DEBUG=pw:browser` demandé : la cause du plantage reste **non expliquée**.
+
+### Passage e2e sur `f256064` (bon commit) — 2026-11-05
+
+- `e2e-projets` : 30/30 OK, base propre. `e2e-gantt` : 44 OK puis plantage à `P3c-fleche` (« Page crashed »).
+- Journal `pw:browser` (rapporté par l'exécutant) : « Network service crashed or was terminated », « GPU process exited unexpectedly: exit_code=143 », « GPU process has crashed 1 time(s) ». Code 143 = le processus graphique a reçu SIGTERM (tué de l'extérieur ou par la surveillance du navigateur) ; le navigateur entier tombe ensuite, d'où les trois pages en même temps. Les trois pages à la fois, avec un point de plantage qui varie d'un passage à l'autre (P3c-cascade, P3c-creer, P3c-fleche, N-choix-ecran…), indiquent une cause **extérieure à l'application** — **non prouvée**.
+- Contradiction non résolue : l'exécutant donne « 2,5 min » pour ce plantage alors qu'il avait parlé de « 35 à 55 min » avant ; le journal complet n'a pas été transmis. `e2e-pilote-scenarios` : pas de rapport mis à jour, cause inconnue.
+- Mesure essayée (à confirmer par un passage) : navigateur lancé avec `--disable-gpu` (rendu logiciel) en plus de `--disable-dev-shm-usage`.
