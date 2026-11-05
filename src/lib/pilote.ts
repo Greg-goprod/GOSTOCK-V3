@@ -196,12 +196,31 @@ export async function loadDocuments(projectId: string, itemId: string | null): P
   return (data || []) as CpDocument[];
 }
 // Envoie le fichier, puis enregistre sa ligne ; si la ligne est refusée, le fichier envoyé est retiré (dépôt sans ligne)
+// Espace de stockage des documents de l'entreprise (migration 62) : utilisé et limite (null = illimitée)
+export interface StorageStatus { used: number; quota: number | null }
+export const STORAGE_FULL_MESSAGE = 'L\'espace de stockage de l\'entreprise est plein';
+export async function loadStorageStatus(): Promise<StorageStatus | null> {
+  const { data, error } = await supabase.rpc('cp_storage_status');
+  if (error || !data) return null; // migration 62 pas encore appliquée, ou pas de droit de lecture : pas de jauge
+  const row = (Array.isArray(data) ? data[0] : data) as { used_bytes: number | string; quota_bytes: number | string | null } | undefined;
+  return row ? { used: Number(row.used_bytes), quota: row.quota_bytes == null ? null : Number(row.quota_bytes) } : null;
+}
+// ok : sous 80 % (ou illimité) ; warn : 80 % et plus ; full : limite atteinte (la base refuse alors les nouveaux dépôts)
+export const storageLevel = (s: StorageStatus | null): 'ok' | 'warn' | 'full' => {
+  if (!s || s.quota === null) return 'ok';
+  if (s.used >= s.quota) return 'full';
+  return s.used >= s.quota * 0.8 ? 'warn' : 'ok';
+};
 export async function uploadDocument(organizationId: string, projectId: string, itemId: string | null, file: File): Promise<void> {
   const problem = docProblem(file);
   if (problem) throw new Error(problem);
   const path = `${organizationId}/${projectId}/${crypto.randomUUID()}-${safeStorageName(file.name)}`;
   const up = await supabase.storage.from('cp-documents').upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
-  if (up.error) throw new Error(up.error.message);
+  if (up.error) {
+    // Un dépôt refusé par la règle du stockage ne dit pas pourquoi : si l'espace est plein, on le dit
+    if (storageLevel(await loadStorageStatus()) === 'full') throw new Error(STORAGE_FULL_MESSAGE);
+    throw new Error(up.error.message);
+  }
   const { error } = await supabase.from('cp_documents').insert({ project_id: projectId, item_id: itemId, file_name: file.name, size_bytes: file.size, mime_type: file.type || null, storage_path: path });
   if (error) { await supabase.storage.from('cp-documents').remove([path]); throw error; }
 }

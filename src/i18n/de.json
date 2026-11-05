@@ -3309,5 +3309,22 @@
 "Mon fichier est refusé.": "Meine Datei wird abgelehnt.",
 "Vérifie sa taille (50 Mo au plus) et son type : les exécutables, scripts et pages web ne sont pas acceptés.": "Prüfe die Größe (höchstens 50 MB) und den Typ: ausführbare Dateien, Skripte und Webseiten werden nicht akzeptiert.",
 "Je ne peux ni écrire ni ajouter de fichier.": "Ich kann weder schreiben noch Dateien hinzufügen.",
-"Seules les personnes de l'équipe du projet et les responsables le peuvent : demande à un responsable de t'ajouter à l'équipe.": "Das können nur die Personen des Projektteams und die Verantwortlichen: Bitte eine verantwortliche Person, dich zum Team hinzuzufügen."
+"Seules les personnes de l'équipe du projet et les responsables le peuvent : demande à un responsable de t'ajouter à l'équipe.": "Das können nur die Personen des Projektteams und die Verantwortlichen: Bitte eine verantwortliche Person, dich zum Team hinzuzufügen.",
+"Espace de l'entreprise : {0} utilisés sur {1} ({2} %)": "Speicherplatz des Unternehmens: {0} belegt von {1} ({2} %)",
+"Espace de l'entreprise : {0} utilisés sur {1} ({2} %) — presque plein": "Speicherplatz des Unternehmens: {0} belegt von {1} ({2} %) — fast voll",
+"Espace de l'entreprise plein : {0} utilisés sur {1}. Plus aucun dépôt possible ; l'espace se libère quelques minutes après la suppression de documents.": "Speicherplatz des Unternehmens voll: {0} belegt von {1}. Kein Hochladen mehr möglich; der Platz wird einige Minuten nach dem Löschen von Dokumenten frei.",
+"L'espace de stockage de l'entreprise est plein": "Der Speicherplatz des Unternehmens ist voll",
+"Documents PILOTE": "PILOTE-Dokumente",
+"Limite…": "Limit…",
+"Limite de stockage des documents": "Speicherlimit für Dokumente",
+"Limite de stockage": "Speicherlimit",
+"Limite (en Go)": "Limit (in GB)",
+"Illimité": "Unbegrenzt",
+"Limite enregistrée": "Limit gespeichert",
+"Indique une limite en Go (0 ou plus)": "Gib ein Limit in GB an (0 oder mehr)",
+"« {0} » : {1} utilisés.": "«{0}»: {1} belegt.",
+"Ne compte que les documents PILOTE (fichiers joints aux projets et aux tâches). Les photos, les fichiers et les sauvegardes ont leurs propres limites. La limite est atteinte à un fichier près : un dépôt en cours peut la dépasser de peu.": "Zählt nur PILOTE-Dokumente (an Projekte und Aufgaben angehängte Dateien). Fotos, Dateien und Backups haben eigene Limits. Das Limit gilt auf eine Datei genau: ein laufender Upload kann es leicht überschreiten.",
+"Limite de stockage modifiée": "Speicherlimit geändert",
+"Un message m'indique « L'espace de stockage de l'entreprise est plein ».": "Eine Meldung zeigt mir «Der Speicherplatz des Unternehmens ist voll».",
+"Ton entreprise a atteint sa limite de documents (2 Go par défaut). Supprime des documents devenus inutiles : l'espace se libère quelques minutes après. Pour une limite plus grande, demande à l'administrateur de la plateforme.": "Dein Unternehmen hat sein Dokumentenlimit erreicht (standardmäßig 2 GB). Lösche nicht mehr benötigte Dokumente: der Platz wird einige Minuten später frei. Für ein größeres Limit frage die Plattformverwaltung."
 }

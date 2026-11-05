@@ -75,6 +75,7 @@ export const PILOTE: HelpArticle[] = [
         result: 'Les messages et les fichiers restent attachés à la tâche ou au projet. Un document supprimé devient aussitôt illisible ; le fichier est effacé du stockage dans les minutes qui suivent.',
         problems: [
           { if: 'Mon fichier est refusé.', then: 'Vérifie sa taille (50 Mo au plus) et son type : les exécutables, scripts et pages web ne sont pas acceptés.' },
+          { if: 'Un message m\'indique « L\'espace de stockage de l\'entreprise est plein ».', then: 'Ton entreprise a atteint sa limite de documents (2 Go par défaut). Supprime des documents devenus inutiles : l\'espace se libère quelques minutes après. Pour une limite plus grande, demande à l\'administrateur de la plateforme.' },
           { if: 'Je ne peux ni écrire ni ajouter de fichier.', then: 'Seules les personnes de l\'équipe du projet et les responsables le peuvent : demande à un responsable de t\'ajouter à l\'équipe.' },
         ],
       },

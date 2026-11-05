@@ -5,8 +5,9 @@ import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { confirmAction } from '../../lib/confirm';
 import { formatDateTime } from '../../lib/platformConsole';
-import { deleteDocument, docProblem, documentUrl, formatSize, loadDocuments, piloteError, uploadDocument, type CpDocument } from '../../lib/pilote';
+import { deleteDocument, docProblem, documentUrl, formatSize, loadDocuments, loadStorageStatus, piloteError, STORAGE_FULL_MESSAGE, storageLevel, uploadDocument, type CpDocument, type StorageStatus } from '../../lib/pilote';
 import Button from '../common/Button';
+import { formatBytes } from '../../lib/platformConsole';
 import { useProjectRights } from './useProjectRights';
 import { SectionHeader } from './SectionHeader';
 import { useSectionOpen } from './useSectionOpen';
@@ -40,17 +41,21 @@ const DocumentsSection: React.FC<Props> = ({ projectId, itemId, autoOpen = false
   const [sending, setSending] = useState<string | null>(null);
   const [over, setOver] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [space, setSpace] = useState<StorageStatus | null>(null);
+  const level = storageLevel(space);
   const input = useRef<HTMLInputElement>(null);
 
   const names = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   const reload = useCallback(async () => {
     try { setDocs(await loadDocuments(projectId, itemId)); } catch (e) { toast.error(piloteError(e)); setDocs(prev => prev ?? []); }
+    void loadStorageStatus().then(setSpace);
   }, [projectId, itemId]);
   useEffect(() => { setDocs(null); void reload(); }, [reload]);
 
   const send = async (files: File[]) => {
     const orgId = profile?.organization?.id;
     if (!orgId || files.length === 0 || sending) return;
+    if (level === 'full') return void toast.error(STORAGE_FULL_MESSAGE);
     const ok: File[] = [];
     for (const f of files) { const problem = docProblem(f); if (problem) toast.error(problem); else ok.push(f); }
     let done = 0;
@@ -59,6 +64,7 @@ const DocumentsSection: React.FC<Props> = ({ projectId, itemId, autoOpen = false
       try { await uploadDocument(orgId, projectId, itemId, f); done++; } catch (e) { toast.error(`${f.name} : ${piloteError(e)}`); }
     }
     setSending(null);
+    void loadStorageStatus().then(setSpace);
     if (done) { toast.success(done > 1 ? `${done} documents ajoutés` : 'Document ajouté'); await reload(); }
   };
   const open = async (d: CpDocument) => {
@@ -113,11 +119,25 @@ const DocumentsSection: React.FC<Props> = ({ projectId, itemId, autoOpen = false
           </ul>
         )}
 
+        {space && space.quota !== null && (() => {
+          const pct = Math.min(100, Math.round((space.used / Math.max(space.quota, 1)) * 100));
+          const tone = level === 'full' ? 'font-semibold text-red-700 dark:text-red-400' : level === 'warn' ? 'text-amber-700 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400';
+          return (
+            <p className={`text-xs ${tone}`} role={level === 'ok' ? undefined : 'status'} data-storage-level={level}>
+              {level === 'full'
+                ? `Espace de l'entreprise plein : ${formatBytes(space.used)} utilisés sur ${formatBytes(space.quota)}. Plus aucun dépôt possible ; l'espace se libère quelques minutes après la suppression de documents.`
+                : level === 'warn'
+                  ? `Espace de l'entreprise : ${formatBytes(space.used)} utilisés sur ${formatBytes(space.quota)} (${pct} %) — presque plein`
+                  : `Espace de l'entreprise : ${formatBytes(space.used)} utilisés sur ${formatBytes(space.quota)} (${pct} %)`}
+            </p>
+          );
+        })()}
+
         {canWrite ? (
           <div className={`flex flex-wrap items-center gap-3 rounded-md border-2 border-dashed px-3 py-3 ${over ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20' : 'border-gray-300 dark:border-gray-600'}`}>
             <input ref={input} id="doc-file" type="file" multiple className="sr-only" aria-label="Choisir des fichiers à ajouter"
               onChange={e => { const files = Array.from(e.target.files ?? []); e.target.value = ''; void send(files); }} />
-            <Button size="sm" variant="outline" icon={<Upload size={14} />} loading={sending !== null} onClick={() => input.current?.click()}>Ajouter des fichiers</Button>
+            <Button size="sm" variant="outline" icon={<Upload size={14} />} loading={sending !== null} disabled={level === 'full'} onClick={() => input.current?.click()}>Ajouter des fichiers</Button>
             <span className="text-xs text-gray-600 dark:text-gray-400">{sending ? `Envoi de « ${sending} »…` : 'ou dépose-les ici — 50 Mo au plus par fichier ; pas d\'exécutables ni de pages web.'}</span>
           </div>
         ) : (

@@ -3309,5 +3309,22 @@
 "Mon fichier est refusé.": "My file is refused.",
 "Vérifie sa taille (50 Mo au plus) et son type : les exécutables, scripts et pages web ne sont pas acceptés.": "Check its size (50 MB at most) and type: executables, scripts and web pages are not accepted.",
 "Je ne peux ni écrire ni ajouter de fichier.": "I can neither write nor add files.",
-"Seules les personnes de l'équipe du projet et les responsables le peuvent : demande à un responsable de t'ajouter à l'équipe.": "Only project team members and leads can: ask a lead to add you to the team."
+"Seules les personnes de l'équipe du projet et les responsables le peuvent : demande à un responsable de t'ajouter à l'équipe.": "Only project team members and leads can: ask a lead to add you to the team.",
+"Espace de l'entreprise : {0} utilisés sur {1} ({2} %)": "Company space: {0} used of {1} ({2} %)",
+"Espace de l'entreprise : {0} utilisés sur {1} ({2} %) — presque plein": "Company space: {0} used of {1} ({2} %) — almost full",
+"Espace de l'entreprise plein : {0} utilisés sur {1}. Plus aucun dépôt possible ; l'espace se libère quelques minutes après la suppression de documents.": "Company space full: {0} used of {1}. No more uploads possible; space is freed a few minutes after documents are deleted.",
+"L'espace de stockage de l'entreprise est plein": "The company's storage space is full",
+"Documents PILOTE": "PILOTE documents",
+"Limite…": "Limit…",
+"Limite de stockage des documents": "Document storage limit",
+"Limite de stockage": "Storage limit",
+"Limite (en Go)": "Limit (in GB)",
+"Illimité": "Unlimited",
+"Limite enregistrée": "Limit saved",
+"Indique une limite en Go (0 ou plus)": "Enter a limit in GB (0 or more)",
+"« {0} » : {1} utilisés.": "“{0}”: {1} used.",
+"Ne compte que les documents PILOTE (fichiers joints aux projets et aux tâches). Les photos, les fichiers et les sauvegardes ont leurs propres limites. La limite est atteinte à un fichier près : un dépôt en cours peut la dépasser de peu.": "Counts only PILOTE documents (files attached to projects and tasks). Photos, files and backups have their own limits. The limit is accurate to one file: an upload in progress can exceed it slightly.",
+"Limite de stockage modifiée": "Storage limit changed",
+"Un message m'indique « L'espace de stockage de l'entreprise est plein ».": "A message tells me “The company's storage space is full”.",
+"Ton entreprise a atteint sa limite de documents (2 Go par défaut). Supprime des documents devenus inutiles : l'espace se libère quelques minutes après. Pour une limite plus grande, demande à l'administrateur de la plateforme.": "Your company has reached its document limit (2 GB by default). Delete documents you no longer need: the space is freed a few minutes later. For a larger limit, ask the platform administrator."
 }

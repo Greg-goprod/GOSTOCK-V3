@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Building2, Plus, Power, PowerOff, SlidersHorizontal } from 'lucide-react';
+import { Building2, HardDrive, Plus, Power, PowerOff, SlidersHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/requests';
 import { confirmAction } from '../../lib/confirm';
-import { formatBytes, formatDateTime, type PlatformCompany, type PlatformModule, type PlatformUsage } from '../../lib/platformConsole';
+import { formatBytes, formatDateTime, formatQuota, type PlatformCompany, type PlatformModule, type PlatformQuota, type PlatformUsage } from '../../lib/platformConsole';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import { EntityTable } from '../common/EntityTable';
 import { MxCardGrid } from '../mx/MxCardGrid';
 import { CompanyCard } from './CompanyCard';
+import StorageQuotaForm from './StorageQuotaForm';
 import { MxBadge } from '../mx/MxBadge';
 import { MxEmpty } from '../mx/MxEmpty';
 import { MxEntityViewToggle } from '../mx/MxEntityViewToggle';
@@ -20,12 +21,15 @@ const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-60
 interface Props {
   companies: PlatformCompany[];
   usage: Map<string, PlatformUsage>;
+  quotas: Map<string, PlatformQuota>;
   modules: PlatformModule[];
   onChanged: () => Promise<void>;
   onManageModules: (companyId: string) => void;
 }
 
-const CompaniesSection: React.FC<Props> = ({ companies, usage, modules, onChanged, onManageModules }) => {
+const CompaniesSection: React.FC<Props> = ({ companies, usage, quotas, modules, onChanged, onManageModules }) => {
+  const [quotaFor, setQuotaFor] = useState<PlatformCompany | null>(null);
+  const docsFigure = (id: string) => `${formatBytes(quotas.get(id)?.used_bytes ?? 0)} / ${quotas.has(id) ? formatQuota(quotas.get(id)?.quota_bytes) : '—'}`;
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', first: '', last: '' });
   const [saving, setSaving] = useState(false);
@@ -121,8 +125,9 @@ const CompaniesSection: React.FC<Props> = ({ companies, usage, modules, onChange
                 { id: 'equipment', label: 'Articles', hideOnMobile: true, render: r => usage.get(r.id)?.equipment ?? 0 },
                 { id: 'checkouts', label: 'Sorties (30 j)', hideOnMobile: true, render: r => usage.get(r.id)?.checkouts_30d ?? 0 },
                 { id: 'storage', label: 'Stockage', hideOnMobile: true, render: r => formatBytes(usage.get(r.id)?.storage_bytes ?? 0) },
+                { id: 'docs', label: 'Documents PILOTE', hideOnMobile: true, render: r => docsFigure(r.id) },
                 { id: 'modules', label: 'Modules', hideOnMobile: true, render: r => (r.modules.length ? r.modules.map(moduleLabel).join(', ') : <span className="text-gray-500">Aucun</span>) },
-                { id: 'action', label: 'Action', render: r => <span className="inline-flex gap-2">{actionButton(r)}<Button size="sm" variant="outline" icon={<SlidersHorizontal size={14} />} onClick={() => onManageModules(r.id)}>Modules</Button></span> },
+                { id: 'action', label: 'Action', render: r => <span className="inline-flex gap-2">{actionButton(r)}<Button size="sm" variant="outline" icon={<HardDrive size={14} />} onClick={() => setQuotaFor(r)}>Limite…</Button><Button size="sm" variant="outline" icon={<SlidersHorizontal size={14} />} onClick={() => onManageModules(r.id)}>Modules</Button></span> },
               ]}
             />
           ) : (
@@ -130,12 +135,13 @@ const CompaniesSection: React.FC<Props> = ({ companies, usage, modules, onChange
               items={companies}
               getItemKey={r => r.id}
               renderItem={r => (
-                <CompanyCard company={r} usage={usage.get(r.id)} modules={modules} onToggleActive={() => void toggle(r)} onManageModules={() => onManageModules(r.id)} />
+                <CompanyCard company={r} usage={usage.get(r.id)} docsFigure={docsFigure(r.id)} onSetQuota={() => setQuotaFor(r)} modules={modules} onToggleActive={() => void toggle(r)} onManageModules={() => onManageModules(r.id)} />
               )}
             />
           )}
         </div>
       )}
+      <StorageQuotaForm company={quotaFor} quota={quotaFor ? quotas.get(quotaFor.id) : undefined} onClose={() => setQuotaFor(null)} onSaved={onChanged} />
     </div>
   );
 };

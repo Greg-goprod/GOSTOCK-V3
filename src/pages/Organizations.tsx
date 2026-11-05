@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { errorMessage } from '../lib/requests';
-import { loadPlatformData, type PlatformCompany, type PlatformModule, type PlatformUsage } from '../lib/platformConsole';
+import { loadPlatformData, type PlatformCompany, type PlatformModule, type PlatformQuota, type PlatformUsage } from '../lib/platformConsole';
 import PageTitle from '../components/common/PageTitle';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import CompaniesSection from '../components/platform/CompaniesSection';
@@ -17,13 +17,14 @@ const Organizations: React.FC = () => {
   const [companies, setCompanies] = useState<PlatformCompany[]>([]);
   const [usage, setUsage] = useState<PlatformUsage[]>([]);
   const [modules, setModules] = useState<PlatformModule[]>([]);
+  const [quotas, setQuotas] = useState<PlatformQuota[]>([]);
   const [loading, setLoading] = useState(true);
   const [companyId, setCompanyId] = useState('');
 
   const load = useCallback(async () => {
     try {
       const data = await loadPlatformData();
-      setCompanies(data.companies); setUsage(data.usage); setModules(data.modules);
+      setCompanies(data.companies); setUsage(data.usage); setModules(data.modules); setQuotas(data.quotas);
     } catch (error) {
       toast.error(errorMessage(error));
     }
@@ -31,6 +32,7 @@ const Organizations: React.FC = () => {
   }, []);
   useEffect(() => { void load(); }, [load]);
   const usageById = useMemo(() => new Map(usage.map(u => [u.organization_id, u])), [usage]);
+  const quotaById = useMemo(() => new Map(quotas.map(q => [q.organization_id, q])), [quotas]);
 
   return (
     <div className="space-y-6">
@@ -48,7 +50,7 @@ const Organizations: React.FC = () => {
       {loading ? (
         <p className="text-gray-500 dark:text-gray-400 font-medium">Chargement…</p>
       ) : section === 'companies' ? (
-        <CompaniesSection companies={companies} usage={usageById} modules={modules} onChanged={load} onManageModules={id => { setCompanyId(id); setSection('modules'); }} />
+        <CompaniesSection companies={companies} usage={usageById} quotas={quotaById} modules={modules} onChanged={load} onManageModules={id => { setCompanyId(id); setSection('modules'); }} />
       ) : section === 'modules' ? (
         <ModulesSection companyId={companyId} onCompanyChange={setCompanyId} companies={companies} modules={modules} onChanged={load} />
       ) : (

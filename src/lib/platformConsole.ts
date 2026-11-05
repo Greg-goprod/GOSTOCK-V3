@@ -22,6 +22,13 @@ export interface PlatformUsage {
   storage_bytes: number;
 }
 
+// Limite de stockage des documents PILOTE d'une entreprise (quota_bytes null = illimité) et espace réellement utilisé
+export interface PlatformQuota {
+  organization_id: string;
+  quota_bytes: number | null;
+  used_bytes: number;
+}
+
 export interface PlatformModule {
   key: string;
   label: string;
@@ -41,10 +48,11 @@ export interface PlatformAuditRow {
 
 export async function loadPlatformData() {
   if (!supabase) throw new Error('Base de données non configurée');
-  const [companies, usage, modules] = await Promise.all([
+  const [companies, usage, modules, quotas] = await Promise.all([
     supabase.rpc('platform_organizations'),
     supabase.rpc('platform_organization_usage'),
     supabase.from('platform_modules').select('key, label, description, position').order('position'),
+    supabase.rpc('platform_storage_quotas'),
   ]);
   const error = companies.error || usage.error || modules.error;
   if (error) throw error;
@@ -52,6 +60,8 @@ export async function loadPlatformData() {
     companies: (companies.data || []) as PlatformCompany[],
     usage: (usage.data || []) as PlatformUsage[],
     modules: (modules.data || []) as PlatformModule[],
+    // Une erreur (migration 62 pas encore appliquée) n'empêche pas d'afficher la console : simplement pas de limites
+    quotas: (quotas.error ? [] : quotas.data || []) as PlatformQuota[],
   };
 }
 
@@ -70,12 +80,16 @@ export const formatBytes = (bytes: number): string => {
   return `${(mb / 1024).toFixed(1).replace('.', ',')} Go`;
 };
 
+// Limite de stockage lisible : « 2 Go », « illimité »
+export const formatQuota = (bytes: number | null | undefined): string => (bytes == null ? 'Illimité' : formatBytes(bytes));
+
 export const formatDateTime = (iso: string | null): string => (iso ? format(new Date(iso), 'dd.MM.yyyy HH:mm', { locale: fr }) : '—');
 
 export const AUDIT_LABELS: Record<string, string> = {
   create_company: 'Entreprise créée',
   suspend_company: 'Entreprise suspendue',
   reactivate_company: 'Entreprise réactivée',
+  set_storage_quota: 'Limite de stockage modifiée',
   enable_module: 'Module activé',
   disable_module: 'Module retiré',
 };

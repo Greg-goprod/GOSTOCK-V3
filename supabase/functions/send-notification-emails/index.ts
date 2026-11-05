@@ -295,15 +295,30 @@ async function sendSms(supabase: Client) {
 
 // Documents PILOTE dont la ligne a été supprimée (par l'utilisateur, ou en cascade avec un projet ou un élément) : la base met leur chemin dans
 // la corbeille, on efface ici les fichiers du stockage (supprimer une ligne de storage.objects par SQL n'efface pas le fichier lui-même).
+// Puis les fichiers ORPHELINS : déposés sans que leur ligne de document n'ait jamais été enregistrée (coupure, client modifié) et plus vieux que 24 h ;
+// ils occupent de la place dans le quota de l'entreprise sans être visibles (fonction cp_orphan_documents, migration 62).
 async function purgeDocuments(supabase: Client) {
+  const out: Record<string, unknown> = { effaces: 0, orphelins: 0 };
   const { data, error } = await supabase.from('cp_document_trash').select('storage_path').order('queued_at').limit(100);
   if (error) return `erreur : ${error.message}`;
-  if (!data?.length) return { effaces: 0 };
-  const paths = data.map((r) => r.storage_path as string);
-  const { error: removeError } = await supabase.storage.from('cp-documents').remove(paths);
-  if (removeError) return `erreur : ${removeError.message}`;
-  await supabase.from('cp_document_trash').delete().in('storage_path', paths);
-  return { effaces: paths.length };
+  if (data?.length) {
+    const paths = data.map((r) => r.storage_path as string);
+    const { error: removeError } = await supabase.storage.from('cp-documents').remove(paths);
+    if (removeError) return `erreur : ${removeError.message}`;
+    await supabase.from('cp_document_trash').delete().in('storage_path', paths);
+    out.effaces = paths.length;
+  }
+  const orphans = await supabase.rpc('cp_orphan_documents', { p_older_than: '24 hours', p_limit: 200 });
+  if (orphans.error) {
+    // Migration 62 pas encore appliquée : la corbeille a été traitée, on le signale simplement
+    out.orphelins_erreur = orphans.error.message;
+  } else if (orphans.data?.length) {
+    const paths = (orphans.data as { storage_path: string }[]).map((r) => r.storage_path);
+    const { error: removeError } = await supabase.storage.from('cp-documents').remove(paths);
+    if (removeError) out.orphelins_erreur = removeError.message;
+    else out.orphelins = paths.length;
+  }
+  return out;
 }
 
 // Mêmes tables que la sauvegarde téléchargée (Paramètres), sans codes de badge ni abonnements

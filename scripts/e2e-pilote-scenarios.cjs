@@ -387,6 +387,40 @@ function abort(e) {
     ok(await count(resp, 'cp_documents', `project_id=eq.${p}`) === 0, 'les documents devraient partir avec le projet');
     return INFO('les fichiers (note, 12 Mo) sont effacés du stockage par la fonction d\'e-mails dans les 5 minutes qui suivent (corbeille) : non vérifié ici');
   });
+  await step('A-quota', 'Quota de stockage (migration 62) : l\'espace utilisé grandit exactement de la taille d\'un dépôt et revient après son effacement ; un administrateur d\'entreprise ne peut pas modifier la limite', async () => {
+    const status = async () => rows(await rpc(resp, 'cp_storage_status'))[0];
+    const st0 = await status();
+    ok(st0 && st0.used_bytes !== undefined, 'cp_storage_status ne répond pas (migration 62 non appliquée ?)');
+    const p = await proj(resp, { name: `${M} Quota` });
+    const org = (await get(resp, `/rest/v1/cp_projects?select=organization_id&id=eq.${p}`))[0].organization_id;
+    accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: p, user_id: S.u_resp, role: 'lead' }), 'équipe');
+    const path = `${org}/${p}/${crypto.randomUUID()}-quota.bin`;
+    const up = await resp.page.evaluate(async ({ base, key, path }) => {
+      const tk = Object.keys(localStorage).find(k => /^sb-.*-auth-token$/.test(k));
+      const token = tk ? JSON.parse(localStorage.getItem(tk) || '{}').access_token : key;
+      const res = await fetch(`${base}/storage/v1/object/cp-documents/${path}`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'false' }, body: new Uint8Array(3 * 1024 * 1024) });
+      return { status: res.status, text: (await res.text()).slice(0, 200) };
+    }, { base: resp.base, key: resp.key, path });
+    ok(up.status === 200, `dépôt de 3 Mo : HTTP ${up.status} ${up.text}`);
+    const st1 = await status();
+    ok(Number(st1.used_bytes) - Number(st0.used_bytes) === 3 * 1024 * 1024, `l'espace utilisé a grandi de ${Number(st1.used_bytes) - Number(st0.used_bytes)} octets (attendu ${3 * 1024 * 1024})`);
+    ok(st1.quota_bytes === null || Number(st1.quota_bytes) >= 0, `limite incompréhensible : ${st1.quota_bytes}`);
+    // Un administrateur d'entreprise ne règle pas la limite : la base remet la valeur d'origine (on tente +1 octet : sans la protection, l'écart serait visible et sans conséquence)
+    if (st1.quota_bytes !== null) {
+      await api(resp, 'PATCH', `/rest/v1/organizations?id=eq.${org}`, { cp_storage_quota_bytes: Number(st1.quota_bytes) + 1 });
+      ok(Number((await status()).quota_bytes) === Number(st1.quota_bytes), 'la limite a été modifiée depuis l\'application (protection absente)');
+    }
+    // Nettoyage : le fichier n'a pas de ligne (orphelin) ; celui qui écrit dans le projet peut l'effacer lui-même, et l'espace revient aussitôt
+    const del = await resp.page.evaluate(async ({ base, key, path }) => {
+      const tk = Object.keys(localStorage).find(k => /^sb-.*-auth-token$/.test(k));
+      const token = tk ? JSON.parse(localStorage.getItem(tk) || '{}').access_token : key;
+      const res = await fetch(`${base}/storage/v1/object/cp-documents/${path}`, { method: 'DELETE', headers: { apikey: key, Authorization: `Bearer ${token}` } });
+      return { status: res.status, text: (await res.text()).slice(0, 200) };
+    }, { base: resp.base, key: resp.key, path });
+    ok(del.status === 200, `effacement du fichier orphelin : HTTP ${del.status} ${del.text}`);
+    ok(Number((await status()).used_bytes) === Number(st0.used_bytes), `l'espace n'est pas revenu à son niveau de départ (${(await status()).used_bytes} au lieu de ${st0.used_bytes})`);
+    accepts(await api(resp, 'DELETE', `/rest/v1/cp_projects?id=eq.${p}`), 'suppression du projet');
+  });
   await step('A-suppression-cascade', 'Supprimer un projet supprime ses éléments, son équipe, ses assignations, ses dépendances et sa liste à cocher', async () => {
     const p = await proj(resp, { name: `${M} À supprimer` });
     accepts(await api(resp, 'POST', '/rest/v1/cp_project_members', { project_id: p, user_id: S.u_resp, role: 'lead' }), 'équipe');
