@@ -1,7 +1,7 @@
 # Rapport des tests des projets PILOTE
 
 Base : GO-MAT · comptes : test.responsable@example.com, test.magasinier@example.com, test.collaborateur@example.com · date : 2026-11-04 14:38
-Commit testé : à renseigner (`git log --oneline -1`).
+Commit testé : b399d3f Merge branch 'claude/loving-thompson-6zfo06' of https://github.com/Greg-goprod/GOSTOCK-V3 into claude/loving-thompson-6zfo06
 
 **Synthèse : 30 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 
