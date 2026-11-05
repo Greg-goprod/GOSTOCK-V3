@@ -35,9 +35,11 @@ let group = '';
 // Les clients connectés (une page chacun). Une page peut PLANTER (« Target crashed » : mémoire du navigateur) : on le détecte, on le dit,
 // et on remplace la page dans le même contexte (la session reste ouverte) pour que les étapes suivantes ne soient pas toutes perdues.
 const CLIENTS = [];
+const T_DEBUT = Date.now();
+const minutes = () => `${((Date.now() - T_DEBUT) / 60000).toFixed(1)} min`;
 function attach(c, page) {
   page.on('pageerror', e => jsErrors.push(`${c.who}: ${e.message}`));
-  page.on('crash', () => { c.crashed = true; console.log(`⚠ PAGE PLANTÉE (${c.who}) — dernière adresse : ${page.url()}`); });
+  page.on('crash', () => { c.crashed = true; console.log(`⚠ PAGE PLANTÉE (${c.who}) à ${minutes()} — dernière adresse : ${page.url()}`); });
   page.on('request', r => { const h = r.headers(); if (/supabase\.co|\/rest\/v1\//.test(r.url())) { c.base ||= new URL(r.url()).origin; c.key ||= h['apikey'] || ''; } });
 }
 async function signIn(c) {
@@ -56,9 +58,9 @@ async function signIn(c) {
 async function revive(c) {
   // Le NAVIGATEUR lui-même est mort (tous les onglets plantent ensemble) : on le relance et on reconnecte chaque client encore utile
   if (BROWSER && !BROWSER.isConnected()) {
-    console.log('⚠ NAVIGATEUR MORT : relance et reconnexion des clients');
+    console.log(`⚠ NAVIGATEUR MORT à ${minutes()} : relance et reconnexion des clients`);
     BROWSER = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
-    BROWSER.on('disconnected', () => console.log('⚠ NAVIGATEUR DÉCONNECTÉ'));
+    BROWSER.on('disconnected', () => console.log(`⚠ NAVIGATEUR DÉCONNECTÉ à ${minutes()}`));
     for (const x of CLIENTS) if (!x.closed) await signIn(x).catch(e => console.log(`  reconnexion de ${x.who} impossible : ${e.message.split('\n')[0]}`));
     return;
   }
@@ -173,7 +175,7 @@ function abort(e) {
 
 (async () => {
   const browser = await chromium.launch({ args: ['--disable-dev-shm-usage'] });
-  browser.on('disconnected', () => console.log('⚠ NAVIGATEUR DÉCONNECTÉ'));
+  browser.on('disconnected', () => console.log(`⚠ NAVIGATEUR DÉCONNECTÉ à ${minutes()}`));
   const resp = await login(browser, 'resp');
   const staff = await login(browser, 'staff');
   const collab = await login(browser, 'collab');

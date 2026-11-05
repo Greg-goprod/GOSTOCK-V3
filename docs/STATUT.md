@@ -259,3 +259,11 @@ Source : analyse de Notion par Claude dans Chrome (`notion-gantt-analyse.zip`). 
 - **`e2e-pilote-scenarios`** : `A-documents` KO → **défaut de mon script** (la réponse du service de stockage était coupée à 300 caractères avant d'être lue comme du JSON ; le lien signé en fait plus) ; `N-choix-ecran` KO → **défaut de mon script** (il attendait 5 types d'avis ; il y en a 6 depuis la migration 58 — la base le dit : il compare maintenant à ce qu'elle propose). Plantage ensuite (même schéma). Classés « APP » par erreur par l'exécutant pour `N-choix-ecran`.
 - **Durcissement** : le rapport s'écrit AUSSI en cas d'arrêt anormal (étape `ARRET`), sinon l'ancien rapport restait en place ; le navigateur est lancé sans mémoire partagée `/dev/shm` (cause classique de « Target crashed » sous Linux / WSL / conteneur) ; « NAVIGATEUR DÉCONNECTÉ » et l'échec d'une remise en état sont écrits.
 - **À faire pour trancher les plantages** : relancer avec `DEBUG=pw:browser` (journal du processus du navigateur : il y dit pourquoi il meurt) et indiquer l'environnement exact (Windows natif, WSL, conteneur).
+
+### Rapport de l'exécutant sur `10fef96` (et non `dae9b50` : son `git fetch` a échoué) — 2026-11-05
+
+- Il a donc **testé l'ancien script** : ce passage ne valide pas les corrections de `dae9b50`.
+- `N-choix-ecran` KO « n'a pas 5 lignes » : attente périmée du script (6 types depuis la migration 58) — corrigé dans `dae9b50`, **pas encore revérifié**.
+- `N-choix-respecte` KO « un avis a été créé malgré le choix » : **conséquence en cascade** (vérifié dans le code du script) : cette étape suppose que `N-choix-ecran` a décoché « Dans l'application » ; l'ancien script s'arrêtait AVANT de cliquer, la case restait cochée, l'avis était donc normal. Pas un défaut de l'application, mais **non revérifié** sur le bon commit.
+- `e2e-gantt` : plantage à `P3c-creer` (étape purement API, aucun écran en jeu) ; le premier passage plantait à `P3c-cascade` (même type). Les trois pages plantent ensemble. L'exécutant dit « entre 35 et 55 minutes » sans fournir d'heure : **non vérifié**. Les journaux de plantage indiquent maintenant le temps écoulé (« à N min »).
+- L'exécutant a sauté le diagnostic `DEBUG=pw:browser` demandé : la cause du plantage reste **non expliquée**.
