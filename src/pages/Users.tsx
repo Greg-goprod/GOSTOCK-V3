@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { Plus, QrCode, Mail, Building2, Phone, LayoutGrid, List, ArrowUpDown, Filter, Pencil, Trash2 } from 'lucide-react';
+import { Plus, QrCode, ArrowUpDown, Filter, Pencil, Trash2, Contact, LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import QRCodeGenerator from '../components/QRCode/QRCodeGenerator';
 import Modal from '../components/common/Modal';
 import FilterPanel, { FilterOption } from '../components/common/FilterPanel';
 import UserModal from '../components/users/UserModal';
+import DepartureModal from '../components/users/DepartureModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { User } from '../types';
+import { ROLE_LABELS } from '../lib/roles';
+import { badgeValue } from '../lib/badges';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityViewToggle } from '../components/mx/MxEntityViewToggle';
+import { MxBadge } from '../components/mx/MxBadge';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
 
 type ViewMode = 'grid' | 'list';
 type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'department' | 'role';
@@ -18,8 +29,12 @@ type SortDirection = 'asc' | 'desc';
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  // Cartes par défaut, choix mémorisé (comme Mannyx)
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => readMxViewMode('gomat-view-personnes', ['grid', 'list'] as const, 'grid'));
+  const setViewMode = (mode: ViewMode) => { setViewModeState(mode); writeMxViewMode('gomat-view-personnes', mode); };
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  // Code du badge de la personne affichée (undefined : en chargement, null : pas de badge)
+  const [badgeCode, setBadgeCode] = useState<string | null | undefined>(undefined);
   const [showQRModal, setShowQRModal] = useState(false);
   const [sortField, setSortField] = useState<SortField>('first_name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -29,6 +44,19 @@ const Users: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | undefined>();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [leaving, setLeaving] = useState<User | null>(null);
+
+  const KIND_LABELS = { temp: 'Intérimaire', subcontractor: 'Sous-traitant' } as const;
+  const accessLabel = (user: User) => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (user.leftOn && user.active === false) return `Parti le ${new Date(user.leftOn).toLocaleDateString('fr-CH')}`;
+    if (user.active === false) return 'Accès suspendu';
+    const kind = user.personKind && user.personKind !== 'employee' ? `${KIND_LABELS[user.personKind]}${user.company ? ` (${user.company})` : ''} · ` : '';
+    const deposit = user.depositAmount && !user.depositReturnedOn ? `caution ${user.depositAmount} CHF · ` : '';
+    if (user.accessUntil && user.accessUntil < today) return `${kind}${deposit}accès échu le ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
+    if (user.accessUntil) return `${kind}${deposit}jusqu'au ${new Date(user.accessUntil).toLocaleDateString('fr-CH')}`;
+    return `${kind}${deposit}${user.linked ? 'Déjà connecté' : 'Jamais connecté'}`;
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -46,7 +74,20 @@ const Users: React.FC = () => {
         throw error;
       }
 
-      setUsers(data || []);
+      // Mêmes champs que dans AppContext : la fiche ouverte en modification garde permis et statut
+      setUsers((data || []).map(u => ({
+        ...u,
+        linked: !!u.auth_user_id,
+        licenseCategories: u.license_categories || [],
+        licenseExpiresOn: u.license_expires_on,
+        personKind: u.person_kind ?? 'employee',
+        company: u.company,
+        accessUntil: u.access_until,
+        leftOn: u.left_on,
+        depositAmount: u.deposit_amount,
+        depositPaidOn: u.deposit_paid_on,
+        depositReturnedOn: u.deposit_returned_on,
+      })));
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
@@ -93,9 +134,13 @@ const Users: React.FC = () => {
     }
   };
 
-  const handleShowQR = (id: string) => {
+  // Le QR affiché est celui du badge (« GOMAT-USER:<code> »), lu par le comptoir et le scanner
+  const handleShowQR = async (id: string) => {
     setSelectedUser(id);
+    setBadgeCode(undefined);
     setShowQRModal(true);
+    const { data } = await supabase.from('user_badges').select('code').eq('user_id', id).maybeSingle();
+    setBadgeCode(data?.code ?? null);
   };
 
   const handleSort = (field: SortField) => {
@@ -129,8 +174,10 @@ const Users: React.FC = () => {
       label: 'Rôle',
       type: 'select',
       options: [
-        { value: 'admin', label: 'Administrateur' },
-        { value: 'user', label: 'Utilisateur' },
+        { value: 'admin', label: ROLE_LABELS.admin },
+        { value: 'manager', label: ROLE_LABELS.manager },
+        { value: 'technician', label: ROLE_LABELS.technician },
+        { value: 'user', label: ROLE_LABELS.user },
       ],
     },
     {
@@ -163,7 +210,7 @@ const Users: React.FC = () => {
       case 'department':
         return a.department.localeCompare(b.department) * direction;
       case 'role':
-        return a.role.localeCompare(b.role) * direction;
+        return (ROLE_LABELS[a.role] ?? a.role).localeCompare(ROLE_LABELS[b.role] ?? b.role) * direction;
       default:
         return 0;
     }
@@ -174,7 +221,7 @@ const Users: React.FC = () => {
       if (!value) return true;
       
       switch (key) {
-        case 'search':
+        case 'search': {
           const searchTerm = value.toLowerCase();
           return (
             user.first_name.toLowerCase().includes(searchTerm) ||
@@ -182,6 +229,7 @@ const Users: React.FC = () => {
             user.email.toLowerCase().includes(searchTerm) ||
             (user.phone || '').toLowerCase().includes(searchTerm)
           );
+        }
         case 'role':
           return user.role === value;
         case 'department':
@@ -207,7 +255,7 @@ const Users: React.FC = () => {
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th 
-                className="px-6 py-3 text-left cursor-pointer group"
+                className="px-4 py-3 text-left cursor-pointer group"
                 onClick={() => handleSort('first_name')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -216,50 +264,50 @@ const Users: React.FC = () => {
                 </div>
               </th>
               <th 
-                className="px-6 py-3 text-left cursor-pointer group"
+                className="px-4 py-3 text-left cursor-pointer group"
                 onClick={() => handleSort('email')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  EMAIL
+                  Email
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
               <th 
-                className="px-6 py-3 text-left cursor-pointer group"
+                className="px-4 py-3 text-left cursor-pointer group"
                 onClick={() => handleSort('phone')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  TÉLÉPHONE
+                  Téléphone
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
               <th 
-                className="px-6 py-3 text-left cursor-pointer group"
+                className="px-4 py-3 text-left cursor-pointer group"
                 onClick={() => handleSort('department')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  DÉPARTEMENT
+                  Département
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
               <th 
-                className="px-6 py-3 text-left cursor-pointer group"
+                className="px-4 py-3 text-left cursor-pointer group"
                 onClick={() => handleSort('role')}
               >
                 <div className="flex items-center text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  RÔLE
+                  Rôle
                   <ArrowUpDown size={14} className="ml-1 opacity-0 group-hover:opacity-100" />
                 </div>
               </th>
-              <th className="px-6 py-3 text-right text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                ACTIONS
+              <th className="px-4 py-3 text-right text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Actions
               </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredUsers.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 flex items-center justify-center">
                       <span className="font-black">
@@ -273,40 +321,52 @@ const Users: React.FC = () => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   {user.email}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   {user.phone}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   {user.department}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100 uppercase">
-                  {user.role}
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  <span className="font-bold uppercase">{ROLE_LABELS[user.role] ?? user.role}</span>
+                  <span className={`block text-xs ${user.active === false ? 'text-tone-danger' : 'text-gray-600 dark:text-gray-400'}`}>
+                    {accessLabel(user)}
+                  </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                <td className="px-4 py-3 whitespace-nowrap text-right"><div className="inline-flex gap-1.5">
                   <Button
                     variant="outline"
                     size="sm"
                     icon={<QrCode size={16} />}
                     onClick={() => handleShowQR(user.id)}
-                    className="font-medium"
-                  >
-                    QR CODE
-                  </Button>
+                    ariaLabel="QR code"
+                  />
                   <Button
                     variant="outline"
                     size="sm"
                     icon={<Pencil size={16} />}
                     onClick={() => handleEditUser(user)}
+                    ariaLabel="Modifier"
                   />
                   <Button
-                    variant="danger"
+                    variant="outline"
+                    size="sm"
+                    icon={<LogOut size={16} />}
+                    onClick={() => setLeaving(user)}
+                    ariaLabel="Départ"
+                  />
+                  <Button
+                    variant="outline"
                     size="sm"
                     icon={<Trash2 size={16} />}
                     onClick={() => handleDeleteClick(user)}
+                    ariaLabel="Supprimer"
+                    className="text-tone-danger"
                   />
+                  </div>
                 </td>
               </tr>
             ))}
@@ -316,129 +376,84 @@ const Users: React.FC = () => {
     </Card>
   );
 
+  // Carte d'entité de la charte : initiales, nom, rôle et service, accès ; actions dans le menu « ⋮ »
   const renderGridView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {filteredUsers.map((user) => (
-        <Card key={user.id} className="hover:shadow-lg transition-shadow">
-          <div className="p-4">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 flex items-center justify-center">
-                <span className="text-lg font-black">
-                  {user.first_name[0]}{user.last_name[0]}
-                </span>
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-gray-800 dark:text-gray-100">{user.first_name} {user.last_name}</h3>
-                <p className="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase">{user.role}</p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                <Mail size={16} />
-                <span className="text-sm font-medium">{user.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                <Phone size={16} />
-                <span className="text-sm font-medium">{user.phone}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                <Building2 size={16} />
-                <span className="text-sm font-medium">{user.department}</span>
-              </div>
-            </div>
-            
-            <div className="mt-4 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                icon={<QrCode size={16} />}
-                onClick={() => handleShowQR(user.id)}
-                className="font-medium"
-              >
-                QR CODE
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                icon={<Pencil size={16} />}
-                onClick={() => handleEditUser(user)}
-              />
-              <Button
-                variant="danger"
-                size="sm"
-                icon={<Trash2 size={16} />}
-                onClick={() => handleDeleteClick(user)}
-              />
-            </div>
-          </div>
-        </Card>
-      ))}
-    </div>
+    <MxCardGrid
+      items={filteredUsers}
+      getItemKey={user => user.id}
+      renderItem={user => (
+        <MxEntityCard
+          avatarName={`${user.first_name} ${user.last_name}`}
+          title={`${user.first_name} ${user.last_name}`}
+          infoParts={[
+            { content: ROLE_LABELS[user.role] ?? user.role },
+            ...(user.department ? [{ content: user.department }] : []),
+          ]}
+          statusBadge={user.active === false ? <MxBadge tone="danger">Accès suspendu</MxBadge> : undefined}
+          due={<span className="inline-block max-w-[calc(160px*var(--mx-scale,1))] truncate align-bottom text-[length:calc(12px*var(--mx-scale,1))] text-gray-500 dark:text-gray-400" title={accessLabel(user)}>{accessLabel(user)}</span>}
+          menuLabel={`Actions pour ${user.first_name} ${user.last_name}`}
+          menuActions={[
+            { id: 'qr', label: 'QR code', icon: QrCode, onSelect: () => handleShowQR(user.id) },
+            { id: 'edit', label: 'Modifier', icon: Pencil, onSelect: () => handleEditUser(user) },
+            { id: 'leave', label: 'Départ', icon: LogOut, onSelect: () => setLeaving(user) },
+            { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => handleDeleteClick(user) },
+          ]}
+          onOpen={() => handleEditUser(user)}
+        />
+      )}
+    />
   );
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">UTILISATEURS</h1>
-        
-        <div className="flex gap-3">
-          <div className="flex rounded-lg border border-gray-200 dark:border-gray-700">
-            <Button
-              variant={viewMode === 'grid' ? 'primary' : 'outline'}
-              size="sm"
-              icon={<LayoutGrid size={18} />}
-              onClick={() => setViewMode('grid')}
-              className="rounded-r-none font-bold"
-            >
-              GRILLE
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'primary' : 'outline'}
-              size="sm"
-              icon={<List size={18} />}
-              onClick={() => setViewMode('list')}
-              className="rounded-l-none font-bold"
-            >
-              LISTE
-            </Button>
-          </div>
+      <PageTitle>Personnes</PageTitle>
+      <PageCommands
+        filters={
           <Button 
             variant="outline" 
             icon={<Filter size={18} />}
             onClick={() => setShowFilters(true)}
             className="font-bold"
           >
-            FILTRES
+            Filtres
             {Object.keys(activeFilters).length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded-full font-black">
+              <span className="ml-1 px-1.5 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded font-black">
                 {Object.keys(activeFilters).length}
               </span>
             )}
           </Button>
-          <Button 
-            variant="primary" 
-            icon={<Plus size={18} />}
-            onClick={handleAddUser}
-            className="font-bold"
+        }
+        pagination={<span className="text-[length:calc(13px*var(--mx-scale,1))] text-gray-500 dark:text-gray-400">{filteredUsers.length} personne(s)</span>}
+        view={<MxEntityViewToggle value={viewMode === 'grid' ? 'cards' : 'list'} onChange={mode => setViewMode(mode === 'cards' ? 'grid' : 'list')} aria-label="Affichage des personnes" />}
+        primary={
+          <div className="flex items-center gap-2">
+          <Link
+            to="/badges"
+            className="mx-btn mx-btn-secondary inline-flex items-center gap-1.5 px-3.5 py-[7px] min-h-[44px] lg:min-h-[32px] text-[length:calc(12.5px*var(--mx-scale,1))]"
           >
-            AJOUTER UN UTILISATEUR
-          </Button>
-        </div>
-      </div>
+            <Contact size={16} aria-hidden="true" /> Imprimer les badges
+          </Link>
+            <Button variant="primary" icon={<Plus size={18} />} onClick={handleAddUser}>Ajouter une personne</Button>
+          </div>
+        }
+      />
 
       {viewMode === 'list' ? renderListView() : renderGridView()}
 
       <Modal
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
-        title="QR CODE UTILISATEUR"
+        title="QR code de la personne"
         size="sm"
       >
-        {selectedUser && (
+        {selectedUser && badgeCode === undefined && <p className="text-sm text-gray-600 dark:text-gray-400">Chargement…</p>}
+        {selectedUser && badgeCode === null && (
+          <p className="text-sm text-gray-700 dark:text-gray-300">Aucun badge trouvé pour cette personne. Ouvre sa fiche « Mon badge » ou « Imprimer les badges » pour en créer un.</p>
+        )}
+        {selectedUser && badgeCode && (
           <div className="flex justify-center">
             <QRCodeGenerator
-              value={selectedUser}
+              value={badgeValue(badgeCode)}
               title={users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || ''}
               subtitle={users.find(u => u.id === selectedUser)?.department}
               size={200}
@@ -454,6 +469,7 @@ const Users: React.FC = () => {
         onApplyFilters={setActiveFilters}
       />
 
+      <DepartureModal user={leaving} onClose={() => { setLeaving(null); fetchUsers(); }} />
       <UserModal
         isOpen={showUserModal}
         onClose={handleCloseUserModal}
@@ -464,8 +480,8 @@ const Users: React.FC = () => {
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteConfirm}
-        title="CONFIRMER LA SUPPRESSION"
-        message={`Êtes-vous sûr de vouloir supprimer l'utilisateur ${userToDelete?.first_name} ${userToDelete?.last_name} ? Cette action est irréversible.`}
+        title="Confirmer la suppression"
+        message={`Es-tu sûr de vouloir supprimer l'utilisateur ${userToDelete?.first_name} ${userToDelete?.last_name} ? Cette action est irréversible.`}
         confirmLabel="SUPPRIMER"
         cancelLabel="ANNULER"
       />

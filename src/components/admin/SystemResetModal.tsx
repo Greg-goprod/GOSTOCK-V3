@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, Trash2, CheckCircle, XCircle, Loader2, CheckCircle2 as CheckCircle2Icon, FileText as FileTextIcon, Tag as TagIcon, Wrench as WrenchIcon } from 'lucide-react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { resetSystemForProduction, displayResetReport, type ResetResults } from '../../scripts/resetSystem';
@@ -66,38 +66,38 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderWarningStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+      <div className="flex items-center gap-3 text-tone-danger">
         <AlertTriangle className="w-8 h-8" />
-        <h3 className="text-xl font-bold">⚠️ ATTENTION - REMISE À ZÉRO DU SYSTÈME</h3>
+        <h3 className="text-xl font-bold"><AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Attention - remise à zéro du système</h3>
       </div>
 
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <h4 className="font-semibold text-red-800 dark:text-red-200 mb-3">
+      <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+        <h4 className="font-semibold text-tone-danger mb-3">
           Cette opération supprimera DÉFINITIVEMENT :
         </h4>
-        <ul className="list-disc list-inside space-y-2 text-red-700 dark:text-red-300">
-          <li>🗑️ Tous les emprunts en cours et l'historique</li>
-          <li>📄 Tous les bons de livraison générés</li>
-          <li>🔧 Toutes les maintenances (en cours et passées)</li>
-          <li>🏷️ Toutes les instances d'équipement individuelles</li>
+        <ul className="list-disc list-inside space-y-2 text-tone-danger">
+          <li><Trash2 className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les emprunts en cours et l'historique</li>
+          <li><FileTextIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les bons de livraison générés</li>
+          <li><WrenchIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les maintenances (en cours et passées)</li>
+          <li><TagIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les instances d'équipement individuelles</li>
         </ul>
       </div>
 
-      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-        <h4 className="font-semibold text-green-800 dark:text-green-200 mb-3">
+      <div className="bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg p-4">
+        <h4 className="font-semibold text-tone-success mb-3">
           Ce qui sera conservé :
         </h4>
-        <ul className="list-disc list-inside space-y-2 text-green-700 dark:text-green-300">
-          <li>✅ Tous les équipements (remis en "disponible")</li>
-          <li>✅ Tous les utilisateurs et départements</li>
-          <li>✅ Toutes les catégories et fournisseurs</li>
-          <li>✅ Tous les paramètres système</li>
+        <ul className="list-disc list-inside space-y-2 text-tone-success">
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les équipements (remis en "disponible")</li>
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les utilisateurs et départements</li>
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Toutes les catégories et fournisseurs</li>
+          <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Tous les paramètres système</li>
         </ul>
       </div>
 
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <p className="text-yellow-800 dark:text-yellow-200 font-medium">
-          ⚠️ Cette action est IRRÉVERSIBLE ! Assurez-vous d'avoir une sauvegarde si nécessaire.
+      <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
+        <p className="text-tone-warning font-medium">
+          <AlertTriangle className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Cette action est IRRÉVERSIBLE ! Assure-toi d'avoir une sauvegarde si nécessaire.
         </p>
       </div>
 
@@ -114,16 +114,16 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderConfirmationStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+      <div className="flex items-center gap-3 text-tone-danger">
         <AlertTriangle className="w-6 h-6" />
         <h3 className="text-lg font-bold">Confirmation finale</h3>
       </div>
 
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <p className="text-red-800 dark:text-red-200 font-medium mb-4">
-          Pour confirmer la remise à zéro, tapez exactement le texte suivant :
+      <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+        <p className="text-tone-danger font-medium mb-4">
+          Pour confirmer la remise à zéro, tape exactement le texte suivant :
         </p>
-        <p className="font-mono text-lg bg-red-100 dark:bg-red-800 p-2 rounded border text-center">
+        <p className="font-mono text-lg bg-danger-100 dark:bg-danger-800 p-2 rounded border text-center">
           {requiredConfirmation}
         </p>
       </div>
@@ -133,10 +133,10 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
           type="text"
           value={confirmationText}
           onChange={(e) => setConfirmationText(e.target.value)}
-          placeholder="Tapez la confirmation ici..."
+          placeholder="Tape la confirmation ici..."
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
                      bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                     focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                     focus:ring-2 focus:ring-danger-500 focus:border-danger-500"
           disabled={isResetting}
         />
       </div>
@@ -151,7 +151,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
           disabled={confirmationText !== requiredConfirmation || isResetting}
         >
           <Trash2 className="w-4 h-4 mr-2" />
-          REMETTRE À ZÉRO LE SYSTÈME
+          Remettre à zéro le système
         </Button>
       </div>
     </div>
@@ -159,20 +159,20 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
 
   const renderExecutingStep = () => (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
+      <div className="flex items-center gap-3 text-primary-600 dark:text-primary-400">
         <Loader2 className="w-6 h-6 animate-spin" />
         <h3 className="text-lg font-bold">Remise à zéro en cours...</h3>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <p className="text-blue-800 dark:text-blue-200">
+      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+        <p className="text-primary-800 dark:text-primary-200">
           La remise à zéro est en cours. Cette opération peut prendre quelques minutes.
-          Ne fermez pas cette fenêtre.
+          Ne ferme pas cette fenêtre.
         </p>
       </div>
 
       <div className="flex justify-center">
-        <div className="animate-pulse text-blue-600 dark:text-blue-400">
+        <div className="animate-pulse text-primary-600 dark:text-primary-400">
           Suppression des données en cours...
         </div>
       </div>
@@ -184,7 +184,7 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
     
     return (
       <div className="space-y-6">
-        <div className={`flex items-center gap-3 ${hasErrors ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+        <div className={`flex items-center gap-3 ${hasErrors ? 'text-tone-danger' : 'text-tone-success'}`}>
           {hasErrors ? <XCircle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
           <h3 className="text-lg font-bold">
             {hasErrors ? 'Remise à zéro terminée avec erreurs' : 'Remise à zéro réussie !'}
@@ -196,18 +196,18 @@ export function SystemResetModal({ isOpen, onClose }: SystemResetModalProps) {
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <h4 className="font-semibold mb-3">Rapport de remise à zéro :</h4>
               <ul className="space-y-2 text-sm">
-                <li>🗑️ Emprunts supprimés : <strong>{resetResults.deletedCheckouts}</strong></li>
-                <li>📄 Bons de livraison supprimés : <strong>{resetResults.deletedDeliveryNotes}</strong></li>
-                <li>🔧 Maintenances supprimées : <strong>{resetResults.deletedMaintenances}</strong></li>
-                <li>🏷️ Instances d'équipement supprimées : <strong>{resetResults.deletedInstances}</strong></li>
-                <li>✅ Équipements remis en disponible : <strong>{resetResults.updatedEquipment}</strong></li>
+                <li><Trash2 className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Emprunts supprimés : <strong>{resetResults.deletedCheckouts}</strong></li>
+                <li><FileTextIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Bons de livraison supprimés : <strong>{resetResults.deletedDeliveryNotes}</strong></li>
+                <li><WrenchIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Maintenances supprimées : <strong>{resetResults.deletedMaintenances}</strong></li>
+                <li><TagIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Instances d'équipement supprimées : <strong>{resetResults.deletedInstances}</strong></li>
+                <li><CheckCircle2Icon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Équipements remis en disponible : <strong>{resetResults.updatedEquipment}</strong></li>
               </ul>
             </div>
 
             {hasErrors && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <h4 className="font-semibold text-red-800 dark:text-red-200 mb-3">Erreurs rencontrées :</h4>
-                <ul className="list-disc list-inside space-y-1 text-red-700 dark:text-red-300 text-sm">
+              <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+                <h4 className="font-semibold text-tone-danger mb-3">Erreurs rencontrées :</h4>
+                <ul className="list-disc list-inside space-y-1 text-tone-danger text-sm">
                   {resetResults.errors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}

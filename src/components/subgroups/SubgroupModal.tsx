@@ -3,11 +3,10 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
 import ColorPicker from '../common/ColorPicker';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { EquipmentSubgroup, EquipmentGroup } from '../../types';
-import { Layers, FileText, Palette } from 'lucide-react';
+import { Layers, FileText, Palette, Folder as FolderIcon, FolderOpen as FolderOpenIcon } from 'lucide-react';
 
 interface SubgroupModalProps {
   isOpen: boolean;
@@ -17,7 +16,6 @@ interface SubgroupModalProps {
 }
 
 const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup, groups }) => {
-  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -104,14 +102,14 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={subgroup ? 'MODIFIER LE SOUS-GROUPE' : 'AJOUTER UN SOUS-GROUPE'}
+      title={subgroup ? 'Modifier le sous-groupe' : 'Ajouter un sous-groupe'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
-          icon={<Layers size={18} className="text-blue-600 dark:text-blue-400" />}
+          title="Informations de base"
+          icon={<Layers size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -166,14 +164,14 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"
                 type="submit"
                 disabled={isLoading || !formData.groupId}
               >
-                {isLoading ? 'SAUVEGARDE...' : subgroup ? 'MODIFIER' : 'AJOUTER'}
+                {isLoading ? 'Enregistrement…' : subgroup ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>
           </form>
@@ -181,8 +179,8 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION"
-          icon={<FileText size={18} className="text-green-600 dark:text-green-400" />}
+          title="Description"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -202,8 +200,8 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
-          icon={<Palette size={18} className="text-purple-600 dark:text-purple-400" />}
+          title="Couleur"
+          icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <div className="space-y-4">
@@ -234,16 +232,16 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                       style={{ backgroundColor: selectedGroup.color }}
                     >
-                      📁 {selectedGroup.name}
+                      <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{selectedGroup.name}
                     </span>
-                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-500 dark:text-gray-400">→</span>
                   </>
                 )}
                 <span 
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                   style={{ backgroundColor: formData.color }}
                 >
-                  📂 {formData.name || 'Nom du sous-groupe'}
+                  <FolderOpenIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{formData.name || 'Nom du sous-groupe'}
                 </span>
               </div>
             </div>

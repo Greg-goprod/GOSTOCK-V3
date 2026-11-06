@@ -1,24 +1,33 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import Card from '../components/common/Card';
+import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
-import Badge from '../components/common/Badge';
 import Modal from '../components/common/Modal';
 import AddEquipmentModal from '../components/equipment/AddEquipmentModal';
 import EditEquipmentModal from '../components/equipment/EditEquipmentModal';
 import QRCodeGenerator from '../components/QRCode/QRCodeGenerator';
 import QRCodesModal from '../components/equipment/QRCodesModal';
 import MaintenanceModal from '../components/maintenance/MaintenanceModal';
-import MaintenanceHistoryModal from '../components/maintenance/MaintenanceHistoryModal';
-import CheckoutModal from '../components/checkout/CheckoutModal';
-import ReturnModal from '../components/checkout/ReturnModal';
 import FilterPanel from '../components/common/FilterPanel';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ExcelImport from '../components/import/ExcelImport';
-import { Plus, QrCode, Wrench, PenTool, Grid3X3, List, RefreshCw, Edit, Trash2, Download, Upload, Search, Filter } from 'lucide-react';
+import { Plus, QrCode, Wrench, PenTool, Package, Edit, Trash2, Download, Upload, Search, Filter, History } from 'lucide-react';
+import EquipmentHistoryModal from '../components/equipment/EquipmentHistoryModal';
 import { Equipment as EquipmentType, EquipmentInstance } from '../types';
-import toast from 'react-hot-toast';
 import StatusBadge from '../components/common/StatusBadge';
+import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
+import { errorMessage } from '../lib/requests';
+import { confirmAction } from '../lib/confirm';
+import RentalBadge from '../components/common/RentalBadge';
+import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityViewToggle } from '../components/mx/MxEntityViewToggle';
+import { MxPagination } from '../components/mx/MxPagination';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
 
 export default function Equipment() {
   const {
@@ -29,30 +38,30 @@ export default function Equipment() {
     equipmentSubgroups,
     equipmentInstances,
     checkouts,
-    addEquipment,
-    updateEquipment,
     deleteEquipment,
-    refreshData,
-    refreshEquipmentData,
-    forceUpdateEquipmentAvailability
+    refreshData
   } = useApp();
+  // Créer, modifier ou supprimer un article : droit « gérer le stock » (la base le vérifie aussi)
+  const canManage = useAuth().can('manage_stock');
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [historyFor, setHistoryFor] = useState<EquipmentType | null>(null);
   const [showQRCodesModal, setShowQRCodesModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [showMaintenanceHistoryModal, setShowMaintenanceHistoryModal] = useState(false);
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [showReturnModal, setShowReturnModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
-  const [selectedEquipmentForQR, setSelectedEquipmentForQR] = useState<EquipmentType | null>(null);
   const [selectedInstance, setSelectedInstance] = useState<EquipmentInstance | null>(null);
+  const [selectedEquipmentForQR, setSelectedEquipmentForQR] = useState<EquipmentType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // Cartes par défaut, choix mémorisé (comme Mannyx)
+  const [viewMode, setViewModeState] = useState<'grid' | 'list'>(() => readMxViewMode('gomat-view-outils', ['grid', 'list'] as const, 'grid'));
+  const setViewMode = (mode: 'grid' | 'list') => { setViewModeState(mode); writeMxViewMode('gomat-view-outils', mode); };
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => Number(readMxViewMode('gomat-pagesize-outils', ['24', '48', '96'] as const, '48')));
   const [sortField, setSortField] = useState<'name' | 'category' | 'status'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
@@ -63,8 +72,7 @@ export default function Equipment() {
     group: '',
     subgroup: ''
   });
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; name: string } | null>(null);
 
   // Fonction pour calculer la disponibilité : disponible = stock - (emprunts + maintenance + perdu)
   const getAvailableQuantity = (eq: EquipmentType): number => {
@@ -88,7 +96,7 @@ export default function Equipment() {
     
     // Compter les emprunts actifs et en retard
     const activeCheckouts = checkouts.filter(
-      c => c.equipment_id === eq.id && 
+      c => c.equipmentId === eq.id && 
       (c.status === 'active' || c.status === 'overdue' || c.status === 'lost')
     ).length;
     
@@ -148,11 +156,26 @@ export default function Equipment() {
     setShowDeleteModal(true);
   };
 
+  // Un outil avec un historique de sorties ne peut pas être supprimé (la base le refuse) : on propose de le retirer du service
   const confirmDelete = async () => {
-    if (selectedEquipment) {
-      await deleteEquipment(selectedEquipment);
-      setShowDeleteModal(false);
-      setSelectedEquipment(null);
+    if (!selectedEquipment) return;
+    const id = selectedEquipment;
+    setShowDeleteModal(false);
+    setSelectedEquipment(null);
+    const { count } = await supabase.from('checkouts').select('id', { count: 'exact', head: true }).eq('equipment_id', id);
+    if (count) {
+      const name = equipment.find(e => e.id === id)?.name ?? 'Cet outil';
+      if (!await confirmAction(`${name} a un historique de ${count} sortie(s) : il ne peut pas être supprimé. Le retirer du service à la place ? Il n'apparaîtra plus comme disponible, son historique est conservé.`)) return;
+      const { error } = await supabase.from('equipment').update({ status: 'retired' }).eq('id', id);
+      if (error) return toast.error(errorMessage(error));
+      toast.success(`${name} retiré du service`);
+      await refreshData();
+      return;
+    }
+    try {
+      await deleteEquipment(id);
+    } catch {
+      // Message déjà affiché par deleteEquipment
     }
   };
 
@@ -161,22 +184,7 @@ export default function Equipment() {
     setShowMaintenanceModal(true);
   };
 
-  const handleMaintenanceHistory = (equipmentId: string) => {
-    setSelectedEquipment(equipmentId);
-    setShowMaintenanceHistoryModal(true);
-  };
 
-  const handleCheckout = (equipmentId: string, instance?: EquipmentInstance) => {
-    setSelectedEquipment(equipmentId);
-    setSelectedInstance(instance || null);
-    setShowCheckoutModal(true);
-  };
-
-  const handleReturn = (equipmentId: string, instance?: EquipmentInstance) => {
-    setSelectedEquipment(equipmentId);
-    setSelectedInstance(instance || null);
-    setShowReturnModal(true);
-  };
 
   const exportToCSV = () => {
     const headers = ['Nom', 'Numéro de série', 'Statut', 'Catégorie', 'Fournisseur', 'Localisation', 'Date d\'ajout'];
@@ -205,8 +213,10 @@ export default function Equipment() {
   };
 
   const filteredEquipment = equipment.filter(eq => {
+    // Les consommables ont leur propre page
+    if (eq.itemType === 'consumable') return false;
     const matchesSearch = eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         eq.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (eq.serialNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (eq.articleNumber && eq.articleNumber.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = !filters.status || eq.status === filters.status;
@@ -226,11 +236,12 @@ export default function Equipment() {
       case 'name':
         comparison = a.name.localeCompare(b.name);
         break;
-      case 'category':
+      case 'category': {
         const categoryA = categories.find(c => c.id === a.category)?.name || '';
         const categoryB = categories.find(c => c.id === b.category)?.name || '';
         comparison = categoryA.localeCompare(categoryB);
         break;
+      }
       case 'status':
         comparison = a.status.localeCompare(b.status);
         break;
@@ -245,159 +256,37 @@ export default function Equipment() {
     return equipmentInstances.filter(instance => instance.equipmentId === equipmentId);
   };
 
-  const renderEquipmentCard = (eq: EquipmentType) => {
-    const category = categories.find(c => c.id === eq.category);
-    const supplier = suppliers.find(s => s.id === eq.supplier);
-    const group = equipmentGroups.find(g => g.id === eq.group);
-    const subgroup = equipmentSubgroups.find(sg => sg.id === eq.subgroup);
-    const instances = getEquipmentInstances(eq.id);
-    
-    // Calculer la disponibilité
-    const getAvailabilityText = () => {
-      if (eq.qrType === 'batch') {
-        return `${eq.availableQuantity || 0}/${eq.totalQuantity || 1}`;
-      } else if (eq.qrType === 'individual') {
-        const availableInstances = instances.filter(inst => inst.status === 'available' || !inst.status).length;
-        return `${availableInstances}/${instances.length || 1}`;
-      }
-      return eq.status === 'available' ? '1/1' : '0/1';
-    };
+  // Pagination (comme Mannyx) : la liste et les cartes affichent la même page
+  const totalPages = Math.max(1, Math.ceil(sortedEquipment.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedEquipment = sortedEquipment.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-    // Calculer la quantité totale et disponible
-    const totalQuantity = eq.totalQuantity || 1;
-    
-    // Calculer la disponibilité en utilisant la fonction getAvailableQuantity
-    let availableQuantity = 0;
-    if (['maintenance', 'lost', 'retired'].includes(eq.status)) {
-      availableQuantity = 0;
-      
-      if (eq.name.includes('Trepied laser petit') || eq.name.toLowerCase().includes('accu')) {
-        console.log('=== BADGE DEBUG ===');
-        console.log('Équipement en maintenance/perdu/retiré, disponibilité forcée à 0');
-        console.log('Status:', eq.status);
-        console.log('=== FIN BADGE DEBUG ===');
-      }
-    } else {
-      availableQuantity = getAvailableQuantity(eq);
-    }
-    
-    if (eq.name.includes('Trepied laser petit') || eq.name.toLowerCase().includes('accu')) {
-      console.log('=== BADGE FINAL ===');
-      console.log('Nom:', eq.name);
-      console.log('Status:', eq.status);
-      console.log('Stock total:', totalQuantity);
-      console.log('Disponibilité calculée:', availableQuantity);
-      console.log('=== FIN BADGE FINAL ===');
-    }
-
+  // Carte d'entité de la charte : photo ronde, nom, stock et disponibilité, statut ; actions dans le menu « ⋮ »
+  const renderEntityCard = (eq: EquipmentType) => {
+    const available = getAvailableQuantity(eq);
     return (
-      <Card key={eq.id} className="p-6 hover:shadow-lg transition-shadow min-h-[200px]">
-        <div className="flex items-start space-x-4 h-full">
-          {/* Image à gauche */}
-          <div className="relative flex-shrink-0 flex items-center justify-center overflow-visible">
-            {eq.imageUrl ? (
-              <img 
-                src={eq.imageUrl} 
-                alt={eq.name}
-                className="w-24 h-24 object-cover rounded-full border-4 border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-700 p-2 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative"
-                onError={(e) => {
-                  console.log("Erreur de chargement d'image:", eq.imageUrl);
-                  
-                  // Stratégie 1: Essayer d'ajouter https:// si l'URL ne commence pas par http ou https
-                  const originalSrc = e.currentTarget.src;
-                  if (!originalSrc.startsWith('http')) {
-                    const newSrc = `https://${originalSrc}`;
-                    console.log("Tentative avec URL corrigée:", newSrc);
-                    e.currentTarget.src = newSrc;
-                    return;
-                  }
-                  
-                  // Si la stratégie 1 ne fonctionne pas, on passe à l'icône de repli
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    // Create a fallback div with the Tool icon
-                    const fallbackDiv = document.createElement('div');
-                    fallbackDiv.className = 'w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative';
-                    
-                    // We can't directly insert a React component, so we'll use a simple SVG
-                    fallbackDiv.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 mx-auto">
-                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                      </svg>
-                    `;
-                    
-                    parent.appendChild(fallbackDiv);
-                  }
-                }}
-              />
-            ) : (
-              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center border-4 border-gray-200 dark:border-gray-700 shadow-sm p-2 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
-                <PenTool className="w-12 h-12 text-gray-400" />
-              </div>
-            )}
-          </div>
-
-          {/* Informations à droite */}
-          <div className="flex-1 flex flex-col justify-between h-full">
-            <div className="space-y-3">
-              {/* Nom du matériel */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{eq.name.toUpperCase()}</h3>
-                {eq.shortTitle && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{eq.shortTitle}</p>
-                )}
-              </div>
-
-              {/* Badges simplifiés */}
-              <div className="flex items-center gap-2">
-                {/* Badge Stock */}
-                <span className="px-3 py-1 bg-blue-50 bg-opacity-80 dark:bg-blue-900 dark:bg-opacity-80 text-blue-800 dark:text-blue-100 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium backdrop-blur-sm">
-                  Stock: {totalQuantity}
-                </span>
-                
-                {/* Badge Disponible */}
-                <span className={`px-3 py-1 ${availableQuantity > 0 ? 'bg-green-50 bg-opacity-80 dark:bg-green-900 dark:bg-opacity-80 text-green-800 dark:text-green-100 border border-green-200 dark:border-green-700' : 'bg-red-50 bg-opacity-80 dark:bg-red-900 dark:bg-opacity-80 text-red-800 dark:text-red-100 border border-red-200 dark:border-red-700'} rounded-full text-sm font-medium backdrop-blur-sm`}>
-                  Disponible: {availableQuantity}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleShowQR(eq.id)}
-              >
-                <QrCode className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleEdit(eq.id)}
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleMaintenance(eq.id)}
-              >
-                <Wrench className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDelete(eq.id)}
-                className="text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Card>
+      <MxEntityCard
+        avatarSrc={eq.imageUrl || null}
+        avatarName={eq.name}
+        title={eq.name}
+        infoParts={[
+          { content: `Stock ${eq.totalQuantity ?? 1}` },
+          { content: `Disponible ${available}` },
+        ]}
+        statusBadge={<StatusBadge status={eq.status} />}
+        due={eq.rentalUntil ? <RentalBadge until={eq.rentalUntil} returned={eq.status === 'retired'} /> : undefined}
+        menuLabel={`Actions pour ${eq.name}`}
+        menuActions={[
+          { id: 'qr', label: 'Code QR', icon: QrCode, onSelect: () => handleShowQR(eq.id) },
+          { id: 'history', label: 'Historique', icon: History, onSelect: () => setHistoryFor(eq) },
+          ...(canManage ? [
+            { id: 'edit', label: 'Modifier', icon: Edit, onSelect: () => handleEdit(eq.id) },
+            { id: 'maintenance', label: 'Maintenance', icon: Wrench, onSelect: () => handleMaintenance(eq.id) },
+            { id: 'delete', label: 'Supprimer', icon: Trash2, tone: 'danger' as const, onSelect: () => handleDelete(eq.id) },
+          ] : []),
+        ]}
+        onOpen={() => (canManage ? handleEdit(eq.id) : setHistoryFor(eq))}
+      />
     );
   };
 
@@ -405,7 +294,7 @@ export default function Equipment() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden w-full z-10 relative">
         <div className="overflow-x-auto w-full">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -435,9 +324,8 @@ export default function Equipment() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredEquipment.map((eq) => {
+              {pagedEquipment.map((eq) => {
                 const category = categories.find(c => c.id === eq.category);
-                const instances = getEquipmentInstances(eq.id);
                 
                 return (
                   <tr key={eq.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -446,18 +334,17 @@ export default function Equipment() {
                         <div className="flex-shrink-0 h-12 w-12">
                           {eq.imageUrl ? (
                             <img
-                              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative"
+                              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 cursor-zoom-in"
                               src={eq.imageUrl}
                               alt={eq.name}
-                              onMouseEnter={() => setHoveredImageId(eq.id)}
-                              onMouseLeave={() => setHoveredImageId(null)}
+                              onClick={() => setZoomedImage({ url: eq.imageUrl!, name: eq.name })}
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 const parent = e.currentTarget.parentElement;
                                 if (parent) {
                                   parent.innerHTML = `
-                                    <div class="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                                    <div class="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500 dark:text-gray-400">
                                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                                       </svg>
                                     </div>
@@ -466,19 +353,11 @@ export default function Equipment() {
                               }}
                             />
                           ) : (
-                            <div className="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1 transition-all duration-300 ease-in-out hover:scale-[5] hover:z-50 hover:shadow-2xl cursor-pointer relative">
-                              <PenTool className="w-6 h-6 text-gray-400" />
+                            <div className="h-12 w-12 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-sm p-1">
+                              <PenTool className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                             </div>
                           )}
                         </div>
-                        {hoveredImageId === eq.id && (
-                          <img
-                            src={eq.imageUrl}
-                            alt={eq.name}
-                            className="absolute left-16 top-1/2 -translate-y-1/2 w-64 h-64 object-contain rounded-lg shadow-xl z-50 border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-900"
-                            style={{ pointerEvents: 'none' }}
-                          />
-                        )}
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {eq.name.toUpperCase()}
@@ -514,25 +393,24 @@ export default function Equipment() {
                         <Button
                           variant="outline"
                           size="sm"
+                          ariaLabel={`Code QR de ${eq.name}`}
                           onClick={() => handleShowQR(eq.id)}
                         >
                           <QrCode className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(eq.id)}
-                        >
-                          <Edit className="w-4 h-4" />
+                        <Button variant="outline" size="sm" ariaLabel={`Historique de ${eq.name}`} onClick={() => setHistoryFor(eq)}>
+                          <History className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(eq.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {canManage && (
+                          <>
+                            <Button variant="outline" size="sm" ariaLabel={`Modifier ${eq.name}`} onClick={() => handleEdit(eq.id)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" ariaLabel={`Supprimer ${eq.name}`} onClick={() => handleDelete(eq.id)} className="text-tone-danger hover:text-tone-danger">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -546,94 +424,53 @@ export default function Equipment() {
   };
 
   // Fonction pour rafraîchir explicitement les données d'équipement
-  const handleRefreshEquipment = async () => {
-    setIsRefreshing(true);
-    await refreshEquipmentData();
-    setIsRefreshing(false);
-    toast.success('Données d\'équipement rafraîchies');
-  };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Équipements</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowImportModal(true)}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Importer
-          </Button>
-          <Button
-            variant="outline"
-            onClick={exportToCSV}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Exporter
-          </Button>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter un équipement
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex gap-4 items-center">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom, numéro de série ou numéro d'article..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-          <Button
-            variant={viewMode === 'grid' ? 'primary' : 'outline'}
-            onClick={() => setViewMode('grid')}
-            className="flex items-center gap-2 rounded-none border-0"
-          >
-            <Grid3X3 className="w-4 h-4" />
-            Grille
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'primary' : 'outline'}
-            onClick={() => setViewMode('list')}
-            className="flex items-center gap-2 rounded-none border-0"
-          >
-            <List className="w-4 h-4" />
-            Liste
-          </Button>
-        </div>
-        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden ml-2">
-          <select 
-            value={sortField}
-            onChange={(e) => setSortField(e.target.value as 'name' | 'category' | 'status')}
-            className="px-3 py-2 border-0 focus:ring-0 focus:outline-none"
-          >
-            <option value="name">Nom</option>
-            <option value="category">Catégorie</option>
-            <option value="status">Statut</option>
-          </select>
-          <Button
-            variant="outline"
-            onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-            className="flex items-center gap-2 rounded-none border-0"
-          >
-            {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
-          </Button>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter className="w-4 h-4 mr-2" />
-          Filtres
-        </Button>
-      </div>
+      <PageTitle>Outils</PageTitle>
+      {/* Commandes dans l'en-tête de module : recherche · filtres · pagination · vue · action principale */}
+      <PageCommands
+        search={
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" aria-hidden="true" />
+            <input type="text" placeholder="Rechercher par nom, numéro de série ou numéro d'article..." aria-label="Rechercher un équipement"
+              value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+              className="w-full pl-9 pr-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800" />
+          </div>
+        }
+        filters={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <select value={sortField} onChange={(e) => setSortField(e.target.value as 'name' | 'category' | 'status')} aria-label="Trier par"
+                className="rounded-r-none border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3">
+                <option value="name">Nom</option>
+                <option value="category">Catégorie</option>
+                <option value="status">Statut</option>
+              </select>
+              <Button variant="outline" onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')} className="rounded-l-none -ml-px"
+                ariaLabel={sortDirection === 'asc' ? 'Tri croissant' : 'Tri décroissant'}>
+                {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
+              </Button>
+            </div>
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} icon={<Filter className="w-4 h-4" />}>Filtres</Button>
+          </div>
+        }
+        pagination={totalPages > 1 || sortedEquipment.length > 24 ? (
+          <MxPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage}
+            previousLabel="Page précédente" nextLabel="Page suivante" totalLabel={`${sortedEquipment.length} outil(s)`}
+            pageSize={pageSize} pageSizeOptions={[{ value: '24', label: '24' }, { value: '48', label: '48' }, { value: '96', label: '96' }]}
+            onPageSizeChange={size => { setPageSize(size); setPage(1); writeMxViewMode('gomat-pagesize-outils', String(size)); }}
+            pageSizeLabel="Outils par page" />
+        ) : undefined}
+        view={<MxEntityViewToggle value={viewMode === 'grid' ? 'cards' : 'list'} onChange={mode => setViewMode(mode === 'cards' ? 'grid' : 'list')} aria-label="Affichage des outils" />}
+        primary={
+          <div className="flex items-center gap-2">
+            {canManage && <Button variant="outline" onClick={() => setShowImportModal(true)} icon={<Upload className="w-4 h-4" />}>Importer</Button>}
+            <Button variant="outline" onClick={exportToCSV} icon={<Download className="w-4 h-4" />}>Exporter</Button>
+            {canManage && <Button onClick={() => setShowAddModal(true)} icon={<Plus className="w-4 h-4" />}>Ajouter un équipement</Button>}
+          </div>
+        }
+      />
 
       <FilterPanel
         isOpen={showFilters}
@@ -689,24 +526,21 @@ export default function Equipment() {
 
       {/* Affichage conditionnel selon le mode de vue sélectionné */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {sortedEquipment.map(renderEquipmentCard)}
-        </div>
+        // Grille de cartes de la charte (jusqu'à 8 colonnes selon la largeur), carte d'entité standard
+        <MxCardGrid items={pagedEquipment} getItemKey={eq => eq.id} renderItem={renderEntityCard} />
       ) : (
         renderEquipmentList()
       )}
 
-      {filteredEquipment.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Aucun équipement trouvé.</p>
-        </div>
-      )}
+      {filteredEquipment.length === 0 && <MxEmpty icon={Package} title="Aucun équipement trouvé" />}
 
       {/* Modals */}
+      {historyFor && <EquipmentHistoryModal equipment={historyFor} onClose={() => setHistoryFor(null)} />}
       {showAddModal && (
         <AddEquipmentModal
           onClose={() => setShowAddModal(false)}
-          onAdd={addEquipment}
+          // La fenêtre enregistre déjà l'article et ses exemplaires : on recharge seulement les données
+          onAdd={() => refreshData()}
         />
       )}
 
@@ -763,42 +597,6 @@ export default function Equipment() {
         />
       )}
 
-      {showMaintenanceHistoryModal && selectedEquipment && (
-        <MaintenanceHistoryModal
-          equipmentId={selectedEquipment}
-          onClose={() => {
-            setShowMaintenanceHistoryModal(false);
-            setSelectedEquipment(null);
-          }}
-        />
-      )}
-
-      {showCheckoutModal && selectedEquipment && (
-        <CheckoutModal
-          equipmentId={selectedEquipment}
-          instance={selectedInstance}
-          onClose={async () => {
-            setShowCheckoutModal(false);
-            setSelectedEquipment(null);
-            setSelectedInstance(null);
-            await refreshEquipmentData();
-          }}
-        />
-      )}
-
-      {showReturnModal && selectedEquipment && (
-        <ReturnModal
-          equipmentId={selectedEquipment}
-          instance={selectedInstance}
-          onClose={async () => {
-            setShowReturnModal(false);
-            setSelectedEquipment(null);
-            setSelectedInstance(null);
-            await refreshEquipmentData();
-          }}
-        />
-      )}
-
       {showDeleteModal && (
         <ConfirmModal
           isOpen={showDeleteModal}
@@ -808,28 +606,35 @@ export default function Equipment() {
           }}
           onConfirm={confirmDelete}
           title="Supprimer l'équipement"
-          message="Êtes-vous sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          variant="danger"
+          message="Es-tu sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
+          confirmLabel="Supprimer"
+          cancelLabel="Annuler"
         />
       )}
 
-      {showImportModal && (
+      {zoomedImage && (
         <Modal
-          isOpen={showImportModal}
-          onClose={() => setShowImportModal(false)}
-          title="Importer des équipements"
+          isOpen={!!zoomedImage}
+          onClose={() => setZoomedImage(null)}
+          title={zoomedImage.name}
+          closeOnBackdrop
         >
-          <ExcelImport
-            onClose={() => setShowImportModal(false)}
-            onImportComplete={() => {
-              setShowImportModal(false);
-              refreshData();
-            }}
+          <img
+            src={zoomedImage.url}
+            alt={zoomedImage.name}
+            className="w-full max-h-[65vh] object-contain rounded-lg"
           />
         </Modal>
       )}
+
+      <ExcelImport
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportComplete={() => {
+          setShowImportModal(false);
+          refreshData();
+        }}
+      />
     </div>
   );
 }

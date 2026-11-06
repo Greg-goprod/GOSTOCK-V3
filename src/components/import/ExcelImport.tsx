@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle, X, Check as CheckIcon } from 'lucide-react';
+import { downloadWorkbook, readSheetRows } from '../../lib/excel';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -39,7 +39,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
   const [importResults, setImportResults] = useState<{ success: number; errors: number }>({ success: 0, errors: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     try {
       // Données d'exemple pour le modèle
       const templateData = [
@@ -78,27 +78,6 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         }
       ];
 
-      // Créer la feuille principale avec les données d'exemple
-      const ws = XLSX.utils.json_to_sheet(templateData);
-      
-      // Définir la largeur des colonnes
-      const colWidths = [
-        { wch: 25 }, // name
-        { wch: 40 }, // description
-        { wch: 15 }, // category
-        { wch: 15 }, // serial_number
-        { wch: 12 }, // status
-        { wch: 20 }, // location
-        { wch: 20 }, // supplier
-        { wch: 50 }, // image_url
-        { wch: 15 }  // available_quantity
-      ];
-      ws['!cols'] = colWidths;
-
-      // Créer le classeur
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Matériel');
-
       // Créer la feuille d'instructions
       const instructions = [
         {
@@ -124,10 +103,10 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         },
         {
           Champ: 'serial_number',
-          Description: 'Numéro de série unique',
-          Obligatoire: 'OUI',
+          Description: 'Numéro de série du fabricant',
+          Obligatoire: 'NON',
           Exemple: 'DL-XPS-001',
-          Notes: 'Doit être unique dans la base de données'
+          Notes: 'Unique s\'il est renseigné ; le numéro d\'article est attribué automatiquement'
         },
         {
           Champ: 'status',
@@ -166,22 +145,11 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         }
       ];
 
-      const wsInstructions = XLSX.utils.json_to_sheet(instructions);
-      
-      // Largeur des colonnes pour les instructions
-      const instructionColWidths = [
-        { wch: 20 }, // Champ
-        { wch: 25 }, // Description
-        { wch: 12 }, // Obligatoire
-        { wch: 30 }, // Exemple
-        { wch: 40 }  // Notes
-      ];
-      wsInstructions['!cols'] = instructionColWidths;
-
-      XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instructions');
-
-      // Télécharger le fichier
-      XLSX.writeFile(wb, 'GO-Mat_Modele_Import.xlsx');
+      await downloadWorkbook([
+        // name, description, category, serial_number, status, location, supplier, image_url, available_quantity
+        { name: 'Matériel', rows: templateData, widths: [25, 40, 15, 15, 12, 20, 20, 50, 15] },
+        { name: 'Instructions', rows: instructions, widths: [20, 25, 12, 30, 40] },
+      ], 'GO-Mat_Modele_Import.xlsx');
       toast.success('Modèle Excel téléchargé avec succès');
     } catch (error) {
       console.error('Error creating Excel template:', error);
@@ -192,8 +160,8 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      if (!selectedFile.name.match(/\.(xlsx|xls)$/)) {
-        toast.error('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)');
+      if (!/\.xlsx$/i.test(selectedFile.name)) {
+        toast.error('Sélectionne un fichier Excel .xlsx (enregistre les anciens .xls au format .xlsx)');
         return;
       }
       setFile(selectedFile);
@@ -211,66 +179,49 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
     e.stopPropagation();
     
     const files = Array.from(e.dataTransfer.files);
-    const excelFile = files.find(file => file.name.match(/\.(xlsx|xls)$/));
+    const excelFile = files.find(file => /\.xlsx$/i.test(file.name));
     
     if (excelFile) {
       setFile(excelFile);
       parseExcelFile(excelFile);
     } else {
-      toast.error('Veuillez déposer un fichier Excel (.xlsx ou .xls)');
+      toast.error('Dépose un fichier Excel .xlsx');
     }
   };
 
-  const parseExcelFile = (file: File) => {
+  const parseExcelFile = async (file: File) => {
     setIsLoading(true);
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        
-        // Prendre la première feuille qui n'est pas "Instructions"
-        let sheetName = workbook.SheetNames.find(name => name !== 'Instructions') || workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+    try {
+      // Première feuille qui n'est pas « Instructions »
+      const jsonData = await readSheetRows(file, ['Instructions']);
 
-        if (jsonData.length === 0) {
-          toast.error('Le fichier Excel est vide ou ne contient pas de données valides');
-          setIsLoading(false);
-          return;
-        }
-
-        const parsedData: ImportRow[] = jsonData.map(row => ({
-          name: (row.name || '').toString().trim(),
-          description: (row.description || '').toString().trim(),
-          category: (row.category || '').toString().trim(),
-          serial_number: (row.serial_number || '').toString().trim(),
-          status: (row.status || 'available').toString().trim(),
-          location: (row.location || '').toString().trim(),
-          supplier: (row.supplier || '').toString().trim(),
-          image_url: (row.image_url || '').toString().trim(),
-          available_quantity: parseInt(row.available_quantity) || 1
-        }));
-
-        setData(parsedData);
-        validateData(parsedData);
-        setStep('validate');
-        toast.success(`${parsedData.length} lignes lues avec succès`);
-      } catch (error) {
-        console.error('Error parsing Excel file:', error);
-        toast.error('Erreur lors de la lecture du fichier Excel. Vérifiez le format du fichier.');
-      } finally {
-        setIsLoading(false);
+      if (jsonData.length === 0) {
+        toast.error('Le fichier Excel est vide ou ne contient pas de données valides');
+        return;
       }
-    };
 
-    reader.onerror = () => {
-      toast.error('Erreur lors de la lecture du fichier');
+      const parsedData: ImportRow[] = jsonData.map(row => ({
+        name: row.name || '',
+        description: row.description || '',
+        category: row.category || '',
+        serial_number: row.serial_number || '',
+        status: row.status || 'available',
+        location: row.location || '',
+        supplier: row.supplier || '',
+        image_url: row.image_url || '',
+        available_quantity: parseInt(row.available_quantity, 10) || 1
+      }));
+
+      setData(parsedData);
+      validateData(parsedData);
+      setStep('validate');
+      toast.success(`${parsedData.length} lignes lues avec succès`);
+    } catch (error) {
+      console.error('Error parsing Excel file:', error);
+      toast.error('Erreur lors de la lecture du fichier. Utilise un fichier .xlsx (Excel 2007 ou plus récent).');
+    } finally {
       setIsLoading(false);
-    };
-
-    reader.readAsArrayBuffer(file);
+    }
   };
 
   const validateData = async (data: ImportRow[]) => {
@@ -292,9 +243,8 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         errors.push({ row: rowNumber, field: 'name', message: 'Le nom est obligatoire' });
       }
 
-      if (!row.serial_number.trim()) {
-        errors.push({ row: rowNumber, field: 'serial_number', message: 'Le numéro de série est obligatoire' });
-      } else {
+      // Numéro de série du fabricant facultatif ; s'il est donné, il doit être unique
+      if (row.serial_number.trim()) {
         // Vérification des doublons dans le fichier
         if (serialNumbers.has(row.serial_number)) {
           errors.push({ row: rowNumber, field: 'serial_number', message: 'Numéro de série en double dans le fichier' });
@@ -311,7 +261,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
       // Validation du statut
       const validStatuses = ['available', 'checked-out', 'maintenance', 'retired'];
       if (row.status && !validStatuses.includes(row.status)) {
-        errors.push({ row: rowNumber, field: 'status', message: 'Statut invalide. Utilisez: available, checked-out, maintenance, retired' });
+        errors.push({ row: rowNumber, field: 'status', message: 'Statut invalide. Utilise: available, checked-out, maintenance, retired' });
       }
 
       // Validation de l'URL d'image
@@ -336,14 +286,14 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
     try {
       new URL(string);
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   };
 
   const handleImport = async () => {
     if (validationErrors.length > 0) {
-      toast.error('Veuillez corriger les erreurs avant d\'importer');
+      toast.error('Corrige les erreurs avant d\'importer');
       return;
     }
 
@@ -366,7 +316,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
           const equipmentData: any = {
             name: row.name.trim(),
             description: row.description.trim() || null,
-            serial_number: row.serial_number.trim(),
+            serial_number: row.serial_number.trim() || null,
             status: row.status || 'available',
             location: row.location.trim() || null,
             image_url: row.image_url.trim() || null,
@@ -474,17 +424,17 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
       <div className="space-y-6">
         {/* Progress indicator */}
         <div className="flex items-center justify-center space-x-4">
-          <div className={`flex items-center ${step === 'upload' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'upload' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>1</div>
             <span className="ml-2">Fichier</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'validate' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'validate' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'validate' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>2</div>
             <span className="ml-2">Validation</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'import' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'import' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'import' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>3</div>
             <span className="ml-2">Import</span>
           </div>
@@ -494,12 +444,12 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
         {step === 'upload' && (
           <div className="space-y-6">
             <div className="text-center">
-              <FileSpreadsheet size={48} className="mx-auto text-gray-400 mb-4" />
+              <FileSpreadsheet size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 Import de matériel depuis Excel
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                Téléchargez le modèle Excel, remplissez-le avec vos données, puis importez-le.
+                Télécharge le modèle Excel, remplis-le avec tes données, puis importe-le.
               </p>
             </div>
 
@@ -519,10 +469,10 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
               onDrop={handleDrop}
             >
               <div className="text-center">
-                <Upload size={32} className="mx-auto text-gray-400 mb-4" />
+                <Upload size={32} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
                 <div className="space-y-2">
                   <p className="text-gray-600 dark:text-gray-400">
-                    Glissez-déposez votre fichier Excel ici ou
+                    Glisse-dépose ton fichier Excel ici ou
                   </p>
                   <Button
                     variant="primary"
@@ -534,25 +484,25 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".xlsx,.xls"
+                    accept=".xlsx"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Formats supportés: .xlsx, .xls (max 10MB)
+                  Format : .xlsx (max 10 Mo)
                 </p>
               </div>
             </div>
 
             {file && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <FileSpreadsheet size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
+                    <FileSpreadsheet size={20} className="text-primary-600 dark:text-primary-400 mr-2" />
                     <div>
-                      <span className="text-blue-800 dark:text-blue-200 font-medium">{file.name}</span>
-                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                      <span className="text-primary-800 dark:text-primary-200 font-medium">{file.name}</span>
+                      <p className="text-xs text-primary-600 dark:text-primary-400">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -588,12 +538,12 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                   {data.length} lignes trouvées
                 </span>
                 {validationErrors.length === 0 ? (
-                  <div className="flex items-center text-green-600">
+                  <div className="flex items-center text-tone-success">
                     <CheckCircle size={16} className="mr-1" />
                     <span className="text-sm">Validation réussie</span>
                   </div>
                 ) : (
-                  <div className="flex items-center text-red-600">
+                  <div className="flex items-center text-tone-danger">
                     <AlertCircle size={16} className="mr-1" />
                     <span className="text-sm">{validationErrors.length} erreurs</span>
                   </div>
@@ -602,18 +552,18 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
             </div>
 
             {validationErrors.length > 0 && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
+              <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+                <h4 className="font-medium text-tone-danger mb-2">
                   Erreurs de validation ({validationErrors.length})
                 </h4>
                 <div className="max-h-40 overflow-y-auto space-y-1">
                   {validationErrors.slice(0, 20).map((error, index) => (
-                    <div key={index} className="text-sm text-red-700 dark:text-red-300">
+                    <div key={index} className="text-sm text-tone-danger">
                       <span className="font-medium">Ligne {error.row}</span>, champ "{error.field}": {error.message}
                     </div>
                   ))}
                   {validationErrors.length > 20 && (
-                    <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    <div className="text-sm text-tone-danger font-medium">
                       ... et {validationErrors.length - 20} autres erreurs
                     </div>
                   )}
@@ -641,38 +591,38 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                       const hasErrors = rowErrors.length > 0;
                       
                       return (
-                        <tr key={index} className={hasErrors ? 'bg-red-50 dark:bg-red-900/10' : ''}>
+                        <tr key={index} className={hasErrors ? 'bg-danger-50 dark:bg-danger-900/10' : ''}>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
                             {index + 1}
                             {hasErrors && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
                             {row.name}
                             {rowErrors.some(e => e.field === 'name') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
                             {row.serial_number}
                             {rowErrors.some(e => e.field === 'serial_number') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{row.category}</td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
                             {row.status}
                             {rowErrors.some(e => e.field === 'status') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                            <span className="font-medium text-blue-600 dark:text-blue-400">
+                            <span className="font-medium text-primary-600 dark:text-primary-400">
                               {row.available_quantity}
                             </span>
                             {rowErrors.some(e => e.field === 'available_quantity') && (
-                              <AlertCircle size={14} className="inline ml-1 text-red-500" />
+                              <AlertCircle size={14} className="inline ml-1 text-danger-500" />
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{row.location}</td>
@@ -718,22 +668,22 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ isOpen, onClose, onImportComp
                     Import en cours...
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400">
-                    Veuillez patienter pendant l'import des données.
+                    Patiente pendant l'import des données.
                   </p>
                 </div>
               ) : (
                 <div>
-                  <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
+                  <CheckCircle size={48} className="mx-auto text-success-500 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                     Import terminé
                   </h3>
                   <div className="space-y-2">
-                    <p className="text-green-600 dark:text-green-400">
-                      ✓ {importResults.success} équipements importés avec succès
+                    <p className="text-tone-success">
+                      <CheckIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.success} équipements importés avec succès
                     </p>
                     {importResults.errors > 0 && (
-                      <p className="text-red-600 dark:text-red-400">
-                        ✗ {importResults.errors} erreurs lors de l'import
+                      <p className="text-tone-danger">
+                        <X className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{importResults.errors} erreurs lors de l'import
                       </p>
                     )}
                   </div>

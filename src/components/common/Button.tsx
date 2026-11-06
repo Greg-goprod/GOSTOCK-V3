@@ -4,7 +4,9 @@ type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' 
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  // Obligatoire pour un bouton sans texte (icône seule) : lu par les lecteurs d'écran et affiché au survol
+  ariaLabel?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
@@ -27,21 +29,24 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = '',
   loading = false,
+  ariaLabel,
 }) => {
+  // Variantes de la charte Mannyx (classes .mx-btn-* dans src/styles/gomat-mx.css)
   const variantClasses = {
-    primary: 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white',
-    secondary: 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100',
-    success: 'bg-success-600 hover:bg-success-700 dark:bg-success-500 dark:hover:bg-success-600 text-white',
-    warning: 'bg-warning-500 hover:bg-warning-600 dark:bg-warning-500 dark:hover:bg-warning-600 text-white',
-    danger: 'bg-danger-600 hover:bg-danger-700 dark:bg-danger-500 dark:hover:bg-danger-600 text-white',
-    outline: 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100 border border-gray-300 dark:border-gray-600',
-    default: 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white', // Identique à primary pour compatibilité
+    primary: 'mx-btn-primary',
+    default: 'mx-btn-primary',
+    secondary: 'mx-btn-secondary',
+    outline: 'mx-btn-secondary',
+    success: 'mx-btn-success',
+    warning: 'mx-btn-warning',
+    danger: 'mx-btn-danger',
   };
 
+  // Libellé 12,5px / 600 (tronc MX). Sur mobile/tablette : cible tactile d'au moins 44px ; compact sur grand écran
   const sizeClasses = {
-    sm: 'text-xs px-2 py-1',
-    md: 'text-xs px-3 py-1.5',
-    lg: 'text-sm px-4 py-2',
+    sm: 'text-[length:calc(12.5px*var(--mx-scale,1))] px-2.5 py-1 min-h-[44px] min-w-[44px] lg:min-h-[28px] lg:min-w-0',
+    md: 'text-[length:calc(12.5px*var(--mx-scale,1))] px-3.5 py-[7px] min-h-[44px] min-w-[44px] lg:min-h-[32px] lg:min-w-0',
+    lg: 'text-[length:calc(12.5px*var(--mx-scale,1))] px-4 py-2 min-h-[44px] min-w-[44px]',
   };
 
   return (
@@ -52,18 +57,17 @@ const Button: React.FC<ButtonProps> = ({
         ${sizeClasses[size]}
         ${fullWidth ? 'w-full' : ''}
         ${className}
-        rounded-md font-medium shadow-sm
-        focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-opacity-50
-        transition-colors duration-200
-        flex items-center justify-center gap-1.5
-        ${disabled || loading ? 'opacity-50 cursor-not-allowed' : ''}
+        mx-btn
+        flex items-center justify-center gap-1.5 whitespace-nowrap
       `}
       disabled={disabled || loading}
       onClick={onClick}
+      aria-label={ariaLabel}
+      title={ariaLabel}
     >
       {loading ? (
         <>
-          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -71,7 +75,7 @@ const Button: React.FC<ButtonProps> = ({
         </>
       ) : (
         <>
-          {icon && <span className="text-[0.9em]">{icon}</span>}
+          {icon && <span className="text-[0.9em]" aria-hidden="true">{icon}</span>}
           {children}
         </>
       )}

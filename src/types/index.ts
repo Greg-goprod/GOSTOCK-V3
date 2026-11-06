@@ -17,6 +17,141 @@ export interface Equipment {
   shortTitle?: string;
   group?: string;
   subgroup?: string;
+  // Outil prêté (revient) ou consommable (décompté du stock d'un dépôt)
+  itemType?: 'tool' | 'consumable';
+  unit?: string;
+  supplierReference?: string;
+  purchasePrice?: number;
+  dailyRate?: number;
+  requiresApproval?: boolean;
+  depotId?: string;
+  requiredTrainingId?: string;
+  requiresSignature?: boolean;
+  // Outil loué chez un loueur (objet temporaire du stock) et date de fin du contrat (AAAA-MM-JJ)
+  rentalId?: string;
+  rentalUntil?: string;
+  purchaseDate?: string | null;
+  warrantyUntil?: string | null;
+  depreciationYears?: number | null;
+  isBattery?: boolean;
+  batteryLifeMonths?: number | null;
+  batteryMaxUses?: number | null;
+  // Véhicule présenté comme un article du shop (jamais enregistré dans la table equipment)
+  vehicle?: boolean;
+}
+
+export interface Depot {
+  id: string;
+  name: string;
+  address?: string;
+  isDefault: boolean;
+}
+
+// Stock d'un consommable dans un dépôt
+export interface ConsumableStock {
+  id: string;
+  equipmentId: string;
+  depotId: string;
+  quantity: number;
+  minQuantity: number;
+}
+
+// Ligne de la feuille de commande (vue low_stock_items)
+export interface LowStockItem {
+  stock_id: string;
+  equipment_id: string;
+  name: string;
+  article_number?: string;
+  unit: string;
+  supplier_reference?: string;
+  purchase_price?: number;
+  depot_id: string;
+  depot_name: string;
+  supplier_id?: string;
+  supplier_name: string;
+  supplier_email?: string;
+  supplier_phone?: string;
+  quantity: number;
+  min_quantity: number;
+  quantity_to_order: number;
+}
+
+export interface Vehicle {
+  id: string;
+  name: string;
+  plate: string;
+  depotId?: string;
+  licenseCategory: string;
+  seats?: number;
+  currentKm: number;
+  fuelLevel: number;          // en huitièmes (0 à 8)
+  status: 'available' | 'in_use' | 'maintenance' | 'retired';
+  nextServiceDate?: string;
+  nextServiceKm?: number;
+  tiresDate?: string;
+  inspectionDate?: string;
+  notes?: string;
+  // Véhicule loué (objet temporaire de la flotte) et date de fin du contrat (AAAA-MM-JJ)
+  rentalId?: string;
+  rentalUntil?: string;
+}
+
+export type RequestStatus = 'requested' | 'approved' | 'rejected' | 'ready' | 'out' | 'closed' | 'cancelled';
+
+// Ligne de la vue requests_overview (snake_case, lue telle quelle)
+export interface RequestOverview {
+  id: string;
+  number: string;
+  requester_id: string;
+  requester_name: string;
+  destination?: string;
+  depot_id: string;
+  depot_name: string;
+  start_at: string;
+  end_at: string;
+  status: RequestStatus;
+  needs_approval: boolean;
+  approval_reason?: string;
+  notes?: string;
+  decided_by?: string;
+  decided_at?: string;
+  decision_note?: string;
+  delivery_note_id?: string;
+  issued_at?: string;
+  closed_at?: string;
+  created_at: string;
+  tool_lines: number;
+  consumable_lines: number;
+  vehicle_names?: string;
+}
+
+export interface RequestItemRow {
+  id: string;
+  item_kind: 'tool' | 'consumable' | 'vehicle';
+  equipment_id?: string;
+  vehicle_id?: string;
+  quantity: number;
+  // Préparation enregistrée par le magasin (exemplaires scannés pour les outils suivis un par un)
+  prepared?: boolean;
+  prepared_instance_ids?: string[];
+}
+
+export interface StockNotification {
+  id: string;
+  kind: string;
+  title: string;
+  message: string;
+  equipmentId?: string;
+  depotId?: string;
+  requestId?: string;
+  // Avis personnel (sa demande est validée, prête…) ; vide pour les alertes du magasin
+  recipientUserId?: string;
+  // Avis PILOTE : le projet et l'élément concernés (un clic ouvre leur fiche)
+  cpProjectId?: string;
+  cpItemId?: string;
+  createdAt: string;
+  // État « lu » de la personne connectée
+  read: boolean;
 }
 
 export interface EquipmentInstance {
@@ -35,7 +170,23 @@ export interface User {
   email: string;
   phone: string;
   department: string;
-  role: 'admin' | 'user';
+  // admin = Administrateur, manager = Responsable, technician = Magasinier, user = Collaborateur
+  role: 'admin' | 'manager' | 'technician' | 'user';
+  permissions?: string[];
+  active?: boolean;
+  // Compte de connexion déjà lié (la personne s'est connectée au moins une fois)
+  linked?: boolean;
+  licenseCategories?: string[];
+  licenseExpiresOn?: string | null;
+  // Collaborateur, intérimaire ou sous-traitant ; accès coupé après accessUntil
+  personKind?: 'employee' | 'temp' | 'subcontractor';
+  company?: string | null;
+  accessUntil?: string | null;
+  leftOn?: string | null;
+  // Caution versée (intérimaires, sous-traitants), rendue au départ
+  depositAmount?: number | null;
+  depositPaidOn?: string | null;
+  depositReturnedOn?: string | null;
   dateCreated: string;
 }
 
@@ -65,6 +216,8 @@ export interface CheckoutRecord {
   status: 'active' | 'returned' | 'overdue' | 'lost';
   notes?: string;
   instanceId?: string; // Pour les équipements individuels
+  kitId?: string; // Sorti avec un kit
+  droppedAt?: string; // Déposé dans la boîte de retour, à contrôler
 }
 
 export interface Notification {
@@ -83,6 +236,8 @@ export interface Supplier {
   email: string;
   phone: string;
   website?: string;
+  // Délai de livraison habituel, en jours (seuils proposés)
+  leadTimeDays?: number;
 }
 
 export interface Category {
@@ -163,6 +318,22 @@ export interface EquipmentMaintenance {
 }
 
 export interface AppContextType {
+  statusConfigs: StatusConfig[];
+  // Notifications non lues de la personne connectée (pastille du menu)
+  alertCount: number;
+  loadingAppData: boolean;
+  depots: Depot[];
+  consumableStock: ConsumableStock[];
+  stockNotifications: StockNotification[];
+  vehicles: Vehicle[];
+  markStockNotificationRead: (id: string) => Promise<void>;
+  // Toutes les notifications de la personne (lues et non lues) et leur état
+  userNotifications: StockNotification[];
+  unreadNotificationCount: number;
+  markNotificationsRead: (ids: string[]) => Promise<void>;
+  markNotificationUnread: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  refreshNotifications: () => Promise<void>;
   equipment: Equipment[];
   categories: Category[];
   suppliers: Supplier[];
@@ -170,16 +341,14 @@ export interface AppContextType {
   equipmentSubgroups: EquipmentSubgroup[];
   equipmentInstances: EquipmentInstance[];
   checkouts: CheckoutRecord[];
-  departments: Department[];
   users: User[];
   deliveryNotes: DeliveryNote[];
-  maintenanceTypes: MaintenanceType[];
-  maintenanceRecords: EquipmentMaintenance[];
-  addEquipment: (equipmentData: Partial<Equipment>) => Promise<string | null>;
+  addEquipment: (equipmentData: Omit<Equipment, 'id' | 'createdAt'>) => Promise<void>;
   updateEquipment: (id: string, equipmentData: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
-  refreshEquipmentData: () => Promise<void>;
+  refreshUsers: () => Promise<void>;
+  refreshEquipmentData: () => Promise<Equipment[]>;
   forceUpdateEquipmentAvailability: () => Promise<void>;
   forceUpdateOverdueCheckouts: () => Promise<void>;
   // Nouvelles fonctions pour les vues matérialisées

@@ -96,14 +96,14 @@ const GroupModal: React.FC<GroupModalProps> = ({ isOpen, onClose, group }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={group ? 'MODIFIER LE GROUPE' : 'AJOUTER UN GROUPE'}
+      title={group ? 'Modifier le groupe' : 'Ajouter un groupe'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
-          icon={<Users size={18} className="text-blue-600 dark:text-blue-400" />}
+          title="Informations de base"
+          icon={<Users size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -141,8 +141,8 @@ const GroupModal: React.FC<GroupModalProps> = ({ isOpen, onClose, group }) => {
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION"
-          icon={<FileText size={18} className="text-green-600 dark:text-green-400" />}
+          title="Description"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -161,8 +161,8 @@ const GroupModal: React.FC<GroupModalProps> = ({ isOpen, onClose, group }) => {
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
-          icon={<Palette size={18} className="text-purple-600 dark:text-purple-400" />}
+          title="Couleur"
+          icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <div>

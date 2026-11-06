@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { QrCode, Zap } from 'lucide-react';
+import React, { useState, useRef, useEffect, useId } from 'react';
+import { Camera, QrCode, Zap } from 'lucide-react';
+import CameraScanner from './CameraScanner';
 
 interface QRCodeScannerProps {
   onScan: (decodedText: string) => void;
@@ -10,8 +11,11 @@ interface QRCodeScannerProps {
 const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableAutoFocus = false }) => {
   const [scannedValue, setScannedValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
   const [lastScanStatus, setLastScanStatus] = useState<'success' | 'error' | 'duplicate' | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const lastScanTimeRef = useRef<number>(0);
   const lastScannedValueRef = useRef<string>('');
 
@@ -82,6 +86,8 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
     } catch (error: unknown) {
       console.error('❌ Erreur scan:', error);
       setLastScanStatus('error');
+      // Motif affiché à l'écran (badge inconnu, accès suspendu, article introuvable…)
+      setLastError(error instanceof Error ? error.message : null);
       if (onError) {
         const errorMessage = error instanceof Error ? error.message : 'Erreur lors du traitement du scan';
         onError(errorMessage);
@@ -117,33 +123,33 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
   };
 
   const getStatusColor = () => {
-    if (isProcessing) return 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20';
-    if (lastScanStatus === 'success') return 'border-green-400 bg-green-50 dark:bg-green-900/20';
-    if (lastScanStatus === 'error') return 'border-red-400 bg-red-50 dark:bg-red-900/20';
-    if (lastScanStatus === 'duplicate') return 'border-orange-400 bg-orange-50 dark:bg-orange-900/20';
-    return 'border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-800';
+    if (isProcessing) return 'border-warning-400 bg-warning-50 dark:bg-warning-900/20';
+    if (lastScanStatus === 'success') return 'border-success-400 bg-success-50 dark:bg-success-900/20';
+    if (lastScanStatus === 'error') return 'border-danger-400 bg-danger-50 dark:bg-danger-900/20';
+    if (lastScanStatus === 'duplicate') return 'border-warning-400 bg-warning-50 dark:bg-warning-900/20';
+    return 'border-[color:var(--mx-input-border)] bg-[color:var(--mx-surface)]';
   };
 
   const getStatusMessage = () => {
-    if (isProcessing) return '⚡ Traitement en cours...';
-    if (lastScanStatus === 'success') return '✅ Scan réussi !';
-    if (lastScanStatus === 'error') return '❌ Erreur de scan';
-    if (lastScanStatus === 'duplicate') return '⚠️ Doublon ignoré';
-    if (scannedValue) return '⚡ Appuyez sur Entrée pour valider';
-    return '🎯 Prêt pour le scan...';
+    if (isProcessing) return 'Traitement en cours...';
+    if (lastScanStatus === 'success') return 'Scan réussi !';
+    if (lastScanStatus === 'error') return lastError ? `Erreur de scan : ${lastError}` : 'Erreur de scan';
+    if (lastScanStatus === 'duplicate') return 'Doublon ignoré';
+    if (scannedValue) return 'Appuie sur Entrée pour valider';
+    return 'Prêt pour le scan...';
   };
 
   return (
     <div className="w-full max-w-md mx-auto">
-      {/* HEADER SIMPLIFIE POUR DEBUG */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-3">
+      {/* État du scanner */}
+      <div className="mx-tint-accent p-3 mb-3">
         <div className="flex items-center gap-2 mb-1">
-          <Zap size={16} className="text-blue-600 dark:text-blue-400" />
-          <h3 className="font-bold text-blue-800 dark:text-blue-200 text-sm">
-            SCANNER QR - {disableAutoFocus ? 'SUSPENDU' : 'ACTIF'}
+          <Zap size={16} className="text-primary-600 dark:text-primary-400" />
+          <h3 className="font-bold text-primary-800 dark:text-primary-200 text-sm">
+            Scanner QR : {disableAutoFocus ? 'suspendu' : 'actif'}
           </h3>
         </div>
-        <p className="text-xs text-blue-700 dark:text-blue-300">
+        <p className="text-xs text-primary-700 dark:text-primary-300">
           {disableAutoFocus 
             ? 'Mode manuel actif'
             : 'Scan automatique activé'
@@ -151,38 +157,57 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onError, disableA
         </p>
       </div>
 
-      {/* CHAMP DE SAISIE SIMPLIFIE */}
+      {/* Champ de saisie (douchette ou clavier) */}
+      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Code scanné
+      </label>
       <div className="relative">
         <input
           ref={inputRef}
+          id={inputId}
           type="text"
           value={scannedValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Scannez ou saisissez un code..."
+          placeholder="Scanne ou saisis un code..."
           disabled={isProcessing}
-          className={`w-full px-3 py-3 text-center border-2 rounded-md font-mono text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${getStatusColor()}`}
+          className={`w-full px-3 py-2.5 text-center border-[1.5px] rounded-md font-mono text-[length:calc(14px*var(--mx-scale,1))] text-gray-900 dark:text-white transition-colors ${getStatusColor()}`}
           autoComplete="off"
           autoFocus={!disableAutoFocus}
         />
         
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           {isProcessing ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
           ) : (
-            <QrCode size={16} className="text-gray-400" />
+            <QrCode size={16} className="text-gray-500 dark:text-gray-400" />
           )}
         </div>
       </div>
 
-      {/* MESSAGE DE STATUT SIMPLIFIE */}
+      {/* Caméra du téléphone ou de la tablette, quand il n'y a pas de lecteur */}
+      <button
+        type="button"
+        onClick={() => setCameraOn(on => !on)}
+        aria-pressed={cameraOn}
+        className="mx-btn mx-btn-secondary mt-2 w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 min-h-[44px] lg:min-h-[34px] text-[length:calc(12.5px*var(--mx-scale,1))]"
+      >
+        <Camera size={16} aria-hidden="true" /> {cameraOn ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
+      </button>
+      {cameraOn && (
+        <div className="mt-2">
+          <CameraScanner onDecode={text => handleScan(text)} />
+        </div>
+      )}
+
+      {/* Message de statut */}
       <div className="mt-2 text-center">
         <p className={`text-sm font-medium ${
-          lastScanStatus === 'success' ? 'text-green-600' :
-          lastScanStatus === 'error' ? 'text-red-600' :
-          lastScanStatus === 'duplicate' ? 'text-orange-600' :
-          isProcessing ? 'text-yellow-600' :
-          'text-blue-600'
+          lastScanStatus === 'success' ? 'text-tone-success' :
+          lastScanStatus === 'error' ? 'text-tone-danger' :
+          lastScanStatus === 'duplicate' ? 'text-tone-warning' :
+          isProcessing ? 'text-tone-warning' :
+          'text-primary-600'
         }`}>
           {getStatusMessage()}
         </p>

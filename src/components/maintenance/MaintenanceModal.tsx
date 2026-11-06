@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Equipment, MaintenanceType, EquipmentMaintenance } from '../../types';
-import { Wrench, FileText, DollarSign, User, Calendar } from 'lucide-react';
+import { Wrench, FileText, User } from 'lucide-react';
 
 interface MaintenanceModalProps {
   isOpen: boolean;
@@ -21,7 +20,6 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   equipment, 
   maintenance 
 }) => {
-  const { t } = useLanguage();
   const [maintenanceTypes, setMaintenanceTypes] = useState<MaintenanceType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -137,21 +135,21 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={maintenance ? 'MODIFIER LA MAINTENANCE' : 'NOUVELLE MAINTENANCE'}
+      title={maintenance ? 'Modifier la maintenance' : 'Nouvelle maintenance'}
       size="lg"
     >
       <div className="space-y-4">
         {/* Informations équipement */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">
-            🔧 MATÉRIEL EN MAINTENANCE
+        <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+          <h3 className="font-bold text-primary-800 dark:text-primary-200 mb-2">
+            <Wrench className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />MATÉRIEL EN MAINTENANCE
           </h3>
           <div className="flex items-center gap-3">
             <div>
-              <p className="font-medium text-blue-700 dark:text-blue-300">
+              <p className="font-medium text-primary-700 dark:text-primary-300">
                 {equipment.name}
               </p>
-              <p className="text-sm text-blue-600 dark:text-blue-400">
+              <p className="text-sm text-primary-600 dark:text-primary-400">
                 N° Série: {equipment.serialNumber} • Article: {equipment.articleNumber}
               </p>
             </div>
@@ -160,8 +158,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
         {/* Informations de base */}
         <Accordion
-          title="TYPE DE MAINTENANCE/PANNE"
-          icon={<Wrench size={18} className="text-blue-600 dark:text-blue-400" />}
+          title="Type de maintenance ou de panne"
+          icon={<Wrench size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -232,14 +230,14 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'SAUVEGARDE...' : maintenance ? 'MODIFIER' : 'CRÉER'}
+                {isLoading ? 'Enregistrement…' : maintenance ? 'Modifier' : 'Créer'}
               </Button>
             </div>
           </form>
@@ -247,8 +245,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION DE L'INTERVENTION"
-          icon={<FileText size={18} className="text-green-600 dark:text-green-400" />}
+          title="Description de l'intervention"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -261,15 +259,15 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               onChange={handleChange}
               rows={4}
               className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-              placeholder="Décrivez le problème, les symptômes, les actions entreprises..."
+              placeholder="Décris le problème, les symptômes, les actions entreprises..."
             />
           </div>
         </Accordion>
 
         {/* Informations techniques */}
         <Accordion
-          title="INFORMATIONS TECHNIQUES"
-          icon={<User size={18} className="text-purple-600 dark:text-purple-400" />}
+          title="Informations techniques"
+          icon={<User size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <div className="space-y-4">
@@ -307,8 +305,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
         {/* Notes */}
         <Accordion
-          title="NOTES ADDITIONNELLES"
-          icon={<FileText size={18} className="text-orange-600 dark:text-orange-400" />}
+          title="Notes additionnelles"
+          icon={<FileText size={18} className="text-tone-warning" />}
           defaultOpen={false}
         >
           <div>

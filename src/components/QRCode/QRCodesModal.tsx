@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React from 'react';
 import Modal from '../common/Modal';
 import QRCodeGenerator from './QRCodeGenerator';
@@ -24,7 +25,7 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
     // Create a new window for printing all QR codes
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
-      alert('Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloquées.');
+      toast.error('Impossible d\'ouvrir la fenêtre d\'impression. Vérifie que les popups ne sont pas bloquées.');
       return;
     }
     
@@ -169,21 +170,21 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`QR CODES - ${equipment.name.toUpperCase()}`}
+      title={`QR codes · ${equipment.name}`}
       size="xl"
     >
       <div className="space-y-6">
         {/* Info header */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <h3 className="text-lg font-black text-blue-800 dark:text-blue-200 mb-2 uppercase">
-            {equipment.qrType === 'individual' ? 'QR CODES INDIVIDUELS' : 'QR CODE UNIQUE'}
+        <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+          <h3 className="text-lg font-black text-primary-800 dark:text-primary-200 mb-2 uppercase">
+            {equipment.qrType === 'individual' ? 'QR codes individuels' : 'QR code unique'}
           </h3>
-          <p className="text-blue-700 dark:text-blue-300 text-sm font-medium">
+          <p className="text-primary-700 dark:text-primary-300 text-sm font-medium">
             {equipment.qrType === 'individual' 
               ? `${instances.length} QR codes individuels pour impression d'étiquettes`
               : 'Un seul QR code pour tout le lot'}
           </p>
-          <p className="text-blue-600 dark:text-blue-400 text-xs font-medium mt-1">
+          <p className="text-primary-600 dark:text-primary-400 text-xs font-medium mt-1">
             Article: {equipment.articleNumber} • Quantité totale: {equipment.totalQuantity}
           </p>
         </div>
@@ -195,7 +196,7 @@ const QRCodesModal: React.FC<QRCodesModalProps> = ({
             icon={<Printer size={18} />}
             onClick={handlePrintAll}
           >
-            IMPRIMER TOUS LES QR CODES
+            Imprimer tous les QR codes
           </Button>
         </div>
 

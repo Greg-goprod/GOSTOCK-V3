@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import QRCodeScanner from '../QRCode/QRCodeScanner';
-import { User, Equipment, Category, Supplier } from '../../types';
+import { User, Equipment } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { Search, Package, Calendar, Printer, User as UserIcon, Plus, Minus, X } from 'lucide-react';
+import { findEquipmentByCode } from '../../lib/scan';
+import { Search, Printer, User as UserIcon, Plus, Minus, X, CalendarDays as CalendarDaysIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserModal from '../users/UserModal';
+import DateInput from '../common/DateInput';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -22,8 +24,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState<'user' | 'equipment' | 'summary'>('user');
   const [users, setUsers] = useState<User[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>([]);
   const [dueDate, setDueDate] = useState('');
@@ -123,6 +123,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         totalQuantity: eq.total_quantity,
         availableQuantity: eq.available_quantity,
         shortTitle: eq.short_title,
+        itemType: eq.item_type,
         group: eq.equipment_groups?.name || ''
       }));
 
@@ -193,6 +194,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           totalQuantity: eq.total_quantity,
           availableQuantity: eq.available_quantity,
           shortTitle: eq.short_title,
+          itemType: eq.item_type,
           group: eq.equipment_groups?.name || ''
         }));
         
@@ -283,6 +285,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           totalQuantity: eq.total_quantity,
           availableQuantity: eq.available_quantity,
           shortTitle: eq.short_title,
+          itemType: eq.item_type,
           group: eq.equipment_groups?.name || ''
         }));
         
@@ -327,16 +330,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         throw equipmentResult.error;
       }
 
-      console.log('Utilisateurs récupérés:', usersResult.data?.length);
-      if (usersResult.data) {
-        // Vérifier si Benoit Kaelin est présent dans les résultats
-        const benoitKaelin = usersResult.data.find(u => 
-          u.first_name?.toLowerCase() === 'benoit' && 
-          u.last_name?.toLowerCase() === 'kaelin'
-        );
-        console.log('Benoit Kaelin trouvé:', benoitKaelin ? 'Oui' : 'Non');
-      }
-
       setUsers(usersResult.data || []);
       
       // Transform equipment data from snake_case to camelCase
@@ -357,6 +350,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         totalQuantity: eq.total_quantity,
         availableQuantity: eq.available_quantity,
         shortTitle: eq.short_title,
+        itemType: eq.item_type,
         group: eq.equipment_groups?.name || ''
       }));
       
@@ -384,116 +378,54 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleEquipmentScan = async (scannedId: string) => {
+    if (!scannedId?.trim()) return;
+
     try {
-      if (!scannedId) {
-        console.error("ID scanné invalide ou vide");
-        return;
-      }
-      
       setIsLoading(true);
-      const normalizedId = scannedId.trim().toLowerCase();
-      
-      // D'abord chercher dans les équipements déjà chargés
-      let foundEquipment = equipment.find(eq => {
-        if (!eq || !eq.serialNumber) return false;
-        
-        const serialMatches = eq.serialNumber.toLowerCase() === normalizedId;
-        const articleMatches = eq.articleNumber && eq.articleNumber.toLowerCase() === normalizedId;
-        const articleIncludes = eq.articleNumber && normalizedId.includes(eq.articleNumber.toLowerCase());
-        
-        return serialMatches || articleMatches || articleIncludes;
-      });
-      
-      // Si trouvé dans les équipements déjà chargés
-      if (foundEquipment) {
-        // Vérifier la disponibilité avec la nouvelle fonction SQL
-        const { data: availabilityCheck, error: availabilityError } = await supabase
-          .rpc('check_equipment_availability', {
-            equipment_id: foundEquipment.id,
-            requested_quantity: 1
-          });
-
-        if (availabilityError) throw availabilityError;
-
-        const availability = availabilityCheck?.[0];
-        if (!availability?.is_available) {
-          toast.error(`Équipement non disponible: ${availability?.message || 'Raison inconnue'}`);
-          return;
-        }
-
-        addEquipmentToCheckout(foundEquipment);
-        // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
+      const found = await findEquipmentByCode(scannedId);
+      if (!found) {
+        toast.error(`Aucun équipement ne correspond au code ${scannedId.trim()}`);
         return;
       }
-      
-      // Si non trouvé, chercher dans la base de données avec vérification de disponibilité
-      console.log("Équipement non trouvé en mémoire, recherche en base de données...");
-      
-      const { data: equipmentData, error: equipmentError } = await supabase
-        .from('equipment')
-        .select(`
-          *,
-          categories(id, name),
-          suppliers(id, name),
-          equipment_groups(id, name)
-        `)
-        .or(`serial_number.eq.${normalizedId},article_number.eq.${normalizedId},article_number.ilike.%${normalizedId}%,name.ilike.%${normalizedId}%`)
-        .neq('status', 'maintenance') // Exclure les équipements en maintenance
-        .neq('status', 'retired')     // Exclure les équipements retirés
-        .order('name')
-        .limit(10);
-      
-      if (equipmentError) throw equipmentError;
-      
-      if (equipmentData && equipmentData.length > 0) {
-        const eq = equipmentData[0];
-        
-        // Double vérification avec la fonction SQL
-        const { data: availabilityCheck, error: availabilityError } = await supabase
-          .rpc('check_equipment_availability', {
-            equipment_id: eq.id,
-            requested_quantity: 1
-          });
 
-        if (availabilityError) throw availabilityError;
-
-        const availability = availabilityCheck?.[0];
-        if (!availability?.is_available) {
-          toast.error(`Équipement non disponible: ${availability?.message || 'Raison inconnue'}`);
-          return;
-        }
-
-        foundEquipment = {
-          id: eq.id,
-          name: eq.name,
-          description: eq.description || '',
-          category: eq.categories?.name || '',
-          serialNumber: eq.serial_number,
-          status: eq.status as Equipment['status'],
-          addedDate: eq.added_date || eq.created_at,
-          lastMaintenance: eq.last_maintenance,
-          imageUrl: eq.image_url,
-          supplier: eq.suppliers?.name || '',
-          location: eq.location || '',
-          articleNumber: eq.article_number,
-          qrType: eq.qr_type || 'individual',
-          totalQuantity: eq.total_quantity,
-          availableQuantity: eq.available_quantity,
-          shortTitle: eq.short_title,
-          group: eq.equipment_groups?.name || ''
-        };
-        
-        addEquipmentToCheckout(foundEquipment);
-        // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
+      const row = found.equipment;
+      if (row.item_type === 'consumable') {
+        toast.error(`${row.name} est un consommable : enregistre sa sortie depuis la page Consommables`);
         return;
       }
-      
-      toast.error('Équipement non trouvé ou non disponible');
-      // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
+      if (row.status === 'retired') {
+        toast.error(`${row.name} est retiré du service`);
+        return;
+      }
+
+      // Version déjà chargée (avec noms de catégorie, fournisseur…), quantités à jour depuis la base
+      const known = equipment.find(eq => eq.id === row.id);
+      const scanned: Equipment = {
+        ...(known ?? {
+          id: row.id,
+          name: row.name,
+          description: row.description || '',
+          category: '',
+          serialNumber: row.serial_number,
+          addedDate: row.created_at,
+          lastMaintenance: row.last_maintenance,
+          imageUrl: row.image_url,
+          supplier: '',
+          location: row.location || '',
+          articleNumber: row.article_number,
+          qrType: row.qr_type || 'individual',
+          shortTitle: row.short_title,
+          group: ''
+        }),
+        status: row.status as Equipment['status'],
+        totalQuantity: row.total_quantity,
+        availableQuantity: row.available_quantity
+      };
+
+      addEquipmentToCheckout(scanned);
     } catch (error: any) {
       console.error('Error scanning equipment:', error);
       toast.error(error.message || 'Erreur lors de la recherche');
-      // setScannedCode(''); // This line was removed from the new_code, so it's removed here.
     } finally {
       setIsLoading(false);
     }
@@ -501,8 +433,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
   const addEquipmentToCheckout = (eq: Equipment) => {
     const existingItem = checkoutItems.find(item => item.equipment.id === eq.id);
-    const availableQty = eq.availableQuantity || 1; // Valeur par défaut si undefined
-    
+    const availableQty = eq.availableQuantity ?? 0;
+
+    if (availableQty <= 0) {
+      toast.error(`Plus de stock disponible pour ${eq.name}`);
+      return;
+    }
+
     if (existingItem) {
       const currentQty = existingItem.quantity || 0;
       if (currentQty < availableQty) {
@@ -536,7 +473,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    const availableQty = item.equipment.availableQuantity || 1; // Valeur par défaut si undefined
+    const availableQty = item.equipment.availableQuantity ?? 0;
     if (newQuantity > availableQty) {
       toast.error(`Quantité maximale disponible: ${availableQty}`);
       return;
@@ -553,89 +490,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
   const handleCheckout = async () => {
     if (!selectedUser || checkoutItems.length === 0) {
-      toast.error('Veuillez sélectionner un utilisateur et au moins un équipement');
+      toast.error('Sélectionne un utilisateur et au moins un équipement');
       return;
     }
 
     if (!dueDate) {
-      toast.error('Veuillez sélectionner une date de retour');
+      toast.error('Sélectionne une date de retour');
       return;
     }
 
     try {
       setIsLoading(true);
 
-      // Create delivery note
-      const { data: deliveryNote, error: deliveryNoteError } = await supabase
-        .from('delivery_notes')
-        .insert([{
-          user_id: selectedUser.id,
-          due_date: dueDate,
-          notes: notes || null
-        }])
-        .select()
-        .single();
-
-      if (deliveryNoteError) throw deliveryNoteError;
-
-      // Create checkouts for each item
-      const checkoutPromises = checkoutItems.map(async (item) => {
-        const checkouts = [];
-        
-        for (let i = 0; i < item.quantity; i++) {
-          checkouts.push({
-            equipment_id: item.equipment.id,
-            user_id: selectedUser.id,
-            delivery_note_id: deliveryNote.id,
-            due_date: dueDate,
-            status: 'active',
-            notes: notes || null
-          });
-        }
-
-        // Insert checkouts
-        const { error: checkoutError } = await supabase
-          .from('checkouts')
-          .insert(checkouts);
-
-        if (checkoutError) throw checkoutError;
-
-        // Update equipment availability
-        const newAvailableQuantity = item.equipment.availableQuantity - item.quantity;
-        const newStatus = newAvailableQuantity === 0 ? 'checked-out' : 'available';
-
-        const { error: equipmentError } = await supabase
-          .from('equipment')
-          .update({
-            available_quantity: newAvailableQuantity,
-            status: newStatus
-          })
-          .eq('id', item.equipment.id);
-
-        if (equipmentError) throw equipmentError;
+      // Bon + emprunts en une seule transaction ; la base refuse la sortie s'il n'y a plus de stock
+      const { data: deliveryNote, error: checkoutError } = await supabase.rpc('create_checkout', {
+        p_user_id: selectedUser.id,
+        p_due_date: dueDate,
+        p_items: checkoutItems.map(item => ({
+          equipment_id: item.equipment.id,
+          quantity: item.quantity
+        })),
+        p_notes: notes || null
       });
 
-      await Promise.all(checkoutPromises);
-
-      // Add notification to localStorage
-      const notification = {
-        id: `checkout-${Date.now()}`,
-        type: 'checkout',
-        title: 'Nouvelle sortie de matériel',
-        message: `Bon N° ${deliveryNote.note_number} créé pour ${selectedUser.first_name} ${selectedUser.last_name} (${checkoutItems.length} équipement${checkoutItems.length > 1 ? 's' : ''})`,
-        date: new Date().toISOString(),
-        priority: 'medium',
-        read: false,
-        relatedData: {
-          note_number: deliveryNote.note_number,
-          userName: `${selectedUser.first_name} ${selectedUser.last_name}`,
-          user_department: selectedUser.department,
-          equipment_count: checkoutItems.reduce((sum, item) => sum + item.quantity, 0)
-        }
-      };
-
-      const existingNotifications = JSON.parse(localStorage.getItem('checkout_notifications') || '[]');
-      localStorage.setItem('checkout_notifications', JSON.stringify([notification, ...existingNotifications]));
+      if (checkoutError) throw checkoutError;
 
       toast.success(`Sortie créée avec succès! Bon N° ${deliveryNote.note_number}`);
       
@@ -670,7 +548,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       });
 
       // Générer le QR code pour le bon de sortie
-      const noteQrCode = deliveryNote.qr_code || `DN-${deliveryNote.note_number}`;
 
       const printContent = `
         <!DOCTYPE html>
@@ -747,8 +624,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 <p>${notes}</p>
               </div>
             ` : ''}
-            <div class="important-notice"><span class="icon">⚠️</span>
-              <span>Ce bon de sortie doit être conservé et présenté lors du retour du matériel.<br />En cas de perte ou de dommage du matériel, veuillez contacter immédiatement le service de gestion.</span>
+            <div class="important-notice"><span class="icon">!</span>
+              <span>Ce bon de sortie doit être conservé et présenté lors du retour du matériel.<br />En cas de perte ou de dommage du matériel, contacte immédiatement le service de gestion.</span>
             </div>
             <div class="signatures">
               <div class="signature-box">
@@ -846,15 +723,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   }, [users, filteredUsers, userSearchTerm]);
 
   const filteredEquipment = equipment.filter(eq => {
-    // Vérifier que les propriétés existent avant d'appeler toLowerCase()
-    if (!eq || !eq.name || !eq.serialNumber || !eq.category) {
+    // Les consommables ne s'empruntent pas ; numéro de série et catégorie sont facultatifs
+    if (!eq || !eq.name || eq.itemType === 'consumable') {
       return false;
     }
     
     const name = eq.name.toLowerCase();
-    const serialNumber = eq.serialNumber.toLowerCase();
+    const serialNumber = (eq.serialNumber || '').toLowerCase();
     const articleNumber = eq.articleNumber ? eq.articleNumber.toLowerCase() : '';
-    const category = eq.category.toLowerCase();
+    const category = (eq.category || '').toLowerCase();
     const group = eq.group ? eq.group.toLowerCase() : '';
     const description = eq.description ? eq.description.toLowerCase() : '';
     const search = searchTerm.toLowerCase();
@@ -873,23 +750,23 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="SORTIE DE MATÉRIEL"
+      title="Sortie de matériel"
       size="xl"
     >
       <div className="space-y-6">
         {/* Progress Steps */}
         <div className="flex items-center justify-center space-x-4">
-          <div className={`flex items-center ${step === 'user' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'user' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'user' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>1</div>
             <span className="ml-2 font-bold">Utilisateur</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'equipment' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'equipment' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'equipment' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>2</div>
             <span className="ml-2 font-bold">Matériel</span>
           </div>
           <div className="w-8 h-px bg-gray-300"></div>
-          <div className={`flex items-center ${step === 'summary' ? 'text-primary-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center ${step === 'summary' ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'summary' ? 'bg-primary-600 text-white' : 'bg-gray-200'}`}>3</div>
             <span className="ml-2 font-bold">Résumé</span>
           </div>
@@ -912,7 +789,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 icon={<Plus size={14} />}
                 onClick={handleAddUser}
               >
-                AJOUTER CONTACT
+                Ajouter contact
               </Button>
             </div>
             <div className="flex items-center gap-4">
@@ -964,14 +841,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           <div className="space-y-4">
             {/* Selected User Info */}
             {selectedUser && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
                 <div className="flex items-center gap-3">
-                  <UserIcon size={20} className="text-blue-600 dark:text-blue-400" />
+                  <UserIcon size={20} className="text-primary-600 dark:text-primary-400" />
                   <div>
-                    <h3 className="font-bold text-blue-800 dark:text-blue-200">
+                    <h3 className="font-bold text-primary-800 dark:text-primary-200">
                       {selectedUser.first_name} {selectedUser.last_name}
                     </h3>
-                    <p className="text-blue-700 dark:text-blue-300 text-sm">
+                    <p className="text-primary-700 dark:text-primary-300 text-sm">
                       {selectedUser.department} • {selectedUser.email}
                     </p>
                   </div>
@@ -1023,8 +900,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                     filteredEquipment.map((eq) => (
                       <div
                         key={eq.id}
-                        className={`flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 ${eq.availableQuantity > 0 ? 'bg-green-100 cursor-pointer' : 'bg-red-100 cursor-not-allowed opacity-60'}`}
-                        onClick={eq.availableQuantity > 0 ? () => addEquipmentToCheckout(eq) : undefined}
+                        className={`flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 ${(eq.availableQuantity ?? 0) > 0 ? 'bg-success-100 cursor-pointer' : 'bg-danger-100 cursor-not-allowed opacity-60'}`}
+                        onClick={(eq.availableQuantity ?? 0) > 0 ? () => addEquipmentToCheckout(eq) : undefined}
                         title={eq.availableQuantity === 0 ? 'Aucune pièce disponible' : ''}
                       >
                         <div className="flex-1">
@@ -1035,12 +912,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                             {eq.serialNumber} • <span className="font-bold text-black dark:text-white">Dispo : {eq.availableQuantity ?? 0}/{eq.totalQuantity ?? 0}</span>
                           </p>
                         </div>
-                        <Plus size={16} className={eq.availableQuantity > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'} />
+                        <Plus size={16} className={(eq.availableQuantity ?? 0) > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'} />
                       </div>
                     ))
                   ) : (
                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                      {searchTerm ? (isSearching ? "Recherche en cours..." : "Aucun équipement trouvé") : "Commencez à taper pour rechercher du matériel"}
+                      {searchTerm ? (isSearching ? "Recherche en cours..." : "Aucun équipement trouvé") : "Commence à taper pour rechercher du matériel"}
                     </div>
                   )}
                   {filteredEquipment.length > 0 && (
@@ -1075,6 +952,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                           size="sm"
                           icon={<Minus size={14} />}
                           onClick={() => updateQuantity(item.equipment.id, item.quantity - 1)}
+                          ariaLabel="Diminuer la quantité"
                         />
                         <span className="w-8 text-center font-bold">{item.quantity}</span>
                         <Button
@@ -1082,13 +960,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                           size="sm"
                           icon={<Plus size={14} />}
                           onClick={() => updateQuantity(item.equipment.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.equipment.availableQuantity}
+                          disabled={item.quantity >= (item.equipment.availableQuantity ?? 0)}
+                          ariaLabel="Augmenter la quantité"
                         />
                         <Button
                           variant="danger"
                           size="sm"
                           icon={<X size={14} />}
                           onClick={() => removeEquipmentFromCheckout(item.equipment.id)}
+                          ariaLabel="Retirer de la sortie"
                         />
                       </div>
                     </div>
@@ -1121,9 +1001,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           <div className="space-y-6">
             {/* User Summary */}
             {selectedUser && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">Emprunteur</h3>
-                <p className="text-blue-700 dark:text-blue-300">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+                <h3 className="font-bold text-primary-800 dark:text-primary-200 mb-2">Emprunteur</h3>
+                <p className="text-primary-700 dark:text-primary-300">
                   {selectedUser.first_name} {selectedUser.last_name} • {selectedUser.department}
                 </p>
               </div>
@@ -1150,13 +1030,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Date de retour prévue *
                 </label>
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-2">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                    📅 Par défaut : retour le jour même ({new Date().toLocaleDateString('fr-FR')})
+                <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-3 mb-2">
+                  <p className="text-sm text-tone-warning font-medium">
+                    <CalendarDaysIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Par défaut : retour le jour même ({new Date().toLocaleDateString('fr-FR')})
                   </p>
                 </div>
-                <input
-                  type="date"
+                <DateInput
+                 
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}

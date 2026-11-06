@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { setLanguage as setInterfaceLanguage } from '../i18n/translator';
+import React, { createContext, useContext } from 'react';
 
 type Language = 'fr' | 'en' | 'de';
 
@@ -115,7 +116,7 @@ const translations: Translations = {
     noData: 'Aucune donnée',
     noResults: 'Aucun résultat',
     confirmDelete: 'Confirmer la suppression',
-    deleteConfirmMessage: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
+    deleteConfirmMessage: 'Es-tu sûr de vouloir supprimer cet élément ?',
     
     // Dashboard
     recentCheckouts: 'Emprunts récents',
@@ -456,26 +457,11 @@ export const useLanguage = () => {
   return context;
 };
 
+// Les textes restent en français ici : la traduction de toute l'interface (DE/IT/EN) est faite par src/i18n/translator.ts
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(() => {
-    const savedLanguage = localStorage.getItem('language');
-    return (savedLanguage as Language) || 'fr';
-  });
-
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('language', lang);
-    document.documentElement.lang = lang;
-  };
-
-  useEffect(() => {
-    localStorage.setItem('language', language);
-    document.documentElement.lang = language;
-  }, [language]);
-
-  const t = (key: string): string => {
-    return translations[language][key] || key;
-  };
+  const language: Language = 'fr';
+  const setLanguage = (lang: Language) => { void setInterfaceLanguage(lang); };
+  const t = (key: string): string => translations[language][key] || key;
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>

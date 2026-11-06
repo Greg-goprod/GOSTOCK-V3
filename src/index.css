@@ -1,10 +1,30 @@
+@import './styles/geist.css';
+@import './styles/tokens-mx.css';
+@import './styles/gomat-mx.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Réduction globale des tailles de police */
+/* Taille de base : lisible sur téléphone/tablette, compacte sur grand écran */
 html {
-  font-size: 14px;
+  font-size: 16px;
+}
+
+@media (min-width: 1024px) {
+  html {
+    /* 14px × 0,9 : densité compacte de Mannyx sur ordinateur */
+    font-size: 12.6px;
+  }
+}
+
+/* Sous 16px, iOS zoome automatiquement sur le champ au focus */
+@media (max-width: 1023px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -77,4 +97,15 @@ thead, tbody, tr, th, td {
 .overflow-x-auto {
   overflow-x: auto !important;
   max-width: 100% !important;
+}
+/* Respect du réglage système « réduire les animations » (les indicateurs de chargement restent animés) */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-spin),
+  *:not(.animate-spin)::before,
+  *:not(.animate-spin)::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

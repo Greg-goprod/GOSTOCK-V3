@@ -1,11 +1,18 @@
+import ImageField from './ImageField';
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
+import CatalogPicker from '../common/CatalogPicker';
+import { CatalogProduct, catalogDescription } from '../../lib/catalog';
 import { supabase } from '../../lib/supabase';
+import { confirmAction } from '../../lib/confirm';
 import toast from 'react-hot-toast';
 import { Category, Supplier, EquipmentGroup, EquipmentSubgroup, Equipment } from '../../types';
-import { Package, Copy, QrCode, Info } from 'lucide-react';
+import { Package, Copy, QrCode, Info, Folder as FolderIcon, FolderOpen as FolderOpenIcon, Tag as TagIcon } from 'lucide-react';
+import TrainingSelect from '../trainings/TrainingSelect';
+import LifecycleFields from './LifecycleFields';
+import { EMPTY_LIFECYCLE, LifecycleValue, lifecyclePayload } from '../../lib/lifecycle';
 
 interface AddEquipmentModalProps {
   isOpen?: boolean;
@@ -14,6 +21,8 @@ interface AddEquipmentModalProps {
 }
 
 const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, onClose, onAdd }) => {
+  // Lien d'image qui ne s'affiche pas : on demande confirmation avant d'enregistrer
+  const [imageBroken, setImageBroken] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [groups, setGroups] = useState<EquipmentGroup[]>([]);
@@ -33,13 +42,23 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     location: '',
     image_url: '',
     short_title: '',
-    available_quantity: 1
+    available_quantity: 1,
+    requires_approval: false,
+    requires_signature: false,
+    purchase_price: '',
+    daily_rate: '',
+    required_training_id: '',
+    catalog_product_id: '',
+    ean: '',
+    supplier_reference: ''
   });
+  const [lifecycle, setLifecycle] = useState<LifecycleValue>(EMPTY_LIFECYCLE);
   const [quantityData, setQuantityData] = useState({
     qrType: 'individual' as 'individual' | 'batch',
     totalQuantity: 1
   });
   const [isGeneratingQRCodes, setIsGeneratingQRCodes] = useState(false);
+  const [nextArticleNumber, setNextArticleNumber] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -47,6 +66,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
       fetchSuppliers();
       fetchGroups();
       fetchSubgroups();
+      supabase?.rpc('preview_article_number').then(({ data }) => setNextArticleNumber(data || ''));
       // Reset form when modal opens
       setStep('basic');
       setFormData({
@@ -61,8 +81,17 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         location: '',
         image_url: '',
         short_title: '',
-        available_quantity: 1
+        available_quantity: 1,
+        requires_approval: false,
+        requires_signature: false,
+        purchase_price: '',
+        daily_rate: '',
+        required_training_id: '',
+        catalog_product_id: '',
+        ean: '',
+        supplier_reference: ''
       });
+      setLifecycle(EMPTY_LIFECYCLE);
       setQuantityData({
         qrType: 'individual',
         totalQuantity: 1
@@ -184,8 +213,10 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
   };
 
   const handleFinalSubmit = async () => {
+    if (imageBroken && formData.image_url && !(await confirmAction('Le lien de l\'image ne s\'affiche pas : elle n\'apparaîtra pas dans le shop. Enregistrer quand même ?'))) return;
     setIsLoading(true);
     setIsGeneratingQRCodes(true);
+    let createdId: string | null = null;
 
     try {
       if (!supabase) {
@@ -203,6 +234,16 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         description: formData.description || null,
         location: formData.location || null,
         short_title: formData.short_title || null,
+        // Vide → NULL : le numéro de série est unique en base, deux chaînes vides se heurteraient
+        serial_number: formData.serial_number.trim() || null,
+        purchase_price: formData.purchase_price === '' ? null : Number(formData.purchase_price),
+        daily_rate: formData.daily_rate === '' ? null : Number(formData.daily_rate),
+        required_training_id: formData.required_training_id || null,
+        requires_signature: formData.requires_signature,
+        ...lifecyclePayload(lifecycle),
+        catalog_product_id: formData.catalog_product_id || null,
+        ean: formData.ean || null,
+        supplier_reference: formData.supplier_reference || null,
         qr_type: quantityData.qrType,
         total_quantity: quantityData.totalQuantity,
         available_quantity: quantityData.totalQuantity
@@ -216,6 +257,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         .single();
 
       if (equipmentError) throw equipmentError;
+      createdId = equipment.id;
 
       // Si c'est un équipement avec QR individuels, créer les instances
       if (quantityData.qrType === 'individual') {
@@ -283,11 +325,28 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'ajout du matériel';
       console.error('Error adding equipment:', error);
+      // Article créé mais exemplaires refusés : on l'annule, sinon il apparaîtrait à moitié créé
+      // au prochain rechargement et un nouvel essai ferait un doublon
+      if (createdId) await supabase.from('equipment').delete().eq('id', createdId);
       toast.error(errorMessage);
     } finally {
       setIsGeneratingQRCodes(false);
       setIsLoading(false);
     }
+  };
+
+  const fillFromCatalog = (product: CatalogProduct) => {
+    setFormData(prev => ({
+      ...prev,
+      name: product.name,
+      description: catalogDescription(product),
+      image_url: product.image_url || prev.image_url,
+      supplier_id: product.supplier_id,
+      catalog_product_id: product.id,
+      ean: product.ean || '',
+      supplier_reference: product.reference
+    }));
+    toast.success(`Fiche remplie : ${product.name}`);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -337,16 +396,23 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={step === 'basic' ? "AJOUTER DU MATÉRIEL" : "CONFIGURATION DES QUANTITÉS"}
+      title={step === 'basic' ? "Ajouter du matériel" : "Configuration des quantités"}
       size="lg"
     >
       {step === 'basic' ? (
         <div className="space-y-4">
+          <CatalogPicker onSelect={fillFromCatalog} />
+          {formData.catalog_product_id && (
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Depuis le catalogue : <span className="font-medium">{formData.name}</span>{' '}
+              <span className="font-mono text-xs">({formData.supplier_reference})</span>. Ajoute le numéro de série du fabricant si tu l'as.
+            </p>
+          )}
           {/* Informations de base */}
           <Accordion
-            title="INFORMATIONS DE BASE"
-            icon={<Info size={18} className="text-blue-600 dark:text-blue-400" />}
-            defaultOpen={false}
+            title="Informations de base"
+            icon={<Info size={18} className="text-primary-600 dark:text-primary-400" />}
+            defaultOpen
           >
             <form onSubmit={handleBasicSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -366,16 +432,19 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Numéro de série *
+                    Numéro de série du fabricant
                   </label>
                   <input
                     type="text"
                     name="serial_number"
-                    required
                     value={formData.serial_number}
                     onChange={handleChange}
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                    placeholder="Facultatif"
                   />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    Numéro d'article attribué automatiquement{nextArticleNumber && <> : <span className="font-mono">{nextArticleNumber}</span></>}
+                  </p>
                 </div>
 
                 <div>
@@ -421,7 +490,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                         style={{ backgroundColor: getGroupColor(formData.group_id) }}
                       />
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        📁 {getGroupName(formData.group_id)}
+                        <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{getGroupName(formData.group_id)}
                       </span>
                     </div>
                   )}
@@ -439,7 +508,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">
-                      {!formData.group_id ? 'Sélectionnez d\'abord un groupe' : 'Sélectionner un sous-groupe'}
+                      {!formData.group_id ? 'Sélectionne d\'abord un groupe' : 'Sélectionner un sous-groupe'}
                     </option>
                     {filteredSubgroups.map(subgroup => (
                       <option key={subgroup.id} value={subgroup.id}>
@@ -460,7 +529,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                         />
                       </div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        📂 {filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
+                        <FolderOpenIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
                       </span>
                     </div>
                   )}
@@ -496,16 +565,59 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                   </label>
                   <select
                     name="status"
-                    value={formData.status}
+                    value={formData.status === 'retired' ? 'retired' : 'available'}
                     onChange={handleChange}
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
                   >
-                    <option value="available">Disponible</option>
-                    <option value="checked-out">Emprunté</option>
-                    <option value="maintenance">En maintenance</option>
-                    <option value="retired">Retiré</option>
+                    {/* Emprunté / en maintenance sont calculés par la base à partir des sorties et maintenances */}
+                    <option value="available">En service</option>
+                    <option value="retired">Retiré du service</option>
                   </select>
                 </div>
+
+                <label className="flex items-start gap-3 md:col-span-2 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.requires_approval}
+                    onChange={e => setFormData(prev => ({ ...prev, requires_approval: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Validation requise</span>
+                    <span className="block text-xs text-gray-600 dark:text-gray-400">Toute demande contenant cet article doit être validée par un responsable, même s'il est disponible.</span>
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 md:col-span-2 rounded-md border border-gray-200 dark:border-gray-700 p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.requires_signature}
+                    onChange={e => setFormData(prev => ({ ...prev, requires_signature: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">Signature à la remise</span>
+                    <span className="block text-xs text-gray-600 dark:text-gray-400">La personne signe sur l'écran en recevant l'outil. Toujours demandé au-delà du seuil de prix des paramètres.</span>
+                  </span>
+                </label>
+
+                <div>
+                  <label htmlFor="eq-price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prix d'achat (CHF)</label>
+                  <input id="eq-price" type="number" min={0} step="0.05" inputMode="decimal" value={formData.purchase_price}
+                    onChange={e => setFormData(prev => ({ ...prev, purchase_price: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Valeur du stock et des pertes</p>
+                </div>
+                <div>
+                  <label htmlFor="eq-rate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tarif interne par jour (CHF)</label>
+                  <input id="eq-rate" type="number" min={0} step="0.05" inputMode="decimal" value={formData.daily_rate}
+                    onChange={e => setFormData(prev => ({ ...prev, daily_rate: e.target.value }))}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono" />
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Coût imputé au chantier par jour de sortie</p>
+                </div>
+                <TrainingSelect id="eq-training" value={formData.required_training_id}
+                  onChange={required_training_id => setFormData(prev => ({ ...prev, required_training_id }))} />
+                <LifecycleFields value={lifecycle} onChange={setLifecycle} />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -553,60 +665,21 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL de l'image
-                </label>
-                <div className="space-y-2">
-                <input
-                  type="url"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-                  placeholder="https://example.com/image.jpg"
-                />
-                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                   Entrez une URL d'image valide et accessible publiquement. Exemple: https://images.pexels.com/photos/1029243/pexels-photo-1029243.jpeg
-                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Utilisez des sites comme <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Pexels</a> ou <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Unsplash</a> pour trouver des images libres de droits.
-                </p>
-                 {formData.image_url && (
-                   <div className="mt-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
-                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Aperçu de l'image:</p>
-                     <div className="flex justify-center">
-                       <img 
-                         src={formData.image_url} 
-                         alt="Aperçu" 
-                        className="h-32 object-contain rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white shadow-sm"
-                         onError={(e) => {
-                           e.currentTarget.style.display = 'none';
-                           const errorMsg = document.createElement('p');
-                           errorMsg.className = 'text-xs text-red-500 mt-2';
-                          errorMsg.textContent = "⚠️ Impossible de charger l'image. Vérifiez que l'URL est correcte, accessible et se termine par .jpg, .jpeg, .png ou .webp";
-                           e.currentTarget.parentElement?.appendChild(errorMsg);
-                         }}
-                       />
-                     </div>
-                   </div>
-                 )}
-                </div>
-              </div>
+              <ImageField value={formData.image_url} onChange={url => setFormData(prev => ({ ...prev, image_url: url }))} onBrokenChange={setImageBroken} />
 
               {/* Aperçu hiérarchique */}
               {(formData.group_id || formData.subgroup_id) && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                    📁 Hiérarchie de classification
+                <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
+                    <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Hiérarchie de classification
                   </h4>
                   <div className="flex items-center gap-2 flex-wrap">
                     {formData.category_id && (
                       <>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                          🏷️ {categories.find(c => c.id === formData.category_id)?.name}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                          <TagIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{categories.find(c => c.id === formData.category_id)?.name}
                         </span>
-                        <span className="text-gray-400">→</span>
+                        <span className="text-gray-500 dark:text-gray-400">→</span>
                       </>
                     )}
                     {formData.group_id && (
@@ -615,9 +688,9 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                           style={{ backgroundColor: getGroupColor(formData.group_id) }}
                         >
-                          📁 {getGroupName(formData.group_id)}
+                          <FolderIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{getGroupName(formData.group_id)}
                         </span>
-                        {formData.subgroup_id && <span className="text-gray-400">→</span>}
+                        {formData.subgroup_id && <span className="text-gray-500 dark:text-gray-400">→</span>}
                       </>
                     )}
                     {formData.subgroup_id && (
@@ -625,12 +698,12 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                         style={{ backgroundColor: filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.color || '#64748b' }}
                       >
-                        📂 {filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
+                        <FolderOpenIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{filteredSubgroups.find(sg => sg.id === formData.subgroup_id)?.name}
                       </span>
                     )}
-                    <span className="text-gray-400">→</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
-                      💻 {formData.name || 'Nom du matériel'}
+                    <span className="text-gray-500 dark:text-gray-400">→</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
+                      <Package className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />{formData.name || 'Nom du matériel'}
                     </span>
                   </div>
                 </div>
@@ -657,9 +730,9 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
         <div className="space-y-4">
           {/* Configuration QR */}
           <Accordion
-            title="CONFIGURATION QR CODES"
-            icon={<QrCode size={18} className="text-purple-600 dark:text-purple-400" />}
-            defaultOpen={false}
+            title="Configuration des QR codes"
+            icon={<QrCode size={18} className="text-primary-600 dark:text-primary-400" />}
+            defaultOpen
           >
             <div className="space-y-4">
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -667,8 +740,8 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                   Quantité configurée
                 </h4>
                 <div className="flex items-center gap-2">
-                  <Package size={20} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                  <Package size={20} className="text-primary-600 dark:text-primary-400" />
+                  <span className="text-lg font-semibold text-primary-600 dark:text-primary-400">
                     {formData.available_quantity} unité{formData.available_quantity > 1 ? 's' : ''}
                   </span>
                 </div>
@@ -731,7 +804,7 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <Copy size={18} className="text-green-600 dark:text-green-400" />
+                          <Copy size={18} className="text-tone-success" />
                           <h4 className="font-medium text-gray-900 dark:text-gray-100">
                             QR Code unique pour le lot
                           </h4>
@@ -745,31 +818,32 @@ const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({ isOpen = true, on
                 </div>
               </div>
 
-              <div className="flex justify-between gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('basic')}
-                >
-                  Retour
-                </Button>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={handleFinalSubmit}
-                    disabled={isSubmitDisabled}
-                  >
-                    {getSubmitButtonText()}
-                  </Button>
-                </div>
-              </div>
             </div>
           </Accordion>
+          {/* Pied collant du drawer : toujours visible */}
+          <div className="mx-drawer-footer flex justify-between gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setStep('basic')}
+            >
+              Retour
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleFinalSubmit}
+                disabled={isSubmitDisabled}
+              >
+                {getSubmitButtonText()}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </Modal>

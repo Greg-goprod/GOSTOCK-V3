@@ -1,0 +1,1223 @@
+/* ==========================================================================
+   TOKENS --mx-* — NOUVELLE DIRECTION ARTISTIQUE
+   --------------------------------------------------------------------------
+   Layer ADDITIF. L'ancien src/styles/tokens.css (--color-*) est GELE et reste
+   la source de verite de l'app actuelle : ce fichier ne le modifie ni ne le
+   remplace. Le prefixe --mx-* garantit l'absence de collision de noms.
+
+   Signal de theme : data-theme sur <html>.
+   - :root                 = DARK (defaut de l'app).
+   - [data-theme="light"]  = surcharges LIGHT.
+
+   --------------------------------------------------------------------------
+   REGLE DE MAINTENANCE DES ALIAS — a respecter a chaque ajout de token
+   --------------------------------------------------------------------------
+   Tout token ALIAS ou DERIVE — c'est-a-dire qui reference un autre token theme
+   par var() ou color-mix() — doit etre declare dans LES DEUX blocs, dark et
+   light, avec la MEME expression. Un alias declare dans un seul bloc casse les
+   ilots de theme (sous-arbre data-theme) SANS ERREUR VISIBLE.
+
+   Pourquoi. Une custom property est substituee sur l'element qui la DECLARE,
+   puis c'est sa valeur deja resolue qui hérite. Un sous-arbre
+   `<div data-theme="light">` place sous un document dark ne matche que le bloc
+   light : il y redeclare ses couleurs de base, mais tout alias absent de ce bloc
+   est herite de :root, donc DEJA substitue contre les bases SOMBRES. Le
+   sous-arbre affiche alors un melange des deux themes. Le bloc dark, lui, est
+   groupe avec :root et declare l'integralite des tokens, ce qui explique que les
+   ilots DARK n'aient jamais revele le probleme.
+
+   La duplication qui suit est donc VOLONTAIRE, ce n'est pas une redondance a
+   nettoyer. Les 19 alias declares a l'identique dans les deux blocs :
+
+     structure     --mx-bg · --mx-accent-2 · --mx-accent-deep · --mx-border2
+                   · --mx-danger-2
+     aplats        --mx-tone-fill-warning · -danger · -success · -info
+                   · -accent · -neutral
+     contrastes    --mx-tone-on-warning · -danger · -info · -accent · -neutral
+     textes nus    --mx-tone-text-danger · -accent · -neutral
+     filet         --mx-tone-line-neutral
+
+   Trois cas qui ne relevent PAS de cette liste :
+   - --mx-accent-lt, --mx-tone-on-success et --mx-tone-text-warning / -success /
+     -info sont declares dans les deux blocs mais avec des expressions
+     DIFFERENTES : leur valeur light est une decision propre au theme (opacite
+     d'overlay, contraste sur aplat, assombrissement pour AA), pas une
+     duplication d'alias.
+   - --mx-font-mono est un alias de --mx-font-ui, invariant par theme : sa valeur
+     heritee est identique dans les deux cas, il ne peut pas casser.
+   - echelles, rayons, espacements, durees et courbes ne referencent aucun token
+     theme : les declarer une seule fois est correct.
+
+   --------------------------------------------------------------------------
+   GRAMMAIRE DES TONS — FONDS NEUTRES + ACCENTS PLEINS
+   --------------------------------------------------------------------------
+   Une seule grammaire, reprise du prototype de handoff (reference/
+   mannyx-drawer.js, table TONE). Les fonds de l'interface restent NEUTRES
+   (--mx-surface, --mx-surface2, --mx-muted-box) ; la couleur d'un ton n'apparait
+   que sous deux formes, toutes deux SATUREES :
+
+   1) APLAT PLEIN — --mx-tone-fill-<ton> + son texte de contraste
+      Fond = la couleur PURE du ton. Usage : bandeau de statut pleine largeur,
+      badge, pastille. Le texte y est un contraste (--mx-tone-on-<ton>),
+      jamais une teinte.
+
+   2) TEXTE / FILET NU — --mx-tone-text-<ton>
+      La couleur du ton portee par du texte, une icone ou un filet, SANS fond ni
+      boite. Usage : messages d'etat (erreur rate-card…), bordure gauche de 3px
+      d'une section accentuee.
+      En DARK c'est la couleur de base telle quelle, SAUF warning (C2.0,
+      2026-10-24, voir le bloc light) qui est une valeur litterale deja
+      foncee dans les deux themes. En LIGHT, success / info sont ASSOMBRIS
+      pour tenir AA sur fond clair.
+
+   Ce qu'il ne faut PAS refaire : il n'existe AUCUNE famille « douce » de fonds
+   teintes lavés en color-mix. Cette derivation a ete construite puis abandonnee
+   (elle produisait des conteneurs arrondis a fond lave que le handoff ne demande
+   nulle part). Ne pas la reintroduire : un ton se pose en aplat plein ou en
+   texte nu, jamais en fond delave.
+
+   Les deux themes doivent etre lisibles : le drawer ne force AUCUN theme local.
+   Les aplats pleins s'en sortent avec les seules couleurs de base, deja
+   redeclarees par theme. Les textes nus, eux, demandent des valeurs light
+   propres, derivees hors handoff et en attente de validation artistique.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   DARK — defaut
+   --------------------------------------------------------------------------
+   [data-theme='dark'] est liste a cote de :root pour rendre les valeurs dark
+   adressables a n'importe quel niveau du DOM (ilot dark dans une page light, et
+   inversement). Sans lui, un sous-arbre marque data-theme="dark" heriterait des
+   surcharges light de l'ancetre, faute de bloc pour les annuler.
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme='dark'] {
+  /* Couleurs de base */
+  --mx-scrim: #191b21;
+  --mx-surface: #14161d;
+  --mx-surface2: #1b1e27;
+  --mx-text: #f5f6f8;
+  --mx-text2: #b4b7c0;
+  --mx-text3: #7d818c;
+  --mx-border: #282c37;
+  --mx-chip-bg: #1b1e27;
+  --mx-chip-text: #b4b7c0;
+  --mx-input-bg: #191c24;
+  --mx-input-border: #2e323f;
+  --mx-toggle-off: #2e323f;
+  --mx-accent: #8672f5;
+  --mx-accent-rgb: 134, 114, 245;
+  --mx-danger: #ff6b6b;
+  --mx-muted-box: #191c24;
+  --mx-dashed: #2e323f;
+  --mx-scrim-overlay: rgba(6, 7, 10, 0.68);
+
+  /* Couleurs derivees — calculees, jamais en dur */
+  --mx-bg: var(--mx-scrim);
+  --mx-accent-lt: rgba(var(--mx-accent-rgb), 0.16);
+  --mx-accent-2: color-mix(in srgb, var(--mx-accent) 78%, #fff);
+  --mx-accent-deep: color-mix(in srgb, var(--mx-accent) 72%, #000);
+  --mx-border2: color-mix(in srgb, var(--mx-border) 60%, transparent);
+
+  /* LOT OFFRES-VUES, V1 (Greg, 2026-10-18) — fond du bloc `MxGroup`, DARK
+     UNIQUEMENT (redeclare a plat sur --mx-surface2 dans la surcharge light
+     ci-dessous, AUCUN changement en clair).
+     CONSTAT : MxGroup.tsx et MxEntityCard.tsx partageaient le MEME token
+     (--mx-surface2) -- fond de bloc et fond de carte strictement identiques
+     en dark (mesure : les deux rendent rgb(27,30,39), contraste 1.00:1),
+     les cartes se noyaient dans le bloc, seul le filet de bordure les
+     separait (a peine visible, meme constat historique que C3.3 plus haut).
+     ESSAI ECARTE : une piste "plus transparent" (color-mix vers
+     `transparent`) a ete mesuree AVANT ce choix -- le fond de PAGE reel en
+     dark est deja tres proche de --mx-surface2 en luminance, si bien que
+     meme une transparence extreme (0 a 50%) ne deplace le contraste
+     bloc/carte que de 1.00:1 a 1.14:1 : imperceptible a l'ecran (capture a
+     l'appui, rapport du lot). La transparence West backdrop-dependante,
+     elle est backdrop-dependante, elle ne peut pas separer deux tons deja
+     voisins.
+     RETENU : assombrissement vers #000, MEME derivation que --mx-accent-deep
+     juste au-dessus (color-mix(..., XX%, #000)) -- un token CALCULE, pas une
+     couleur neuve. Contrainte de Greg : la luminosite du bloc doit rester
+     STRICTEMENT entre celle du fond de page et celle des cartes (un peu plus
+     clair que la page, nettement plus sombre que les cartes), filet de bloc
+     toujours visible pour distinguer deux blocs voisins.
+     VALEURS MESUREES (sonde HTML isolee important ce fichier, capture CDP,
+     luminance relative WCAG) :
+       page (fond reel derriere le bloc)      rgb(12,15,33)  lum 0.0053
+       bloc, apres ce correctif (55% vers #000) rgb(15,17,21) lum 0.0056
+       carte (--mx-surface2, INCHANGEE)       rgb(27,30,39)  lum 0.0131
+       contraste bloc/page  : 1.01:1 (bloc tres legerement plus clair)
+       contraste bloc/carte : 1.14:1 (vs 1.00:1 avant ce lot)
+     Le ratio WCAG bloc/carte reste modeste en valeur absolue -- l'extremite
+     sombre de l'echelle (luminances < 0.02) comprime fortement ce calcul,
+     memes en ecarts de luminance notables -- mais la separation EST nette a
+     l'oeil (capture avant/apres du rapport de lot) : le filet de carte
+     (--mx-border, nettement plus clair que les deux fonds) redevient
+     visible des que les deux fonds cessent d'etre identiques. */
+  --mx-group-bg: color-mix(in srgb, var(--mx-surface2) 55%, #000);
+
+  /* Survol de la variante danger de MxButton — LOT MODALE B2 (2026-10-02),
+     premier consommateur de cette variante (voir l'en-tete de MxButton.tsx,
+     recette documentee de longue date, jamais posee avant ce lot faute de
+     site d'appel). MEME DERIVATION que --mx-accent-2 (color-mix 78% vers
+     #fff), sur --mx-danger au lieu de --mx-accent : aucune raison de
+     traiter le survol d'un aplat danger differemment de celui d'un aplat
+     accent. */
+  --mx-danger-2: color-mix(in srgb, var(--mx-danger) 78%, #fff);
+
+  /* Tons de statut — couleurs de BASE, saturees. Elles se posent soit en aplat
+     plein, soit en texte nu (voir l'en-tete du fichier). */
+  --mx-green: #3dd9a5; /* valide / signe */
+  --mx-cyan: #4fc9e8; /* en cours */
+  --mx-pink: #ff6fa8; /* accent categoriel */
+  /* Survol de la variante success de MxButton — LOT OFFRES-CYCLE, C1.4
+     (Greg, 2026-10-17), premier consommateur de cette variante (cartes :
+     "Accepter"/"Valider sans renvoi" en vert, cf. l'en-tete de MxButton.tsx).
+     MEME DERIVATION que --mx-accent-2/--mx-danger-2 (color-mix 78% vers
+     #fff), sur --mx-green au lieu de --mx-accent/--mx-danger. */
+  --mx-green-2: color-mix(in srgb, var(--mx-green) 78%, #fff);
+
+  /* `--mx-field-prefilled-border`/`-bg` — RETIRES, LOT BOOKING-DRAWERS-FIN,
+     LOT 2, C2 STRICT (Greg, 2026-10-23). Poses en C1.8 (2026-10-18) pour
+     `tone="prefilled"` (MxNumberField/MxSelectField) SANS aucune source dans
+     le handoff -- ni ce lot, ni avant lui (c'etait deja des classes Tailwind
+     vertes arbitraires). Constat de Greg : source probable de la « bordure
+     blanche/vive » vue en recette sur les montants. Remplaces par un texte
+     d'aide standard du handoff (« Aide », 11,5px/500, --mx-text3) sous le
+     champ concerne -- voir `getFieldTone()` dans OfferComposer.tsx. Ne pas
+     reintroduire ces tokens sans decision explicite et datee de Greg (voir
+     .cursor/rules/da-handoff-stricte.mdc). */
+
+  /* --------------------------------------------------------------------
+     COULEURS DE MARQUE EXTERNES — LOT ARTISTES-FICHE, B5 (2026-10-04, Greg).
+     ----------------------------------------------------------------------
+     DEROGATION a la grammaire de couleur ci-dessus (6 tons de STATUT) :
+     l'identite visuelle d'une plateforme TIERCE (Spotify, Instagram...)
+     n'est jamais un statut metier, elle ne varie donc JAMAIS par theme --
+     DECLAREES UNE SEULE FOIS ici (:root + [data-theme='dark']), AUCUNE
+     redeclaration dans le bloc [data-theme='light'] plus bas : meme
+     precedent que --mx-toggle-knob / --mx-shadow-drawer (tokens INVARIANTS
+     par theme, cf. leurs commentaires).
+     Consommees par ArtistStatsChart.tsx, ArtistHistoryChart.tsx et
+     ArtistStatsOverview.tsx (src/components/artist/), via le helper partage
+     src/components/artist/platformBrandColors.ts -- plus aucun hex en dur
+     dans ces 3 fichiers pour une couleur de plateforme.
+     VALEURS : reprises du code existant (Sens A, aucune couleur inventee).
+     La ou les 3 fichiers d'origine (+ ArtistSocialLinks.tsx, non touche par
+     ce lot) divergeaient sur la MEME plateforme, la valeur retenue est celle
+     deja majoritaire dans le code (2 sites sur 3), jamais une valeur neuve :
+     instagram (#E4405F, ArtistHistoryChart + ArtistSocialLinks, contre
+     #E1306C seul dans ArtistStatsOverview), tiktok et tidal (#000000,
+     SOURCE_COLORS + ArtistSocialLinks, contre une couleur de l'ancien logo
+     dans ArtistHistoryChart), twitter (#000000 -- l'app traite deja ce
+     `source` comme X, pas Twitter, dans 2 fichiers sur 3). Voir le rapport
+     STOP du lot pour le detail plateforme par plateforme. */
+  --mx-brand-spotify: #1db954;
+  --mx-brand-apple-music: #fa243c;
+  --mx-brand-instagram: #e4405f;
+  --mx-brand-facebook: #1877f2;
+  --mx-brand-tiktok: #000000;
+  --mx-brand-youtube: #ff0000;
+  --mx-brand-twitter: #000000;
+  --mx-brand-deezer: #feaa2d;
+  --mx-brand-soundcloud: #ff5500;
+  --mx-brand-bandsintown: #00cec8;
+  --mx-brand-amazon: #ff9900;
+  --mx-brand-tidal: #000000;
+  --mx-brand-beatport: #94d500;
+  --mx-brand-shazam: #0088ff;
+  --mx-brand-songkick: #f80046;
+  --mx-brand-traxsource: #00b4d8;
+  --mx-brand-tracklist: #ff6b00;
+  --mx-brand-radio: #8b5cf6;
+  --mx-brand-itunes: #ea4cc0;
+
+  /* ------------------------------------------------------------------------
+     APLAT PLEIN — fond sature d'un bandeau, d'un badge, d'une pastille.
+     Alias des couleurs de base : le nommage par TON (et non par couleur) est ce
+     qui permet aux primitives d'indexer un ton sans connaitre sa teinte.
+
+     Decision C2.0 (Greg, 2026-10-24) : le warning passe en orange fonce
+     LITTERAL dans les DEUX themes (aplat #C2410C, texte blanc) -- plus aucun
+     ambre (--mx-band/--mx-band-text retires, voir la note complete pres du
+     bloc light pour l'historique de la decision precedente qu'ils
+     remplacent).
+     ------------------------------------------------------------------------ */
+  --mx-tone-fill-warning: #c2410c;
+  --mx-tone-fill-danger: var(--mx-danger);
+  --mx-tone-fill-success: var(--mx-green);
+  --mx-tone-fill-info: var(--mx-cyan);
+  --mx-tone-fill-accent: var(--mx-accent);
+  /* Neutral n'a pas d'aplat sature : il retombe sur une surface secondaire. */
+  --mx-tone-fill-neutral: var(--mx-surface2);
+
+  /* Texte de contraste POSE SUR un aplat plein.
+
+     DIVERGENCE ASSUMEE vis-a-vis du prototype, qui pose un `fg: '#fff'` litteral
+     pour danger / success / info / accent. Ce blanc fixe est illisible en DARK, ou
+     les couleurs de statut sont des pastels clairs : mesure a l'appui, il donne
+     success 1.80, info 1.94, danger 2.78 et accent 3.66 — quatre echecs AA, dont
+     le bouton primaire qui est un aplat accent.
+     --mx-tone-on suit donc le theme : quasi-noir sur les pastels clairs du dark,
+     blanc sur les couleurs profondes du light. La lisibilite primait sur la
+     fidelite litterale. */
+  --mx-tone-on: #14110a;
+
+  /* Le contraste est declare PAR TON, et non une fois pour toutes. Suivre le
+     theme ne suffit pas : a l'interieur d'un meme theme, les six tons n'ont pas
+     la meme luminance, donc pas tous le meme texte lisible. Le cas qui l'impose
+     est l'aplat success en light (#0F9D6E), ou le blanc tombe a 3.46.
+     Ces alias resolvent --mx-tone-on dans le contexte de l'element, ils suivent
+     donc le theme sans redeclaration ; seules les EXCEPTIONS sont surchargees. */
+  --mx-tone-on-warning: #ffffff; /* texte blanc sur l'aplat #C2410C, C2.0 */
+  --mx-tone-on-danger: var(--mx-tone-on);
+  --mx-tone-on-success: var(--mx-tone-on);
+  --mx-tone-on-info: var(--mx-tone-on);
+  --mx-tone-on-accent: var(--mx-tone-on);
+  --mx-tone-on-neutral: var(--mx-text2); /* pas d'aplat sature : surface2 */
+
+  /* ------------------------------------------------------------------------
+     TEXTE / FILET NU — la couleur PURE du ton, portee par du texte, une icone
+     ou un filet de 3px. Aucun color-mix : c'est exactement la couleur de base.
+     Ces alias existent pour que les primitives ne referencent jamais une couleur
+     par son nom (--mx-danger) mais toujours par son ROLE (ton danger).
+     EXCEPTION warning (C2.0, Greg, 2026-10-24) : valeur LITTERALE, pas une
+     base --mx-*, l'orange fonce du ton n'a pas d'autre usage que ce role. */
+  --mx-tone-text-warning: #e06a1b;
+  --mx-tone-text-danger: var(--mx-danger);
+  --mx-tone-text-success: var(--mx-green);
+  --mx-tone-text-info: var(--mx-cyan);
+  --mx-tone-text-accent: var(--mx-accent);
+  --mx-tone-text-neutral: var(--mx-text2);
+
+  /* Filet de section accentuee : identique au texte nu, sauf pour neutral dont
+     le filet est une bordure et non une couleur de statut. */
+  --mx-tone-line-neutral: var(--mx-border);
+
+  /* Pastille d'interrupteur : volontairement INVARIANTE par theme (blanche sur
+     piste sombre en dark comme sur piste claire en light), au meme titre que
+     --mx-tone-on-warning (C2.0). Ne pas la deriver de --mx-text, qui s'inverse. */
+  --mx-toggle-knob: #ffffff;
+
+  /* --------------------------------------------------------------------
+     ECHELLE ET DENSITE — lot "echelle et densite d'affichage"
+     ----------------------------------------------------------------------
+     Facteur UNIQUE. Densite reglable par utilisateur (src/lib/uiDensity.ts),
+     portee par l'attribut data-density sur <html>, posee AVANT le premier
+     rendu (main.tsx, meme endroit que setTheme(getTheme())) et memorisee
+     dans localStorage comme le theme. Trois paliers, definis plus bas dans
+     ce fichier (apres le bloc light, portee par attribut donc independante
+     du theme) :
+       data-density absent, ou "normal"  -> 1    (defaut)
+       data-density="compact"            -> .9
+       data-density="dense"              -> .8
+     Consomme par les echelles --mx-fs-*, --mx-space-*, --mx-radius-* (SAUF
+     --mx-radius-pill, qui reste 999px a toute densite : une gelule scalee
+     n'a pas de sens) et --mx-drawer-w-*, toutes en
+     calc(<valeur actuelle> * var(--mx-scale, 1)) ci-dessous, ainsi que par
+     --mx-icon-* / --mx-control-h (bloc suivant) et par la base rem de
+     l'ancien monde (html{font-size} dans src/index.css).
+     NE SCALE PAS : --mx-border-w / --mx-border-w-thin (un filet plus fin que
+     1px physique disparaitrait a densite Tres compacte), ni le contour de
+     focus clavier (1px litteral, EXCEPTION 1/2 plus bas — deja hors de
+     l'echelle des bordures, pour la meme raison).
+     Declare UNE SEULE FOIS ici, pas duplique dans le bloc light : il ne
+     depend d'aucune couleur de theme, meme motif que les echelles de
+     typographie/espacement/rayon qui suivent et qui ne sont pas non plus
+     redeclarees en light. */
+  --mx-scale: 1;
+
+  /* Typographie — familles */
+  --mx-font-ui: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --mx-font-display: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  /* Alias semantique : rend en Geist. Les zones chiffrees portent
+     font-variant-numeric: tabular-nums (applique par les composants). */
+  --mx-font-mono: var(--mx-font-ui);
+
+  /* Typographie — echelle (px, independante du html{font-size:14px} qui ne
+     scale que les rem). Les annotations rappellent l'usage cible ; les poids
+     et tracking ne sont PAS tokenises dans ce lot. */
+  --mx-fs-page-title: calc(52px * var(--mx-scale, 1)); /* 700, tracking -0.05em, line-height 0.95 */
+  --mx-fs-section: calc(26px * var(--mx-scale, 1)); /* 700, -0.04em ; drawer-title 26px/-0.02em */
+  --mx-fs-focal: calc(29px * var(--mx-scale, 1)); /* 700, -0.02em, tabular-nums */
+  --mx-fs-block: calc(16px * var(--mx-scale, 1)); /* 700, -0.02em */
+  --mx-fs-body: calc(13.5px * var(--mx-scale, 1)); /* 400-600, line-height 1.5-1.6 */
+  --mx-fs-field-label: calc(12.5px * var(--mx-scale, 1)); /* 600 */
+  --mx-fs-meta: calc(12.5px * var(--mx-scale, 1)); /* 500-600, tabular-nums */
+  --mx-fs-help: calc(11.5px * var(--mx-scale, 1)); /* 500, line-height 1.55 */
+  --mx-fs-subtitle: calc(11px * var(--mx-scale, 1)); /* 800, 0.14em, uppercase */
+  --mx-fs-section-label: calc(11px * var(--mx-scale, 1)); /* 700, 0.08em, uppercase */
+  --mx-fs-band: calc(11px * var(--mx-scale, 1)); /* 700, 0.1em, uppercase */
+  --mx-fs-badge: calc(10.5px * var(--mx-scale, 1)); /* 700, 0.04em, uppercase */
+
+  /* Tailles employees par `reference/mannyx-drawer.js` et ABSENTES de la table
+     du README. Ce n'est pas une invention : la table du README decrit l'echelle
+     generale, et la source qui fait foi pour un composant de drawer est
+     mannyx-drawer.js (regle de priorite du 2026-09-23, voir
+     docs/design/handoff-mannyx-ds/LISEZ-MOI-EN-PREMIER.md). Les valeurs sont
+     relevees telles quelles dans ce fichier, pas arrondies sur l'echelle. */
+  /* C8 — MxSteps. Deux paliers EN DESSOUS de toute autre taille de l'echelle
+     (10.5px etait le plancher jusqu'ici) : la source qui fait foi pour ce
+     composant est mannyx-drawer.js, dont les valeurs (.mx-dr-step-lbl 9.5px,
+     numero de pastille 10px) sont relevees telles quelles, pas arrondies sur
+     un cran existant — regle directionnelle : le handoff peut etre PLUS PETIT
+     que l'echelle du tronc, jamais l'inverse (decision Greg 2026-09-24). */
+  --mx-fs-step-label: calc(
+    9.5px * var(--mx-scale, 1)
+  ); /* 600, uppercase absent — .mx-dr-step-lbl */
+  --mx-fs-step-num: calc(10px * var(--mx-scale, 1)); /* 700 — numero dans .mx-dr-step-dot */
+  /* C9 — MxMenu (LOT SELECTEUR-EVENEMENT, 2026-09-29). Meme motif que
+     --mx-fs-step-label/-num ci-dessus : la source qui fait foi pour ce
+     composant est le catalogue (reference/Mannyx Components V2.html,
+     section « Dropdown & menus », .dd-group-label { font-size:10px }), et
+     10px est SOUS le plancher qui existait jusque-la (10.5px, --mx-fs-badge)
+     — regle directionnelle inchangee : le handoff peut etre PLUS PETIT que
+     l'echelle du tronc, jamais l'inverse. --mx-fs-step-num vaut deja 10px
+     mais nomme un usage distinct (numero de pastille d'etape) : le reutiliser
+     ici aurait couple deux composants sans rapport a une seule valeur qui ne
+     coincide que par hasard. */
+  --mx-fs-menu-group-label: calc(10px * var(--mx-scale, 1)); /* 700, uppercase — .dd-group-label */
+  --mx-fs-kv-key: calc(12px * var(--mx-scale, 1)); /* 600 — .mx-dr-kv-row dt */
+  --mx-fs-item: calc(
+    13px * var(--mx-scale, 1)
+  ); /* 700 — .mx-dr-kv-row dd, .mx-dr-list-item .t, .mx-dr-muted */
+  --mx-fs-cta: calc(
+    14px * var(--mx-scale, 1)
+  ); /* 700 — .mx-dr-btn[data-variant="primary"|"danger"] */
+
+  /* LOT MODALE B3 (2026-10-02) — MxModal/MxConfirmDialog. Source DIFFERENTE
+     des trois tailles ci-dessus : reference/Mannyx Components V2.html (pas
+     mannyx-drawer.js), section #s-modals. Coincident par hasard avec
+     --mx-fs-cta (14px) pour le titre d'en-tete : PAS reutilise, ce preset
+     nomme un role distinct (titre de modale, pas libelle de bouton) — meme
+     principe que --mx-fs-step-num/--mx-fs-menu-group-label ci-dessus, deux
+     composants sans rapport ne doivent pas partager un token au seul motif
+     d'une valeur identique. */
+  --mx-fs-modal-title: calc(14px * var(--mx-scale, 1)); /* 700 — .modal-header span */
+  /* Titre et message de la variante « 1 colonne — Confirmation » (L.711-722),
+     distincts du titre d'en-tete generique ci-dessus : MxConfirmDialog ne
+     rend PAS l'en-tete de MxModal (showHeader=false, voir son en-tete de
+     fichier) et centre ce titre et ce message dans le corps. */
+  --mx-fs-confirm-title: calc(15px * var(--mx-scale, 1)); /* 700 */
+  --mx-fs-confirm-message: calc(13px * var(--mx-scale, 1)); /* 400, line-height 1.5 */
+
+  --mx-line-tight: 1.2;
+  --mx-line-normal: 1.5;
+
+  /* ------------------------------------------------------------------
+     ICONES ET HAUTEUR DE CONTROLE — lot "echelle et densite d'affichage"
+     --------------------------------------------------------------------
+     Valeurs REPRISES telles quelles des size={N} Lucide et minHeight
+     litteraux du tronc au moment de l'audit (B0) — aucune valeur inventee.
+       --mx-icon-xs  <- MxSteps (Check, pastille d'etape faite)
+       --mx-icon-sm  <- MxFields (chevron de select), MxLoadingLine (rouet)
+       --mx-icon-md  <- MxDrawer (bouton d'action d'en-tete)
+       --mx-icon-lg  <- MxDrawer (bouton de fermeture)
+       --mx-icon-xl  <- MxDrawer (titleIcon)
+     Consommees en style width/height sur le SVG Lucide — le style CSS
+     l'emporte sur l'attribut `size`, qui n'est donc plus pose du tout
+     (JAMAIS `size={N}` : garde ESLint, eslint.config.js). Voir
+     src/components/mx/internal/mxIcon.ts pour le helper de style.
+     --mx-control-h reprend le minHeight:34 partage par MxButton et le champ
+     de MxFields (INPUT_STYLE) — SEUL point commun de hauteur de controle du
+     tronc a ce jour ; ne pas y rattacher un autre element (bouton icone
+     32x32 de MxDrawer, pastille d'etape 26x26 de MxSteps) qui n'est pas une
+     hauteur de CHAMP/BOUTON generique. */
+  --mx-icon-xs: calc(13px * var(--mx-scale, 1));
+  --mx-icon-sm: calc(15px * var(--mx-scale, 1));
+  --mx-icon-md: calc(16px * var(--mx-scale, 1));
+  --mx-icon-lg: calc(17px * var(--mx-scale, 1));
+  --mx-icon-xl: calc(22px * var(--mx-scale, 1));
+  --mx-control-h: calc(34px * var(--mx-scale, 1));
+
+  /* ------------------------------------------------------------------
+     AUTRES DIMENSIONS DE CONTROLE — correction C1 (lot "echelle et
+     densite d'affichage", 2026-09-29). Memes valeurs qu'au premier B1,
+     nommees pour les rares dimensions REUTILISEES a l'identique par
+     plusieurs sites du tronc (bouton icone carre, pastille d'etape,
+     puces decoratives). Le reste des dimensions littérales converties
+     par C1 est UN USAGE UNIQUE : calc(<n>px * var(--mx-scale, 1)) inline,
+     pas un nouveau token — cf. la regle deja en vigueur sur --mx-space-*
+     (« pas un token, l'echelle n'en a que 4/8/12... »). */
+  --mx-iconbtn-size: calc(
+    32px * var(--mx-scale, 1)
+  ); /* MxDrawer : boutons d'action et de fermeture d'en-tete */
+  --mx-step-dot: calc(26px * var(--mx-scale, 1)); /* MxSteps : pastille d'etape */
+  --mx-dot-sm: calc(
+    3px * var(--mx-scale, 1)
+  ); /* MxDrawer (separateur du bandeau), MxPreview (idem, demo) */
+  --mx-dot-md: calc(4px * var(--mx-scale, 1)); /* MxStatusPill : puce */
+
+  /* ------------------------------------------------------------------
+     AVATAR — LOT MENU-UTILISATEUR B (2026-09-29), MxAvatar. Aucun token
+     --mx-avatar-* n'existait avant ce lot. 2 des 3 crans REPRENNENT une
+     valeur EXACTE deja posee ailleurs dans l'appli (precedent applique par
+     --mx-icon-* et --mx-iconbtn-size ci-dessus : la valeur en usage prime
+     sur l'arrondi) :
+       --mx-avatar-size-md <- .av du catalogue (34px, "Avatar Group —
+         Touring Party", reference/Mannyx Components V2.html L.144)
+       --mx-avatar-size-lg <- .artist-avatar du catalogue (56px, L.1945)
+     --mx-avatar-size-sm n'a pas de precedent catalogue : 28px, cran
+     immediatement sous md, alignee sur .ctx-btn (28px, meme fichier) pour
+     un avatar cote-a-cote avec un MxIconButton dans une meme rangee. */
+  --mx-avatar-size-sm: calc(28px * var(--mx-scale, 1));
+  --mx-avatar-size-md: calc(34px * var(--mx-scale, 1));
+  --mx-avatar-size-lg: calc(56px * var(--mx-scale, 1));
+  /* --mx-avatar-size-xl — LOT ARTISTES-LISTE, C2.4 (2026-10-03). Carte
+     Artiste agrandie (8 colonnes a 1920px/Compacte, voir ArtistesListMx.tsx)
+     : avatar agrandi « en proportion », pas de precedent catalogue (comme
+     -sm ci-dessus). Ratio repris de -lg/carte avant ce lot (56px pour une
+     carte de 140px, soit 0.4) applique a la nouvelle largeur minimale de
+     carte (220px) : 220 * 0.4 = 88px. */
+  --mx-avatar-size-xl: calc(88px * var(--mx-scale, 1));
+  /* Police des INITIALES de repli — meme motif que --mx-fs-step-label/-num
+     (MxSteps) : trio dedie, aucune correspondance catalogue a reprendre pour
+     la police (seule la dimension du cercle en a une, voir ci-dessus). */
+  --mx-fs-avatar-sm: calc(11px * var(--mx-scale, 1));
+  --mx-fs-avatar-md: calc(13.5px * var(--mx-scale, 1));
+  --mx-fs-avatar-lg: calc(20px * var(--mx-scale, 1));
+  /* --mx-fs-avatar-xl — meme ratio taille-police/diametre que -lg (20/56
+     ~ 0.357) applique a 88px : 88 * 0.357 ~ 31px, arrondi a 31px. */
+  --mx-fs-avatar-xl: calc(31px * var(--mx-scale, 1));
+
+  /* ------------------------------------------------------------------
+     SIDEBAR ET BARRE DU HAUT — LOT CADRE B (2026-09-30). Aucun token
+     --mx-sidebar-* / --mx-topbar-* n'existait avant ce lot.
+       --mx-sidebar-w <- largeur ACTUELLE de la sidebar legacy
+         (SIDEBAR_EXPANDED, src/layout/AppLayout.tsx), aucun precedent
+         catalogue (la demo « Sidebar - etats », reference/Mannyx
+         Components V2.html L.656, ne pose pas de largeur sur son
+         conteneur) : valeur EN USAGE reprise telle quelle, memes raisons
+         que --mx-avatar-size-*.
+       --mx-sidebar-w-collapsed <- SIDEBAR_COLLAPSED, meme fichier, meme
+         raison.
+     --mx-topbar-h : 56px, PAS un choix libre — DOIT rester rigoureusement
+     egal a 4rem. La hauteur de la barre du haut (`h-16` Tailwind = 4rem)
+     est COUPLEE en dur dans 11 layouts de module non touches par ce lot
+     (`-m-6 flex flex-col h-[calc(100vh-4rem)]`, ex. BookingLayout.tsx:17) :
+     leur zone de contenu occupe toute la hauteur de la fenetre MOINS la
+     barre du haut. `html { font-size: calc(14px * var(--mx-scale, 1)); }`
+     (src/index.css) fait du `rem` une unite qui suit DEJA --mx-scale ; donc
+     4rem = 4 * 14px * scale = 56px * scale, EXACTEMENT --mx-topbar-h
+     ci-dessous, quelle que soit la valeur de --mx-scale. Verifie par le
+     calcul, PAS par mesure a l'ecran : changer soit ce token, soit le
+     14px de `html` sans re-verifier cette egalite casserait la hauteur de
+     tous les layouts de module en branche Mannyx. */
+  --mx-sidebar-w: calc(200px * var(--mx-scale, 1));
+  --mx-sidebar-w-collapsed: calc(64px * var(--mx-scale, 1));
+  --mx-topbar-h: calc(56px * var(--mx-scale, 1));
+
+  /* Navigation de SECOND niveau (MxSubNav) — LOT NAV-SECONDAIRE, B1
+     (2026-09-30), CORRIGE C1 (2026-09-30, Greg). 182px, PAS un choix libre —
+     DOIT rester rigoureusement egal a 13rem, EXACTEMENT `w-52` Tailwind
+     (13rem) de la sidebar legacy (SettingsSidebar.tsx, branche ancienne).
+     Meme raisonnement que --mx-topbar-h ci-dessus : `html { font-size:
+     calc(14px * var(--mx-scale, 1)); }` (src/index.css) fait du `rem` une
+     unite qui suit DEJA --mx-scale ; donc 13rem = 13 * 14px * scale =
+     182px * scale, EXACTEMENT --mx-subnav-w ci-dessous, quelle que soit la
+     valeur de --mx-scale. Verifie par le calcul, PAS par mesure a l'ecran :
+     changer soit ce token, soit le 14px de `html`, sans re-verifier cette
+     egalite casserait la coherence visuelle entre les deux branches a toute
+     densite. (208px, dans la version B1 de ce token, etait la valeur
+     NOMINALE de 13rem a l'hypothese Tailwind de 16px — pas la largeur
+     REELLEMENT rendue par la branche ancienne dans ce projet, qui vaut
+     182px. Corrige par Greg.) */
+  --mx-subnav-w: calc(182px * var(--mx-scale, 1));
+
+  /* Pastille de COMPTEUR (nombre), surimprimee au coin d'un bouton icone —
+     LOT NOTIFICATIONS B (2026-09-30), MxCountBadge. Valeur EN USAGE reprise
+     telle quelle (18px, pastille de NotificationButton.tsx avant ce lot),
+     meme raison que --mx-sidebar-w/--mx-avatar-size-* ci-dessus : aucun
+     precedent catalogue pour une pastille circulaire de compteur (le
+     catalogue ne montre que MxBadge, une etiquette RECTANGULAIRE, voir son
+     commentaire). Rayon toujours --mx-radius-pill (999px, jamais scale) :
+     une gelule circulaire doit rester un demi-cercle a toute densite. */
+  --mx-countbadge-size: calc(18px * var(--mx-scale, 1));
+
+  /* Apercu de document integre (MxDocPreview) — LOT CONTRATS B2 (2026-10-02).
+     Hauteur de REPLI pour un usage AUTONOME (prop `fill` absente/fausse) :
+     340px, valeur EN USAGE du modele repris par le composant (TabFichiers.tsx,
+     `pages/app/administration/finance-v2/tabs/`, seul embryon de pattern « PDF
+     dans le corps d'un panneau » du projet avant ce lot — meme precedent que
+     --mx-countbadge-size ci-dessus, aucun catalogue a mesurer).
+     CORRECTIF C3.2 (2026-10-02) : ce token etait REFERENCE par le composant
+     depuis sa creation mais jamais DEFINI ici — l'oubli rendait la propriete
+     CSS `height` invalide (var() sans repli), donc ramenee a `auto` : l'iframe
+     ne rendait fonctionnellement AUCUN apercu visible. Corrige en meme temps
+     que l'ajout de la prop `fill`, qui ETIRE l'apercu sur la hauteur du
+     conteneur flex parent (le corps de MxDrawer) au lieu de cette valeur
+     fixe — c'est `fill` que `ContractDrawerMx` utilise, ce token ne sert donc
+     plus que de repli pour un futur consommateur autonome. */
+  --mx-docpreview-h: calc(340px * var(--mx-scale, 1));
+
+  /* Interrupteur — geometrie de `.mx-dr-switch`, cf. le commentaire de TRACK
+     dans MxToggles.tsx : ce sont les dimensions d'un CONTROLE, pas des
+     espacements, donc hors de l'echelle --mx-space-*, mais elles suivent
+     --mx-scale comme tout le reste depuis cette correction. */
+  --mx-toggle-track-w: calc(38px * var(--mx-scale, 1));
+  --mx-toggle-track-h: calc(22px * var(--mx-scale, 1));
+  --mx-toggle-knob-size: calc(18px * var(--mx-scale, 1));
+  --mx-toggle-pad: calc(2px * var(--mx-scale, 1));
+
+  /* Espacement */
+  --mx-space-4: calc(4px * var(--mx-scale, 1));
+  --mx-space-8: calc(8px * var(--mx-scale, 1));
+  --mx-space-12: calc(12px * var(--mx-scale, 1));
+  --mx-space-16: calc(16px * var(--mx-scale, 1));
+  --mx-space-24: calc(24px * var(--mx-scale, 1));
+  --mx-space-32: calc(32px * var(--mx-scale, 1));
+  --mx-space-48: calc(48px * var(--mx-scale, 1));
+  --mx-space-64: calc(64px * var(--mx-scale, 1));
+  --mx-space-80: calc(80px * var(--mx-scale, 1));
+  --mx-space-96: calc(96px * var(--mx-scale, 1));
+
+  /* Rayons */
+  --mx-radius-3: calc(3px * var(--mx-scale, 1));
+  --mx-radius-4: calc(4px * var(--mx-scale, 1));
+  --mx-radius-6: calc(6px * var(--mx-scale, 1));
+  --mx-radius-8: calc(8px * var(--mx-scale, 1));
+  --mx-radius-10: calc(10px * var(--mx-scale, 1));
+  /* Gelule : jamais scalee, 999px garantit un demi-cercle a toute taille. */
+  --mx-radius-pill: 999px;
+
+  /* Bordures */
+  --mx-border-w: 1.5px;
+  --mx-border-w-thin: 1px;
+
+  /* ------------------------------------------------------------------
+     EMPILEMENT (z-index)
+
+     L'ORDRE CI-DESSOUS N'EST PAS CELUI DU HANDOFF. Ce n'est pas un oubli,
+     et il ne faut pas le "corriger" un jour vers les valeurs du catalogue.
+
+     Le handoff empile menu 100 < info-bulle 200 < popup de picker 500 <
+     modale 1000 < previsualisation 2000 < palette 4000 < drawer
+     5000/5001. C'est un ordre de VITRINE : chaque demonstration du
+     catalogue est seule a l'ecran, aucune couche ne s'ouvre par-dessus
+     une autre. En composition reelle les trois relations qui comptent
+     sont toutes inversees. Deux ecarts assumes :
+
+     1. La MODALE passe AU-DESSUS du DRAWER (handoff : l'inverse).
+        Motif concret : la confirmation de finalisation du decompte
+        s'ouvre DEPUIS le drawer de settlement. Si le drawer passait
+        au-dessus, la confirmation serait masquee par ce qui l'a
+        declenchee. Plus largement, la regle projet impose que toute
+        suppression persistee passe par ConfirmDialog — une modale — et
+        les suppressions se declenchent depuis les drawers.
+        L'application appliquait deja cet ordre avant le tronc :
+        CompanyFormModal porte zIndex=600 pour couvrir aura/Drawer a 500.
+
+     2. L'INFO-BULLE est la couche la PLUS HAUTE (handoff : 200, sous
+        tout le reste). Une info-bulle posee sur un interrupteur de
+        MxDrawer doit rester visible. Elle est en pointer-events:none :
+        au sommet, elle ne bloque rien.
+
+     UN SEUL CRAN pour tout ce qui est ancre a un champ (--mx-z-popover).
+     Separer "menu" et "popover" comme le handoff est un piege : un menu
+     deroulant ouvert DANS une modale doit passer au-dessus d'elle, il ne
+     peut donc pas vivre sous la couche modale.
+
+     Plancher a 100 : z-50 est la valeur Tailwind la plus haute utilisee
+     dans l'application, sur plusieurs centaines d'occurrences. Aucune
+     couche mx ne doit pouvoir passer sous du code non migre.
+
+     Paliers de 100 occupes a 1 % : inserer une couche plus tard ne
+     demandera jamais de renumeroter.
+     ------------------------------------------------------------------ */
+  --mx-z-base: 0;
+  /* Plancher du chevauchement local (avatars groupes, cellule survolee). La
+     PROFONDEUR reste calculee a l'appel : un token ne peut pas exprimer une
+     pile de N elements. Le catalogue empile les avatars de 5 a 1. */
+  --mx-z-raised: 1;
+  /* --mx-z-sticky (100) SUPPRIME -- LOT PAGE-HEADER, Phase B, B4
+     (2026-10-17). Etait deja orphelin (0 consommateur) depuis le retrait de
+     la barre collante (LOT VUES-CARTES-LISTE, C5) ; voir
+     docs/REGISTRE_RETRAITS.md, entree 21. */
+  /* Coquille applicative (barre laterale, barre du haut). RESERVE : rien du
+     tronc ne l'occupe encore, la barre laterale est en z-40 Tailwind. */
+  --mx-z-chrome: 200;
+  /* Voile puis panneau a +1 : forme du handoff (5000/5001), valeurs projet. */
+  --mx-z-drawer-scrim: 300;
+  --mx-z-drawer: 301;
+  --mx-z-modal-scrim: 400;
+  --mx-z-modal: 401;
+  /* Tout flottant ANCRE a un champ : menu, select, autocompletion, popover,
+     popup de picker. SEULE valeur reprise telle quelle au handoff.
+
+     CONDITION POUR QUE CE CRAN TIENNE SA PROMESSE (LOT PICKERS-MX, retours de
+     recette Greg, 2026-10-16, C1.2) : la couche doit sortir du flux par
+     MxPortal (document.body ou cible de scope). Un flottant qui reste
+     DESCENDANT DOM d'un drawer (--mx-z-drawer 301) ou d'une modale
+     (--mx-z-modal 401) herite du CONTEXTE D'EMPILEMENT de cet ancetre : son
+     z-index, meme superieur en valeur, ne depasse alors jamais visuellement
+     cet ancetre (regle CSS des contextes d'empilement imbriques, pas une
+     exception a cette echelle). C'est ce qui s'est produit pour
+     MxDatePicker/MxTimePicker/MxDateTimePicker/MxDateRangePicker
+     (components/mx/MxDatePicker.tsx et consorts) : panneau rendu en place
+     plutot que par MxPortal -> calendrier ouvert DERRIERE le drawer de
+     prolongation malgre --mx-z-popover (500) > --mx-z-drawer (301). Corrige
+     en faisant passer `MxPickerPanel` (components/mx/internal/MxPickerField.tsx)
+     par `MxPortal`, memes principes que MxMenu (qui l'a toujours fait).
+     Regle valable pour TOUT futur flottant ancre a un champ du tronc : poser
+     --mx-z-popover ne suffit pas, il faut aussi sortir du flux. */
+  --mx-z-popover: 500;
+  --mx-z-toast: 600;
+  --mx-z-tooltip: 700;
+
+  /* Couche ALERTE — LOT MODALE B (2026-10-02), decision de Greg. Reservee a
+     MxConfirmDialog, PAS a MxModal (qui reste sur --mx-z-modal/-modal-scrim
+     ci-dessus) : une confirmation doit rester au-dessus de TOUTE modale
+     AURA deja ouverte, y compris celles relevees a la main tres au-dessus de
+     500 (CompanyFormModal 600, SendContractForSignatureModal/SendOfferModal
+     1200, SendPaymentProofModal 1300 — voir l'inventaire LOT MODALE A1/A5).
+     1400 : premier palier de 100 au-dessus du plus haut de ces relevages
+     connus (1300). SOUS les toasts, qui restent hors de cette echelle a
+     z-[9999] (Tailwind, ToastNotification.tsx) : une confirmation ne doit
+     jamais masquer une notification qui arrive pendant qu'elle est ouverte.
+     TRANSITOIRE PAR NATURE : ce cran n'existe que pour coexister avec des
+     modales AURA encore relevees a la main. Il disparait avec elles — le
+     jour ou plus aucun aura/Modal ne depasse --mx-z-modal, MxConfirmDialog
+     peut revenir sur --mx-z-modal standard et ce cran est retire. */
+  --mx-z-alert-scrim: 1400;
+  --mx-z-alert: 1401;
+
+  /* CINQ PLAFONDS ETRANGERS depassent --mx-z-tooltip et resteront au-dessus
+     des couches mx. Ils sont documentes ici plutot qu'ecrases : gonfler
+     l'echelle pour "passer au-dessus" rejouerait la guerre de z-index que
+     cette echelle sert precisement a finir. NE PAS RELEVER LES CRANS.
+
+       99999  DragOverlay de dnd-kit (3 grilles temporelles)
+              LEGITIME — un fantome de glisser-deposer survole tout.
+       10050  .pac-container de Google Places
+              LEGITIME — injecte par une tierce partie sur son propre champ.
+       99999  aura/Tooltip
+              DETTE — disparait avec MxTooltip en T2.4.
+        9999  les 4 popups de components/ui/pickers
+              DETTE — disparait en T2.6.
+   1300/1000  SimpleHtmlEditor plein ecran / ground/map
+              DETTE ISOLEE — a ramener sur --mx-z-modal le jour ou on y
+              touche. Sans urgence, deux surfaces plein ecran. */
+
+  /* Largeurs de drawer.
+     Les quatre premiers crans viennent du handoff (README, § Drawer >
+     Parametres, option `size`). Les deux derniers sont des EXTENSIONS DU
+     PROJET, absentes du handoff : l'application utilise couramment 700 a
+     940, la ou l'echelle de la DA plafonne a 680.
+
+     ECART A CONNAITRE, ANTERIEUR AU TRONC : la DA dessinait le drawer de
+     deal a 420px (annexe-drawer-deal-metier.md, §1). L'implementation a
+     atterri a 620, et le cran le plus proche est xl 680 — soit 1,6 fois
+     la largeur dessinee. L'ecart ne vient pas du tronc, mais il est
+     rendu visible ici pour qu'on decide un jour de le REDUIRE plutot que
+     de le subir. Le repli, si xl est juge trop large, est lg 520 : pas
+     un cran sur mesure, qui dissoudrait l'echelle. */
+  --mx-drawer-w-sm: calc(360px * var(--mx-scale, 1)); /* handoff */
+  --mx-drawer-w-md: calc(
+    420px * var(--mx-scale, 1)
+  ); /* handoff — largeur du drawer de deal (annexe, §1) */
+  --mx-drawer-w-lg: calc(520px * var(--mx-scale, 1)); /* handoff */
+  --mx-drawer-w-xl: calc(680px * var(--mx-scale, 1)); /* handoff */
+  --mx-drawer-w-xxl: calc(800px * var(--mx-scale, 1)); /* extension projet */
+  --mx-drawer-w-full: calc(960px * var(--mx-scale, 1)); /* extension projet */
+
+  /* Largeurs de modale — LOT MODALE B3 (2026-10-02), MxModal.
+     Source : reference/Mannyx Components V2.html, section #s-modals, les 4
+     variantes de grille interieure (« 1 colonne — Confirmation » L.711 a
+     « 4 colonnes — Import/Planning » L.786). Valeurs EN USAGE reprises
+     telles quelles, meme precedent que --mx-drawer-w-* ci-dessus : 380 (sm,
+     confirmation 1 colonne — taille par defaut de MxConfirmDialog), 520
+     (md, formulaire 2 colonnes), 720 (lg, fiche 3 colonnes), 900 (xl, import
+     4 colonnes). */
+  --mx-modal-w-sm: calc(380px * var(--mx-scale, 1));
+  --mx-modal-w-md: calc(520px * var(--mx-scale, 1));
+  --mx-modal-w-lg: calc(720px * var(--mx-scale, 1));
+  --mx-modal-w-xl: calc(900px * var(--mx-scale, 1));
+
+  /* Elevations — elev-0 s'accompagne d'une bordure 1px var(--mx-border) */
+  --mx-elev-0: none;
+  --mx-elev-1: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 8px rgba(0, 0, 0, 0.04);
+  --mx-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 10px rgba(0, 0, 0, 0.35); /* elev-2 */
+  --mx-elev-3: 0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.1);
+  --mx-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5), 0 16px 48px rgba(0, 0, 0, 0.55); /* elev-4 */
+  --mx-shadow-drawer: -28px 0 64px rgba(0, 0, 0, 0.45);
+  /* C8 — miroir horizontal de --mx-shadow-drawer, pour un drawer ancre a
+     gauche (`side="left"`). Meme litteral, signe du premier offset inverse.
+     Declaree ICI SEULEMENT, dans le meme bloc unique que l'original : c'est
+     une ombre INVARIANTE PAR THEME (voir le commentaire sur --mx-toggle-knob-
+     shadow ci-dessous), donc hors du champ de la regle de maintenance des
+     alias (l.98-110), qui ne vise que les tokens DERIVES d'un autre token
+     theme via var()/color-mix(). */
+  --mx-shadow-drawer-left: 28px 0 64px rgba(0, 0, 0, 0.45);
+
+  /* Ombre de la pastille d'interrupteur — `.mx-dr-switch i` de
+     reference/mannyx-drawer.js. Absente de l'echelle d'elevations du README,
+     qui ne descend pas a ce niveau de detail : la source contextuelle tranche
+     (regle de priorite du 2026-09-23). Nettement plus marquee qu'--mx-elev-1
+     (0.25 contre 0.06), et c'est voulu : la pastille doit se detacher d'un
+     rail SATURE, pas d'une surface neutre. Invariante par theme, comme les
+     --mx-elev-* : du noir pur a 25 %, lisible sur l'accent comme sur le gris
+     d'arret, dans les deux themes. */
+  --mx-toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+
+  /* Animation */
+  --mx-ease-spring: cubic-bezier(0.2, 0.8, 0.3, 1.3);
+  --mx-ease-appear: cubic-bezier(0, 0, 0.2, 1);
+  --mx-ease-drawer: cubic-bezier(0.22, 1, 0.36, 1);
+  --mx-dur-fast: 0.15s;
+  --mx-dur-drawer: 0.32s;
+  --mx-dur-scrim: 0.25s;
+  --mx-dur-shimmer: 1.2s; /* boucle du squelette de chargement (README) */
+  /* 0.2s : bascule d'interrupteur, `.mx-dr-switch` de mannyx-drawer.js. Ni le
+     rail ni la pastille ne prennent --mx-dur-fast : a 0.15s, la course de la
+     pastille se termine avant que le fond du rail ait fini de virer, et les
+     deux mouvements se desolidarisent. Le handoff les tient a la meme duree. */
+  --mx-dur-toggle: 0.2s;
+
+  /* Focus. Deux mecanismes distincts, qui coexistent au lieu de se remplacer :
+     - l'anneau ci-dessous, sur :focus, que mannyx-drawer.js pose sur les CHAMPS
+       (box-shadow 0 0 0 3px rgba(accent-rgb, .18)) ;
+     - l'outline :focus-visible du README, transversal, POSE en bas de ce
+       fichier (EXCEPTION 1 / 2), a 1px/1px — ECART PROJET ASSUME face au
+       2px/2px du README, voir le commentaire de la regle.
+     Au focus CLAVIER les deux se superposent, et c'est voulu : l'anneau
+     (spread 3px, SANS flou) forme une bande translucide unie de 0 a 3px du
+     bord ; le contour, opaque, occupe 1 a 2px — ENTIEREMENT NICHE au milieu de
+     cette bande, qui reste visible de part et d'autre (1px avant, 1px apres).
+     Au focus SOURIS, seul l'anneau s'affiche — le contour est neutralise par
+     la seconde regle de l'exception.
+     L'alpha est FIXE a 0.18 : ne pas le remplacer par --mx-accent-lt, qui vaut
+     0.16 en sombre mais 0.09 en clair et divise donc la visibilite par deux. */
+  --mx-focus-ring: 0 0 0 3px rgba(var(--mx-accent-rgb), 0.18);
+}
+
+/* --------------------------------------------------------------------------
+   LIGHT — surcharges
+   -------------------------------------------------------------------------- */
+[data-theme='light'] {
+  /* Couleurs de base */
+  --mx-scrim: #dadbe0;
+  --mx-surface: #ffffff;
+  --mx-surface2: #f6f6f8;
+  --mx-text: #101114;
+  --mx-text2: #4a4d57;
+  --mx-text3: #82858f;
+  --mx-border: #e2e3e9;
+  --mx-chip-bg: #f1f2f5;
+  --mx-chip-text: #4a4d57;
+  --mx-input-bg: #ffffff;
+  --mx-input-border: #cbcdd6;
+  --mx-toggle-off: #e3e4ea;
+  --mx-accent: #5a46d6;
+  --mx-accent-rgb: 90, 70, 214;
+  --mx-danger: #d6273d;
+  --mx-muted-box: #f6f6f8;
+  --mx-dashed: #cbcdd6;
+  --mx-scrim-overlay: rgba(16, 17, 20, 0.55);
+
+  /* Derive a opacite propre au theme (0.16 en dark) */
+  --mx-accent-lt: rgba(var(--mx-accent-rgb), 0.09);
+
+  /* Tons de statut */
+  --mx-green: #0f9d6e;
+  --mx-cyan: #0b7fa8;
+  --mx-pink: #c42678;
+
+  /* En light, les couleurs de statut deviennent profondes : le texte de
+     contraste pose SUR un aplat plein passe donc au blanc. */
+  --mx-tone-on: #ffffff;
+
+  /* EXCEPTION, seul aplat qui echoue AA une fois le theme suivi. Le vert light
+     (#0F9D6E) reste trop clair pour du blanc : 3.46. Le texte fonce l'amene a
+     5.39. La couleur de FOND reste celle du handoff, inchangee. Valeur
+     LITTERALE depuis le retrait de --mx-band-text (C2.0, 2026-10-24) : ce
+     n'etait pas une couleur ambre, juste un quasi-noir partage par
+     coincidence avec l'ancien texte warning. */
+  --mx-tone-on-success: #14110a;
+
+  /* Les APLATS PLEINS n'ont besoin d'aucune surcharge : --mx-tone-fill-* sont des
+     alias des couleurs de base, deja redeclarees juste au-dessus, et ils
+     fonctionnent tels quels -- SAUF warning, voir plus bas (C2.0).
+
+     ------------------------------------------------------------------------
+     DERIVATION HORS HANDOFF — A VALIDER PAR LA DIRECTION ARTISTIQUE
+     ------------------------------------------------------------------------
+     Le TEXTE NU, lui, ne peut pas reutiliser les couleurs de base en light :
+     posees sur --mx-surface2 (#F6F6F8, valeur que prend aussi --mx-muted-box),
+     elles donnent success 3.21 et info 4.22 — deux echecs AA (warning n'est
+     plus concerne, voir C2.0 ci-dessous).
+     Surface2 est le fond contraignant, plus sombre que le blanc ; les valeurs
+     ci-dessous sont calees dessus, elles passent donc a fortiori sur --mx-surface.
+
+     Methode : assombrissement multiplicatif de la couleur de base vers le noir,
+     en sRGB, ce qui conserve la TEINTE et l'essentiel de la saturation. Le
+     pourcentage est le plus eleve qui atteigne 4.60 sur surface2 — on assombrit
+     le minimum necessaire, avec 0.1 de marge sous le seuil de 4.5.
+
+     ------------------------------------------------------------------------
+     WARNING — DECISION C2.0 (Greg, 2026-10-24) : orange fonce, PLUS D'AMBRE
+     ------------------------------------------------------------------------
+     Ancienne tentative (conservee ici pour memoire, remplacee) : un ambre
+     assombri en texte nu butait sur un gamut sRGB qui pince le chroma du
+     jaune en descendant en luminosite (C 0.107 a L 0.545, 96% du maximum
+     atteignable) -- toute variante AA virait au kaki, et devier vers
+     l'orange aurait confondu le ton avec DANGER. La decision de l'epoque
+     etait donc de reserver l'ambre a l'APLAT (MxNote density="fill") et de
+     ne jamais l'employer en texte nu sur fond clair.
+     Nouvelle decision : le ton warning n'est plus l'ambre mais un ORANGE
+     FONCE directement choisi dans une zone du gamut qui NE pince pas en
+     luminosite -- la confusion avec danger (rouge) ne se pose plus puisque
+     danger reste un rouge pur (#D6273D) et warning un orange brule. Valeurs
+     LITTERALES, identiques en texte nu et en filet, PAS une base --mx-* :
+     #C2410C en light, #E06A1B en dark (voir le bloc dark). L'aplat passe a
+     la MEME valeur #C2410C (au lieu de suivre --mx-band par theme), avec un
+     texte blanc dans les deux themes -- simplification demandee par Greg,
+     le ton n'a plus a varier par theme. */
+  --mx-tone-text-warning: #c2410c;
+  --mx-tone-text-success: color-mix(in srgb, var(--mx-green) 81%, #000); /* #0C7F59 */
+  --mx-tone-text-info: color-mix(in srgb, var(--mx-cyan) 94%, #000); /* #0A779E */
+
+  /* ==========================================================================
+     ALIAS A REDECLARER — indispensable aux ILOTS light imbriques
+     --------------------------------------------------------------------------
+     Les expressions ci-dessous sont IDENTIQUES a celles du bloc dark, et cette
+     repetition n'est pas une redondance : elle est la seule facon de faire
+     recalculer un alias dans un sous-arbre.
+     Une custom property est substituee sur l'element qui la DECLARE, puis c'est
+     sa valeur deja resolue qui hérite. Un `<div data-theme="light">` place sous
+     un document dark ne matche que ce bloc : il redeclare bien --mx-scrim, mais
+     s'il ne redeclare pas --mx-bg, il hérite du --mx-bg de :root — c'est-a-dire
+     le scrim SOMBRE, deja substitue — et son fond de page reste noir.
+     Symptome constate avant correction : la colonne light de la demo rendait un
+     fond #191B21 et un bandeau neutral #1B1E27 des que l'application passait en
+     dark. Le bloc dark, lui, est groupe avec :root et declare les 96 tokens, ce
+     qui explique que les ilots DARK aient toujours fonctionne.
+     Ne sont PAS repris ici les tokens invariants par theme — echelles, rayons,
+     espacements, polices, durees, courbes : leur valeur ne depend d'aucune base
+     thematique, l'heritage de :root est donc correct pour eux.
+     ========================================================================== */
+  --mx-bg: var(--mx-scrim);
+  --mx-accent-2: color-mix(in srgb, var(--mx-accent) 78%, #fff);
+  --mx-accent-deep: color-mix(in srgb, var(--mx-accent) 72%, #000);
+  --mx-border2: color-mix(in srgb, var(--mx-border) 60%, transparent);
+  /* LOT OFFRES-VUES, V1 (Greg, 2026-10-18) — PAS la meme expression qu'en
+     dark (seul token de cet ilot ou la formule differe par theme, et non
+     seulement la base) : le correctif de contraste bloc/carte ne concerne
+     QUE le dark (voir le commentaire complet dans le bloc dark ci-dessus).
+     En light, --mx-surface2 (#F6F6F8) est deja tres proche du blanc ; lui
+     appliquer la MEME derivation vers #000 assombrirait le bloc de facon
+     visible et non demandee. --mx-group-bg retombe donc ici sur
+     --mx-surface2 NU, c'est-a-dire EXACTEMENT le comportement d'avant ce
+     lot (aucune regression en clair). */
+  --mx-group-bg: var(--mx-surface2);
+  /* Meme expression qu'en dark — voir le commentaire la-bas. */
+  --mx-danger-2: color-mix(in srgb, var(--mx-danger) 78%, #fff);
+  /* Meme expression qu'en dark — voir le commentaire la-bas (LOT
+     OFFRES-CYCLE, C1.4). */
+  --mx-green-2: color-mix(in srgb, var(--mx-green) 78%, #fff);
+  /* `--mx-field-prefilled-border`/`-bg` — RETIRES ici aussi, voir le
+     commentaire du bloc dark (LOT BOOKING-DRAWERS-FIN, LOT 2, C2 STRICT,
+     2026-10-23). */
+
+  /* Valeur LITTERALE identique au bloc dark (C2.0, 2026-10-24) : le warning
+     ne suit plus --mx-band par theme, voir la note plus haut. */
+  --mx-tone-fill-warning: #c2410c;
+  --mx-tone-fill-danger: var(--mx-danger);
+  --mx-tone-fill-success: var(--mx-green);
+  --mx-tone-fill-info: var(--mx-cyan);
+  --mx-tone-fill-accent: var(--mx-accent);
+  --mx-tone-fill-neutral: var(--mx-surface2);
+
+  --mx-tone-on-warning: #ffffff; /* texte blanc sur l'aplat #C2410C, C2.0 */
+  --mx-tone-on-danger: var(--mx-tone-on);
+  --mx-tone-on-info: var(--mx-tone-on);
+  --mx-tone-on-accent: var(--mx-tone-on);
+  --mx-tone-on-neutral: var(--mx-text2);
+
+  --mx-tone-text-danger: var(--mx-danger);
+  --mx-tone-text-accent: var(--mx-accent);
+  --mx-tone-text-neutral: var(--mx-text2);
+
+  --mx-tone-line-neutral: var(--mx-border);
+
+  /* C8 — meme motif que les alias ci-dessus : var(--mx-accent-rgb) doit se
+     recalculer sur l'accent LIGHT dans un ilot theme="light" imbrique dans une
+     page dark. Meme expression que le bloc dark, aucune valeur propre. */
+  --mx-focus-ring: 0 0 0 3px rgba(var(--mx-accent-rgb), 0.18);
+
+  /* Sans surcharge : deja AA sur surface2 en light.
+     danger 4.61 (marge fine, signalee) · accent 5.93 · neutral 7.81 */
+
+  /* Elevations themees */
+  --mx-shadow: 0 1px 2px rgba(16, 17, 20, 0.05), 0 2px 10px rgba(16, 17, 20, 0.05); /* elev-2 */
+  --mx-shadow-lg: 0 4px 16px rgba(16, 17, 20, 0.1), 0 16px 48px rgba(16, 17, 20, 0.12); /* elev-4 */
+}
+
+/* --------------------------------------------------------------------------
+   DENSITE — paliers de --mx-scale, cf. le bloc « ECHELLE ET DENSITE » dans
+   :root ci-dessus. Portee par l'attribut data-density sur <html>
+   (src/lib/uiDensity.ts), donc INDEPENDANTE de data-theme : ces regles
+   n'ont pas besoin d'etre dupliquees pour dark/light, elles ciblent le meme
+   attribut quel que soit le theme actif.
+
+   ORDRE DANS LE FICHIER — NE PAS DEPLACER AVANT :root. --mx-scale:1 (dans
+   :root) et [data-density="compact"]/[data-density="dense"] ci-dessous ont
+   une specificite CSS IDENTIQUE (pseudo-classe vs attribut, meme poids) :
+   sur l'element <html>, qui matche a la fois :root et l'attribut de
+   densite quand il est pose, c'est l'ORDRE DANS LA FEUILLE qui tranche.
+   Ces regles doivent donc rester APRES la declaration de :root pour gagner
+   le conflit — les placer avant la rendrait inoperantes sans erreur visible.
+   -------------------------------------------------------------------------- */
+[data-density='compact'] {
+  --mx-scale: 0.9;
+}
+
+[data-density='dense'] {
+  --mx-scale: 0.8;
+}
+
+/* ==========================================================================
+   EXCEPTIONS A LA REGLE « ZERO CSS DANS LE TRONC »
+   --------------------------------------------------------------------------
+   Le tronc src/components/mx ne contient AUCUN fichier .css : toute sa
+   presentation passe par des objets de style en ligne, ce qui place
+   l'integralite du tronc dans le champ d'ESLint. Les regles ci-dessous sont
+   les SEULES exceptions, et elles vivent ICI, dans src/styles/ — hors du
+   tronc. La regle « zero .css dans components/mx » reste donc intacte au sens
+   litteral : aucun fichier n'est ajoute au repertoire.
+
+   REGLE D'OCTROI D'UNE EXCEPTION — la seule.
+   Une exception n'est accordee que si le style EN LIGNE ne peut PAS exprimer
+   le besoin. Deux cas connus le rendent impossible :
+     - une PSEUDO-CLASSE (:focus-visible, :hover, :last-child…), qui n'existe
+       pas dans l'attribut style ;
+     - une POSITION RELATIVE ENTRE FRERES (« sauf le premier », « seulement si
+       precede de »), qu'un element ne connait pas de lui-meme.
+   Jamais par CONFORT : ni pour factoriser, ni pour raccourcir, ni pour eviter
+   de passer une prop. Si le besoin s'exprime en ligne, il s'ecrit en ligne.
+
+   2 EXCEPTIONS ACCORDEES A CE JOUR. Toute demande d'une troisieme passe par
+   Greg, et doit demontrer l'impossibilite ci-dessus, pas la commodite.
+
+     1. :focus-visible — anneau d'accessibilite transversal du README.
+        ACCORDEE le 2026-09-23, POSEE le meme jour (lot C5).
+        Motif : pseudo-classe. L'accessibilite prime sur la contrainte
+        d'architecture.
+        Elle compte DEUX regles, qui sont un seul mecanisme : rendre le contour
+        au clavier, et le retirer quand le focus ne vient pas du clavier. Voir
+        le bloc de l'exception pour pourquoi l'une ne va jamais sans l'autre.
+        EPAISSEUR REVUE le 2026-09-23, meme jour : 1px/1px et non 2px/2px.
+        ECART PROJET ASSUME, MEME TRAITEMENT QUE L'ECART TYPOGRAPHIQUE — le
+        MECANISME :focus-visible est conserve integralement et n'est pas
+        negociable (c'est l'accessibilite) ; seule l'EPAISSEUR du contour
+        differe du README. Un futur audit classe ceci « conforme a la decision
+        projet », jamais « ERREUR », et ne propose jamais de revenir a 2px —
+        mais DOIT signaler toute disparition du mecanisme lui-meme (contour
+        absent au clavier, ou present au clic souris). Detail et mesures dans
+        le commentaire de la regle, juste en dessous.
+     2. Filet de separation des lignes cle/valeur — ci-dessous.
+        ACCORDEE le 2026-09-23, posee.
+        Motif : position relative entre freres.
+   ========================================================================== */
+
+/* EXCEPTION 1 / 2 — contour de focus clavier.
+   Transcrit la regle d'accessibilite du README (« Focus clavier » :
+   `outline: 2px solid var(--accent); outline-offset: 2px` sur `:focus-visible`,
+   pour les boutons, les champs et les liens). Le README la donne comme « a
+   conserver : c'est l'accessibilite ».
+
+   ECART PROJET ASSUME — DECISION DE GREG DU 2026-09-23, MEME JOUR QUE LA POSE.
+   Le README demande 2px/2px. Le tronc pose 1px/1px : juge trop epais et date
+   par Greg a l'ecran. MEME TRAITEMENT QUE L'ECART TYPOGRAPHIQUE DE
+   docs/design/handoff-mannyx-ds/LISEZ-MOI-EN-PREMIER.md — le MECANISME
+   :focus-visible est conserve INTEGRALEMENT et n'est PAS negociable, c'est
+   l'accessibilite ; seule l'EPAISSEUR du contour differe. Ne jamais «
+   corriger » vers 2px. Un futur audit qui redecouvre ce 1px doit le classer
+   « conforme a la decision projet », et signaler en revanche toute
+   disparition du MECANISME (contour absent au clavier, present au clic
+   souris) — c'est ce qui compte, pas l'epaisseur.
+
+   MESURE DE CONTRASTE (WCAG, luminance relative, calcul sur les valeurs sRGB
+   reelles des tokens — PAS une mesure en navigateur, l'outil etait
+   indisponible au moment du calcul). A 1px, un contour demande PLUS de
+   contraste qu'a 2px pour rester percu : verifie sur les quatre contextes qui
+   comptent, contour opaque contre le FOND REEL derriere lui.
+     dark  / --mx-surface  : 4.94:1     dark  / --mx-surface2 : 4.55:1
+     light / --mx-surface  : 6.40:1     light / --mx-surface2 : 5.93:1
+   Tous largement au-dessus du plancher de 3:1 (WCAG 1.4.11, indicateurs non
+   textuels). Insuffisant cependant pour conclure : sur un CHAMP ou un
+   INTERRUPTEUR, le contour ne se pose pas sur le fond nu, il se loge DANS la
+   bande de --mx-focus-ring (spread 3px, alpha .18, SANS flou — donc une bande
+   translucide UNIE, pas un dégrade). A l'offset 1px choisi ici, le contour
+   [1,2] tombe ENTIEREMENT a l'interieur de cette bande [0,3] : c'est le
+   contexte le plus tendu, calcule a part.
+     dark  / halo sur surface  : 3.93:1   dark  / halo sur surface2  : 3.59:1
+     light / halo sur surface  : 4.87:1   light / halo sur surface2  : 4.54:1
+   Les quatre passent encore le plancher de 3:1, le plus juste etant DARK sur
+   --mx-surface2 (3.59:1, ~20% de marge). Aucune couleur de repli n'est donc
+   necessaire. Si une revision future de --mx-surface2 ou de l'alpha du halo
+   les rapproche du seuil, c'est CE calcul qu'il faut refaire, pas celui contre
+   le fond nu — c'est lui qui a failli.
+
+   POURQUOI PAS EN STYLE EN LIGNE. `:focus-visible` est une PSEUDO-CLASSE, que
+   l'attribut style ne peut pas exprimer. C'est le premier des deux cas
+   d'impossibilite qui ouvrent droit a une exception.
+
+   DEUX REGLES, UN SEUL MECANISME — ET UN ORDRE QUI NE S'INVERSE PAS.
+   La seconde regle neutralise le contour que le navigateur dessine sur :focus
+   quand le focus NE vient PAS du clavier (clic souris). Elle remplace les
+   `outline:'none'` que quatre primitives portaient en style EN LIGNE, et qui
+   rendaient la premiere regle inoperante : une declaration de l'attribut style
+   bat n'importe quel selecteur de feuille de style, sans `!important`. Ces
+   quatre declarations ont donc ete retirees dans le meme lot.
+   Ne JAMAIS garder la seconde regle sans la premiere : ce serait exactement le
+   defaut que ce lot corrige, un tronc ou le focus clavier est invisible.
+
+   PORTEE PAR ATTRIBUT, JAMAIS PAR ELEMENT. `button:focus-visible` toucherait
+   les centaines de boutons AURA non migres, tres au-dela du tronc. Les
+   primitives marquent donc explicitement ce qui est concerne, par
+   `data-mx-focus`. Le portent aujourd'hui : MxButton, l'input de
+   MxNumberField, le select de MxSelectField, l'interrupteur de MxToggle et le
+   bouton de fermeture de MxDrawer.
+
+   CE QUI NE LE PORTE PAS, ET POURQUOI. Le PANNEAU de MxDrawer garde son
+   `outline:none` en ligne et reste hors de ces regles. Il est focalise par
+   PROGRAMME a l'ouverture (tabIndex=-1, voir MxDrawer), et l'heuristique
+   :focus-visible des navigateurs peut s'y declencher : un contour cernerait
+   alors le panneau entier. Un conteneur qui recoit le focus faute de mieux
+   n'est pas une cible de focus clavier.
+
+   1px reste LITTERAL, comme le 2px du README qu'il remplace : ce n'est pas une
+   bordure, et l'echelle des bordures (1px / 1.5px) n'a pas a l'accueillir. Un
+   token pour un usage unique serait du bruit. La couleur, elle, est bien un
+   token — le contour suit l'accent du theme. */
+[data-mx-focus]:focus-visible {
+  outline: 1px solid var(--mx-accent);
+  outline-offset: 1px;
+}
+
+[data-mx-focus]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* EXCEPTION 2 / 2 — filet de separation des lignes cle/valeur.
+   Transcrit `.mx-dr-kv-row{border-bottom:1.5px solid var(--border)}` +
+   `:last-child{border-bottom:none}` de reference/mannyx-drawer.js.
+
+   POURQUOI PAS EN STYLE EN LIGNE. Une ligne ne sait pas si elle est la
+   derniere de sa suite, et MxKVGroup ne peut pas le lui dire : ses enfants
+   reels melent fragments, tableaux issus de .map(), MxDivider, MxBadge et
+   MxNote. Une distribution par cloneElement injecterait la position dans un
+   MxDivider et compterait un fragment pour une ligne.
+
+   POURQUOI LE FRERE ADJACENT PLUTOT QUE :last-child. `+` pose le filet ENTRE
+   deux lignes consecutives, ce qui rend la question du dernier sans objet, et
+   tout enfant intercale — separateur, badge, message — interrompt la serie.
+   C'est le comportement voulu : un MxDivider entre deux lignes les separe
+   deja, un second filet ferait doublon.
+
+   PORTEE STRICTE : scopee au groupe (`.mx-kv-group >`), donc un MxKV pose
+   ailleurs — MxFields en mode lecture, par exemple — n'est pas touche. C'est
+   exactement le perimetre du handoff, ou `.mx-dr-kv-row` n'existe que dans
+   `.mx-dr-kv`.
+
+   Le padding-top equilibre le filet : 8px du gap du groupe au-dessus, 8px de
+   padding en dessous. Le handoff pose 9px/9px via `padding:9px 0`, que le gap
+   du groupe (8px, partage avec les enfants non-lignes) rend inatteignable a
+   l'identique sans casser l'espacement de ces enfants. */
+.mx-kv-group > .mx-kv + .mx-kv {
+  border-top: var(--mx-border-w) solid var(--mx-border);
+  padding-top: var(--mx-space-8);
+}
+
+/* EXCEPTION 3 / 3 — contour de focus clavier, PORTEE GLOBALE (toute
+   l'application, pas seulement le tronc).
+   Accordee par Greg le 2026-09-28 (lot "focus-global", programme d'adoption
+   Mannyx, lot 2). Lecture seule prealable (A1/A2) : la quasi-totalite des
+   elements interactifs anciens (sidebar, *Tabs a base de NavLink, boutons
+   AURA via Tailwind focus:ring) n'ont AUCUN contour de focus clavier distinct
+   aujourd'hui — au mieux un ring visible au clic souris ET au clavier
+   indifferemment (AURA Button), au pire rien du tout (sidebar-item, NavLink
+   des *Tabs). Cette regle POSE le mecanisme partout ou rien de plus specifique
+   ne s'y opose ; elle ne le RETIRE nulle part.
+
+   POURQUOI PAS EN STYLE EN LIGNE. Meme raison que l'exception 1/2 :
+   `:focus-visible` est une PSEUDO-CLASSE globale, non ciblee par attribut —
+   c'est le sens meme de ce lot (« toute l'application », pas `data-mx-focus`)
+   — donc inexprimable par l'attribut style, qui ne s'applique qu'a l'element
+   qui le porte.
+
+   SPECIFICITE VOLONTAIREMENT BASSE (0,1,0) : `:focus-visible` seul, sans
+   selecteur d'element ni de classe. Consequence ASSUMEE, releve a l'audit
+   A1 : toute regle plus specifique — ne serait-ce qu'une seule classe —
+   continue de gagner et masque celle-ci pour son perimetre. Notamment :
+   `.input:focus{outline:none}` / `.select:focus{...}` (utilities.css,
+   specificite 0,2,0), les classes Tailwind `focus:outline-none`/`focus:ring-*`
+   des boutons AURA (0,2,0), `.finance-console *:focus-visible{outline:2px...}`
+   (0,2,0, prioritaire dans son scope), et surtout
+   `.dark input:focus/select:focus/textarea:focus{outline:none !important}`
+   (index.css) — le `!important` y gagne INCONDITIONNELLEMENT, specificite ou
+   pas. Corriger ces cas precis (retirer leurs outline:none, ou les faire
+   ceder devant celle-ci) est un lot ULTERIEUR, pas celui-ci : ce lot POSE le
+   mecanisme la ou rien ne s'y oppose deja, il ne le fait pas gagner partout.
+
+   TRAITS FIXES, PAS D'ECHELLE. 1px/1px litteral, comme le contour scope de
+   l'exception 1/2 (meme raisonnement : ce n'est pas une bordure, --mx-scale
+   ne concerne que les TAILLES, pas les EPAISSEURS de trait — voir le lot
+   "echelle et densite d'affichage", corrections C1/C5). La couleur suit
+   l'accent du theme via le token.
+
+   NE TOUCHE PAS [data-mx-focus] : ces regles (exception 1/2, ci-dessus)
+   restent en place, redondantes avec celle-ci sur leur perimetre mais sans
+   conflit (meme declaration). Leur fusion eventuelle est un lot ulterieur.
+   NE TOUCHE PAS LES *-console.css (finance/ground/economat) : ces feuilles
+   sont vouees a disparaitre avec la migration Mannyx, pas a etre corrigees
+   au passage. */
+:focus-visible {
+  outline: var(--mx-border-w-thin) solid var(--mx-accent);
+  outline-offset: 1px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* EXCEPTION — barre de defilement des corps de drawer. LOT BOOKING-DRAWERS-FIN,
+   LOT 2, C2.4 (2026-10-23). Transcrit la regle globale du catalogue
+   (`01-catalogue-autonome.html` / `reference/Mannyx Components V2.html`, L.101) :
+   `::-webkit-scrollbar{width:5px}` / `::-webkit-scrollbar-track{background:
+   transparent}` / `::-webkit-scrollbar-thumb{background:var(--border);
+   border-radius:3px}` — PLUS l'equivalent Firefox (`scrollbar-width`/
+   `scrollbar-color`), absent du prototype (webkit seul) mais necessaire pour ne
+   pas laisser Firefox au style natif par defaut, bien plus large.
+
+   PORTEE PAR ATTRIBUT, JAMAIS GLOBALE — a la difference du catalogue qui
+   l'applique a `::-webkit-scrollbar` SANS selecteur (toute la page de demo) :
+   une regle globale toucherait aussi les listes/tableaux/consoles AURA non
+   migres, tres au-dela du perimetre de ce lot (corps de drawer). Meme motif que
+   `[data-mx-focus]` ci-dessus. Posent `data-mx-scroll` : le corps de
+   `MxDrawer` en `bodyMode="scroll"` (defaut), et chaque panneau d'onglet
+   scrollable sous `bodyMode="fill"` (OfferComposer, SendOfferEmailCore — voir
+   leurs `DRAWER_TAB_PANEL`).
+
+   Rayon 3px : litteral, hors echelle (3px existe comme cran mais pour
+   « badges, onglets de picker, kbd », pas les barres de defilement — meme
+   motif que les valeurs litterales deja presentes dans ce fichier pour des
+   usages uniques). Epaisseur 5px : idem, geometrie d'un controle de
+   defilement, pas une bordure ni un espacement. */
+[data-mx-scroll] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mx-border) transparent;
+}
+
+[data-mx-scroll]::-webkit-scrollbar {
+  width: 5px;
+}
+
+[data-mx-scroll]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-mx-scroll]::-webkit-scrollbar-thumb {
+  background: var(--mx-border);
+  border-radius: 3px;
+}

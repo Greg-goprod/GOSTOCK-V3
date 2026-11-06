@@ -34,7 +34,7 @@ export async function resetSystemForProduction(): Promise<ResetResults> {
 
   // Vérifier que Supabase est configuré
   if (!supabase) {
-    results.errors.push('Configuration Supabase invalide. Vérifiez vos variables d\'environnement.');
+    results.errors.push('Configuration Supabase invalide. Vérifie tes variables d\'environnement.');
     return results;
   }
 

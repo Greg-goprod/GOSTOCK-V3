@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCodeScanner from '../components/QRCode/QRCodeScanner';
 import Card from '../components/common/Card';
@@ -6,12 +6,13 @@ import Button from '../components/common/Button';
 import { ArrowLeft, Search, Package, User, FileText, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
-import { Equipment, User as UserType, CheckoutRecord } from '../types';
+import { findEquipmentByCode } from '../lib/scan';
+import { Equipment, User as UserType } from '../types';
 import ReturnModal from '../components/checkout/ReturnModal';
+import PageTitle from '../components/common/PageTitle';
 
 const Scan: React.FC = () => {
   const navigate = useNavigate();
-  const [scannedId, setScannedId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<'equipment' | 'user' | 'checkout' | 'delivery_note' | null>(null);
   const [item, setItem] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,6 @@ const Scan: React.FC = () => {
 
   const handleScan = async (decodedText: string) => {
     console.log("Scan détecté:", decodedText);
-    setScannedId(decodedText);
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -119,75 +119,10 @@ const Scan: React.FC = () => {
     // Remplacer les apostrophes par des tirets si présentes
     const normalizedId = id.replace(/'/g, '-');
     
-    // Vérifier si c'est un code d'instance (format: ART-20250614-0025-001)
-    const isInstanceCode = /^[A-Z]+-\d+-\d+-\d+$/.test(normalizedId);
-    
-    // Extraire le code article de base si c'est un code d'instance
-    let articleCode = normalizedId;
-    if (isInstanceCode) {
-      // Extraire la partie article sans le numéro d'instance
-      const parts = normalizedId.split('-');
-      if (parts.length >= 3) {
-        articleCode = parts.slice(0, 3).join('-');
-      }
-    }
-    
-    console.log("Code normalisé:", normalizedId);
-    console.log("Code article extrait:", articleCode);
-    
-    // Recherche par numéro de série exact
-    let { data: equipment, error: equipmentError } = await supabase
-      .from('equipment')
-      .select('*')
-      .eq('serial_number', normalizedId)
-      .maybeSingle();
-    
-    console.log("Recherche par numéro de série:", equipment, equipmentError);
-    
-    // Si pas trouvé par numéro de série, essayer par numéro d'article
-    if (!equipment && !equipmentError) {
-      const { data: equipmentByArticle, error: articleError } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('article_number', normalizedId)
-        .maybeSingle();
-      
-      console.log("Recherche par numéro d'article:", equipmentByArticle, articleError);
-      
-      if (equipmentByArticle) {
-        equipment = equipmentByArticle;
-      }
-    }
-    
-    // Si pas trouvé par numéro d'article, essayer par code article extrait
-    if (!equipment && !equipmentError) {
-      const { data: equipmentByArticleCode, error: articleCodeError } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('article_number', articleCode)
-        .maybeSingle();
-      
-      console.log("Recherche par code article extrait:", equipmentByArticleCode, articleCodeError);
-      
-      if (equipmentByArticleCode) {
-        equipment = equipmentByArticleCode;
-      }
-    }
-
-    // Si toujours pas trouvé, essayer avec ILIKE pour une correspondance partielle
-    if (!equipment && !equipmentError) {
-      const { data: equipmentByPartialArticle, error: partialArticleError } = await supabase
-        .from('equipment')
-        .select('*')
-        .ilike('article_number', `%${articleCode}%`)
-        .limit(1);
-      
-      console.log("Recherche par correspondance partielle d'article:", equipmentByPartialArticle, partialArticleError);
-      
-      if (equipmentByPartialArticle && equipmentByPartialArticle.length > 0) {
-        equipment = equipmentByPartialArticle[0];
-      }
-    }
+    // Identifiant, numéro d'article ou numéro de série exacts (plus de correspondance approximative
+    // qui pouvait retourner un autre article) ; les codes d'exemplaire sont traités plus bas
+    const found = await findEquipmentByCode(normalizedId);
+    const equipment = found && !found.instance ? found.equipment : null;
 
     // Si on a trouvé un équipement
     if (equipment) {
@@ -223,7 +158,7 @@ const Scan: React.FC = () => {
         articleNumber: equipment.article_number,
         qrType: equipment.qr_type || 'individual',
         totalQuantity: equipment.total_quantity || 1,
-        availableQuantity: equipment.available_quantity || 1,
+        availableQuantity: equipment.available_quantity ?? 0,
         shortTitle: equipment.short_title
       };
       
@@ -236,8 +171,12 @@ const Scan: React.FC = () => {
           delivery_notes(id, note_number, status)
         `)
         .eq('equipment_id', equipment.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'overdue'])
+        .order('checkout_date')
+        .limit(1)
         .maybeSingle();
+      // Sans ce contrôle, une erreur de lecture ferait passer l'outil pour disponible
+      if (checkoutError) throw checkoutError;
       
       if (activeCheckout) {
         console.log("Emprunt actif trouvé pour cet équipement:", activeCheckout);
@@ -288,7 +227,7 @@ const Scan: React.FC = () => {
         *,
         equipment(*)
       `)
-      .eq('qr_code', normalizedId)
+      .eq('qr_code', found?.instance?.qr_code ?? normalizedId)
       .maybeSingle();
 
     console.log("Recherche instance:", instance, instanceError);
@@ -313,7 +252,7 @@ const Scan: React.FC = () => {
         articleNumber: instance.equipment.article_number,
         qrType: instance.equipment.qr_type || 'individual',
         totalQuantity: instance.equipment.total_quantity || 1,
-        availableQuantity: instance.equipment.available_quantity || 1,
+        availableQuantity: instance.equipment.available_quantity ?? 0,
         shortTitle: instance.equipment.short_title
       };
       
@@ -427,42 +366,17 @@ const Scan: React.FC = () => {
   };
 
   const handleReturnEquipment = async () => {
-    if (itemType === 'checkout' && item && item.status === 'active') {
+    if (itemType === 'checkout' && item && (item.status === 'active' || item.status === 'overdue')) {
       try {
         setLoading(true);
         
-        // Mettre à jour le statut du checkout
-        const { error: checkoutError } = await supabase
-          .from('checkouts')
-          .update({
-            status: 'returned',
-            return_date: new Date().toISOString()
-          })
-          .eq('id', item.id);
+        // La base remet le stock à jour elle-même
+        const { error: returnError } = await supabase.rpc('return_with_check', {
+          p_checkout_id: item.id,
+          p_condition: 'ok'
+        });
 
-        if (checkoutError) throw checkoutError;
-
-        // Mettre à jour la quantité disponible de l'équipement
-        const { data: equipmentData, error: equipmentFetchError } = await supabase
-          .from('equipment')
-          .select('available_quantity, total_quantity')
-          .eq('id', item.equipmentId)
-          .single();
-
-        if (equipmentFetchError) throw equipmentFetchError;
-
-        const newAvailableQuantity = (equipmentData.available_quantity || 0) + 1;
-        const newStatus = newAvailableQuantity >= (equipmentData.total_quantity || 1) ? 'available' : 'checked-out';
-
-        const { error: equipmentUpdateError } = await supabase
-          .from('equipment')
-          .update({
-            status: newStatus,
-            available_quantity: newAvailableQuantity
-          })
-          .eq('id', item.equipmentId);
-
-        if (equipmentUpdateError) throw equipmentUpdateError;
+        if (returnError) throw returnError;
 
         toast.success('Matériel retourné avec succès');
         
@@ -493,9 +407,9 @@ const Scan: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">SCANNER QR CODE</h1>
+          <PageTitle>Scanner</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Scannez un QR code pour identifier un matériel, un utilisateur, un emprunt ou un bon de sortie
+            Scanne un QR code pour identifier un matériel, un utilisateur, un emprunt ou un bon de sortie
           </p>
         </div>
         
@@ -513,15 +427,15 @@ const Scan: React.FC = () => {
         <QRCodeScanner onScan={handleScan} onError={setError} />
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+          <div className="mt-4 p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-md">
             <div className="flex items-center gap-2">
-              <AlertCircle size={18} className="text-red-600 dark:text-red-400" />
-              <p className="text-sm font-medium text-red-700 dark:text-red-300">
+              <AlertCircle size={18} className="text-tone-danger" />
+              <p className="text-sm font-medium text-tone-danger">
                 {error}
               </p>
             </div>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-2 pl-6">
-              Essayez de scanner à nouveau ou saisissez manuellement le code dans le champ ci-dessus.
+            <p className="text-xs text-tone-danger mt-2 pl-6">
+              Essaie de scanner à nouveau ou saisis manuellement le code dans le champ ci-dessus.
             </p>
           </div>
         )}
@@ -534,10 +448,10 @@ const Scan: React.FC = () => {
         )}
 
         {success && item && (
-          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+          <div className="mt-4 p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-md">
             <div className="flex items-center gap-2">
-              <CheckCircle size={18} className="text-green-600 dark:text-green-400" />
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">
+              <CheckCircle size={18} className="text-tone-success" />
+              <p className="text-sm font-medium text-tone-success">
                 {itemType === 'equipment' && `Équipement trouvé: ${item.name}`}
                 {itemType === 'user' && `Utilisateur trouvé: ${item.first_name} ${item.last_name}`}
                 {itemType === 'checkout' && `Emprunt trouvé pour: ${item.equipment?.name}`}
@@ -640,7 +554,7 @@ const Scan: React.FC = () => {
                 Voir les détails
               </Button>
 
-              {itemType === 'checkout' && item.status === 'active' && (
+              {itemType === 'checkout' && (item.status === 'active' || item.status === 'overdue') && (
                 <Button
                   variant="success"
                   icon={<ArrowLeft size={18} />}
@@ -672,7 +586,7 @@ const Scan: React.FC = () => {
           setShowReturnModal(false);
           setSelectedNoteId(undefined);
         }}
-        initialNoteId={selectedNoteId}
+        deliveryNoteId={selectedNoteId}
       />
     </div>
   );

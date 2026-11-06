@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { supabase } from '../../lib/supabase';
-import { Equipment, EquipmentMaintenance, MaintenanceType } from '../../types';
-import { Wrench, Calendar, Clock, CheckCircle, AlertTriangle, FileText, DollarSign, User, Plus } from 'lucide-react';
+import { Equipment, EquipmentMaintenance } from '../../types';
+import { Wrench, Calendar, Clock, CheckCircle, AlertTriangle, DollarSign, User, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MaintenanceModal from './MaintenanceModal';
 
@@ -99,19 +99,19 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
     switch (status) {
       case 'in_progress':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200">
             En cours
           </span>
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-success-100 dark:bg-success-900/50 text-tone-success">
             Terminée
           </span>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[length:calc(11px*var(--mx-scale,1))] font-bold bg-danger-100 dark:bg-danger-900/50 text-tone-danger">
             Annulée
           </span>
         );
@@ -141,25 +141,25 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={`HISTORIQUE DE MAINTENANCE - ${equipment.name}`}
+        title={`Historique de maintenance · ${equipment.name}`}
         size="xl"
       >
         <div className="space-y-6">
           {/* Informations équipement */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">
-                  MATÉRIEL
+                <h3 className="font-bold text-primary-800 dark:text-primary-200 mb-2">
+                  Matériel
                 </h3>
-                <p className="font-medium text-blue-700 dark:text-blue-300">
+                <p className="font-medium text-primary-700 dark:text-primary-300">
                   {equipment.name}
                 </p>
-                <p className="text-sm text-blue-600 dark:text-blue-400">
+                <p className="text-sm text-primary-600 dark:text-primary-400">
                   N° Série: {equipment.serialNumber} • Article: {equipment.articleNumber}
                 </p>
                 {equipment.lastMaintenance && (
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                  <p className="text-sm text-primary-600 dark:text-primary-400 mt-1">
                     Dernière maintenance: {formatDate(equipment.lastMaintenance)}
                   </p>
                 )}
@@ -170,7 +170,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                 onClick={handleAddMaintenance}
                 className="font-bold"
               >
-                NOUVELLE MAINTENANCE
+                Nouvelle maintenance
               </Button>
             </div>
           </div>
@@ -182,9 +182,9 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
             </div>
           ) : maintenanceHistory.length === 0 ? (
             <div className="text-center py-12">
-              <Wrench size={48} className="mx-auto text-gray-400 mb-4" />
+              <Wrench size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
               <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase">
-                AUCUN HISTORIQUE DE MAINTENANCE
+                Aucun historique de maintenance
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-4 font-medium">
                 Aucune maintenance n'a été enregistrée pour ce matériel.
@@ -195,7 +195,7 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                 onClick={handleAddMaintenance}
                 className="font-bold"
               >
-                AJOUTER UNE MAINTENANCE
+                Ajouter une maintenance
               </Button>
             </div>
           ) : (
@@ -205,10 +205,10 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                   key={maintenance.id} 
                   className={`border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer ${
                     maintenance.status === 'in_progress' 
-                      ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20' 
+                      ? 'border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20' 
                       : maintenance.status === 'completed'
-                      ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
-                      : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+                      ? 'border-success-200 dark:border-success-800 bg-success-50 dark:bg-success-900/20'
+                      : 'border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-900/20'
                   }`}
                   onClick={() => handleEditMaintenance(maintenance)}
                 >
@@ -217,9 +217,9 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                       <div className="flex items-center gap-2 mb-2">
                         <span 
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                          style={{ backgroundColor: maintenance.maintenanceType.color }}
+                          style={{ backgroundColor: maintenance.maintenanceType?.color || '#6d3ee0' }}
                         >
-                          {maintenance.maintenanceType.name}
+                          {maintenance.maintenanceType?.name || 'Maintenance'}
                         </span>
                         {getStatusBadge(maintenance.status)}
                       </div>
@@ -272,17 +272,17 @@ const MaintenanceHistoryModal: React.FC<MaintenanceHistoryModalProps> = ({ isOpe
                     
                     <div className="flex-shrink-0 ml-4">
                       {maintenance.status === 'in_progress' ? (
-                        <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-medium">
+                        <div className="flex items-center gap-1 text-primary-600 dark:text-primary-400 text-xs font-medium">
                           <Wrench size={14} />
                           <span>En cours</span>
                         </div>
                       ) : maintenance.status === 'completed' ? (
-                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-xs font-medium">
+                        <div className="flex items-center gap-1 text-tone-success text-xs font-medium">
                           <CheckCircle size={14} />
                           <span>Terminée</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-medium">
+                        <div className="flex items-center gap-1 text-tone-danger text-xs font-medium">
                           <AlertTriangle size={14} />
                           <span>Annulée</span>
                         </div>

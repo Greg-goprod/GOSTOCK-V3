@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { MxDrawer, type MxDrawerSize } from '../mx/MxDrawer';
 
 interface ModalProps {
   isOpen: boolean;
@@ -7,105 +7,47 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  // Conservé pour compatibilité : le drawer de la charte se ferme au clic sur le voile et à Échap
+  closeOnBackdrop?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-  size = 'md',
-}) => {
-  const modalRef = useRef<HTMLDivElement>(null);
+// Toutes les fenêtres de GO-Mat s'ouvrent en drawer (panneau latéral de la charte Mannyx).
+// Largeurs dans l'échelle fermée de la charte (360 / 420 / 520 / 680 px) : le plus grand cran est 680 px.
+const SIZE: Record<NonNullable<ModalProps['size']>, MxDrawerSize> = {
+  sm: 'md',
+  md: 'lg',
+  lg: 'xl',
+  xl: 'xl',
+};
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      // Vérifier si le clic est sur un élément du ColorPicker
-      const isColorPickerClick = (event.target as Element).closest('.color-picker-portal');
-      
-      if (modalRef.current && !modalRef.current.contains(event.target as Node) && !isColorPickerClick) {
-        onClose();
-      }
-    };
+// Durée du glissement de fermeture (0.32s dans la charte) avant de démonter le contenu
+const CLOSE_DELAY = 350;
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, onClose]);
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  // Le contenu est démonté à la fermeture, comme avant : chaque ouverture repart d'un formulaire neuf
+  const [mounted, setMounted] = useState(isOpen);
+  // Ouvert une image après le montage, pour jouer le glissement d'entrée
+  const [shown, setShown] = useState(false);
+  const lastChildren = useRef(children);
+  if (isOpen) lastChildren.current = children;
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
+      setMounted(true);
+      const frame = requestAnimationFrame(() => setShown(true));
+      return () => cancelAnimationFrame(frame);
     }
-
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
+    setShown(false);
+    const timer = setTimeout(() => setMounted(false), CLOSE_DELAY);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
-  const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-
-  if (!isOpen) return null;
+  if (!mounted && !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop avec effet de flou */}
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300" />
-      
-      {/* Container flottant - position plus haute et moins de hauteur */}
-      <div className="flex min-h-full items-start justify-center p-3 pt-12">
-        <div
-          ref={modalRef}
-          className={`${sizeClasses[size]} w-full transform transition-all duration-300 scale-100`}
-        >
-          {/* Modal flottant avec ombre douce et bordure subtile */}
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden max-h-[80vh]">
-            {/* Header compact avec effet glassmorphism */}
-            <div className="flex items-center justify-between px-3 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b border-gray-100 dark:border-gray-700">
-              <h2 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wide">{title}</h2>
-              <button
-                onClick={onClose}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
-              >
-                <X size={16} className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200" />
-              </button>
-            </div>
-            
-            {/* Content avec padding réduit et scroll optimisé */}
-            <div className="p-3 overflow-y-auto max-h-[calc(80vh-48px)] text-gray-900 dark:text-white">
-              {children}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <MxDrawer open={shown && isOpen} onClose={onClose} title={title} size={SIZE[size]}>
+      {lastChildren.current}
+    </MxDrawer>
   );
 };
 

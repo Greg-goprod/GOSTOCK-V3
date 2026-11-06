@@ -1,5 +1,6 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 import { 
   AppContextType, 
   Category, 
@@ -9,17 +10,87 @@ import {
   EquipmentInstance, 
   EquipmentSubgroup, 
   Supplier, 
+  User,
+  Depot,
+  ConsumableStock,
+  StockNotification,
+  Vehicle,
   CheckoutWithCalculatedStatus,
   EquipmentWithCalculatedStatus
 } from '../types';
 import toast from 'react-hot-toast';
 
-// Define notification type
-interface Notification {
-  id: string;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  timestamp: Date;
+// Ligne de la table equipment (snake_case) → Equipment (camelCase)
+const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
+  id: item.id,
+  name: item.name,
+  description: item.description || '',
+  category: item.category_id,
+  serialNumber: item.serial_number,
+  status: item.status,
+  addedDate: item.created_at,
+  lastMaintenance: item.last_maintenance,
+  imageUrl: item.image_url,
+  supplier: item.supplier_id,
+  location: item.location,
+  articleNumber: item.article_number,
+  qrType: item.qr_type,
+  totalQuantity: item.total_quantity,
+  availableQuantity: item.available_quantity,
+  shortTitle: item.short_title,
+  group: item.group_id,
+  subgroup: item.subgroup_id,
+  itemType: item.item_type,
+  unit: item.unit,
+  supplierReference: item.supplier_reference,
+  requiresApproval: Boolean(item.requires_approval),
+  dailyRate: item.daily_rate === null || item.daily_rate === undefined ? undefined : Number(item.daily_rate),
+  purchasePrice: item.purchase_price === null || item.purchase_price === undefined ? undefined : Number(item.purchase_price),
+  depotId: item.depot_id,
+  requiredTrainingId: item.required_training_id ?? undefined,
+  requiresSignature: Boolean(item.requires_signature),
+  purchaseDate: item.purchase_date,
+  warrantyUntil: item.warranty_until,
+  depreciationYears: item.depreciation_years,
+  isBattery: Boolean(item.is_battery),
+  batteryLifeMonths: item.battery_life_months,
+  batteryMaxUses: item.battery_max_uses,
+  rentalId: item.rental_id ?? undefined,
+  rentalUntil: item.rental_until ?? undefined
+});
+
+const mapUserRow = (u: Record<string, any>) => ({
+  id: u.id,
+  first_name: u.first_name,
+  last_name: u.last_name,
+  email: u.email,
+  phone: u.phone,
+  department: u.department,
+  role: u.role,
+  permissions: u.permissions || [],
+  active: u.active !== false,
+  linked: !!u.auth_user_id,
+  licenseCategories: u.license_categories || [],
+  licenseExpiresOn: u.license_expires_on,
+  personKind: u.person_kind ?? 'employee',
+  company: u.company,
+  accessUntil: u.access_until,
+  leftOn: u.left_on,
+  depositAmount: u.deposit_amount,
+  depositPaidOn: u.deposit_paid_on,
+  depositReturnedOn: u.deposit_returned_on,
+  dateCreated: u.created_at
+});
+
+// Un collaborateur ne lit que sa propre fiche ; les autres personnes viennent de l'annuaire
+// (nom, service), assez pour afficher qui a quoi sans exposer e-mail, téléphone, caution ou permis
+async function withDirectory(list: ReturnType<typeof mapUserRow>[]) {
+  const { data } = await supabase.rpc('people_directory');
+  const known = new Set(list.map(u => u.id));
+  const others = ((data || []) as Record<string, any>[])
+    .filter(u => !known.has(u.id))
+    .map(u => mapUserRow({ ...u, role: 'user' }));
+  return [...list, ...others];
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -40,7 +111,9 @@ interface AppProviderProps {
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { profile } = useAuth();
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -50,20 +123,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [statusConfigs, setStatusConfigs] = useState<any[]>([]); // Assuming StatusConfig is now part of Equipment or handled differently
   const [checkouts, setCheckouts] = useState<import('../types').CheckoutRecord[]>([]);
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [depots, setDepots] = useState<Depot[]>([]);
+  const [consumableStock, setConsumableStock] = useState<ConsumableStock[]>([]);
+  // Notifications de la personne connectée (lues et non lues, état propre à chacun) et nombre de non lues
+  const [userNotifications, setUserNotifications] = useState<StockNotification[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingAppData, setLoadingAppData] = useState(true);
-
-  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date(),
-    };
-    setNotifications(prev => [...prev, newNotification]);
-  };
-
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-  };
 
   const fetchAppData = async () => {
     setLoadingAppData(true);
@@ -75,6 +142,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         throw new Error('Supabase client not initialized');
       }
       
+      // Les alertes d'échéance (flotte, entretien, retours, rapport du mois…) sont créées par la tâche planifiée de la base, toutes les
+      // 5 minutes (fonction send-notification-emails, clé de service) : l'application ne les déclenche plus (migration 63).
+
       // Charger toutes les données nécessaires en parallèle
       const [
         equipmentResult,
@@ -86,7 +156,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         statusConfigsResult,
         checkoutsResult,
         usersResult,
-        deliveryNotesResult
+        deliveryNotesResult,
+        depotsResult,
+        consumableStockResult,
+        vehiclesResult
       ] = await Promise.all([
         supabase.from('equipment').select('*').order('created_at', { ascending: false }),
         supabase.from('categories').select('*').order('name'),
@@ -97,7 +170,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         supabase.from('status_configs').select('*').order('name'),
         supabase.from('checkouts').select('*').order('created_at', { ascending: false }),
         supabase.from('users').select('*').order('last_name'),
-        supabase.from('delivery_notes').select('*').order('created_at', { ascending: false })
+        supabase.from('delivery_notes').select('*').order('created_at', { ascending: false }),
+        supabase.from('depots').select('*').order('name'),
+        supabase.from('consumable_stock').select('*'),
+        supabase.from('vehicles').select('*').order('name')
       ]);
 
       if (equipmentResult.error) throw equipmentResult.error;
@@ -110,28 +186,44 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (checkoutsResult.error) throw checkoutsResult.error;
       if (usersResult.error) throw usersResult.error;
       if (deliveryNotesResult.error) throw deliveryNotesResult.error;
+      if (depotsResult.error) throw depotsResult.error;
+      if (consumableStockResult.error) throw consumableStockResult.error;
+      if (vehiclesResult.error) throw vehiclesResult.error;
 
+      setVehicles((vehiclesResult.data || []).map((v: Record<string, any>) => ({
+        id: v.id,
+        name: v.name,
+        plate: v.plate,
+        depotId: v.depot_id,
+        licenseCategory: v.license_category,
+        seats: v.seats ?? undefined,
+        currentKm: v.current_km,
+        fuelLevel: v.fuel_level,
+        status: v.status,
+        nextServiceDate: v.next_service_date ?? undefined,
+        nextServiceKm: v.next_service_km ?? undefined,
+        tiresDate: v.tires_date ?? undefined,
+        inspectionDate: v.inspection_date ?? undefined,
+        notes: v.notes ?? undefined,
+        rentalId: v.rental_id ?? undefined,
+        rentalUntil: v.rental_until ?? undefined
+      })));
+
+      setDepots((depotsResult.data || []).map((d: Record<string, any>) => ({
+        id: d.id,
+        name: d.name,
+        address: d.address,
+        isDefault: d.is_default
+      })));
+      setConsumableStock((consumableStockResult.data || []).map((s: Record<string, any>) => ({
+        id: s.id,
+        equipmentId: s.equipment_id,
+        depotId: s.depot_id,
+        quantity: Number(s.quantity),
+        minQuantity: Number(s.min_quantity)
+      })));
       // Transformer les données du snake_case vers le camelCase
-      const transformedEquipment = equipmentResult.data?.map((item: Record<string, any>) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        category: item.category_id,
-        serialNumber: item.serial_number,
-        status: item.status,
-        addedDate: item.created_at,
-        lastMaintenance: item.last_maintenance,
-        imageUrl: item.image_url,
-        supplier: item.supplier_id,
-        location: item.location,
-        articleNumber: item.article_number,
-        qrType: item.qr_type,
-        totalQuantity: item.total_quantity,
-        availableQuantity: item.available_quantity,
-        shortTitle: item.short_title,
-        group: item.group_id,
-        subgroup: item.subgroup_id
-      })) || [];
+      const transformedEquipment = equipmentResult.data?.map(mapEquipmentRow) || [];
 
       // Transformer les bons de livraison
       const transformedDeliveryNotes = deliveryNotesResult.data?.map((item: Record<string, any>) => {
@@ -180,7 +272,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setDeliveryNotes(transformedDeliveryNotes);
       }
       
-      // Charger les utilisateurs
+      setUsers(await withDirectory((usersResult.data || []).map(mapUserRow)));
       setEquipment(transformedEquipment);
       // Mapping strict pour Category
       setCategories(categoriesResult.data?.map((item: Record<string, any>) => ({
@@ -196,7 +288,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         contactPerson: item.contact_person,
         email: item.email,
         phone: item.phone,
-        website: item.website
+        website: item.website,
+        leadTimeDays: item.lead_time_days
       })) || []);
       // Mapping strict pour EquipmentGroup
       setEquipmentGroups(groupsResult.data?.map((item: Record<string, any>) => ({
@@ -242,22 +335,29 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         returnDate: c.return_date,
         status: c.status,
         notes: c.notes,
-        instanceId: c.instance_id
+        instanceId: c.instance_id,
+        kitId: c.kit_id ?? undefined,
+        droppedAt: c.dropped_at ?? undefined
       })));
       
     } catch (error) {
       console.error('Error fetching app data:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors du chargement des données'
-      });
+      toast.error('Erreur lors du chargement des données');
     } finally {
       setLoadingAppData(false);
+      // Les échéances viennent d'être contrôlées : les alertes créées sont à jour dans la pastille
+      void refreshNotifications();
     }
   };
 
   const refreshData = async () => {
     await fetchAppData();
+  };
+
+  // Liste des personnes seule (après une création ou une modification) : sans recharger tout le reste
+  const refreshUsers = async () => {
+    const { data, error } = await supabase.from('users').select('*').order('last_name');
+    if (!error) setUsers(await withDirectory((data || []).map(mapUserRow)));
   };
 
   const addEquipment = async (equipmentData: Omit<Equipment, 'id' | 'createdAt'>) => {
@@ -290,38 +390,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error) throw error;
 
       // Transformer les données reçues de snake_case vers camelCase
-      const newEquipment: Equipment = {
-        id: data.id,
-        name: data.name,
-        description: data.description || '',
-        category: data.category_id,
-        serialNumber: data.serial_number,
-        status: data.status,
-        addedDate: data.created_at,
-        lastMaintenance: data.last_maintenance,
-        imageUrl: data.image_url,
-        supplier: data.supplier_id,
-        location: data.location,
-        articleNumber: data.article_number,
-        qrType: data.qr_type,
-        totalQuantity: data.total_quantity,
-        availableQuantity: data.available_quantity,
-        shortTitle: data.short_title,
-        group: data.group_id,
-        subgroup: data.subgroup_id
-      };
+      const newEquipment = mapEquipmentRow(data);
 
       setEquipment(prev => [newEquipment, ...prev]);
-      addNotification({
-        type: 'success',
-        message: 'Équipement ajouté avec succès'
-      });
+      toast.success('Équipement ajouté avec succès');
     } catch (error) {
       console.error('Error adding equipment:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors de l\'ajout de l\'équipement'
-      });
+      toast.error('Erreur lors de l\'ajout de l\'équipement');
       throw error;
     }
   };
@@ -357,38 +432,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error) throw error;
 
       // Transformer le résultat de snake_case vers camelCase
-      const updatedEquipment: Equipment = {
-        id: data.id,
-        name: data.name,
-        description: data.description || '',
-        category: data.category_id,
-        serialNumber: data.serial_number,
-        status: data.status,
-        addedDate: data.created_at,
-        lastMaintenance: data.last_maintenance,
-        imageUrl: data.image_url,
-        supplier: data.supplier_id,
-        location: data.location,
-        articleNumber: data.article_number,
-        qrType: data.qr_type,
-        totalQuantity: data.total_quantity,
-        availableQuantity: data.available_quantity,
-        shortTitle: data.short_title,
-        group: data.group_id,
-        subgroup: data.subgroup_id
-      };
+      const updatedEquipment = mapEquipmentRow(data);
 
       setEquipment(prev => prev.map(eq => eq.id === id ? updatedEquipment : eq));
-      addNotification({
-        type: 'success',
-        message: 'Équipement mis à jour avec succès'
-      });
+      toast.success('Équipement mis à jour avec succès');
     } catch (error) {
       console.error('Error updating equipment:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors de la mise à jour de l\'équipement'
-      });
+      toast.error('Erreur lors de la mise à jour de l\'équipement');
       throw error;
     }
   };
@@ -403,21 +453,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error) throw error;
 
       setEquipment(prev => prev.filter(eq => eq.id !== id));
-      addNotification({
-        type: 'success',
-        message: 'Équipement supprimé avec succès'
-      });
+      toast.success('Équipement supprimé avec succès');
     } catch (error) {
       console.error('Error deleting equipment:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur lors de la suppression de l\'équipement'
-      });
+      const isReferenced = (error as { code?: string })?.code === '23503';
+      toast.error(isReferenced
+        ? 'Ce matériel a un historique de sorties : passe-le en « Retiré du service » plutôt que de le supprimer'
+        : 'Erreur lors de la suppression de l\'équipement');
       throw error;
     }
   };
 
-  // Ajoutez cette fonction au contexte pour permettre un rafraîchissement explicite des données
+  // Ajoute cette fonction au contexte pour permettre un rafraîchissement explicite des données
   const refreshEquipmentData = async () => {
     try {
       const { data: equipmentData, error: equipmentError } = await supabase
@@ -427,27 +474,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
       if (equipmentError) throw equipmentError;
       
-      // Transformer les données de snake_case en camelCase
-      const transformedEquipment = equipmentData.map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        category: item.category,
-        serialNumber: item.serial_number,
-        status: item.status,
-        addedDate: item.added_date,
-        lastMaintenance: item.last_maintenance,
-        imageUrl: item.image_url,
-        supplier: item.supplier,
-        location: item.location,
-        articleNumber: item.article_number,
-        qrType: item.qr_type,
-        totalQuantity: item.total_quantity || 1,
-        availableQuantity: item.available_quantity || 0,
-        shortTitle: item.short_title,
-        group: item.group,
-        subgroup: item.subgroup
-      }));
+      // Mêmes colonnes que fetchAppData (category_id, supplier_id, group_id…)
+      const transformedEquipment = equipmentData.map(mapEquipmentRow);
 
       setEquipment(transformedEquipment);
       
@@ -466,33 +494,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      // Pour chaque équipement
-      for (const eq of equipment) {
-        // Compter les emprunts actifs, en retard et perdus
-        const { data: checkoutsData, error: checkoutsError } = await supabase
-          .from('checkouts')
-          .select('*')
-          .eq('equipment_id', eq.id)
-          .in('status', ['active', 'overdue', 'lost']);
-
-        if (checkoutsError) throw checkoutsError;
-        
-        const activeCount = checkoutsData?.length || 0;
-        const totalQuantity = eq.totalQuantity || 1;
-        const availableQuantity = Math.max(totalQuantity - activeCount, 0);
-        const newStatus = availableQuantity <= 0 ? 'checked-out' : 'available';
-        
-        // Mettre à jour la quantité disponible
-        const { error: updateError } = await supabase
-          .from('equipment')
-          .update({
-            available_quantity: availableQuantity,
-            status: newStatus
-          })
-          .eq('id', eq.id);
-          
-        if (updateError) throw updateError;
-      }
+      // La base recalcule le stock de chaque équipement à partir des emprunts et maintenances
+      const { error } = await supabase.rpc('update_equipment_availability');
+      if (error) throw error;
       
       // Rafraîchir les données
       await refreshEquipmentData();
@@ -512,7 +516,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('force_update_overdue_checkouts');
+      const { error } = await supabase.rpc('force_update_overdue_checkouts');
       
       if (error) throw error;
       
@@ -650,9 +654,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('return_equipment', {
+      // Retour en bon état, consigné comme au comptoir (le comptoir permet de signaler un problème)
+      const { data, error } = await supabase.rpc('return_with_check', {
         p_checkout_id: checkoutId,
-        p_notes: notes
+        p_condition: 'ok',
+        p_notes: notes || null,
+        p_photos: []
       });
       
       if (error) throw error;
@@ -679,9 +686,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
     
     try {
-      const { data, error } = await supabase.rpc('mark_equipment_lost', {
+      // Une perte ouvre un incident (décision du responsable : remplacé, retenue, retrouvé…)
+      const equipmentId = checkouts.find(c => c.id === checkoutId)?.equipmentId;
+      const { data, error } = await supabase.rpc('declare_incident', {
+        p_kind: 'lost',
+        p_equipment_id: equipmentId,
         p_checkout_id: checkoutId,
-        p_notes: notes
+        p_description: notes || null
       });
       
       if (error) throw error;
@@ -701,13 +712,116 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     fetchAppData();
   }, []);
 
+  // Notifications : la base est la seule source. L'état « lu » est propre à chaque personne.
+  // Articles et stocks : relus en arrière-plan pour que les écrans (Consommables, accueil…) ne retardent pas sur la base
+  const refreshStock = async () => {
+    if (!supabase) return;
+    const [eq, stock] = await Promise.all([
+      supabase.from('equipment').select('*').order('created_at', { ascending: false }),
+      supabase.from('consumable_stock').select('*'),
+    ]);
+    if (eq.error || stock.error) return;
+    setEquipment((eq.data || []).map(mapEquipmentRow));
+    setConsumableStock((stock.data || []).map((s: Record<string, any>) => ({
+      id: s.id,
+      equipmentId: s.equipment_id,
+      depotId: s.depot_id,
+      quantity: Number(s.quantity),
+      minQuantity: Number(s.min_quantity)
+    })));
+  };
+
+  const refreshNotifications = async () => {
+    if (!supabase) return;
+    const [list, count] = await Promise.all([
+      supabase.rpc('my_notifications', { p_limit: 200 }),
+      supabase.rpc('unread_notification_count')
+    ]);
+    if (list.error || count.error) return; // on garde l'affichage précédent plutôt que de le vider sur une panne réseau
+    setUserNotifications(((list.data || []) as Record<string, any>[]).map(n => ({
+      id: n.id,
+      kind: n.kind,
+      title: n.title,
+      message: n.message,
+      equipmentId: n.equipment_id ?? undefined,
+      depotId: n.depot_id ?? undefined,
+      requestId: n.request_id ?? undefined,
+      recipientUserId: n.recipient_user_id ?? undefined,
+      // Absents tant que la migration 61 n'est pas appliquée : l'avis mène alors à « Mes tâches », comme avant
+      cpProjectId: n.cp_project_id ?? undefined,
+      cpItemId: n.cp_item_id ?? undefined,
+      createdAt: n.created_at,
+      read: Boolean(n.is_read)
+    })));
+    setUnreadNotificationCount(Number(count.data) || 0);
+  };
+
+  // Au chargement, puis toutes les minutes et au retour sur l'onglet : une nouvelle alerte apparaît sans recharger la page
+  useEffect(() => {
+    if (!profile?.id) {
+      setUserNotifications([]);
+      setUnreadNotificationCount(0);
+      return;
+    }
+    void refreshNotifications();
+    const timer = window.setInterval(() => { if (!document.hidden) { void refreshNotifications(); void refreshStock(); } }, 60_000);
+    const onVisible = () => { if (!document.hidden) { void refreshNotifications(); void refreshStock(); } };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
+  // Un changement d'état « lu » est appliqué tout de suite à l'écran, puis confirmé par la base
+  const changeReadState = async (ids: string[], read: boolean, call: () => PromiseLike<{ error: { message: string } | null }>) => {
+    if (!supabase || ids.length === 0) return;
+    const before = userNotifications;
+    const idSet = new Set(ids);
+    setUserNotifications(prev => prev.map(n => (idSet.has(n.id) ? { ...n, read } : n)));
+    setUnreadNotificationCount(prev => Math.max(0, prev + before.filter(n => idSet.has(n.id) && n.read !== read).length * (read ? -1 : 1)));
+    const { error } = await call();
+    if (error) {
+      toast.error(read ? 'Impossible de marquer comme lu' : 'Impossible de marquer comme non lu');
+    }
+    await refreshNotifications();
+  };
+
+  const markNotificationsRead = (ids: string[]) =>
+    changeReadState(ids, true, () => supabase!.rpc('mark_notifications_read', { p_ids: ids }));
+  const markStockNotificationRead = (id: string) => markNotificationsRead([id]);
+  const markNotificationUnread = (id: string) =>
+    changeReadState([id], false, () => supabase!.rpc('mark_notification_unread', { p_id: id }));
+  const markAllNotificationsRead = async () => {
+    if (!supabase) return;
+    const ids = userNotifications.filter(n => !n.read).map(n => n.id);
+    await changeReadState(ids, true, () => supabase!.rpc('mark_all_notifications_read'));
+  };
+
+  // Alertes non lues (avis personnels et alertes du magasin) ; les affichages existants gardent ce nom
+  const stockNotifications = useMemo(() => userNotifications.filter(n => !n.read), [userNotifications]);
+  // Pastille du menu : uniquement les notifications non lues de la personne (même nombre que la page Notifications)
+  const alertCount = unreadNotificationCount;
+
   return (
     <AppContext.Provider
       value={{
-        // Notifications
-        notifications,
-        addNotification,
-        removeNotification,
+        // Alertes (retards, retours proches, stock bas)
+        alertCount,
+        depots,
+        consumableStock,
+        stockNotifications,
+        markStockNotificationRead,
+        userNotifications,
+        unreadNotificationCount,
+        markNotificationsRead,
+        markNotificationUnread,
+        markAllNotificationsRead,
+        refreshNotifications,
+        vehicles,
         
         // Equipment data
         equipment,
@@ -719,6 +833,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         statusConfigs,
         checkouts,
         deliveryNotes,
+        users,
         
         // Loading states
         loadingAppData,
@@ -728,6 +843,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         updateEquipment,
         deleteEquipment,
         refreshData,
+        refreshUsers,
         refreshEquipmentData,
         forceUpdateEquipmentAvailability,
         forceUpdateOverdueCheckouts,

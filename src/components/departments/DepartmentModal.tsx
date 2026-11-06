@@ -3,7 +3,6 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
 import ColorPicker from '../common/ColorPicker';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Department } from '../../types';
@@ -16,7 +15,6 @@ interface DepartmentModalProps {
 }
 
 const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, department }) => {
-  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -96,14 +94,14 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={department ? 'MODIFIER LE DÉPARTEMENT' : 'AJOUTER UN DÉPARTEMENT'}
+      title={department ? 'Modifier le département' : 'Ajouter un département'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
-          icon={<Building size={18} className="text-blue-600 dark:text-blue-400" />}
+          title="Informations de base"
+          icon={<Building size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -126,14 +124,14 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'SAUVEGARDE...' : department ? 'MODIFIER' : 'AJOUTER'}
+                {isLoading ? 'Enregistrement…' : department ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>
           </form>
@@ -141,8 +139,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
 
         {/* Description */}
         <Accordion
-          title="DESCRIPTION"
-          icon={<FileText size={18} className="text-green-600 dark:text-green-400" />}
+          title="Description"
+          icon={<FileText size={18} className="text-tone-success" />}
           defaultOpen={false}
         >
           <div>
@@ -161,8 +159,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
-          icon={<Palette size={18} className="text-purple-600 dark:text-purple-400" />}
+          title="Couleur"
+          icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <div>

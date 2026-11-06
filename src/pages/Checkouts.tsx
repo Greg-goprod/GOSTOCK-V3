@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../contexts/AppContext";
 import Button from "../components/common/Button";
 import CheckoutModal from "../components/checkout/CheckoutModal";
@@ -6,9 +6,16 @@ import ReturnModal from "../components/checkout/ReturnModal";
 import StatusBadge from "../components/common/StatusBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Plus, Search, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft } from "lucide-react";
+import { Plus, Eye, RefreshCw, Grid3X3, List, ArrowUpDown, CornerDownLeft, ClipboardList } from "lucide-react";
 import { CheckoutWithCalculatedStatus, DeliveryNote } from "../types";
 import toast from "react-hot-toast";
+import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
 
 // Interface étendue pour les bons de livraison avec statut calculé
 interface DeliveryNoteWithStatus extends Omit<DeliveryNote, 'status'> {
@@ -34,10 +41,11 @@ export default function Checkouts() {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedDeliveryNote, setSelectedDeliveryNote] = useState<DeliveryNoteWithStatus | null>(null);
-  const [deliveryCheckouts, setDeliveryCheckouts] = useState<CheckoutWithCalculatedStatus[]>([]);
   const [calculatedCheckouts, setCalculatedCheckouts] = useState<CheckoutWithCalculatedStatus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'equipment'>('list');
+  // Sur téléphone, les cartes plutôt que le tableau (trop large)
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'equipment'>(() => readMxViewMode('gomat-view-sorties', ['grid', 'list', 'equipment'] as const, 'grid'));
+  const changeView = (mode: 'grid' | 'list' | 'equipment') => { setViewMode(mode); writeMxViewMode('gomat-view-sorties', mode); };
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,7 +142,7 @@ export default function Checkouts() {
     return {
       id: id,
       // Utiliser la propriété delivery_note_number si disponible, sinon générer un numéro
-      number: firstCheckout.delivery_note_number || `Bon-${id.substring(0, 6)}`,
+      number: (deliveryNotes ?? []).find(n => n.id === id)?.number || firstCheckout.delivery_note_number || `Bon-${id.substring(0, 6)}`,
       status: status,
       userId: firstCheckout.user_id,
       createdAt: firstCheckout.delivery_note_date || firstCheckout.checkout_date,
@@ -174,13 +182,6 @@ export default function Checkouts() {
     }
     
     setSelectedDeliveryNote(deliveryNote);
-    
-    // Récupérer les emprunts associés à ce bon de livraison
-    const associatedCheckouts = calculatedCheckouts.filter(
-      checkout => checkout.delivery_note_id === deliveryNote.id
-    ) || [];
-    
-    setDeliveryCheckouts(associatedCheckouts);
     setShowReturnModal(true);
   };
 
@@ -219,73 +220,33 @@ export default function Checkouts() {
 
   // Rendu de la vue en grille
   const renderGridView = () => {
+    if (deliveryNotesWithStatus.length === 0) {
+      return <MxEmpty icon={ClipboardList} title="Aucun bon de sortie trouvé" />;
+    }
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {deliveryNotesWithStatus.length > 0 ? (
-          deliveryNotesWithStatus.map((deliveryNote) => {
-            const checkoutsForNote = groupedByDeliveryNote[deliveryNote.id] || [];
-            
-            return (
-              <div
-                key={deliveryNote.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
-              >
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <div>
-                    <h3 className="font-bold text-lg">Bon #{deliveryNote.number}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {deliveryNote.createdAt ? 
-                        format(new Date(deliveryNote.createdAt), "dd MMMM yyyy", { locale: fr }) : 
-                        "Date inconnue"}
-                    </p>
-                  </div>
-                  <StatusBadge status={deliveryNote.status || 'unknown'} />
-                </div>
-                <div className="p-4">
-                  <p className="text-sm font-medium mb-2">
-                    <span className="text-gray-500 dark:text-gray-400">Utilisateur: </span>
-                    {deliveryNote.userName || "Utilisateur inconnu"}
-                  </p>
-                  <p className="text-sm mb-4">
-                    <span className="text-gray-500 dark:text-gray-400">Équipements: </span>
-                    {checkoutsForNote.length}
-                  </p>
-                  <div className="space-y-2 mb-4">
-                    {checkoutsForNote.slice(0, 3).map((checkout) => {
-                      return (
-                        <div
-                          key={checkout.id}
-                          className="flex justify-between items-center text-sm"
-                        >
-                          <span>{checkout.equipment_name}</span>
-                          <StatusBadge status={checkout.status || 'unknown'} />
-                        </div>
-                      );
-                    })}
-                    {checkoutsForNote.length > 3 && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                        ... et {checkoutsForNote.length - 3} autre(s)
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => handleOpenReturnModal(deliveryNote)}
-                    icon={<Eye size={16} />}
-                  >
-                    DÉTAILS / RETOUR
-                  </Button>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="col-span-3 text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <p className="text-gray-500 dark:text-gray-400">Aucun bon de sortie trouvé.</p>
-          </div>
-        )}
-      </div>
+      <MxCardGrid
+        items={deliveryNotesWithStatus}
+        getItemKey={note => note.id}
+        renderItem={deliveryNote => {
+          const checkoutsForNote = groupedByDeliveryNote[deliveryNote.id] || [];
+          const names = checkoutsForNote.map(c => c.equipment_name).filter(Boolean);
+          return (
+            <MxEntityCard
+              avatarName={deliveryNote.userName || 'Bon'}
+              title={deliveryNote.userName || 'Utilisateur inconnu'}
+              infoParts={[
+                { content: `Bon #${deliveryNote.number}` },
+                { content: `${checkoutsForNote.length} équipement${checkoutsForNote.length > 1 ? 's' : ''} · ${deliveryNote.createdAt ? format(new Date(deliveryNote.createdAt), 'dd.MM.yyyy', { locale: fr }) : 'date inconnue'}` },
+              ]}
+              statusBadge={<StatusBadge status={deliveryNote.status || 'unknown'} />}
+              due={names.length ? <span>{names.slice(0, 2).join(', ')}{names.length > 2 ? ` … +${names.length - 2}` : ''}</span> : undefined}
+              menuLabel={`Actions pour le bon ${deliveryNote.number}`}
+              menuActions={[{ id: 'open', label: 'Détails / retour', icon: Eye, onSelect: () => handleOpenReturnModal(deliveryNote) }]}
+              onOpen={() => handleOpenReturnModal(deliveryNote)}
+            />
+          );
+        }}
+      />
     );
   };
 
@@ -385,14 +346,8 @@ export default function Checkouts() {
                         </ul>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenReturnModal(deliveryNote)}
-                          icon={<Eye size={14} />}
-                        >
-                          DÉTAILS / RETOUR
-                        </Button>
+                        {/* Action en icône, comme les tableaux de Mannyx */}
+                        <Button variant="secondary" size="sm" onClick={() => handleOpenReturnModal(deliveryNote)} icon={<Eye size={14} />} ariaLabel="Détails / retour" />
                       </td>
                     </tr>
                   );
@@ -525,7 +480,7 @@ export default function Checkouts() {
                                 })}
                                 icon={<CornerDownLeft size={14} />}
                               >
-                                RETOURNER
+                                Retourner
                               </Button>
                             )}
                           </div>
@@ -549,59 +504,29 @@ export default function Checkouts() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Rechercher par équipement ou utilisateur..."
-          className="w-64 max-w-xs p-2 pl-10 border border-gray-300 rounded-md"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button
-            variant="secondary"
-            onClick={handleForceUpdateStatus}
-            icon={<RefreshCw size={16} />}
-            loading={isLoading}
-          >
-            METTRE À JOUR LES STATUTS
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => setShowCheckoutModal(true)}
-            icon={<Plus size={16} />}
-          >
-            NOUVELLE SORTIE
-          </Button>
-          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-            <Button
-              variant={viewMode === 'grid' ? 'primary' : 'outline'}
-              onClick={() => setViewMode('grid')}
-              className="flex items-center gap-2 rounded-none border-0"
-            >
-              <Grid3X3 className="w-4 h-4" />
-              Grille
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'primary' : 'outline'}
-              onClick={() => setViewMode('list')}
-              className="flex items-center gap-2 rounded-none border-0"
-            >
-              <List className="w-4 h-4" />
-              Liste
-            </Button>
-            <Button
-              variant={viewMode === 'equipment' ? 'primary' : 'outline'}
-              onClick={() => setViewMode('equipment')}
-              className="flex items-center gap-2 rounded-none border-0"
-            >
-              <CornerDownLeft className="w-4 h-4" />
-              Équipements
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <PageTitle>Sorties</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Bons de sortie et matériel emprunté, avec leur date de retour.</p>
       </div>
+      <PageCommands
+        search={
+          <input type="text" placeholder="Rechercher par équipement ou utilisateur..." aria-label="Rechercher par équipement ou utilisateur"
+            className="w-full px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        }
+        view={
+          // Vue « Équipements » en plus des cartes et de la liste ; icônes seules, comme la bascule de Mannyx
+          <MxSegmented aria-label="Affichage" value={viewMode} onChange={v => changeView(v as typeof viewMode)} iconOnly
+            options={[{ value: 'grid', label: 'Cartes', icon: Grid3X3 }, { value: 'list', label: 'Liste', icon: List }, { value: 'equipment', label: 'Par équipement', icon: CornerDownLeft }]} />
+        }
+        primary={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={handleForceUpdateStatus} icon={<RefreshCw size={16} />} loading={isLoading} ariaLabel="Mettre à jour les statuts" />
+            <Button variant="primary" onClick={() => setShowCheckoutModal(true)} icon={<Plus size={16} />}>Nouvelle sortie</Button>
+          </div>
+        }
+      />
 
       {isLoading ? (
         <div className="text-center py-8">Chargement des données...</div>
@@ -629,14 +554,7 @@ export default function Checkouts() {
             setSelectedDeliveryNote(null);
             loadCheckoutsWithStatus();
           }}
-          deliveryNote={{
-            id: selectedDeliveryNote.id,
-            userId: selectedDeliveryNote.userId,
-            number: selectedDeliveryNote.number || 'N/A',
-            createdAt: selectedDeliveryNote.createdAt,
-            notes: selectedDeliveryNote.notes
-          }}
-          checkouts={deliveryCheckouts}
+          deliveryNoteId={selectedDeliveryNote.id}
         />
       )}
     </div>

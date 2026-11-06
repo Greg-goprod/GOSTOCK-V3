@@ -1,622 +1,231 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
+import { canAccess } from '../lib/access';
+import { piloteNotificationPath } from '../lib/pilote';
+import PilotePrefs from '../components/notifications/PilotePrefs';
 import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
-import { useLanguage } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabase';
-import { AlertTriangle, Clock, CheckCircle, Bell, Calendar, Package, User, Trash2, BookMarked as MarkAsRead } from 'lucide-react';
-import { format, differenceInDays, isPast } from 'date-fns';
+import PushToggle from '../components/common/PushToggle';
+import { CheckCircle, Bell, BookMarked as MarkAsUnread, ClipboardList, RotateCcw, Package, Wrench, AlertTriangle, FolderKanban } from 'lucide-react';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import toast from 'react-hot-toast';
+import { MxSegmented } from '../components/mx/MxSegmented';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { NotificationCard } from '../components/notifications/NotificationCard';
+import { MxBadge } from '../components/mx/MxBadge';
+import PageTitle from '../components/common/PageTitle';
+import { EntityTable } from '../components/common/EntityTable';
+import { MxEntityViewToggle } from '../components/mx/MxEntityViewToggle';
+import { MxPagination } from '../components/mx/MxPagination';
+import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
+import { PageCommands } from '../components/Layout/ModuleHeader';
+import type { StockNotification } from '../types';
 
-interface NotificationItem {
-  id: string;
-  type: 'overdue' | 'due_soon' | 'maintenance' | 'system' | 'checkout';
-  title: string;
-  message: string;
-  date: string;
-  priority: 'high' | 'medium' | 'low';
-  read: boolean;
-  relatedData?: {
-    equipmentId?: string;
-    equipmentName?: string;
-    userId?: string;
-    userName?: string;
-    checkoutId?: string;
-    dueDate?: string;
-    daysOverdue?: number;
-    delivery_note_id?: string;
-    note_number?: string;
-    user_department?: string;
-    equipment_count?: number;
-  };
-}
+type Group = 'requests' | 'returns' | 'stock' | 'upkeep' | 'incidents' | 'pilote' | 'other';
+
+const GROUPS: { id: Group; label: string; empty: string; to: string }[] = [
+  { id: 'requests', label: 'Demandes', empty: 'Aucune notification de demande.', to: '/demandes' },
+  { id: 'returns', label: 'Retours', empty: 'Aucune notification de retour ou de prolongation.', to: '/checkouts' },
+  { id: 'stock', label: 'Stock', empty: 'Aucune notification de stock.', to: '/commande' },
+  { id: 'upkeep', label: 'Entretien et échéances', empty: 'Aucune notification d\'entretien ou d\'échéance.', to: '/entretien' },
+  { id: 'incidents', label: 'Pertes et casse', empty: 'Aucune notification de perte ou de casse.', to: '/incidents' },
+  { id: 'pilote', label: 'PILOTE', empty: 'Aucune notification PILOTE.', to: '/pilote/projets?section=mytasks' },
+  { id: 'other', label: 'Autres', empty: 'Aucune autre notification.', to: '/notifications' },
+];
+
+// Famille d'une notification d'après son type (les types inconnus tombent dans « Autres »)
+const GROUP_OF: Record<string, Group> = {
+  request_to_approve: 'requests', request_approved: 'requests', request_rejected: 'requests', request_ready: 'requests',
+  return_reminder: 'returns', return_overdue: 'returns', return_escalation: 'returns', loan_extended: 'returns',
+  extension_request: 'returns', drop_box: 'returns', tool_found: 'returns',
+  low_stock: 'stock', transfer: 'stock',
+  maintenance_due: 'upkeep', vehicle_deadline: 'upkeep', warranty_end: 'upkeep', repair_late: 'upkeep', battery_end: 'upkeep',
+  training_expiry: 'upkeep', rental_due: 'upkeep', ppe_renewal: 'upkeep', mission_end: 'upkeep',
+  incident: 'incidents', tool_damaged: 'incidents',
+  cp_assigned: 'pilote', cp_team_added: 'pilote', cp_dates_changed: 'pilote', cp_due_soon: 'pilote', cp_overdue: 'pilote', cp_comment: 'pilote',
+};
+
+const groupOf = (n: StockNotification): Group => GROUP_OF[n.kind] ?? 'other';
+
+const GROUP_ICON = { requests: ClipboardList, returns: RotateCcw, stock: Package, upkeep: Wrench, incidents: AlertTriangle, pilote: FolderKanban, other: Bell };
+
+const TONE: Record<string, 'danger' | 'warning' | 'success' | 'info'> = {
+  request_rejected: 'danger', return_overdue: 'danger', return_escalation: 'danger', incident: 'danger', tool_damaged: 'danger', repair_late: 'danger',
+  request_to_approve: 'warning', extension_request: 'warning', low_stock: 'warning', maintenance_due: 'warning', vehicle_deadline: 'warning',
+  warranty_end: 'warning', battery_end: 'warning', training_expiry: 'warning', rental_due: 'warning', ppe_renewal: 'warning', mission_end: 'warning',
+  backup_due: 'warning', return_reminder: 'warning', cp_due_soon: 'warning', cp_overdue: 'danger', cp_dates_changed: 'warning',
+  request_approved: 'success', request_ready: 'success', loan_extended: 'success',
+};
 
 const Notifications: React.FC = () => {
-  const { t } = useLanguage();
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'read' | 'overdue' | 'maintenance' | 'checkout'>('all');
+  const { userNotifications, unreadNotificationCount, markNotificationsRead, markNotificationUnread, markAllNotificationsRead, refreshNotifications, checkouts, loadingAppData } = useApp();
+  const navigate = useNavigate();
+  const { profile, can } = useAuth();
+  const hasPilote = !!profile?.modules?.includes('cp.projects');
+  const [status, setStatus] = useState<'all' | 'unread' | 'read'>('all');
+  const [group, setGroup] = useState<'all' | Group>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  // Vue Liste (par défaut : on lit beaucoup de lignes) ou Cartes, mémorisée ; pagination comme les autres listes
+  const [viewMode, setViewModeState] = useState<'cards' | 'list'>(() => readMxViewMode('gomat-view-notifications', ['cards', 'list'] as const, 'list'));
+  const [pageSize, setPageSize] = useState(() => Number(readMxViewMode('gomat-pagesize-notifications', ['24', '48', '96'] as const, '48')));
+  const [page, setPage] = useState(1);
+  const setViewMode = (mode: 'cards' | 'list') => { setViewModeState(mode); writeMxViewMode('gomat-view-notifications', mode); };
 
-  useEffect(() => {
-    // Nettoyer les notifications stockées dans localStorage
-    localStorage.removeItem('checkout_notifications');
-    localStorage.removeItem('return_notifications');
-    
-    generateNotifications();
-    
-    // Écouter les nouvelles notifications de sortie
-    const checkForNewCheckoutNotifications = () => {
-      const checkoutNotifications = JSON.parse(localStorage.getItem('checkout_notifications') || '[]');
-      if (checkoutNotifications.length > 0) {
-        // Intégrer les notifications de sortie
-        setNotifications(prev => {
-          const existingIds = new Set(prev.map(n => n.id));
-          const newNotifications = checkoutNotifications.filter((n: any) => !existingIds.has(n.id));
-          return [...newNotifications, ...prev];
-        });
-      }
-    };
+  const readCount = userNotifications.length - userNotifications.filter(n => !n.read).length;
+  const unreadCount = userNotifications.length - readCount;
 
-    // Vérifier périodiquement les nouvelles notifications
-    const interval = setInterval(checkForNewCheckoutNotifications, 2000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  const visible = useMemo(() => userNotifications.filter(n =>
+    (status === 'all' || (status === 'unread' ? !n.read : n.read)) && (group === 'all' || groupOf(n) === group)
+  ), [userNotifications, status, group]);
 
-  const generateNotifications = async () => {
-    try {
-      setLoading(true);
-      const generatedNotifications: NotificationItem[] = [];
+  const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paged = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-      // 1. Récupérer les emprunts en retard
-      const { data: overdueCheckouts, error: overdueError } = await supabase
-        .from('checkouts')
-        .select(`
-          *,
-          equipment(name, serial_number),
-          users(first_name, last_name)
-        `)
-        .eq('status', 'active')
-        .lt('due_date', new Date().toISOString());
+  const groupCounts = useMemo(() => {
+    const base = userNotifications.filter(n => status === 'all' || (status === 'unread' ? !n.read : n.read));
+    const counts: Record<string, number> = { all: base.length };
+    for (const g of GROUPS) counts[g.id] = base.filter(n => groupOf(n) === g.id).length;
+    return counts;
+  }, [userNotifications, status]);
 
-      if (overdueError) throw overdueError;
+  // Situation du moment : un état calculé à l'instant, pas des notifications (il n'a pas de « lu »)
+  const situation = useMemo(() => {
+    const limit = Date.now() + 3 * 24 * 60 * 60 * 1000;
+    const overdue = checkouts.filter(c => c.status === 'overdue').length;
+    const soon = checkouts.filter(c => c.status === 'active' && c.dueDate && new Date(c.dueDate).getTime() <= limit).length;
+    return { overdue, soon };
+  }, [checkouts]);
 
-      // Créer des notifications pour les retards
-      overdueCheckouts?.forEach(checkout => {
-        const daysOverdue = differenceInDays(new Date(), new Date(checkout.due_date));
-        generatedNotifications.push({
-          id: `overdue-${checkout.id}`,
-          type: 'overdue',
-          title: 'Matériel en retard',
-          message: `${checkout.equipment?.name || 'Équipement inconnu'} emprunté par ${checkout.users?.first_name} ${checkout.users?.last_name} est en retard de ${daysOverdue} jour(s)`,
-          date: new Date().toISOString(),
-          priority: daysOverdue > 7 ? 'high' : daysOverdue > 3 ? 'medium' : 'low',
-          read: false,
-          relatedData: {
-            equipmentId: checkout.equipment_id,
-            equipmentName: checkout.equipment?.name,
-            userId: checkout.user_id,
-            userName: `${checkout.users?.first_name} ${checkout.users?.last_name}`,
-            checkoutId: checkout.id,
-            dueDate: checkout.due_date,
-            daysOverdue
-          }
-        });
-      });
-
-      // 2. Récupérer les emprunts qui arrivent à échéance dans les 3 prochains jours
-      const threeDaysFromNow = new Date();
-      threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-
-      const { data: dueSoonCheckouts, error: dueSoonError } = await supabase
-        .from('checkouts')
-        .select(`
-          *,
-          equipment(name, serial_number),
-          users(first_name, last_name)
-        `)
-        .eq('status', 'active')
-        .gte('due_date', new Date().toISOString())
-        .lte('due_date', threeDaysFromNow.toISOString());
-
-      if (dueSoonError) throw dueSoonError;
-
-      // Créer des notifications pour les échéances proches
-      dueSoonCheckouts?.forEach(checkout => {
-        const daysUntilDue = differenceInDays(new Date(checkout.due_date), new Date());
-        generatedNotifications.push({
-          id: `due-soon-${checkout.id}`,
-          type: 'due_soon',
-          title: 'Retour prévu bientôt',
-          message: `${checkout.equipment?.name || 'Équipement inconnu'} emprunté par ${checkout.users?.first_name} ${checkout.users?.last_name} doit être retourné dans ${daysUntilDue} jour(s)`,
-          date: new Date().toISOString(),
-          priority: daysUntilDue <= 1 ? 'high' : 'medium',
-          read: false,
-          relatedData: {
-            equipmentId: checkout.equipment_id,
-            equipmentName: checkout.equipment?.name,
-            userId: checkout.user_id,
-            userName: `${checkout.users?.first_name} ${checkout.users?.last_name}`,
-            checkoutId: checkout.id,
-            dueDate: checkout.due_date
-          }
-        });
-      });
-
-      // 3. Récupérer les équipements en maintenance depuis plus de 30 jours
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const { data: maintenanceEquipment, error: maintenanceError } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('status', 'maintenance')
-        .lt('created_at', thirtyDaysAgo.toISOString());
-
-      if (maintenanceError) throw maintenanceError;
-
-      // Créer des notifications pour les maintenances prolongées
-      maintenanceEquipment?.forEach(equipment => {
-        const daysInMaintenance = differenceInDays(new Date(), new Date(equipment.created_at));
-        generatedNotifications.push({
-          id: `maintenance-${equipment.id}`,
-          type: 'maintenance',
-          title: 'Maintenance prolongée',
-          message: `${equipment.name} est en maintenance depuis ${daysInMaintenance} jours`,
-          date: new Date().toISOString(),
-          priority: daysInMaintenance > 60 ? 'high' : 'medium',
-          read: false,
-          relatedData: {
-            equipmentId: equipment.id,
-            equipmentName: equipment.name
-          }
-        });
-      });
-
-      // 4. Récupérer les notifications de sortie depuis localStorage
-      const checkoutNotifications = JSON.parse(localStorage.getItem('checkout_notifications') ||'[]');
-      generatedNotifications.push(...checkoutNotifications);
-
-      // 5. Ajouter notification système si aucune notification
-      if (generatedNotifications.length === 0) {
-        generatedNotifications.push({
-          id: 'system-welcome',
-          type: 'system',
-          title: 'Système de notifications actif',
-          message: 'Le système de notifications surveille automatiquement les retards, les maintenances prolongées et les mouvements de sortie.',
-          date: new Date().toISOString(),
-          priority: 'low',
-          read: false
-        });
-      }
-
-      // Trier par priorité et date
-      generatedNotifications.sort((a, b) => {
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
-        if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-          return priorityOrder[b.priority] - priorityOrder[a.priority];
-        }
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-      });
-
-      setNotifications(generatedNotifications);
-    } catch (error: any) {
-      console.error('Error generating notifications:', error);
-      toast.error('Erreur lors du chargement des notifications');
-    } finally {
-      setLoading(false);
-    }
+  const refresh = async () => {
+    setRefreshing(true);
+    try { await refreshNotifications(); } finally { setRefreshing(false); }
   };
 
-  const markAsRead = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-    toast.success('Notification marquée comme lue');
+  const open = (n: StockNotification) => {
+    if (!n.read) void markNotificationsRead([n.id]);
+    // Avis PILOTE : la fiche de l'élément ou du projet concerné (voir piloteNotificationPath) ; les autres avis, la page de leur famille
+    const target = n.kind.startsWith('cp_') ? piloteNotificationPath(n) : GROUPS.find(g => g.id === groupOf(n))?.to;
+    // Une personne sans accès à la page de destination (ex. un collaborateur : « Demandes ») est envoyée à ses commandes du Shop
+    if (target && target !== '/notifications') navigate(canAccess(target.split('?')[0], can) ? target : '/shop?vue=commandes');
   };
 
-  const markAsUnread = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId ? { ...notif, read: false } : notif
-      )
-    );
-    toast.success('Notification marquée comme non lue');
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notif => ({ ...notif, read: true }))
-    );
-    toast.success('Toutes les notifications ont été marquées comme lues');
-  };
-
-  const deleteNotification = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.filter(notif => notif.id !== notificationId)
-    );
-    
-    // Si c'est une notification de sortie, la supprimer aussi du localStorage
-    if (notificationId.startsWith('checkout-')) {
-      const checkoutNotifications = JSON.parse(localStorage.getItem('checkout_notifications') || '[]');
-      const updatedNotifications = checkoutNotifications.filter((n: any) => n.id !== notificationId);
-      localStorage.setItem('checkout_notifications', JSON.stringify(updatedNotifications));
-    }
-    
-    toast.success('Notification supprimée');
-  };
-
-  const getFilteredNotifications = () => {
-    switch (filter) {
-      case 'unread':
-        return notifications.filter(n => !n.read);
-      case 'read':
-        return notifications.filter(n => n.read);
-      case 'overdue':
-        return notifications.filter(n => n.type === 'overdue');
-      case 'maintenance':
-        return notifications.filter(n => n.type === 'maintenance');
-      case 'checkout':
-        return notifications.filter(n => n.type === 'checkout');
-      default:
-        return notifications;
-    }
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'overdue':
-        return <AlertTriangle size={20} className="text-red-500" />;
-      case 'due_soon':
-        return <Clock size={20} className="text-yellow-500" />;
-      case 'maintenance':
-        return <Package size={20} className="text-blue-500" />;
-      case 'checkout':
-        return <Package size={20} className="text-green-500" />;
-      default:
-        return <Bell size={20} className="text-gray-500" />;
-    }
-  };
-
-  const getPriorityColor = (priority: string, isRead: boolean) => {
-    const opacity = isRead ? 'opacity-60' : '';
-    switch (priority) {
-      case 'high':
-        return `border-l-red-500 bg-red-50 dark:bg-red-900/10 ${opacity}`;
-      case 'medium':
-        return `border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/10 ${opacity}`;
-      default:
-        return `border-l-blue-500 bg-blue-50 dark:bg-blue-900/10 ${opacity}`;
-    }
-  };
-
-  const filteredNotifications = getFilteredNotifications();
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const readCount = notifications.filter(n => n.read).length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500 dark:text-gray-400 font-medium">Chargement des notifications...</div>
-      </div>
-    );
-  }
+  const emptyText = status === 'unread' ? 'Aucune notification non lue.'
+    : status === 'read' ? 'Aucune notification lue.'
+    : group === 'all' ? 'Aucune notification pour le moment.'
+    : GROUPS.find(g => g.id === group)?.empty ?? 'Aucune notification.';
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">NOTIFICATIONS</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
-            Événements spéciaux, rappels de retard et mouvements de matériel
-          </p>
-        </div>
-        
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            icon={<CheckCircle size={18} />}
-            onClick={markAllAsRead}
-            disabled={unreadCount === 0}
-            className="font-bold"
-          >
-            TOUT MARQUER COMME LU
-          </Button>
-          <Button
-            variant="primary"
-            icon={<Bell size={18} />}
-            onClick={generateNotifications}
-            className="font-bold"
-          >
-            ACTUALISER
-          </Button>
-        </div>
+      <div>
+        <PageTitle>Notifications</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
+          Les événements du magasin et les avis qui te concernent. Ton état « lu » est personnel : il ne change rien pour les autres.
+        </p>
+        <div className="mt-2"><PushToggle /></div>
       </div>
+      {hasPilote && <PilotePrefs />}
+      <PageCommands
+        filters={<MxSegmented aria-label="Statut" value={status} onChange={v => setStatus(v as typeof status)} options={[
+          { value: 'all', label: `Toutes (${userNotifications.length})` },
+          { value: 'unread', label: `Non lues (${unreadCount})` },
+          { value: 'read', label: `Lues (${readCount})` },
+        ]} />}
+        pagination={totalPages > 1 || visible.length > 24 ? (
+          <MxPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setPage}
+            previousLabel="Page précédente" nextLabel="Page suivante" totalLabel={`${visible.length} notification(s)`}
+            pageSize={pageSize} pageSizeOptions={[{ value: '24', label: '24' }, { value: '48', label: '48' }, { value: '96', label: '96' }]}
+            onPageSizeChange={size => { setPageSize(size); setPage(1); writeMxViewMode('gomat-pagesize-notifications', String(size)); }}
+            pageSizeLabel="Notifications par page" />
+        ) : undefined}
+        view={<MxEntityViewToggle value={viewMode} onChange={setViewMode} aria-label="Affichage des notifications" />}
+        primary={<div className="flex flex-wrap gap-2">
+          <Button variant="outline" icon={<CheckCircle size={16} />} onClick={() => void markAllNotificationsRead()} disabled={unreadNotificationCount === 0}>Tout marquer comme lu</Button>
+          <Button icon={<Bell size={16} />} onClick={() => void refresh()} disabled={refreshing}>{refreshing ? 'Actualisation…' : 'Actualiser'}</Button>
+        </div>} />
 
-      {/* Filtres */}
-      <Card>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={filter === 'all' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('all')}
-            className="font-bold"
-          >
-            TOUTES ({notifications.length})
-          </Button>
-          <Button
-            variant={filter === 'unread' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('unread')}
-            className="font-bold"
-          >
-            NON LUES ({unreadCount})
-          </Button>
-          <Button
-            variant={filter === 'read' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('read')}
-            className="font-bold"
-          >
-            LUES ({readCount})
-          </Button>
-          <Button
-            variant={filter === 'checkout' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('checkout')}
-            className="font-bold"
-          >
-            SORTIES ({notifications.filter(n => n.type === 'checkout').length})
-          </Button>
-          <Button
-            variant={filter === 'overdue' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('overdue')}
-            className="font-bold"
-          >
-            EN RETARD ({notifications.filter(n => n.type === 'overdue').length})
-          </Button>
-          <Button
-            variant={filter === 'maintenance' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('maintenance')}
-            className="font-bold"
-          >
-            MAINTENANCES ({notifications.filter(n => n.type === 'maintenance').length})
-          </Button>
-        </div>
-      </Card>
-
-      {/* Liste des notifications */}
-      <div className="space-y-3">
-        {filteredNotifications.length === 0 ? (
-          <Card>
-            <div className="text-center py-12">
-              <Bell size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase">
-                AUCUNE NOTIFICATION
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 font-medium">
-                {filter === 'all' 
-                  ? 'Aucune notification pour le moment.'
-                  : filter === 'unread' 
-                  ? 'Aucune notification non lue.'
-                  : filter === 'read'
-                  ? 'Aucune notification lue.'
-                  : filter === 'checkout'
-                  ? 'Aucune notification de sortie.'
-                  : filter === 'overdue' 
-                  ? 'Aucune notification de retard.' 
-                  : 'Aucune notification de maintenance.'
-                }
+      {(situation.overdue > 0 || situation.soon > 0) && (
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-gray-900 dark:text-white">Situation du moment</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {situation.overdue > 0 && <span className="text-tone-danger font-semibold">{situation.overdue > 1 ? `${situation.overdue} sorties en retard` : `${situation.overdue} sortie en retard`}</span>}
+                {situation.overdue > 0 && situation.soon > 0 && ' · '}
+                {situation.soon > 0 && <span className="text-tone-warning font-semibold">{`${situation.soon} à rendre d'ici 3 jours`}</span>}
+                {'. Ce n\'est pas une notification : le chiffre se met à jour tout seul quand le matériel revient.'}
               </p>
             </div>
-          </Card>
-        ) : (
-          filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`border-l-4 rounded-lg p-4 transition-all duration-200 hover:shadow-md ${
-                getPriorityColor(notification.priority, notification.read)
-              } ${
-                notification.read 
-                  ? 'bg-opacity-50 dark:bg-opacity-30' 
-                  : 'shadow-sm'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="flex-shrink-0 mt-1">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-black ${
-                        notification.read 
-                          ? 'text-gray-600 dark:text-gray-400' 
-                          : 'text-gray-900 dark:text-white'
-                      } uppercase tracking-wide`}>
-                        {notification.title}
-                      </h3>
-                      
-                      <Badge
-                        variant={
-                          notification.priority === 'high' ? 'danger' :
-                          notification.priority === 'medium' ? 'warning' : 'info'
-                        }
-                      >
-                        {notification.priority === 'high' ? 'URGENT' :
-                         notification.priority === 'medium' ? 'IMPORTANT' : 'INFO'}
-                      </Badge>
-                      
-                      {notification.read ? (
-                        <div className="flex items-center gap-1">
-                          <CheckCircle size={16} className="text-green-500" />
-                          <span className="text-xs text-green-600 dark:text-green-400 font-black uppercase">LUE</span>
-                        </div>
-                      ) : (
-                        <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                      )}
-                    </div>
-                    
-                    <p className={`text-sm font-medium ${
-                      notification.read 
-                        ? 'text-gray-500 dark:text-gray-500' 
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}>
-                      {notification.message}
-                    </p>
-                    
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Calendar size={12} />
-                        <span className="font-medium">
-                          {format(new Date(notification.date), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                        </span>
-                      </div>
-                      
-                      {notification.relatedData?.equipmentName && (
-                        <div className="flex items-center gap-1">
-                          <Package size={12} />
-                          <span className="font-medium">{notification.relatedData.equipmentName}</span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.userName && (
-                        <div className="flex items-center gap-1">
-                          <User size={12} />
-                          <span className="font-medium">{notification.relatedData.userName}</span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.note_number && (
-                        <div className="flex items-center gap-1">
-                          <Package size={12} />
-                          <span className="font-mono font-bold">{notification.relatedData.note_number}</span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.equipment_count && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-blue-600 dark:text-blue-400 font-black">
-                            {notification.relatedData.equipment_count} équipement{notification.relatedData.equipment_count > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {notification.relatedData?.daysOverdue && (
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle size={12} />
-                          <span className="text-red-600 dark:text-red-400 font-black">
-                            {notification.relatedData.daysOverdue} jour(s) de retard
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 ml-4">
-                  {notification.read ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      icon={<MarkAsRead size={14} />}
-                      onClick={() => markAsUnread(notification.id)}
-                      className="text-xs font-bold"
-                    >
-                      MARQUER NON LUE
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      icon={<CheckCircle size={14} />}
-                      onClick={() => markAsRead(notification.id)}
-                      className="text-xs font-bold"
-                    >
-                      MARQUER COMME LUE
-                    </Button>
-                  )}
-                  
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    icon={<Trash2 size={14} />}
-                    onClick={() => deleteNotification(notification.id)}
-                    className="text-xs"
-                  />
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Statistiques */}
-      {notifications.length > 0 && (
-        <Card>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-black text-gray-900 dark:text-white">
-                {notifications.length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
-                Total notifications
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
-                {unreadCount}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
-                Non lues
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-black text-green-600 dark:text-green-400">
-                {readCount}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
-                Lues
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-black text-green-600 dark:text-green-400">
-                {notifications.filter(n => n.type === 'checkout').length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
-                Sorties
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-black text-red-600 dark:text-red-400">
-                {notifications.filter(n => n.type === 'overdue').length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
-                Retards
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-black text-yellow-600 dark:text-yellow-400">
-                {notifications.filter(n => n.type === 'due_soon').length}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">
-                Échéances
-              </div>
-            </div>
+            {canAccess('/checkouts', can) && <Link to="/checkouts" className="text-sm font-medium text-primary-700 dark:text-primary-300 hover:underline">Voir les sorties</Link>}
           </div>
         </Card>
       )}
+
+      <MxSegmented aria-label="Famille" value={group} onChange={v => setGroup(v as typeof group)} options={[
+        { value: 'all', label: `Toutes (${groupCounts.all})` },
+        ...GROUPS.filter(g => groupCounts[g.id] > 0 || group === g.id).map(g => ({ value: g.id, label: `${g.label} (${groupCounts[g.id]})` })),
+      ]} />
+
+      <div className="space-y-3">
+        {loadingAppData && userNotifications.length === 0 ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="text-gray-500 dark:text-gray-400 font-medium">Chargement des notifications...</div>
+          </div>
+        ) : visible.length === 0 ? (
+          <Card>
+            <div className="text-center py-12">
+              <Bell size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Aucune notification</h3>
+              <p className="text-gray-500 dark:text-gray-400 font-medium">{emptyText}</p>
+            </div>
+          </Card>
+        ) : viewMode === 'list' ? (
+          <EntityTable
+            items={paged}
+            getKey={n => n.id}
+            caption="Notifications"
+            onOpen={open}
+            rowClassName={n => (n.read ? 'opacity-75' : 'font-medium')}
+            columns={[
+              { id: 'state', label: 'État', render: n => (n.read ? <MxBadge tone="neutral">Lue</MxBadge> : <MxBadge tone="accent">Non lue</MxBadge>) },
+              { id: 'what', label: 'Notification', render: n => (
+                <div>
+                  <p className="text-gray-900 dark:text-white">{n.title}</p>
+                  <p className="text-xs font-normal text-gray-600 dark:text-gray-400">{n.message}</p>
+                </div>
+              ) },
+              { id: 'group', label: 'Famille', hideOnMobile: true, render: n => <MxBadge tone={TONE[n.kind] ?? 'info'}>{GROUPS.find(g => g.id === groupOf(n))?.label ?? 'Autres'}</MxBadge> },
+              { id: 'date', label: 'Date', hideOnMobile: true, render: n => <span className="whitespace-nowrap text-xs font-normal">{format(new Date(n.createdAt), 'dd.MM.yyyy HH:mm', { locale: fr })}</span> },
+              { id: 'action', label: 'Action', render: n => (
+                // Le bouton ne doit pas déclencher l'ouverture de la ligne
+                <span onClick={e => e.stopPropagation()}>
+                  <Button size="sm" variant="outline" icon={n.read ? <MarkAsUnread size={14} /> : <CheckCircle size={14} />}
+                    onClick={() => { void (n.read ? markNotificationUnread(n.id) : markNotificationsRead([n.id])); }}>
+                    {n.read ? 'Marquer non lue' : 'Marquer comme lue'}
+                  </Button>
+                </span>
+              ) },
+            ]}
+          />
+        ) : (
+          <MxCardGrid
+            items={paged}
+            getItemKey={n => n.id}
+            renderItem={n => (
+              <NotificationCard
+                notification={n}
+                familyLabel={GROUPS.find(g => g.id === groupOf(n))?.label ?? 'Autres'}
+                tone={TONE[n.kind] ?? 'info'}
+                icon={GROUP_ICON[groupOf(n)]}
+                onOpen={() => open(n)}
+                onToggleRead={() => { void (n.read ? markNotificationUnread(n.id) : markNotificationsRead([n.id])); }}
+              />
+            )}
+          />
+        )}
+      </div>
     </div>
   );
 };

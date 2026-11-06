@@ -3,7 +3,6 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Accordion from '../common/Accordion';
 import ColorPicker from '../common/ColorPicker';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { StatusConfig } from '../../types';
@@ -16,7 +15,6 @@ interface StatusModalProps {
 }
 
 const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) => {
-  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
@@ -96,14 +94,14 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={status ? 'MODIFIER LE STATUT' : 'AJOUTER UN STATUT'}
+      title={status ? 'Modifier le statut' : 'Ajouter un statut'}
       size="md"
     >
       <div className="space-y-4">
         {/* Informations de base */}
         <Accordion
-          title="INFORMATIONS DE BASE"
-          icon={<Settings size={18} className="text-blue-600 dark:text-blue-400" />}
+          title="Informations de base"
+          icon={<Settings size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,7 +134,7 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
                   placeholder="Généré automatiquement si vide"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Laissez vide pour générer automatiquement
+                  Laisse vide pour générer automatiquement
                 </p>
               </div>
             )}
@@ -146,14 +144,14 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
                 variant="outline"
                 onClick={onClose}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button
                 variant="primary"
                 type="submit"
                 disabled={isLoading}
               >
-                {isLoading ? 'SAUVEGARDE...' : status ? 'MODIFIER' : 'AJOUTER'}
+                {isLoading ? 'Enregistrement…' : status ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>
           </form>
@@ -161,8 +159,8 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
 
         {/* Couleur */}
         <Accordion
-          title="COULEUR"
-          icon={<Palette size={18} className="text-purple-600 dark:text-purple-400" />}
+          title="Couleur"
+          icon={<Palette size={18} className="text-primary-600 dark:text-primary-400" />}
           defaultOpen={false}
         >
           <div className="space-y-4">

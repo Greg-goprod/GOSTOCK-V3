@@ -9,6 +9,11 @@ import SubgroupModal from '../components/subgroups/SubgroupModal';
 import DepartmentModal from '../components/departments/DepartmentModal';
 import MaintenanceTypeModal from '../components/settings/MaintenanceTypeModal';
 import ExcelImport from '../components/import/ExcelImport';
+import CatalogImport from '../components/import/CatalogImport';
+import NotificationRecipients from '../components/settings/NotificationRecipients';
+import FoundToolSettings from '../components/settings/FoundToolSettings';
+import BackupPanel from '../components/settings/BackupPanel';
+import SmsSetting from '../components/settings/SmsSetting';
 import { SystemResetModal } from '../components/admin/SystemResetModal';
 import { useApp } from '../contexts/AppContext';
 import { 
@@ -21,17 +26,20 @@ import {
   Layers,
   Wrench,
   Upload,
+  BookOpen,
+  Mail,
   Download,
   Globe,
   Moon,
   Sun,
   Truck,
-  Building2
-} from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+  Building2,
+  AlertTriangle as AlertTriangleIcon, PhoneCall, HardDriveDownload } from 'lucide-react';
+import LanguagePicker from '../components/common/LanguagePicker';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+
 import { 
   Category, 
   Supplier, 
@@ -41,9 +49,10 @@ import {
   MaintenanceType,
   SystemSetting 
 } from '../types';
+import PageTitle from '../components/common/PageTitle';
+import { getActiveOrganizationId } from '../lib/organization';
 
 const Settings: React.FC = () => {
-  const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { refreshData } = useApp();
   
@@ -76,7 +85,10 @@ const Settings: React.FC = () => {
   
   // Loading states
   const [loading, setLoading] = useState(true);
-  const [articlePrefix, setArticlePrefix] = useState('');
+  const [articleSeries, setArticleSeries] = useState('');
+  const [nextArticleNumber, setNextArticleNumber] = useState('');
+  const [approvalMaxQuantity, setApprovalMaxQuantity] = useState('10');
+  const [signatureMinValue, setSignatureMinValue] = useState('500');
   const [companyLogo, setCompanyLogo] = useState('');
 
   useEffect(() => {
@@ -120,7 +132,16 @@ const Settings: React.FC = () => {
       .order('name');
     
     if (error) throw error;
-    setSuppliers(data || []);
+    // Mêmes champs que dans AppContext : la fenêtre d'édition lit contactPerson, leadTimeDays…
+    setSuppliers((data || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      contactPerson: item.contact_person,
+      email: item.email,
+      phone: item.phone,
+      website: item.website,
+      leadTimeDays: item.lead_time_days,
+    })));
   };
 
   const fetchGroups = async () => {
@@ -184,15 +205,38 @@ const Settings: React.FC = () => {
     setSystemSettings(data || []);
     
     // Set specific settings
-    const prefixSetting = data?.find(s => s.id === 'article_prefix');
-    if (prefixSetting) {
-      setArticlePrefix(prefixSetting.value);
-    }
+    const { data: organization } = await supabase!
+      .from('organizations')
+      .select('article_series')
+      .eq('id', getActiveOrganizationId() ?? '')
+      .maybeSingle();
+    if (organization) setArticleSeries(organization.article_series ?? '');
+    const { data: preview } = await supabase!.rpc('preview_article_number');
+    setNextArticleNumber(preview || '');
     
+    const signatureSetting = data?.find(s => s.id === 'signature_min_value');
+    if (signatureSetting) setSignatureMinValue(signatureSetting.value);
+
+    const approvalSetting = data?.find(s => s.id === 'approval_max_quantity');
+    if (approvalSetting) {
+      setApprovalMaxQuantity(approvalSetting.value);
+    }
+
     const logoSetting = data?.find(s => s.id === 'company_logo');
     if (logoSetting) {
       setCompanyLogo(logoSetting.value);
     }
+  };
+
+  const saveArticleSeries = async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase.rpc('set_article_series', { p_series: articleSeries });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setNextArticleNumber(data || '');
+    toast.success(`Série enregistrée : prochain numéro ${data}`);
   };
 
   const updateSystemSetting = async (id: string, value: string, description?: string) => {
@@ -281,22 +325,22 @@ const Settings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight uppercase">PARAMÈTRES</h1>
+          <PageTitle>Paramètres</PageTitle>
           <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
             Configuration du système et gestion des données de référence
           </p>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
             icon={<Upload size={18} />}
             onClick={() => setShowImportModal(true)}
             className="font-bold"
           >
-            IMPORTER EXCEL
+            Importer Excel
           </Button>
           <Button
             variant="outline"
@@ -304,15 +348,15 @@ const Settings: React.FC = () => {
             onClick={exportData}
             className="font-bold"
           >
-            EXPORTER CONFIG
+            Exporter configuration
           </Button>
         </div>
       </div>
 
       {/* Paramètres système */}
       <Accordion
-        title="PARAMÈTRES SYSTÈME"
-        icon={<SettingsIcon size={20} className="text-blue-600 dark:text-blue-400" />}
+        title="Paramètres système"
+        icon={<SettingsIcon size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={true}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -321,22 +365,14 @@ const Settings: React.FC = () => {
             <div className="p-4 space-y-4">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Globe size={18} />
-                INTERFACE
+                Interface
               </h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Langue
                 </label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as any)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                >
-                  <option value="fr">Français</option>
-                  <option value="en">English</option>
-                  <option value="de">Deutsch</option>
-                </select>
+                <LanguagePicker />
               </div>
               
               <div>
@@ -360,35 +396,106 @@ const Settings: React.FC = () => {
             <div className="p-4 space-y-4">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Building2 size={18} />
-                ENTREPRISE
+                Entreprise
               </h3>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Préfixe des articles
+                <label htmlFor="article-series" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Série de numérotation des articles
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id="article-series"
                     type="text"
-                    value={articlePrefix}
-                    onChange={(e) => setArticlePrefix(e.target.value)}
-                    maxLength={5}
+                    value={articleSeries}
+                    onChange={(e) => setArticleSeries(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+                    maxLength={6}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-mono tracking-widest uppercase"
+                    placeholder="Ex: GCENT1"
+                  />
+                  <Button variant="primary" size="sm" onClick={saveArticleSeries} disabled={articleSeries.length !== 6}>
+                    Sauver
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Exactement 6 lettres ou chiffres. Chaque nouvel article reçoit automatiquement le numéro suivant
+                  {nextArticleNumber && <> : prochain numéro <span className="font-mono text-gray-800 dark:text-gray-200">{nextArticleNumber}</span></>}.
+                  Les articles déjà créés gardent leur numéro.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="approval-max-quantity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Seuil de validation des demandes
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="approval-max-quantity"
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    value={approvalMaxQuantity}
+                    onChange={(e) => setApprovalMaxQuantity(e.target.value)}
                     className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    placeholder="Ex: MAT"
                   />
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => updateSystemSetting('article_prefix', articlePrefix, 'Préfixe utilisé pour générer les numéros d\'articles')}
+                    onClick={() => {
+                      const value = Number(approvalMaxQuantity);
+                      if (!Number.isInteger(value) || value < 1) {
+                        toast.error('Le seuil doit être un nombre entier positif');
+                        return;
+                      }
+                      updateSystemSetting('approval_max_quantity', String(value), 'Au-delà de cette quantité par article, une demande doit être validée par un responsable');
+                    }}
                   >
-                    SAUVER
+                    Sauver
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Préfixe utilisé pour générer les numéros d'articles (5 caractères max)
+                  Au-delà de cette quantité par article, une demande doit être validée par un responsable. Les véhicules et les articles marqués « validation requise » le sont toujours.
                 </p>
               </div>
-              
+
+              <div>
+                <label htmlFor="signature-min" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Signature à la remise à partir de (CHF)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="signature-min"
+                    type="number"
+                    min={0}
+                    step={50}
+                    inputMode="numeric"
+                    value={signatureMinValue}
+                    onChange={(e) => setSignatureMinValue(e.target.value)}
+                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      const value = Number(signatureMinValue);
+                      if (!(value >= 0)) {
+                        toast.error('Montant invalide');
+                        return;
+                      }
+                      updateSystemSetting('signature_min_value', String(value), 'Prix d\'achat (CHF) à partir duquel la signature est demandée à la remise');
+                    }}
+                  >
+                    Sauver
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Un outil dont le prix d'achat atteint ce montant (ou marqué « signature à la remise ») est signé sur l'écran par la personne qui le reçoit. 0 = seulement les outils marqués.
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Logo de l'entreprise (URL)
@@ -406,7 +513,7 @@ const Settings: React.FC = () => {
                     size="sm"
                     onClick={() => updateSystemSetting('company_logo', companyLogo, 'URL du logo de l\'entreprise')}
                   >
-                    SAUVER
+                    Sauver
                   </Button>
                 </div>
                 {companyLogo && (
@@ -425,15 +532,68 @@ const Settings: React.FC = () => {
         </div>
       </Accordion>
 
+      {/* Notifications par e-mail */}
+      <Accordion
+        title="Notifications par e-mail et SMS"
+        icon={<Mail size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <NotificationRecipients />
+            <SmsSetting />
+          </div>
+        </Card>
+      </Accordion>
+
+      {/* Outil trouvé : page publique */}
+      <Accordion
+        title="Outil trouvé (page publique)"
+        icon={<PhoneCall size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <FoundToolSettings />
+          </div>
+        </Card>
+      </Accordion>
+
+      {/* Sauvegarde complète */}
+      <Accordion
+        title="Sauvegarde"
+        icon={<HardDriveDownload size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <BackupPanel />
+          </div>
+        </Card>
+      </Accordion>
+
+      {/* Catalogues fournisseurs */}
+      <Accordion
+        title="Catalogues fournisseurs"
+        icon={<BookOpen size={20} className="text-primary-600 dark:text-primary-400" />}
+        defaultOpen={false}
+      >
+        <Card>
+          <div className="p-4">
+            <CatalogImport suppliers={suppliers} onSuppliersChanged={fetchSuppliers} />
+          </div>
+        </Card>
+      </Accordion>
+
       {/* Catégories */}
       <Accordion
-        title={`CATÉGORIES (${categories.length})`}
-        icon={<Tag size={20} className="text-green-600 dark:text-green-400" />}
+        title={`Catégories (${categories.length})`}
+        icon={<Tag size={20} className="text-tone-success" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez les catégories de matériel pour organiser votre inventaire
+            Gère les catégories de matériel pour organiser ton inventaire
           </p>
           <Button
             variant="primary"
@@ -444,7 +604,7 @@ const Settings: React.FC = () => {
               setShowCategoryModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -470,12 +630,14 @@ const Settings: React.FC = () => {
                       setEditingCategory(category);
                       setShowCategoryModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('categories', category.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -489,13 +651,13 @@ const Settings: React.FC = () => {
 
       {/* Fournisseurs */}
       <Accordion
-        title={`FOURNISSEURS (${suppliers.length})`}
-        icon={<Truck size={20} className="text-purple-600 dark:text-purple-400" />}
+        title={`Fournisseurs (${suppliers.length})`}
+        icon={<Truck size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez vos fournisseurs et leurs informations de contact
+            Gère tes fournisseurs et leurs informations de contact
           </p>
           <Button
             variant="primary"
@@ -506,7 +668,7 @@ const Settings: React.FC = () => {
               setShowSupplierModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -526,12 +688,14 @@ const Settings: React.FC = () => {
                       setEditingSupplier(supplier);
                       setShowSupplierModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('suppliers', supplier.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -547,8 +711,8 @@ const Settings: React.FC = () => {
 
       {/* Groupes et sous-groupes */}
       <Accordion
-        title={`GROUPES ET SOUS-GROUPES (${groups.length} groupes, ${subgroups.length} sous-groupes)`}
-        icon={<Layers size={20} className="text-indigo-600 dark:text-indigo-400" />}
+        title={`Groupes et sous-groupes (${groups.length} groupes, ${subgroups.length} sous-groupes)`}
+        icon={<Layers size={20} className="text-primary-600 dark:text-primary-400" />}
         defaultOpen={false}
       >
         <div className="space-y-6">
@@ -565,7 +729,7 @@ const Settings: React.FC = () => {
                   setShowGroupModal(true);
                 }}
               >
-                AJOUTER GROUPE
+                Ajouter groupe
               </Button>
             </div>
             
@@ -591,19 +755,21 @@ const Settings: React.FC = () => {
                           setEditingGroup(group);
                           setShowGroupModal(true);
                         }}
+                        ariaLabel="Modifier"
                       />
                       <Button
                         variant="danger"
                         size="sm"
                         icon={<Trash2 size={14} />}
                         onClick={() => handleDeleteItem('equipment_groups', group.id)}
+                        ariaLabel="Supprimer"
                       />
                     </div>
                   </div>
                   {group.description && (
                     <p className="text-xs text-gray-500 mt-1">{group.description}</p>
                   )}
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  <p className="text-xs text-primary-600 dark:text-primary-400 mt-1">
                     {subgroups.filter(sg => sg.groupId === group.id).length} sous-groupe(s)
                   </p>
                 </div>
@@ -625,13 +791,13 @@ const Settings: React.FC = () => {
                 }}
                 disabled={groups.length === 0}
               >
-                AJOUTER SOUS-GROUPE
+                Ajouter sous-groupe
               </Button>
             </div>
             
             {groups.length === 0 ? (
               <p className="text-sm text-gray-500 italic">
-                Créez d'abord un groupe pour pouvoir ajouter des sous-groupes
+                Crée d'abord un groupe pour pouvoir ajouter des sous-groupes
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -664,12 +830,14 @@ const Settings: React.FC = () => {
                               setEditingSubgroup(subgroup);
                               setShowSubgroupModal(true);
                             }}
+                            ariaLabel="Modifier"
                           />
                           <Button
                             variant="danger"
                             size="sm"
                             icon={<Trash2 size={14} />}
                             onClick={() => handleDeleteItem('equipment_subgroups', subgroup.id)}
+                            ariaLabel="Supprimer"
                           />
                         </div>
                       </div>
@@ -690,13 +858,13 @@ const Settings: React.FC = () => {
 
       {/* Départements */}
       <Accordion
-        title={`DÉPARTEMENTS (${departments.length})`}
-        icon={<Building size={20} className="text-orange-600 dark:text-orange-400" />}
+        title={`Départements (${departments.length})`}
+        icon={<Building size={20} className="text-tone-warning" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez les départements de votre organisation
+            Gère les départements de ton organisation
           </p>
           <Button
             variant="primary"
@@ -707,7 +875,7 @@ const Settings: React.FC = () => {
               setShowDepartmentModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -733,12 +901,14 @@ const Settings: React.FC = () => {
                       setEditingDepartment(department);
                       setShowDepartmentModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('departments', department.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -754,13 +924,13 @@ const Settings: React.FC = () => {
 
       {/* Types de maintenance */}
       <Accordion
-        title={`TYPES DE MAINTENANCE (${maintenanceTypes.length})`}
-        icon={<Wrench size={20} className="text-yellow-600 dark:text-yellow-400" />}
+        title={`Types de maintenance (${maintenanceTypes.length})`}
+        icon={<Wrench size={20} className="text-tone-warning" />}
         defaultOpen={false}
       >
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez les types de maintenance et de pannes
+            Gère les types de maintenance et de pannes
           </p>
           <Button
             variant="primary"
@@ -771,7 +941,7 @@ const Settings: React.FC = () => {
               setShowMaintenanceTypeModal(true);
             }}
           >
-            AJOUTER
+            Ajouter
           </Button>
         </div>
         
@@ -797,12 +967,14 @@ const Settings: React.FC = () => {
                       setEditingMaintenanceType(type);
                       setShowMaintenanceTypeModal(true);
                     }}
+                    ariaLabel="Modifier"
                   />
                   <Button
                     variant="danger"
                     size="sm"
                     icon={<Trash2 size={14} />}
                     onClick={() => handleDeleteItem('maintenance_types', type.id)}
+                    ariaLabel="Supprimer"
                   />
                 </div>
               </div>
@@ -816,14 +988,14 @@ const Settings: React.FC = () => {
 
       {/* Administration */}
       <Accordion
-        title="ADMINISTRATION"
-        icon={<SettingsIcon size={20} className="text-red-600 dark:text-red-400" />}
+        title="Administration"
+        icon={<SettingsIcon size={20} className="text-tone-danger" />}
         defaultOpen={false}
       >
         <div className="space-y-6">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <h4 className="font-semibold text-red-800 dark:text-red-200 mb-3">
-              ⚠️ Zone d'administration - Actions irréversibles
+          <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
+            <h4 className="font-semibold text-tone-danger mb-3">
+              <AlertTriangleIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" aria-hidden="true" />Zone d'administration - Actions irréversibles
             </h4>
             <div className="space-y-4">
               <div>
@@ -838,7 +1010,7 @@ const Settings: React.FC = () => {
                   icon={<Trash2 size={16} />}
                   onClick={() => setShowSystemResetModal(true)}
                 >
-                  REMETTRE À ZÉRO LE SYSTÈME
+                  Remettre à zéro le système
                 </Button>
               </div>
             </div>

@@ -1,0 +1,1019 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { CheckCircle2, Circle, Inbox, Minus, PackageCheck, Plus, Search, Truck, X, XCircle , ClipboardList } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Button from '../components/common/Button';
+import Modal from '../components/common/Modal';
+import FuelInput from '../components/common/FuelInput';
+import SignaturePad from '../components/common/SignaturePad';
+import QRCodeScanner from '../components/QRCode/QRCodeScanner';
+import PickListButton from '../components/requests/PickListButton';
+import { useSignatureRule } from '../lib/signature';
+import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
+import { DeclareIncidentModal } from './Incidents';
+import PhotoInput from '../components/common/PhotoInput';
+import { supabase } from '../lib/supabase';
+import { useSiteSuggestions } from '../lib/sites';
+import { findEquipmentByCode } from '../lib/scan';
+import { REQUEST_STATUS, errorMessage, formatPeriod, toLocalInput } from '../lib/requests';
+import { RequestItemRow, RequestOverview, RequestStatus } from '../types';
+import { DateTimeInput } from '../components/common/DateInput';
+import { confirmAction, promptAction } from '../lib/confirm';
+import SiteNotice from '../components/common/SiteNotice';
+import { MxEmpty } from '../components/mx/MxEmpty';
+import { MxCardGrid } from '../components/mx/MxCardGrid';
+import { MxEntityCard } from '../components/mx/MxEntityCard';
+import { MX_TONE_LINE, type MxTone } from '../components/mx/tokens';
+import { MxSegmented } from '../components/mx/MxSegmented';
+import PageTitle from '../components/common/PageTitle';
+import { PageCommands } from '../components/Layout/ModuleHeader';
+import ExtendModal from '../components/checkout/ExtendModal';
+
+// Objet loué : disponible seulement jusqu'à la fin du contrat
+const rentalNote = (x: { rentalUntil?: string }) => (x.rentalUntil ? ` · loué jusqu'au ${new Date(`${x.rentalUntil}T12:00:00`).toLocaleDateString('fr-CH')}` : '');
+
+type Filter = 'todo' | 'deliver' | 'approve' | 'out' | 'all';
+
+// Commandes du shop à livrer sur chantier (le mode est écrit en tête de la remarque)
+const isDelivery = (r: { notes?: string }) => (r.notes ?? '').startsWith('Livraison sur chantier');
+
+const FILTERS: { id: Filter; label: string; statuses: RequestStatus[] | null }[] = [
+  { id: 'todo', label: 'À préparer', statuses: ['approved', 'ready'] },
+  { id: 'deliver', label: 'À livrer', statuses: ['approved', 'ready'] },
+  { id: 'approve', label: 'À valider', statuses: ['requested'] },
+  { id: 'out', label: 'Sorties', statuses: ['out'] },
+  { id: 'all', label: 'Toutes', statuses: null },
+];
+
+const inputClass =
+  'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
+const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+
+const StatusPill: React.FC<{ status: RequestStatus }> = ({ status }) => (
+  <span className={`inline-flex rounded px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold whitespace-nowrap ${REQUEST_STATUS[status].className}`}>
+    {REQUEST_STATUS[status].label}
+  </span>
+);
+
+const contentSummary = (r: RequestOverview) =>
+  [
+    r.tool_lines > 0 && `${r.tool_lines} outil${r.tool_lines > 1 ? 's' : ''}`,
+    r.consumable_lines > 0 && `${r.consumable_lines} consommable${r.consumable_lines > 1 ? 's' : ''}`,
+    r.vehicle_names,
+  ].filter(Boolean).join(' · ');
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Les demandes sont groupées par étape, comme les offres de Mannyx
+const STEP_GROUPS: { id: string; label: string; statuses: RequestStatus[] }[] = [
+  { id: 'requested', label: 'À valider', statuses: ['requested'] },
+  { id: 'approved', label: 'Validées, à préparer', statuses: ['approved'] },
+  { id: 'ready', label: 'Prêtes à retirer', statuses: ['ready'] },
+  { id: 'out', label: 'Sorties', statuses: ['out'] },
+  { id: 'done', label: 'Terminées', statuses: ['closed', 'rejected', 'cancelled'] },
+];
+const STEP_TOTAL = 5;
+const STEP_INDEX: Partial<Record<RequestStatus, number>> = { requested: 0, approved: 1, ready: 2, out: 3, closed: 4 };
+const STEP_TONE: Partial<Record<RequestStatus, MxTone>> = { requested: 'warning', approved: 'info', ready: 'success', out: 'accent', closed: 'neutral' };
+
+// Avis personnels : demande validée, refusée, prête à retirer
+export const MyNotices: React.FC = () => {
+  const { stockNotifications, markStockNotificationRead } = useApp();
+  const { profile } = useAuth();
+  const mine = stockNotifications.filter(n => n.recipientUserId && n.recipientUserId === profile?.id);
+  if (mine.length === 0) return null;
+  return (
+    <ul className="space-y-2" aria-label="Avis sur mes demandes">
+      {mine.map(n => (
+        <li
+          key={n.id}
+          className={`flex items-start justify-between gap-3 rounded-lg p-3 text-sm ${n.kind === 'request_rejected' ? 'bg-danger-50 text-danger-900 dark:bg-danger-900/30 dark:text-danger-100' : n.kind === 'request_ready' ? 'bg-success-50 text-success-900 dark:bg-success-900/30 dark:text-success-100' : 'bg-info-50 text-gray-900 dark:bg-info-900 dark:text-info-100'}`}
+        >
+          <div>
+            <p className="font-semibold">{n.title}</p>
+            <p>{n.message}</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => markStockNotificationRead(n.id)}>OK</Button>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+// Ce que la personne connectée a en sa possession (le magasin le voit dans « Sorties »)
+export const MyEquipment: React.FC = () => {
+  const { checkouts, equipment, equipmentInstances } = useApp();
+  const { profile } = useAuth();
+  const [reporting, setReporting] = useState<{ checkoutId: string; equipmentId: string } | null>(null);
+  const [extending, setExtending] = useState<{ id: string; name: string; due: string } | null>(null);
+  const mine = checkouts
+    .filter(c => c.userId === profile?.id && (c.status === 'active' || c.status === 'overdue'))
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  if (mine.length === 0) return null;
+
+  return (
+    <section className="rounded-lg bg-white dark:bg-gray-800 shadow p-4" aria-labelledby="my-equipment">
+      <h2 id="my-equipment" className="font-bold text-gray-900 dark:text-white mb-2">Matériel chez moi ({mine.length})</h2>
+      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+        {mine.map(c => {
+          const item = equipment.find(e => e.id === c.equipmentId);
+          const instance = c.instanceId ? equipmentInstances.find(i => i.id === c.instanceId) : undefined;
+          const late = c.status === 'overdue' || new Date(c.dueDate).getTime() < Date.now();
+          const daysLate = Math.max(1, Math.floor((Date.now() - new Date(c.dueDate).getTime()) / DAY_MS));
+          return (
+            <li key={c.id} className="flex justify-between items-center gap-3 py-2">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item?.name ?? 'Article'}</div>
+                <div className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                  {[instance?.qrCode ?? item?.articleNumber, `à rendre le ${new Date(c.dueDate).toLocaleDateString('fr-CH')}`].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {late && (
+                  <span className="rounded mx-tint-badge-danger px-2 py-0.5 text-[length:calc(11px*var(--mx-scale,1))] font-bold">
+                    {daysLate} j de retard
+                  </span>
+                )}
+                <Button size="sm" variant="outline" onClick={() => setExtending({ id: c.id, name: item?.name ?? 'Article', due: c.dueDate })}>Prolonger</Button>
+                <Button size="sm" variant="outline" onClick={() => setReporting({ checkoutId: c.id, equipmentId: c.equipmentId })}>Signaler</Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {extending && <ExtendModal mode="collab" lines={[extending]} onClose={() => setExtending(null)} />}
+      {reporting && (
+        <DeclareIncidentModal
+          checkoutId={reporting.checkoutId}
+          equipmentId={reporting.equipmentId}
+          onClose={() => setReporting(null)}
+          onDone={async () => setReporting(null)}
+        />
+      )}
+    </section>
+  );
+};
+
+const Requests: React.FC = () => {
+  const [requests, setRequests] = useState<RequestOverview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { can } = useAuth();
+  const staff = can('scan') || can('approve') || can('view_all');
+  const [filter, setFilter] = useState<Filter>(staff ? 'todo' : 'all');
+  const [search, setSearch] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  // Demande préremplie (« Refaire cette demande »)
+  const [prefill, setPrefill] = useState<RequestPrefill | null>(null);
+  const [selected, setSelected] = useState<RequestOverview | null>(null);
+  // Commande ouverte depuis le comptoir (« Sortir la commande »)
+  const [openId, setOpenId] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Demande préparée depuis une fiche chantier (« Préparer un chantier semblable ») ou ouverte depuis l'accueil
+  useEffect(() => {
+    const state = location.state as { prefill?: RequestPrefill; newRequest?: boolean; openRequest?: string } | null;
+    if (state?.openRequest) setOpenId(state.openRequest);
+    const incoming = state?.prefill;
+    if (state?.openRequest) navigate(location.pathname, { replace: true, state: null });
+    if (incoming || state?.newRequest) {
+      if (incoming) setPrefill(incoming);
+      setShowNew(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location, navigate]);
+
+  const load = async () => {
+    if (!supabase) return;
+    setLoading(true);
+    const { data, error } = await supabase.from('requests_overview').select('*').order('start_at');
+    setLoading(false);
+    if (error) {
+      toast.error('Impossible de charger les demandes');
+      return;
+    }
+    setRequests((data || []) as RequestOverview[]);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!openId || loading) return;
+    const found = requests.find(r => r.id === openId);
+    if (found) setSelected(found);
+    setOpenId(null);
+  }, [openId, loading, requests]);
+
+  const counts = useMemo(
+    () => Object.fromEntries(FILTERS.map(f => [f.id, (f.statuses ? requests.filter(r => f.statuses!.includes(r.status)) : requests).filter(r => f.id !== 'deliver' || isDelivery(r)).length])),
+    [requests]
+  );
+
+  const visible = useMemo(() => {
+    const statuses = FILTERS.find(f => f.id === filter)?.statuses;
+    const term = search.trim().toLowerCase();
+    return requests
+      .filter(r => !statuses || statuses.includes(r.status))
+      .filter(r => filter !== 'deliver' || isDelivery(r))
+      .filter(r => !term || [r.number, r.requester_name, r.destination, r.vehicle_names].some(v => (v || '').toLowerCase().includes(term)))
+      // Toutes : les plus récentes d'abord ; sinon par date de début
+      .sort((a, b) => filter === 'all'
+        ? new Date(b.start_at).getTime() - new Date(a.start_at).getTime()
+        : new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+  }, [requests, filter, search]);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <PageTitle>{staff ? 'Demandes' : 'Mes demandes'}</PageTitle>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Réservations d'outils, de consommables et de véhicules</p>
+      </div>
+
+      <MyNotices />
+      {!staff && <MyEquipment />}
+
+      {/* Filtres d'étape : bascule de la charte (comme les filtres de Mannyx) */}
+      <PageCommands
+        search={<div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" aria-hidden="true" />
+          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Numéro, personne, chantier, véhicule…" aria-label="Rechercher une demande" className={`${inputClass} pl-10`} />
+        </div>}
+        filters={staff ? (
+          <MxSegmented aria-label="Étape" value={filter} onChange={v => setFilter(v as typeof filter)}
+            options={FILTERS.map(f => ({ value: f.id, label: `${f.label} (${counts[f.id] ?? 0})` }))} />
+        ) : undefined}
+        primary={<Button icon={<Plus size={16} />} onClick={() => setShowNew(true)}>Nouvelle demande</Button>}
+      />
+
+      {loading ? (
+        <div className="py-12 text-center text-gray-600 dark:text-gray-400">Chargement…</div>
+      ) : visible.length === 0 ? (
+        <MxEmpty icon={ClipboardList} title={requests.length === 0 ? 'Aucune demande pour l\'instant' : 'Aucune demande dans cette liste'}
+          description={requests.length === 0 ? 'Crée la première avec « Nouvelle demande ».' : undefined} />
+      ) : (
+        <div className="space-y-6">
+          {STEP_GROUPS.map(group => {
+            const rows = visible.filter(r => group.statuses.includes(r.status));
+            if (rows.length === 0) return null;
+            return (
+              <section key={group.id} aria-label={group.label}>
+                <h2 className="mx-section-label mb-3">{`${group.label} (${rows.length})`}</h2>
+                <MxCardGrid
+                  items={rows}
+                  getItemKey={r => r.id}
+                  renderItem={r => {
+                    const at = STEP_INDEX[r.status];
+                    return (
+                      <MxEntityCard
+                        avatarName={r.requester_name}
+                        title={r.requester_name}
+                        infoParts={[
+                          { content: `${r.number}${r.destination ? ` · ${r.destination}` : ''}` },
+                          { content: contentSummary(r) || '—' },
+                        ]}
+                        statusBadge={<StatusPill status={r.status} />}
+                        steps={at === undefined ? undefined : {
+                          total: STEP_TOTAL, currentIndex: at, toneLine: MX_TONE_LINE[STEP_TONE[r.status] ?? 'info'],
+                          ariaLabel: `Étape ${at + 1} sur ${STEP_TOTAL} : ${REQUEST_STATUS[r.status].label}`,
+                        }}
+                        due={<span>{`${formatPeriod(r.start_at, r.end_at)} · ${r.depot_name}`}</span>}
+                        menuLabel={`Actions pour la demande ${r.number}`}
+                        menuActions={[{ id: 'open', label: 'Ouvrir', icon: Inbox, onSelect: () => setSelected(r) }]}
+                        onOpen={() => setSelected(r)}
+                      />
+                    );
+                  }}
+                />
+                {group.id === 'requested' && rows.some(r => r.approval_reason) && (
+                  <ul className="mt-2 space-y-0.5 text-sm text-tone-warning">
+                    {rows.filter(r => r.approval_reason).map(r => <li key={r.id}>{`${r.number} : validation requise (${r.approval_reason})`}</li>)}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {showNew && (
+        <NewRequestModal
+          initial={prefill ?? undefined}
+          onClose={() => { setShowNew(false); setPrefill(null); }}
+          onCreated={async created => {
+            setShowNew(false);
+            setPrefill(null);
+            await load();
+            toast.success(created.status === 'approved'
+              ? `Demande ${created.number} validée automatiquement`
+              : `Demande ${created.number} envoyée en validation`);
+          }}
+        />
+      )}
+
+      {selected && (
+        <RequestDetailModal
+          request={selected}
+          onClose={() => setSelected(null)}
+          onChanged={async () => {
+            setSelected(null);
+            await load();
+          }}
+          onRepeat={repeat => {
+            setSelected(null);
+            setPrefill(repeat);
+            setShowNew(true);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------------ */
+
+export interface RequestPrefill {
+  items: { kind: 'tool' | 'consumable' | 'vehicle'; id: string; quantity: number }[];
+  destination?: string | null;
+}
+
+interface RequestTemplate {
+  id: string;
+  name: string;
+  destination: string | null;
+  items: RequestPrefill['items'];
+}
+
+interface DraftItem {
+  kind: 'tool' | 'consumable' | 'vehicle';
+  id: string;
+  name: string;
+  unit?: string;
+  quantity: number;
+}
+
+const NewRequestModal: React.FC<{ initial?: RequestPrefill; onClose: () => void; onCreated: (r: { number: string; status: RequestStatus }) => Promise<void> }> = ({ initial, onClose, onCreated }) => {
+  const sites = useSiteSuggestions();
+  const { users, depots, equipment, vehicles, consumableStock } = useApp();
+  const { profile, can } = useAuth();
+  // Le magasin et les responsables peuvent saisir une demande pour quelqu'un d'autre
+  const forOthers = can('scan') || can('approve');
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(7, 30, 0, 0);
+  const tomorrowEnd = new Date(tomorrow);
+  tomorrowEnd.setHours(17, 0, 0, 0);
+
+  const [requesterId, setRequesterId] = useState(forOthers ? '' : profile?.id ?? '');
+  const [destination, setDestination] = useState(initial?.destination ?? '');
+  const [depotId, setDepotId] = useState(depots.find(d => d.isDefault)?.id || depots[0]?.id || '');
+  const [start, setStart] = useState(toLocalInput(tomorrow));
+  const [end, setEnd] = useState(toLocalInput(tomorrowEnd));
+  const [notes, setNotes] = useState('');
+  // Lignes d'un panier favori ou d'une demande précédente (articles retirés entre-temps ignorés)
+  const toDraft = (list: RequestPrefill['items']): DraftItem[] => list.flatMap((i): DraftItem[] => {
+    if (i.kind === 'vehicle') {
+      const v = vehicles.find(x => x.id === i.id);
+      return v ? [{ kind: 'vehicle', id: v.id, name: `${v.name} · ${v.plate}`, quantity: 1 }] : [];
+    }
+    const e = equipment.find(x => x.id === i.id && x.status !== 'retired');
+    return e ? [{ kind: i.kind, id: e.id, name: e.name, unit: e.unit, quantity: i.quantity }] : [];
+  });
+  const [items, setItems] = useState<DraftItem[]>(() => toDraft(initial?.items ?? []));
+  const [templates, setTemplates] = useState<RequestTemplate[]>([]);
+
+  useEffect(() => {
+    supabase.from('request_templates').select('id, name, destination, items').order('name')
+      .then(({ data }) => setTemplates((data || []) as RequestTemplate[]));
+  }, []);
+
+  const applyTemplate = (id: string) => {
+    const t = templates.find(x => x.id === id);
+    if (!t) return;
+    setItems(toDraft(t.items));
+    if (t.destination) setDestination(t.destination);
+    toast.success(`Panier « ${t.name} » chargé`);
+  };
+
+  const saveTemplate = async () => {
+    if (!profile || items.length === 0) return;
+    const name = (await promptAction('Nom du panier (ex. Kit carottage, Mon lundi) :'))?.trim();
+    if (!name) return;
+    const { error } = await supabase.from('request_templates').upsert({
+      user_id: profile.id,
+      name,
+      destination: destination || null,
+      items: items.map(i => ({ kind: i.kind, id: i.id, quantity: i.quantity })),
+    }, { onConflict: 'user_id,name' });
+    if (error) return toast.error(errorMessage(error));
+    toast.success(`Panier « ${name} » enregistré`);
+    const { data } = await supabase.from('request_templates').select('id, name, destination, items').order('name');
+    setTemplates((data || []) as RequestTemplate[]);
+  };
+  const [tab, setTab] = useState<DraftItem['kind']>('tool');
+  const [search, setSearch] = useState('');
+  const [availability, setAvailability] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const startIso = start ? new Date(start).toISOString() : '';
+  const endIso = end ? new Date(end).toISOString() : '';
+  const periodOk = !!startIso && !!endIso && endIso > startIso;
+
+  // Disponibilité sur la période des outils et véhicules choisis
+  useEffect(() => {
+    if (!supabase || !periodOk) return;
+    let cancelled = false;
+    (async () => {
+      const result: Record<string, string> = {};
+      for (const item of items) {
+        // Objet loué : réservable seulement jusqu'à la fin du contrat (contrôlé aussi en base)
+        const until = item.kind === 'vehicle' ? vehicles.find(v => v.id === item.id)?.rentalUntil : equipment.find(e => e.id === item.id)?.rentalUntil;
+        if (until && endIso.slice(0, 10) > until) {
+          result[item.id] = `Location jusqu'au ${new Date(`${until}T12:00:00`).toLocaleDateString('fr-CH')} : retour dépassé`;
+          continue;
+        }
+        if (item.kind === 'tool') {
+          const { data } = await supabase!.rpc('tool_availability', { p_equipment_id: item.id, p_start: startIso, p_end: endIso });
+          result[item.id] = typeof data === 'number' ? `${data} disponible${data > 1 ? 's' : ''} sur la période` : '';
+        } else if (item.kind === 'vehicle') {
+          const { data } = await supabase!.rpc('vehicle_unavailability', { p_vehicle_id: item.id, p_start: startIso, p_end: endIso });
+          // Permis du conducteur vérifié dès le choix du véhicule (et non seulement à l'envoi)
+          const category = vehicles.find(v => v.id === item.id)?.licenseCategory;
+          const { data: license } = requesterId && category
+            ? await supabase!.rpc('license_covers', { p_user_id: requesterId, p_category: category, p_until: endIso })
+            : { data: null };
+          result[item.id] = data ? String(data) : license ? String(license) : 'Libre sur la période';
+        } else {
+          const stock = consumableStock.find(s => s.equipmentId === item.id && s.depotId === depotId)?.quantity ?? 0;
+          result[item.id] = `${stock} ${item.unit ?? ''} en stock au dépôt`;
+        }
+      }
+      if (!cancelled) setAvailability(result);
+    })();
+    return () => { cancelled = true; };
+  }, [items, startIso, endIso, depotId, periodOk, consumableStock, requesterId, vehicles, equipment]);
+
+  const candidates = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const chosen = new Set(items.map(i => i.id));
+    if (tab === 'vehicle') {
+      return vehicles
+        .filter(v => v.status !== 'retired' && !chosen.has(v.id))
+        .filter(v => !term || `${v.name} ${v.plate}`.toLowerCase().includes(term))
+        .map(v => ({ id: v.id, name: v.name, detail: `${v.plate}${rentalNote(v)}`, unit: undefined }));
+    }
+    return equipment
+      .filter(e => (tab === 'consumable' ? e.itemType === 'consumable' : e.itemType !== 'consumable') && e.status !== 'retired' && !chosen.has(e.id))
+      .filter(e => !term || `${e.name} ${e.articleNumber ?? ''} ${e.serialNumber ?? ''}`.toLowerCase().includes(term))
+      .slice(0, 30)
+      .map(e => ({ id: e.id, name: e.name, detail: `${e.articleNumber || e.serialNumber || ''}${rentalNote(e)}`, unit: e.unit }));
+  }, [tab, search, items, vehicles, equipment]);
+
+  const addItem = (c: { id: string; name: string; unit?: string }) => {
+    if (tab === 'vehicle' && items.some(i => i.kind === 'vehicle')) {
+      toast.error('Un seul véhicule par demande');
+      return;
+    }
+    setItems(prev => [...prev, { kind: tab, id: c.id, name: c.name, unit: c.unit, quantity: 1 }]);
+  };
+
+  const setQty = (id: string, qty: number) =>
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, quantity: Math.max(1, qty) } : i)));
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!supabase) return;
+    if (!requesterId) return toast.error('Choisis la personne qui fait la demande');
+    if (!periodOk) return toast.error('La fin doit être après le début');
+    if (items.length === 0) return toast.error('Ajoute au moins un article ou un véhicule');
+    setSaving(true);
+    const { data, error } = await supabase.rpc('create_request', {
+      p_requester_id: requesterId,
+      p_depot_id: depotId,
+      p_start: startIso,
+      p_end: endIso,
+      p_items: items.map(i => ({ kind: i.kind, id: i.id, quantity: i.quantity })),
+      p_destination: destination || null,
+      p_notes: notes || null,
+    });
+    setSaving(false);
+    if (error) return toast.error(errorMessage(error));
+    await onCreated(data);
+  };
+
+  const TABS: { id: DraftItem['kind']; label: string }[] = [
+    { id: 'tool', label: 'Outils' },
+    { id: 'consumable', label: 'Consommables' },
+    { id: 'vehicle', label: 'Véhicule' },
+  ];
+
+  return (
+    <Modal isOpen onClose={onClose} title="Nouvelle demande" size="xl">
+      <form onSubmit={submit} className="space-y-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="req-user" className={labelClass}>Pour qui</label>
+            {forOthers ? (
+              <select id="req-user" value={requesterId} onChange={e => setRequesterId(e.target.value)} className={inputClass} required>
+                <option value="">— Choisir une personne —</option>
+                {/* Personnes actives et dont l'accès court encore (pas les départs ni les missions terminées) */}
+                {users.filter(u => u.active !== false && (!u.accessUntil || u.accessUntil >= new Date().toISOString().slice(0, 10)))
+                  .map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
+              </select>
+            ) : (
+              <input id="req-user" value={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`} className={inputClass} readOnly />
+            )}
+          </div>
+          <div>
+            <label htmlFor="req-dest" className={labelClass}>Chantier ou service</label>
+            <input id="req-dest" list="req-dest-sites" autoComplete="off" value={destination} onChange={e => setDestination(e.target.value)} className={inputClass} placeholder="ex. Chantier Renens" />
+            <datalist id="req-dest-sites">{sites.map(site => <option key={site.name} value={site.name} label={site.registered ? 'Chantier' : 'Sans fiche chantier'} />)}</datalist>
+            <SiteNotice value={destination} />
+          </div>
+          <div>
+            <label htmlFor="req-start" className={labelClass}>Du</label>
+            <DateTimeInput id="req-start" value={start} onChange={e => setStart(e.target.value)} className={inputClass} required />
+          </div>
+          <div>
+            <label htmlFor="req-end" className={labelClass}>Au</label>
+            <DateTimeInput id="req-end" value={end} onChange={e => setEnd(e.target.value)} className={inputClass} required />
+          </div>
+          <div>
+            <label htmlFor="req-depot" className={labelClass}>Dépôt</label>
+            <select id="req-depot" value={depotId} onChange={e => setDepotId(e.target.value)} className={inputClass} required>
+              {depots.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="req-notes" className={labelClass}>Remarque (facultatif)</label>
+            <input id="req-notes" value={notes} onChange={e => setNotes(e.target.value)} className={inputClass} />
+          </div>
+        </div>
+
+        {/* Paniers favoris */}
+        {(templates.length > 0 || items.length > 0) && (
+          <div className="flex flex-wrap items-end gap-2">
+            {templates.length > 0 && (
+              <div>
+                <label htmlFor="req-template" className={labelClass}>Mes paniers</label>
+                <select id="req-template" value="" onChange={e => applyTemplate(e.target.value)} className={inputClass}>
+                  <option value="">— Charger un panier —</option>
+                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+            )}
+            {items.length > 0 && <Button size="sm" variant="outline" onClick={saveTemplate}>Enregistrer comme panier</Button>}
+          </div>
+        )}
+
+        {/* Choix des articles */}
+        <div className="space-y-3">
+          <MxSegmented aria-label="Type d'article" value={tab} onChange={v => { setTab(v as DraftItem['kind']); setSearch(''); }}
+            options={TABS.map(t => ({ value: t.id, label: t.label }))} />
+          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…" aria-label="Rechercher un article" className={inputClass} />
+          <ul className="max-h-56 overflow-y-auto space-y-1.5">
+            {candidates.length === 0 ? (
+              <li className="p-3 text-sm text-gray-600 dark:text-gray-400">Aucun résultat</li>
+            ) : candidates.map(c => (
+              <li key={c.id}>
+                <button type="button" onClick={() => addItem(c)} className="mx-dr-list-item w-full flex justify-between items-center gap-3 text-left hover:border-primary-400">
+                  <span className="text-[length:calc(13px*var(--mx-scale,1))] font-semibold text-gray-900 dark:text-gray-100">{c.name} <span className="font-mono text-[length:calc(12px*var(--mx-scale,1))] font-medium text-gray-500 dark:text-gray-400">{c.detail}</span></span>
+                  <Plus size={16} className="text-primary-600 dark:text-primary-300 shrink-0" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Contenu de la demande ({items.length})</h3>
+          {items.length === 0 ? (
+            <p className="text-sm text-gray-600 dark:text-gray-400">Rien pour l'instant : choisis des articles ci-dessus.</p>
+          ) : (
+            <ul className="space-y-2">
+              {items.map(item => (
+                <li key={item.id} className="mx-dr-list-item flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {item.kind === 'vehicle' && <Truck size={14} className="inline mr-1 align-text-bottom" aria-hidden="true" />}
+                      {item.name}
+                    </div>
+                    <div className={`text-xs ${/réservé|échue|dépassé|maintenance|retiré|permis|^0 /.test(availability[item.id] || '') ? 'text-tone-danger' : 'text-gray-600 dark:text-gray-400'}`}>
+                      {availability[item.id] || (periodOk ? 'Vérification…' : 'Choisis une période valide')}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {item.kind !== 'vehicle' && (
+                      <>
+                        <Button size="sm" variant="outline" icon={<Minus size={14} />} onClick={() => setQty(item.id, item.quantity - 1)} ariaLabel="Diminuer la quantité" />
+                        <input
+                          type="number" min="1" step="1" inputMode="numeric" value={item.quantity}
+                          onChange={e => setQty(item.id, Number(e.target.value) || 1)}
+                          aria-label={`Quantité : ${item.name}`}
+                          className="w-16 text-center font-mono rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-gray-900 dark:text-gray-100"
+                        />
+                        <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={() => setQty(item.id, item.quantity + 1)} ariaLabel="Augmenter la quantité" />
+                      </>
+                    )}
+                    <Button size="sm" variant="outline" icon={<X size={14} />} onClick={() => setItems(prev => prev.filter(i => i.id !== item.id))} ariaLabel={`Retirer ${item.name}`} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {items.some(i => i.kind === 'vehicle') && (
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Une demande avec véhicule est toujours validée par un responsable.</p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button>
+          <Button type="submit" loading={saving}>Envoyer la demande</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+/* ------------------------------------------------------------------------ */
+
+const RequestDetailModal: React.FC<{ request: RequestOverview; onClose: () => void; onChanged: () => Promise<void>; onRepeat: (prefill: RequestPrefill) => void }> = ({ request, onClose, onChanged, onRepeat }) => {
+  const { equipment, vehicles, users, refreshData, consumableStock } = useApp();
+  const { profile, can } = useAuth();
+  const isOwner = profile?.id === request.requester_id;
+  // Retrait par un tiers (chef d'équipe…) : le demandeur reste responsable du matériel
+  const [pickupBy, setPickupBy] = useState(request.requester_id);
+  const pickupName = (() => {
+    const u = users.find(x => x.id === pickupBy);
+    return u ? `${u.first_name} ${u.last_name}` : request.requester_name;
+  })();
+  const [items, setItems] = useState<RequestItemRow[]>([]);
+  const [deliveryNumber, setDeliveryNumber] = useState<string | null>(null);
+  // La base remplace de toute façon ce nom par celui de la personne connectée
+  const decider = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim();
+  const [decisionNote, setDecisionNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [issuing, setIssuing] = useState(false);
+  const [extendingRequest, setExtendingRequest] = useState(false);
+  // Quantités qui sortent de l'ordinaire : à lire avant de valider (le stock n'est contrôlé qu'à la sortie)
+  const quantityWarnings = items.flatMap(i => {
+    const e = equipment.find(x => x.id === i.equipment_id);
+    if (!e || i.item_kind === 'vehicle') return [];
+    const qty = Number(i.quantity);
+    if (i.item_kind === 'consumable') {
+      const stock = consumableStock.find(x => x.equipmentId === e.id && x.depotId === request.depot_id)?.quantity ?? 0;
+      if (qty > stock) return [`${e.name} : ${qty} demandé, ${stock} en stock au dépôt`];
+      if (qty >= 1000) return [`${e.name} : quantité très élevée (${qty}), vérifie qu'il n'y a pas d'erreur de saisie`];
+    } else if (qty > (e.totalQuantity ?? 1)) {
+      return [`${e.name} : ${qty} demandé, mais seulement ${e.totalQuantity ?? 1} en parc`];
+    }
+    return [];
+  });
+  const vehicleItem = items.find(i => i.item_kind === 'vehicle');
+  const vehicle = vehicles.find(v => v.id === vehicleItem?.vehicle_id);
+  const [km, setKm] = useState('');
+  const [fuel, setFuel] = useState(8);
+  const [damages, setDamages] = useState('');
+  const [signature, setSignature] = useState<string | null>(null);
+  // Photos du véhicule au départ : comparées à celles du retour
+  const [startPhotos, setStartPhotos] = useState<string[]>([]);
+  // Matériel de valeur : la personne qui retire signe la remise
+  const needsSignature = useSignatureRule();
+  const [handoverSignature, setHandoverSignature] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    (async () => {
+      const { data, error } = await supabase!.from('request_items').select('*').eq('request_id', request.id);
+      if (error) return toast.error('Impossible de charger le contenu de la demande');
+      setItems((data || []).map(i => ({ ...i, quantity: Number(i.quantity) })));
+      if (request.delivery_note_id) {
+        const { data: note } = await supabase!.from('delivery_notes').select('note_number').eq('id', request.delivery_note_id).maybeSingle();
+        setDeliveryNumber(note?.note_number ?? null);
+      }
+    })();
+  }, [request.id, request.delivery_note_id]);
+
+  useEffect(() => {
+    if (vehicle) {
+      setKm(String(vehicle.currentKm));
+      setFuel(vehicle.fuelLevel);
+    }
+  }, [vehicle]);
+
+  const itemName = (i: RequestItemRow) =>
+    i.item_kind === 'vehicle'
+      ? `${vehicles.find(v => v.id === i.vehicle_id)?.name ?? 'Véhicule'} · ${vehicles.find(v => v.id === i.vehicle_id)?.plate ?? ''}`
+      : equipment.find(e => e.id === i.equipment_id)?.name ?? 'Article supprimé';
+  const itemUnit = (i: RequestItemRow) => (i.item_kind === 'consumable' ? equipment.find(e => e.id === i.equipment_id)?.unit : undefined);
+
+  const run = async (fn: () => PromiseLike<{ error: unknown }>, success: string) => {
+    setBusy(true);
+    const { error } = await fn();
+    setBusy(false);
+    if (error) {
+      toast.error(errorMessage(error));
+      return false;
+    }
+    toast.success(success);
+    await refreshData();
+    await onChanged();
+    return true;
+  };
+
+  const decide = (approve: boolean) =>
+    run(() => supabase!.rpc('decide_request', { p_request_id: request.id, p_approve: approve, p_decided_by: decider, p_note: decisionNote || null }),
+      approve ? `Demande ${request.number} validée` : `Demande ${request.number} refusée`);
+
+  const setStatus = (status: 'ready' | 'approved' | 'cancelled', message: string) =>
+    run(() => supabase!.rpc('set_request_status', { p_request_id: request.id, p_status: status }), message);
+
+  // Annuler abandonne la demande : on demande toujours confirmation
+  const cancelRequest = async () => {
+    if (await confirmAction(`Annuler la demande ${request.number} ? Le matériel réservé redevient disponible.`)) {
+      setStatus('cancelled', `Demande ${request.number} annulée`);
+    }
+  };
+
+  const issue = async () => {
+    if (pickupBy !== request.requester_id) {
+      const { error } = await supabase.from('requests').update({ picked_up_by: pickupBy }).eq('id', request.id);
+      if (error) return toast.error(errorMessage(error));
+    }
+    const ok = await run(() => supabase!.rpc('issue_request', {
+      p_request_id: request.id,
+      p_vehicle: vehicleItem ? { km: Number(km), fuel, damages: damages || null, signature } : null,
+    }), `Demande ${request.number} sortie`);
+    const handover = handoverSignature ?? signature;
+    if (ok && valuableTools.length && handover) {
+      const { data: issued } = await supabase.from('requests').select('delivery_note_id').eq('id', request.id).maybeSingle();
+      const { error } = issued?.delivery_note_id
+        ? await supabase.rpc('sign_delivery_note', { p_note_id: issued.delivery_note_id, p_signature: handover, p_name: pickupName })
+        : { error: null };
+      if (error) toast.error(`Signature non enregistrée : ${errorMessage(error)}`);
+    }
+    if (ok && vehicleItem && startPhotos.length) {
+      const { error } = await supabase.from('vehicle_trips').update({ start_photos: startPhotos }).eq('request_id', request.id).is('end_at', null);
+      if (error) toast.error(`Photos non enregistrées : ${errorMessage(error)}`);
+    }
+  };
+
+  // Préparation enregistrée en base : on peut préparer le soir et sortir le matin
+  const savePreparation = async (item: RequestItemRow, isPrepared: boolean, instanceIds: string[]) => {
+    const { error } = await supabase.rpc('set_request_preparation', { p_item_id: item.id, p_prepared: isPrepared, p_instance_ids: instanceIds });
+    if (error) {
+      toast.error(errorMessage(error));
+      return false;
+    }
+    setItems(prev => prev.map(i => (i.id === item.id ? { ...i, prepared: isPrepared, prepared_instance_ids: instanceIds } : i)));
+    return true;
+  };
+
+  // Préparation : le magasinier scanne chaque article ; pour un outil suivi un par un, chaque exemplaire scanné est celui qui sortira
+  const onScan = async (code: string) => {
+    try {
+      const found = await findEquipmentByCode(code);
+      const match = found && items.find(i => i.equipment_id === found.equipment.id);
+      if (!match) {
+        toast.error(found ? `${found.equipment.name} ne fait pas partie de cette demande` : `Code inconnu : ${code}`);
+        return;
+      }
+      const name = found!.equipment.name;
+      const instance = found!.instance;
+      if (!instance) {
+        if (await savePreparation(match, true, match.prepared_instance_ids ?? [])) toast.success(`${name} préparé`);
+        return;
+      }
+      const ids = match.prepared_instance_ids ?? [];
+      const needed = Math.ceil(match.quantity);
+      if (ids.includes(instance.id)) {
+        toast(`${instance.qr_code} est déjà scanné`);
+        return;
+      }
+      if (ids.length >= needed) {
+        toast.error(`${name} : les ${needed} exemplaire(s) demandés sont déjà scannés`);
+        return;
+      }
+      const next = [...ids, instance.id];
+      if (await savePreparation(match, next.length >= needed, next)) {
+        toast.success(next.length >= needed ? `${name} préparé` : `${name} : ${next.length} / ${needed} exemplaire(s) scanné(s)`);
+      }
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
+  };
+
+  const articleLines = items.filter(i => i.item_kind !== 'vehicle');
+  const valuableTools = items.filter(i => {
+    const item = i.item_kind === 'tool' ? equipment.find(e => e.id === i.equipment_id) : undefined;
+    return item ? needsSignature(item) : false;
+  });
+  const allPrepared = articleLines.every(i => i.prepared);
+  // Préparer et sortir : le magasin uniquement (le collaborateur ne scanne jamais)
+  const canIssue = can('scan') && ['approved', 'ready'].includes(request.status);
+  const canCancelOwn = isOwner && !can('scan') && request.status === 'approved';
+
+  return (
+    <Modal isOpen onClose={onClose} title={`Demande ${request.number}`} size="lg">
+      <div className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-2 rounded-md bg-gray-50 dark:bg-gray-700/40 p-3 text-sm">
+          <div><div className="text-gray-600 dark:text-gray-400">Pour</div><div className="font-medium text-gray-900 dark:text-gray-100">{request.requester_name}{request.destination ? ` · ${request.destination}` : ''}</div></div>
+          <div><div className="text-gray-600 dark:text-gray-400">Période</div><div className="font-mono text-gray-900 dark:text-gray-100">{formatPeriod(request.start_at, request.end_at)}</div></div>
+          <div><div className="text-gray-600 dark:text-gray-400">Dépôt</div><div className="text-gray-900 dark:text-gray-100">{request.depot_name}</div></div>
+          <div><div className="text-gray-600 dark:text-gray-400">État</div><div className="flex items-center gap-2"><StatusPill status={request.status} />{deliveryNumber && <span className="font-mono text-gray-700 dark:text-gray-300">Bon {deliveryNumber}</span>}</div></div>
+          {request.notes && <div className="sm:col-span-2"><div className="text-gray-600 dark:text-gray-400">Remarque</div><div className="text-gray-900 dark:text-gray-100">{request.notes}</div></div>}
+          {request.decided_by && (
+            <div className="sm:col-span-2 text-gray-700 dark:text-gray-300">
+              {request.status === 'rejected' ? 'Refusée' : 'Validée'} par {request.decided_by}
+              {request.decision_note && ` : ${request.decision_note}`}
+            </div>
+          )}
+          {(isOwner || can('scan') || can('approve')) && items.length > 0 && (
+            <div className="sm:col-span-2 flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onRepeat({
+                  destination: request.destination,
+                  items: items.map(i => ({ kind: i.item_kind, id: (i.item_kind === 'vehicle' ? i.vehicle_id : i.equipment_id) as string, quantity: Number(i.quantity) })),
+                })}
+              >
+                Refaire cette demande
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex justify-between items-baseline mb-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white">Contenu</h3>
+            {canIssue && articleLines.length > 0 && (
+              <span className="text-sm text-gray-600 dark:text-gray-400">{articleLines.filter(i => i.prepared).length} / {articleLines.length} préparé(s)</span>
+            )}
+          </div>
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {items.map(i => (
+              <li key={i.id} className="flex items-center justify-between gap-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {canIssue && i.item_kind !== 'vehicle' ? (
+                    <button
+                      type="button"
+                      onClick={() => savePreparation(i, !i.prepared, i.prepared ? [] : i.prepared_instance_ids ?? [])}
+                      aria-label={i.prepared ? `${itemName(i)} préparé` : `Marquer ${itemName(i)} comme préparé`}
+                      className="min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center"
+                    >
+                      {i.prepared
+                        ? <CheckCircle2 size={20} className="text-tone-success" />
+                        : <Circle size={20} className="text-gray-400" />}
+                    </button>
+                  ) : i.item_kind === 'vehicle' ? <Truck size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" /> : null}
+                  <span className="text-sm text-gray-900 dark:text-gray-100">{itemName(i)}</span>
+                  {canIssue && (i.prepared_instance_ids?.length ?? 0) > 0 && (
+                    <span className="text-xs text-gray-600 dark:text-gray-400">{`${i.prepared_instance_ids!.length} exemplaire(s) scanné(s)`}</span>
+                  )}
+                </div>
+                <span className="font-mono text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                  {i.item_kind === 'vehicle' ? '' : `${i.quantity} ${itemUnit(i) ?? ''}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Validation */}
+        {request.status === 'requested' && (
+          <div className="space-y-3 rounded-md border border-warning-200 dark:border-warning-800 p-3">
+            <p className="text-sm text-gray-800 dark:text-gray-200">Validation requise : {request.approval_reason}</p>
+            {quantityWarnings.length > 0 && (
+              <div role="alert" className="rounded-md mx-tint-badge-warning p-3 text-sm space-y-1">
+                <p className="font-semibold">À vérifier avant de valider</p>
+                <ul className="list-disc pl-5">{quantityWarnings.map(w => <li key={w}>{w}</li>)}</ul>
+              </div>
+            )}
+            {can('approve') ? (
+              <>
+                <div>
+                  <label htmlFor="decision-note" className={labelClass}>Remarque (obligatoire si refus)</label>
+                  <input id="decision-note" value={decisionNote} onChange={e => setDecisionNote(e.target.value)} className={inputClass} />
+                </div>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button variant="danger" icon={<XCircle size={16} />} onClick={() => decide(false)} loading={busy}>Refuser</Button>
+                  <Button variant="success" icon={<CheckCircle2 size={16} />} onClick={() => decide(true)} loading={busy}>Valider</Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-400">En attente de la décision d'un responsable.</p>
+            )}
+            {/* Annuler (sans motif de refus) : par le demandeur, ou par le magasin et les responsables */}
+            {(isOwner || can('approve') || can('scan')) && (
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={cancelRequest} loading={busy}>
+                  {isOwner ? 'Annuler ma demande' : 'Annuler la demande'}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Préparation et sortie */}
+        {canIssue && !issuing && (
+          // flex-1 + mt-auto du pied : le pied reste en bas du drawer même quand la demande est courte
+          <div className="flex-1 flex flex-col space-y-3">
+            <div className="max-w-xs">
+              <label htmlFor="pickup-by" className={labelClass}>Retiré par</label>
+              <select id="pickup-by" value={pickupBy} onChange={e => setPickupBy(e.target.value)} className={inputClass}>
+                {users.filter(u => u.active !== false).map(u => (
+                  <option key={u.id} value={u.id}>{u.first_name} {u.last_name}{u.id === request.requester_id ? ' (demandeur)' : ''}</option>
+                ))}
+              </select>
+            </div>
+            {articleLines.length > 0 && (
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Scanne chaque article préparé (ou coche-le à la main).</p>
+                <QRCodeScanner onScan={onScan} disableAutoFocus />
+              </div>
+            )}
+            {valuableTools.length > 0 && !vehicleItem && allPrepared && (
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                  Matériel de valeur ({valuableTools.map(i => equipment.find(e => e.id === i.equipment_id)?.name).join(', ')}) : {pickupName} signe la remise.
+                </p>
+                <SignaturePad label={`Signature de ${pickupName}`} onChange={setHandoverSignature} />
+              </div>
+            )}
+            {/* Pied de fiche (pied entité) : actions de la demande */}
+            <div className="mx-drawer-footer flex flex-wrap justify-end gap-2">
+              {!allPrepared && <p className="w-full text-right text-xs text-gray-600 dark:text-gray-400">Tous les articles doivent être préparés avant la sortie.</p>}
+              {/* Action qui abandonne la demande : à gauche, en rouge, avec confirmation */}
+              <button type="button" onClick={cancelRequest} disabled={busy}
+                className="mx-btn mx-btn-ghost mr-auto px-3 py-2 text-[length:calc(12.5px*var(--mx-scale,1))] text-tone-danger hover:!bg-[color-mix(in_srgb,var(--mx-danger)_10%,transparent)]">
+                Annuler la demande
+              </button>
+              <PickListButton requestId={request.id} title={`Préparation ${request.number}`}
+                subtitle={[request.requester_name, request.destination, `pour le ${new Date(request.start_at).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })}`].filter(Boolean).join(' · ')} />
+              {request.status === 'approved' ? (
+                <Button variant="outline" icon={<PackageCheck size={16} />} onClick={() => setStatus('ready', `Demande ${request.number} prête`)} loading={busy}>Marquer prête</Button>
+              ) : (
+                <Button variant="outline" onClick={() => setStatus('approved', 'Remise en préparation')} loading={busy}>Remettre en préparation</Button>
+              )}
+              <Button
+                onClick={() => (vehicleItem ? setIssuing(true) : issue())}
+                loading={busy}
+                disabled={!allPrepared || (valuableTools.length > 0 && !vehicleItem && !handoverSignature)}
+              >
+                {vehicleItem ? 'Sortir : état des lieux' : 'Sortir'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {canCancelOwn && (
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={cancelRequest} loading={busy}>Annuler ma demande</Button>
+          </div>
+        )}
+
+        {/* État des lieux du véhicule au départ */}
+        {canIssue && issuing && vehicle && (
+          <div className="space-y-4 rounded-md border border-gray-200 dark:border-gray-700 p-3">
+            <h3 className="font-semibold text-gray-900 dark:text-white">État des lieux au départ · {vehicle.name}</h3>
+            <div>
+              <label htmlFor="start-km" className={labelClass}>Kilométrage (dernier relevé : <span className="font-mono">{vehicle.currentKm.toLocaleString('fr-CH')} km</span>)</label>
+              <input id="start-km" type="number" min={vehicle.currentKm} inputMode="numeric" value={km} onChange={e => setKm(e.target.value)} className={`${inputClass} font-mono`} required />
+            </div>
+            <FuelInput value={fuel} onChange={setFuel} />
+            <div>
+              <label htmlFor="start-damages" className={labelClass}>Dégâts constatés (facultatif)</label>
+              <textarea id="start-damages" value={damages} onChange={e => setDamages(e.target.value)} rows={2} className={inputClass} placeholder="ex. rayure porte arrière droite" />
+            </div>
+            <PhotoInput folder="vehicules" value={startPhotos} onChange={setStartPhotos} label="Photos du véhicule au départ (au moins une : chaque côté si possible)" />
+            <SignaturePad label={`Signature de ${pickupName}`} onChange={setSignature} />
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setIssuing(false)} disabled={busy}>Retour</Button>
+              <Button onClick={issue} loading={busy} disabled={!km || !signature || startPhotos.length === 0}>Valider la sortie</Button>
+            </div>
+          </div>
+        )}
+
+        {request.status === 'out' && vehicleItem && (
+          <p className="text-sm text-gray-700 dark:text-gray-300">Le retour du véhicule se fait depuis la page Véhicules (état des lieux de retour).</p>
+        )}
+        {/* Prolonger ce qui est encore dehors (outils non rendus, véhicule) */}
+        {request.status === 'out' && (can('scan') || can('approve')) && (
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setExtendingRequest(true)}>Prolonger ce qui reste dehors</Button>
+          </div>
+        )}
+        {extendingRequest && (
+          <ExtendModal mode="staff" requestId={request.id} title={`Prolonger ${request.number}`} lines={[{ id: request.id, name: request.number, due: request.end_at }]}
+            onClose={() => setExtendingRequest(false)} onDone={onChanged} />
+        )}
+      </div>
+    </Modal>
+  );
+};
+
+export default Requests;

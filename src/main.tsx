@@ -4,9 +4,17 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import { AppProvider } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
+import AuthGate from './components/auth/AuthGate';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Toaster } from 'react-hot-toast';
+import { isSupabaseConfigured } from './lib/supabase';
+import { registerServiceWorker } from './lib/install';
+import { initLanguage } from './i18n/translator';
+
+registerServiceWorker();
+initLanguage();
 
 // Vérification critique des variables d'environnement
 const checkEnvironmentVariables = () => {
@@ -19,8 +27,8 @@ const checkEnvironmentVariables = () => {
   console.log('- VITE_SUPABASE_URL:', supabaseUrl ? '✅ Définie' : '❌ Manquante');
   console.log('- VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Définie' : '❌ Manquante');
 
-  if (import.meta.env.PROD && (!supabaseUrl || !supabaseAnonKey)) {
-    console.error('❌ ERREUR CRITIQUE: Variables d\'environnement Supabase manquantes en production');
+  if (!isSupabaseConfigured) {
+    console.error('❌ ERREUR CRITIQUE: configuration Supabase manquante ou invalide (.env)');
     console.error('Configuration requise dans Netlify:');
     console.error('1. Dashboard Netlify → Site settings → Environment variables');
     console.error('2. Ajouter VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY');
@@ -52,17 +60,14 @@ const checkEnvironmentVariables = () => {
         ">
           <h1 style="color: #dc2626; margin-bottom: 1rem;">Configuration Supabase manquante</h1>
           <p style="color: #374151; margin-bottom: 1.5rem;">
-            Les variables d'environnement Supabase ne sont pas configurées sur Netlify.
+            Les variables VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sont absentes ou invalides.
           </p>
           <div style="background: #f3f4f6; padding: 1rem; border-radius: 4px; text-align: left; font-size: 0.875rem;">
-            <strong>Configuration requise :</strong><br>
-            1. Dashboard Netlify → Site settings → Environment variables<br>
-            2. Ajouter VITE_SUPABASE_URL<br>
-            3. Ajouter VITE_SUPABASE_ANON_KEY<br>
-            4. Redéployer le site
+            <strong>En local :</strong> compléter le fichier .env à la racine du projet, puis relancer npm run dev.<br><br>
+            <strong>En ligne (Netlify) :</strong> Site settings → Environment variables, ajouter les deux variables, puis redéployer.
           </div>
           <button onclick="window.location.reload()" style="
-            background: #2563eb; 
+            background: #6d3ee0; 
             color: white; 
             border: none; 
             padding: 0.75rem 1.5rem; 
@@ -99,19 +104,45 @@ if (!checkEnvironmentVariables()) {
       <BrowserRouter>
         <LanguageProvider>
           <ThemeProvider>
-            <AppProvider>
-              <App />
-              <Toaster 
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
+            <AuthProvider>
+              <AuthGate>
+                <AppProvider>
+                  <App />
+                </AppProvider>
+              </AuthGate>
+            </AuthProvider>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                // Notifications de la charte Mannyx : surface, filet, ombre « modale »
+                style: {
+                  background: 'var(--mx-surface)',
+                  color: 'var(--mx-text)',
+                  border: '1.5px solid var(--mx-border)',
+                  borderRadius: '6px',
+                  boxShadow: 'var(--mx-shadow-lg)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  padding: '12px 14px',
+                },
+                // Fond teinté selon le ton (catalogue .toast)
+                success: {
                   style: {
-                    background: '#363636',
-                    color: '#fff',
+                    background: 'color-mix(in srgb, var(--mx-green) 10%, var(--mx-surface))',
+                    borderColor: 'color-mix(in srgb, var(--mx-green) 35%, var(--mx-border))',
                   },
-                }}
-              />
-            </AppProvider>
+                  iconTheme: { primary: 'var(--mx-green)', secondary: 'var(--mx-surface)' },
+                },
+                error: {
+                  style: {
+                    background: 'color-mix(in srgb, var(--mx-danger) 10%, var(--mx-surface))',
+                    borderColor: 'color-mix(in srgb, var(--mx-danger) 35%, var(--mx-border))',
+                  },
+                  iconTheme: { primary: 'var(--mx-danger)', secondary: 'var(--mx-surface)' },
+                },
+              }}
+            />
           </ThemeProvider>
         </LanguageProvider>
       </BrowserRouter>
