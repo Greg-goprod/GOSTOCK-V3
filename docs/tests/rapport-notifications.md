@@ -1,11 +1,11 @@
 # Rapport des tests des notifications
 
-Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-05 09:17
-Commit testé : d955337 STATUT : migration 61 appliquée et vérifiée sur GO-MAT
+Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-06 20:41
+Commit testé : 2564f4db6fb71704391b896108559d0f93ed9c92
 
 **Synthèse : 25 OK · 0 PARTIEL · 0 KO · 1 NON TESTÉ · 0 INFO**
 
-Nettoyage : 3 notification(s) marquée(s) lue(s) pour les trois comptes (les notifications « TEST-NOTIF » restent en base : ces comptes ne peuvent pas les supprimer).
+Nettoyage : 2 notification(s) marquée(s) lue(s) pour les trois comptes (les notifications « TEST-NOTIF » restent en base : ces comptes ne peuvent pas les supprimer).
 
 ## À corriger (KO et PARTIEL)
 

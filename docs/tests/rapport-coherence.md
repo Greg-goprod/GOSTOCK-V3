@@ -1,7 +1,7 @@
 # Rapport de cohérence des chiffres
 
 Base : GO-MAT · comptes : test.responsable@example.com, test.collaborateur@example.com · date : 2026-11-02 07:04
-Commit testé : à renseigner (`git log --oneline -1`).
+Commit testé : 2564f4db6fb71704391b896108559d0f93ed9c92
 
 **Synthèse : 11 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 0 INFO**
 

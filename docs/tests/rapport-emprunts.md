@@ -1,7 +1,7 @@
 # Rapport du cycle de vie d'un emprunt
 
-Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-05 09:22
-Commit testé : d955337 STATUT : migration 61 appliquée et vérifiée sur GO-MAT
+Base : GO-MAT · comptes : test.collaborateur@example.com, test.magasinier@example.com, test.responsable@example.com · date : 2026-11-06 20:42
+Commit testé : 2564f4db6fb71704391b896108559d0f93ed9c92
 
 **Synthèse : 36 OK · 0 PARTIEL · 0 KO · 0 NON TESTÉ · 13 INFO (comportements à lire)**
 
