@@ -64,7 +64,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
 }));
 
-// Rate limiting - Max 100 requêtes par minute par IP
+// Le relais est derrière le proxy de Fly (un seul saut) : sans ce réglage, toutes les requêtes semblent venir du proxy
+// et la limite ci-dessous serait partagée par tout le monde (un appelant sans clé pourrait bloquer les envois légitimes).
+// Avec « 1 », l'adresse prise en compte est celle que le proxy de Fly a ajoutée en dernier, donc non falsifiable par l'appelant.
+app.set('trust proxy', 1);
+
+// Rate limiting - Max 30 requêtes par minute par IP
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 30,
