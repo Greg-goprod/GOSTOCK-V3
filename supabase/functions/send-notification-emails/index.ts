@@ -5,8 +5,8 @@
 // Chaque canal ne fonctionne que si ses secrets sont saisis ; l'autre continue sans lui.
 // Corps { "test": "adresse@exemple.ch" } : e-mail de test vers un destinataire enregistré.
 //
-// Secrets e-mail : SMTP_RELAY_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
-// SMTP_FROM_EMAIL ; facultatifs : SMTP_RELAY_URL (voir la transition ci-dessous), SMTP_FROM_NAME, APP_URL.
+// Secrets e-mail : SMTP_RELAY_URL, SMTP_RELAY_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
+// SMTP_FROM_EMAIL ; facultatifs : SMTP_FROM_NAME, APP_URL.
 // Qui peut l'appeler : la tâche planifiée de la base (en-tête « x-cron-secret », secret généré et gardé par la base : fonction verify_cron_secret, migration 64)
 // ou la clé de service ; l'e-mail de test, uniquement une personne connectée qui est administratrice. La clé publique du projet ne suffit plus.
 // Secrets téléphone : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (ex. mailto:magasin@exemple.ch).
@@ -16,10 +16,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 
-// TRANSITION (décision B de Greg en attente) : sans le secret SMTP_RELAY_URL, l'ancien relais par défaut est encore utilisé ; la réponse de la fonction le signale
-// (champ « relais »). Cible : plus de valeur par défaut (les identifiants SMTP ne doivent jamais partir chez un autre produit).
-const RELAY_SECRET_SET = Boolean(Deno.env.get('SMTP_RELAY_URL'));
-const RELAY_URL = Deno.env.get('SMTP_RELAY_URL') ?? 'https://go-prod-smtp-relay.fly.dev';
+// Pas de valeur par défaut : sans relais configuré, les identifiants SMTP ne partent nulle part (ils ne doivent jamais aller chez un autre produit)
+const RELAY_URL = Deno.env.get('SMTP_RELAY_URL');
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const RELAY_KEY = Deno.env.get('SMTP_RELAY_API_KEY');
 const SMTP = {
@@ -134,6 +132,7 @@ async function callerIsAdmin(req: Request, supabase: Client) {
 
 const missingConfig = () =>
   [
+    ['SMTP_RELAY_URL', RELAY_URL],
     ['SMTP_RELAY_API_KEY', RELAY_KEY],
     ['SMTP_HOST', SMTP.host],
     ['SMTP_USERNAME', SMTP.username],
@@ -235,8 +234,7 @@ Deno.serve(async (req) => {
   const documents = await purgeDocuments(supabase).catch((e) => `erreur : ${(e as Error).message}`);
 
   // Sans secrets SMTP, les e-mails restent en attente (visibles dans l'app) ; le reste a tourné
-  const relais = RELAY_SECRET_SET ? 'secret' : 'défaut (SMTP_RELAY_URL absent)';
-  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed, sms, backup, documents, relais });
+  if (missing.length) return json({ emails: 'non configuré', missing, push: pushed, sms, backup, documents });
 
   const { data: pending, error } = await supabase.rpc('claim_notification_emails', { p_limit: 50 });
   if (error) return json({ error: error.message, push: pushed, sms, backup }, 500);
@@ -267,7 +265,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup, documents, relais });
+  return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup, documents });
 });
 
 interface PendingPush {
