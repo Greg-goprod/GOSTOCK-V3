@@ -99,6 +99,16 @@ RESET ROLE;
 SELECT zz.check('check_* : le propriétaire (tâche planifiée) les appelle toujours', zz.raises('SELECT public.check_due_reminders(), public.check_monthly_report(), public.check_backup_reminder()') IS NULL);
 SELECT zz.check('check_cp_deadlines et les fonctions de réservation ne sont pas touchées', NOT has_function_privilege('authenticated', 'public.check_cp_deadlines()'::regprocedure, 'execute') AND has_function_privilege('authenticated', 'public.check_request_availability(uuid)'::regprocedure, 'execute'));
 
+-- 7. Secret de la tâche planifiée (migration 64) : généré par la base, vérifié par la base, invisible des utilisateurs
+SELECT secret AS le_secret FROM public.cron_secret \gset
+SELECT zz.check('secret du cron : généré par la base (64 caractères, une seule ligne)', length(:'le_secret') = 64 AND (SELECT count(*) FROM public.cron_secret) = 1);
+SELECT zz.check('verify_cron_secret : vrai pour le bon secret, faux pour un autre, un secret court, vide ou absent', public.verify_cron_secret(:'le_secret') AND NOT public.verify_cron_secret(repeat('a', 64)) AND NOT public.verify_cron_secret('court') AND NOT public.verify_cron_secret('') AND NOT public.verify_cron_secret(NULL));
+SELECT zz.check('verify_cron_secret : réservée à la clé de service (ni utilisateurs connectés, ni anonymes)', has_function_privilege('service_role', 'public.verify_cron_secret(text)', 'execute') AND NOT has_function_privilege('authenticated', 'public.verify_cron_secret(text)', 'execute') AND NOT has_function_privilege('anon', 'public.verify_cron_secret(text)', 'execute'));
+SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
+SELECT zz.check('le secret est illisible pour un administrateur d''entreprise (table et fonction)', zz.raises('SELECT secret FROM public.cron_secret') LIKE '%permission denied%' AND zz.raises($$SELECT public.verify_cron_secret('x')$$) LIKE '%permission denied%');
+RESET ROLE;
+SELECT zz.check('migration rejouable : relancer la création ne change pas le secret', (SELECT count(*) FROM public.cron_secret WHERE secret = :'le_secret') = 1);
+
 -- Ménage
 SELECT set_config('app.org_guard_off', 'on', false);
 DELETE FROM public.depots WHERE name IN ('Dépôt restauré (entreprise 1)', 'Dépôt maintenance');
