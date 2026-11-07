@@ -17,6 +17,8 @@ import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
 import ExportMenu from '../components/pilote/ExportMenu';
+import { criticalPath } from '../lib/criticalPath';
+import { freezeBaseline, removeBaseline } from '../components/pilote/baselineActions';
 import { saveProjectAsTemplate } from '../components/pilote/templateActions';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
@@ -28,7 +30,7 @@ const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Z
 // Regroupements proposés
 const GROUPING_CHOICES: Grouping[] = ['status', 'type'];
 const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type' };
-const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [] };
+const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [], baselines: [] };
 
 // PILOTE › Gantt (module payant) : projets et leurs éléments sur une échelle de temps
 // `embedded` : affiché comme onglet de la page Projets, qui porte déjà le titre et l'introduction
@@ -42,6 +44,13 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const [showNames, setShowNamesState] = useState<boolean>(() => { try { return localStorage.getItem('gomat-gantt-names') !== 'hidden'; } catch { return true; } });
   const setColorBy = (v: ColorBy) => { setColorByState(v); try { localStorage.setItem('gomat-gantt-colorby', v); } catch { /* préférence facultative */ } };
   const setShowNames = (v: boolean) => { setShowNamesState(v); try { localStorage.setItem('gomat-gantt-names', v ? 'shown' : 'hidden'); } catch { /* préférence facultative */ } };
+  // Repères d'analyse : chemin critique et ligne de base (préférences mémorisées dans le navigateur)
+  const flag = (key: string) => { try { return localStorage.getItem(key) === 'on'; } catch { return false; } };
+  const [showCritical, setShowCriticalState] = useState(() => flag('gomat-gantt-critical'));
+  const [showBaseline, setShowBaselineState] = useState(() => flag('gomat-gantt-baseline'));
+  const setFlag = (key: string, v: boolean) => { try { localStorage.setItem(key, v ? 'on' : 'off'); } catch { /* préférence facultative */ } };
+  const setShowCritical = (v: boolean) => { setShowCriticalState(v); setFlag('gomat-gantt-critical', v); };
+  const setShowBaseline = (v: boolean) => { setShowBaselineState(v); setFlag('gomat-gantt-baseline', v); };
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // Recherche, filtres et vues enregistrées (partagés avec le Tableau et le Calendrier)
   const { filters, setFilters, views, saveView, deleteView, applyView } = useViewFilters(grouping, setGrouping);
@@ -97,6 +106,12 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const rows = useMemo(() => (rights.create ? withAddRows(visibleRows(model, expanded), expanded) : visibleRows(model, expanded)), [model, expanded, rights.create]);
   const undated = useMemo(() => undatedRows(model), [model]);
   const nonWorkingDays = useMemo(() => new Map((data?.calendarDays ?? []).map(d => [d.day, d.label])), [data]);
+  // Le chemin critique se calcule sur TOUTES les données (un filtre couperait les chaînes)
+  const critical = useMemo(() => (showCritical && data ? criticalPath(data) : undefined), [showCritical, data]);
+  const baselines = useMemo(() => {
+    if (!showBaseline || !data || data.baselines.length === 0) return undefined;
+    return new Map(data.baselines.map(b => [b.item_id ? `i:${b.item_id}` : `p:${b.project_id}`, { start: b.starts_on, end: b.ends_on }]));
+  }, [showBaseline, data]);
   const projectName = useMemo(() => new Map((data?.projects ?? []).map(p => [p.id, p.name])), [data]);
 
   const toggle = (key: string) => setExpanded(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
@@ -189,7 +204,10 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
           )}
           <ExportMenu data={shownData} userName={id => userNames.get(id) ?? '—'} today={today} printable />
           <MenuButton id="gantt-more" menuLabel="Affichage" iconOnly ariaLabel="Plus d'options d'affichage" icon={<MoreHorizontal size={16} />}
-            groups={[{ id: 'colorby', label: 'Couleur des barres', items: [
+            groups={[{ id: 'marks', label: 'Repères', items: [
+              { id: 'critical', label: 'Chemin critique', checked: showCritical, closeOnSelect: false, onSelect: () => setShowCritical(!showCritical) },
+              { id: 'baseline', label: 'Ligne de base', checked: showBaseline, closeOnSelect: false, onSelect: () => setShowBaseline(!showBaseline) },
+            ] }, { id: 'colorby', label: 'Couleur des barres', items: [
               { id: 'status', label: 'Par état', checked: colorBy === 'status', onSelect: () => setColorBy('status') },
               { id: 'project', label: 'Par projet', checked: colorBy === 'project', onSelect: () => setColorBy('project') },
             ] }]}
@@ -227,14 +245,17 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
       ) : (
         <GanttChart rows={rows} links={data.links} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
           onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline}
-          showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} nonWorkingDays={nonWorkingDays} />
+          showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} nonWorkingDays={nonWorkingDays} critical={critical} baselines={baselines} />
       )}
       </div>
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />
       <ProjectForm data={data} target={projectTarget} readOnly={projectTarget?.mode === 'edit' && !rights.update} onClose={() => setProjectTarget(null)} onSaved={reload}
         onDuplicate={rights.create ? row => { setProjectTarget(null); setDuplicating(row); } : undefined}
-        onSaveAsTemplate={rights.create ? row => { setProjectTarget(null); void saveProjectAsTemplate(row).then(ok => { if (ok) void reload(); }); } : undefined} />
+        onSaveAsTemplate={rights.create ? row => { setProjectTarget(null); void saveProjectAsTemplate(row).then(ok => { if (ok) void reload(); }); } : undefined}
+        onFreezeBaseline={rights.create && rights.update && rights.delete ? row => { setProjectTarget(null); void freezeBaseline(row).then(ok => { if (ok) { setShowBaseline(true); void reload(); } }); } : undefined}
+        baselineProjectIds={new Set(data.baselines.map(b => b.project_id))}
+        onClearBaseline={rights.create && rights.update && rights.delete ? row => { setProjectTarget(null); void removeBaseline(row).then(ok => { if (ok) void reload(); }); } : undefined} />
       <DuplicateProjectForm project={duplicating} onClose={() => setDuplicating(null)} onDone={id => { setDuplicating(null); setOpenAfter(id); void reload(); }} />
     </div>
   );

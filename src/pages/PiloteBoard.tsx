@@ -17,7 +17,7 @@ import ExportMenu from '../components/pilote/ExportMenu';
 import { useViewFilters } from '../components/pilote/useViewFilters';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
-const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [] };
+const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [], baselines: [] };
 const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join('');
 

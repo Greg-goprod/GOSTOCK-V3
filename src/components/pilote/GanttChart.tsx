@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Plus, Route } from 'lucide-react';
 import { dayFromNumber, dayNumberOf } from '../../lib/ganttModel';
 import { clipBar, isWeekend, linkPaths, makeHeader, makeScale, nonWorkingBoxes, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
@@ -36,11 +36,17 @@ interface Props {
   onPlace?: (row: GanttRow, start: string, end: string) => Promise<void>;
   // Jours fériés et fermetures de l'entreprise (date → libellé) : teintés en ambre, comme les week-ends le sont en gris
   nonWorkingDays?: ReadonlyMap<string, string>;
+  // Chemin critique (éléments et dépendances qui décident de la fin du projet) : cerclés et tracés en orange
+  critical?: { items: ReadonlySet<string>; links: ReadonlySet<string> };
+  // Ligne de base : où chaque ligne était prévue (clé de ligne « p:… » / « i:… »), dessinée sous la barre avec l'écart de fin
+  baselines?: ReadonlyMap<string, { start: string | null; end: string | null }>;
 }
 
 const BAR_H: Record<GanttRow['kind'], number> = { group: 8, project: 22, phase: 18, task: 20, subtask: 14, milestone: 14, add: 0 };
 const kindLabel = (r: GanttRow) => (r.kind === 'add' ? 'Nouveau' : r.kind === 'group' ? 'Groupe' : r.kind === 'project' ? 'Projet' : ITEM_KIND_LABEL[r.kind as ItemKind]);
 // Un groupe (état ou type) accepte aussi un « + » : il crée un projet rangé dans ce groupe
+// Écart de fin (en jours) d'une ligne avec sa ligne de base : positif = en retard sur le plan de référence
+const varianceOf = (end: string | null, baseEnd: string | null | undefined) => (end && baseEnd ? dayNumberOf(end) - dayNumberOf(baseEnd) : 0);
 const canAddTo = (r: GanttRow) => r.kind === 'project' || r.kind === 'phase' || r.kind === 'task' || r.kind === 'group';
 
 // Diagramme de Gantt : liste en arbre à gauche (fixe), barres à droite. Une seule zone de défilement pour que la liste et les barres restent alignées.
@@ -87,7 +93,7 @@ const InlineAdd: React.FC<{ row: GanttRow; onCreate: Props['onCreate'] }> = ({ r
   );
 };
 
-const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate, showNames = true, onJump, onPlace, nonWorkingDays }) => {
+const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate, showNames = true, onJump, onPlace, nonWorkingDays, critical, baselines }) => {
   const box = useRef<HTMLDivElement>(null);
   // Colonne des noms plus étroite sur téléphone, pour laisser de la place aux barres
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
@@ -111,6 +117,8 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
   }, []);
   const scale = useMemo(() => makeScale(period, Math.max(width - NAME_W - 2, 120)), [period, width, NAME_W]);
   const header = useMemo(() => makeHeader(scale, locale), [scale, locale]);
+  const variance = (r: GanttRow) => (baselines && r.kind !== 'group' ? varianceOf(r.end, baselines.get(r.key)?.end) : 0);
+  const baselineText = (r: GanttRow) => { const b = baselines?.get(r.key); if (!b?.end) return ''; const v = varianceOf(r.end, b.end); return ` · Ligne de base : fin ${formatDay(b.end)}${v === 0 ? '' : ` (${v > 0 ? '+' : '−'}${Math.abs(v)} j)`}`; };
   const weekends = useMemo(() => weekendBoxes(scale), [scale]);
   const holidayBoxes = useMemo(() => nonWorkingBoxes(scale, new Set(nonWorkingDays?.keys() ?? [])), [scale, nonWorkingDays]);
   const totalW = scale.days * scale.px;
@@ -233,6 +241,8 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
                   className={`min-w-0 flex-1 truncate text-left text-[13px] ${r.kind === 'group' ? 'font-bold uppercase tracking-wide text-gray-700 dark:text-gray-200' : r.kind === 'project' ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                   {r.name}
                 </button>
+                {clickable && r.id && critical?.items.has(r.id) && r.kind !== 'project' && <Route size={14} role="img" aria-label="Chemin critique" className="ml-1 shrink-0 text-orange-600" />}
+                {clickable && variance(r) !== 0 && <span data-variance={variance(r)} className={`ml-1 shrink-0 rounded px-1 text-[10px] font-semibold ${variance(r) > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'}`} title="Écart de fin avec la ligne de base">{`${variance(r) > 0 ? '+' : '−'}${Math.abs(variance(r))} j`}</span>}
                 {clickable && isOverdue(r.end, r.family, today) && <AlertTriangle size={14} role="img" aria-label="En retard" className="ml-1 shrink-0 text-danger-600" />}
                 {r.start === null && clickable && <span className="ml-1 shrink-0 rounded bg-gray-100 dark:bg-gray-700 px-1.5 text-[10px] text-gray-600 dark:text-gray-300">Sans date</span>}
                 {canCreate && canAddTo(r) && (
@@ -254,9 +264,10 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
             <svg aria-hidden className="pointer-events-none absolute left-0 top-0 z-[7]" width={totalW} height={bodyH} style={{ overflow: 'visible' }}>
               <defs>
                 <marker id="gantt-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#64748b" /></marker>
+                <marker id="gantt-arrow-crit" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#ea580c" /></marker>
                 <marker id="gantt-arrow-bad" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#dc2626" /></marker>
               </defs>
-              {arrows.map(a => <path key={a.id} data-link={a.id} data-violated={a.violated ? 'true' : undefined} d={a.d} fill="none" stroke={a.violated ? '#dc2626' : '#64748b'} strokeWidth={1.5} markerEnd={`url(#${a.violated ? 'gantt-arrow-bad' : 'gantt-arrow'})`} />)}
+              {arrows.map(a => { const crit = !a.violated && !!critical?.links.has(a.id); return <path key={a.id} data-link={a.id} data-violated={a.violated ? 'true' : undefined} data-critical={crit ? 'true' : undefined} d={a.d} fill="none" stroke={a.violated ? '#dc2626' : crit ? '#ea580c' : '#64748b'} strokeWidth={crit ? 2.5 : 1.5} markerEnd={`url(#${a.violated ? 'gantt-arrow-bad' : crit ? 'gantt-arrow-crit' : 'gantt-arrow'})`} />; })}
             </svg>
           )}
           {todayInside && <div aria-hidden className="absolute top-0 z-[5] w-px bg-danger-500" style={{ left: todayX, height: bodyH }} />}
@@ -292,6 +303,14 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
               </button>
             );
           })}
+          {/* Ligne de base : où chaque ligne était prévue, en gris sous sa barre */}
+          {baselines && rows.map((r, i) => {
+            const b = baselines.get(r.key);
+            if (!b || !b.start || !b.end || r.kind === 'group' || r.kind === 'add') return null;
+            const c = clipBar(scale, b.start, b.end);
+            if (!c) return null;
+            return <div key={`base:${r.key}`} aria-hidden data-baseline={r.key} className="pointer-events-none absolute z-[3] rounded-full bg-gray-500/60 dark:bg-gray-300/50" style={{ left: c.left, width: c.width, top: i * ROW_H + ROW_H - 7, height: 4 }} />;
+          })}
           {rows.map((r, i) => {
             if (r.kind === 'add' || !r.start || !r.end) return null;
             const top = i * ROW_H;
@@ -309,7 +328,9 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
             }
             const pct = progressOf(r);
             const late = r.kind !== 'group' && isOverdue(r.end, r.family, today);
-            const title = `${kindLabel(r)} · ${r.name} · ${datesOf(r)}${pct === null ? '' : ` · ${Math.round(pct * 100)} %`}${late ? ' · En retard' : ''}`;
+            const crit = !!r.id && r.kind !== 'group' && r.kind !== 'project' && !!critical?.items.has(r.id);
+            const ring = late && crit ? '0 0 0 1.5px #dc2626, 0 0 0 3.5px #ea580c' : late ? '0 0 0 2px #dc2626' : crit ? '0 0 0 2px #ea580c' : undefined;
+            const title = `${kindLabel(r)} · ${r.name} · ${datesOf(r)}${pct === null ? '' : ` · ${Math.round(pct * 100)} %`}${late ? ' · En retard' : ''}${crit ? ' · Chemin critique' : ''}${baselineText(r)}`;
             const clickable = r.kind !== 'group';
             const draggable = canEdit && movable(r);
             const common = { 'aria-label': title, title, role: clickable ? 'button' : undefined, tabIndex: clickable ? 0 : undefined } as const;
@@ -324,7 +345,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
               const cx = left + barW / 2;
               return (
                 <div key={r.key} className={`absolute flex items-center ${view ? 'z-[8]' : 'z-[6]'}`} style={{ left: cx - 8, top: top + (ROW_H - 16) / 2, height: 16 }}>
-                  <div {...common} {...handle} className={`h-3.5 w-3.5 shrink-0 rotate-45 ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-[2px] outline-offset-2 focus-visible:outline focus-visible:outline-2`} style={{ background: r.color, marginLeft: 1, marginRight: 8, opacity: r.family === 'done' ? 0.55 : 1, boxShadow: late ? '0 0 0 2px #dc2626' : undefined, touchAction: draggable ? 'none' : undefined }} />
+                  <div {...common} {...handle} className={`h-3.5 w-3.5 shrink-0 rotate-45 ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-[2px] outline-offset-2 focus-visible:outline focus-visible:outline-2`} style={{ background: r.color, marginLeft: 1, marginRight: 8, opacity: r.family === 'done' ? 0.55 : 1, boxShadow: ring, touchAction: draggable ? 'none' : undefined }} />
                   <span className="whitespace-nowrap text-[11px] text-gray-700 dark:text-gray-300">{r.name}</span>
                 </div>
               );
@@ -334,7 +355,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
               <div key={r.key} onMouseEnter={() => setHoverKey(r.key)} onMouseLeave={() => setHoverKey(k => (k === r.key ? null : k))} className={`absolute flex items-center ${view ? 'z-[8]' : 'z-[6]'}`} style={{ left, top: top + (ROW_H - h) / 2, height: h }}>
                 <div {...common} {...handle}
                   className={`group/bar relative select-none overflow-hidden ${draggable ? 'cursor-grab active:cursor-grabbing' : clickable ? 'cursor-pointer' : ''} ${clickable ? 'outline-offset-2 focus-visible:outline focus-visible:outline-2' : ''} ${view ? 'ring-2 ring-white/70 shadow-md' : ''}`}
-                  style={{ touchAction: draggable ? 'none' : undefined, width: barW, height: h, background: `${r.color}${summary ? '66' : '40'}`, border: `1px solid ${r.color}`, boxShadow: late ? '0 0 0 2px #dc2626' : undefined, opacity: r.family === 'cancelled' ? 0.45 : 1, borderRadius: `${clipped.clippedLeft ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedLeft ? 0 : 6}px` }}>
+                  style={{ touchAction: draggable ? 'none' : undefined, width: barW, height: h, background: `${r.color}${summary ? '66' : '40'}`, border: `1px solid ${r.color}`, boxShadow: ring, opacity: r.family === 'cancelled' ? 0.45 : 1, borderRadius: `${clipped.clippedLeft ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedLeft ? 0 : 6}px` }}>
                   {pct !== null && !summary && <div aria-hidden className="absolute inset-y-0 left-0" style={{ width: `${Math.round(pct * 100)}%`, background: r.color, opacity: 0.6 }} />}
                   {summary && pct !== null && <div aria-hidden className="absolute inset-y-0 left-0" style={{ width: `${Math.round(pct * 100)}%`, background: r.color }} />}
                   {!summary && barW >= 90 && <span className="pointer-events-none relative z-[1] block truncate px-1.5 text-[11px] font-medium leading-[inherit] text-gray-900 dark:text-white" style={{ lineHeight: `${h - 2}px` }}>{r.name}</span>}

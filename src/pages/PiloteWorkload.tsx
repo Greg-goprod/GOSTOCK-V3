@@ -12,7 +12,7 @@ import Modal from '../components/common/Modal';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
-const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [] };
+const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [], baselines: [] };
 const WEEKS = 8;
 const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
 const dm = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`;

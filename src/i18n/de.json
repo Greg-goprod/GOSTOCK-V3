@@ -3478,5 +3478,16 @@
 "libre": "frei",
 "confortable": "komfortabel",
 "presque plein": "fast voll",
-"surcharge": "Überlastung"
+"surcharge": "Überlastung",
+"Repères": "Markierungen",
+"Chemin critique": "Kritischer Pfad",
+"Ligne de base": "Basisplan",
+"Écart de fin avec la ligne de base": "Endabweichung vom Basisplan",
+"Figer la ligne de base…": "Basisplan einfrieren …",
+"Effacer la ligne de base…": "Basisplan löschen …",
+"Figer la ligne de base du projet « {0} » ? Les dates actuelles deviennent le plan de référence et remplacent la ligne de base précédente.": "Basisplan des Projekts „{0}“ einfrieren? Die aktuellen Termine werden zum Referenzplan und ersetzen den bisherigen Basisplan.",
+"Effacer la ligne de base du projet « {0} » ?": "Basisplan des Projekts „{0}“ löschen?",
+"Ligne de base figée ({0} date)": "Basisplan eingefroren ({0} Termin)",
+"Ligne de base figée ({0} dates)": "Basisplan eingefroren ({0} Termine)",
+"Ligne de base effacée": "Basisplan gelöscht"
 }

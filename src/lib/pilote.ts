@@ -78,6 +78,25 @@ export interface GanttData extends PiloteData {
   links: CpLink[];
   calendarDays: CpCalendarDay[];
   capacities: CpCapacity[];
+  baselines: CpBaselineDate[];
+}
+
+// Ligne de base : photo des dates d'un projet (item_id vide) et de ses éléments au moment où elle a été figée
+export interface CpBaselineDate { project_id: string; item_id: string | null; starts_on: string | null; ends_on: string | null; taken_at: string }
+// Lecture tolérante : tant que la migration de la ligne de base n'est pas appliquée, la table n'existe pas → aucune ligne de base
+export async function loadBaselines(): Promise<CpBaselineDate[]> {
+  const { data, error } = await supabase.from('cp_baseline_dates').select('project_id, item_id, starts_on, ends_on, taken_at');
+  return error ? [] : ((data || []) as CpBaselineDate[]);
+}
+export async function setBaseline(projectId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('cp_set_baseline', { p_project: projectId });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+export async function clearBaseline(projectId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('cp_clear_baseline', { p_project: projectId });
+  if (error) throw error;
+  return Number(data ?? 0);
 }
 
 // Heures de travail par semaine d'une personne (40 par défaut quand rien n'est saisi)
@@ -118,13 +137,14 @@ export async function loadPilote(): Promise<PiloteData> {
 }
 
 export async function loadGantt(): Promise<GanttData> {
-  const [base, items, itemMembers, links, calendarDays, capacities] = await Promise.all([
+  const [base, items, itemMembers, links, calendarDays, capacities, baselines] = await Promise.all([
     loadPilote(),
     supabase.from('cp_items').select('*').order('position').order('starts_on', { nullsFirst: false }).order('name'),
     supabase.from('cp_item_members').select('item_id, user_id'),
     supabase.from('cp_item_links').select('id, project_id, predecessor_id, successor_id'),
     loadCalendarDays(),
     loadCapacities(),
+    loadBaselines(),
   ]);
   const error = [items, itemMembers, links].map(r => r.error).find(Boolean);
   if (error) throw error;
@@ -136,7 +156,7 @@ export async function loadGantt(): Promise<GanttData> {
     ...base, items: keptItems,
     itemMembers: ((itemMembers.data || []) as CpItemMember[]).filter(m => keptIds.has(m.item_id)),
     links: ((links.data || []) as CpLink[]).filter(l => !templateIds.has(l.project_id)),
-    calendarDays, capacities,
+    calendarDays, capacities, baselines,
   };
 }
 

@@ -3478,5 +3478,16 @@
 "libre": "libero",
 "confortable": "confortevole",
 "presque plein": "quasi pieno",
-"surcharge": "sovraccarico"
+"surcharge": "sovraccarico",
+"Repères": "Indicatori",
+"Chemin critique": "Percorso critico",
+"Ligne de base": "Linea di base",
+"Écart de fin avec la ligne de base": "Scostamento della fine rispetto alla linea di base",
+"Figer la ligne de base…": "Congela la linea di base…",
+"Effacer la ligne de base…": "Cancella la linea di base…",
+"Figer la ligne de base du projet « {0} » ? Les dates actuelles deviennent le plan de référence et remplacent la ligne de base précédente.": "Congelare la linea di base del progetto «{0}»? Le date attuali diventano il piano di riferimento e sostituiscono la linea di base precedente.",
+"Effacer la ligne de base du projet « {0} » ?": "Cancellare la linea di base del progetto «{0}»?",
+"Ligne de base figée ({0} date)": "Linea di base congelata ({0} data)",
+"Ligne de base figée ({0} dates)": "Linea di base congelata ({0} date)",
+"Ligne de base effacée": "Linea di base cancellata"
 }

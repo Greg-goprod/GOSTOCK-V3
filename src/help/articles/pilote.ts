@@ -159,6 +159,19 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'critique-base',
+        title: 'Chemin critique et ligne de base',
+        steps: [
+          { text: 'Dans le menu « … » du Gantt (« Repères »), coche « Chemin critique » : les tâches et jalons qui décident de la date de fin d\'un projet sont cerclés d\'orange, avec une icône dans la liste, et leurs dépendances sont tracées en orange épais. Un retard sur l\'un d\'eux décale la fin du projet.' },
+          { text: 'Le chemin critique est calculé à partir des dépendances : on part des éléments qui finissent en dernier et on remonte tant que rien ne sépare les dates (sans compter week-ends, jours fériés et fermetures du calendrier de travail). Les éléments terminés ou annulés, les phases et les éléments sans date sont ignorés. Un élément seul, sans dépendance, n\'est jamais marqué : il faut des dépendances.' },
+          { text: 'Pour figer le plan accepté : ouvre le projet (clic sur son nom dans le Gantt) puis « Figer la ligne de base… ». Il faut pouvoir créer, modifier et supprimer des projets (administrateur, responsable). Un projet n\'a qu\'une ligne de base : en figer une nouvelle remplace la précédente.' },
+          { text: 'Coche ensuite « Ligne de base » dans « Repères » : sous chaque barre, un trait gris montre où elle était prévue, et un repère rouge (+5 j) ou vert (−2 j) donne l\'écart de fin avec ce plan. L\'infobulle d\'une barre rappelle la fin prévue. Les éléments ajoutés après avoir figé la ligne de base n\'ont pas de trait gris.' },
+        ],
+        problems: [
+          { if: 'Rien n\'est marqué comme critique.', then: 'Il faut des dépendances entre les éléments (voir « Dépendances »), des dates, et des éléments pas encore terminés. Un jour ouvré libre entre deux éléments interrompt la chaîne.' },
+        ],
+      },
+      {
         id: 'filtrer',
         title: 'Chercher, filtrer et retrouver les retards',
         steps: [

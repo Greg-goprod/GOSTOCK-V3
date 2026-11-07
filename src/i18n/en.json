@@ -3478,5 +3478,16 @@
 "libre": "free",
 "confortable": "comfortable",
 "presque plein": "nearly full",
-"surcharge": "overload"
+"surcharge": "overload",
+"Repères": "Markers",
+"Chemin critique": "Critical path",
+"Ligne de base": "Baseline",
+"Écart de fin avec la ligne de base": "End variance against the baseline",
+"Figer la ligne de base…": "Freeze the baseline…",
+"Effacer la ligne de base…": "Clear the baseline…",
+"Figer la ligne de base du projet « {0} » ? Les dates actuelles deviennent le plan de référence et remplacent la ligne de base précédente.": "Freeze the baseline of the project “{0}”? The current dates become the reference plan and replace the previous baseline.",
+"Effacer la ligne de base du projet « {0} » ?": "Clear the baseline of the project “{0}”?",
+"Ligne de base figée ({0} date)": "Baseline frozen ({0} date)",
+"Ligne de base figée ({0} dates)": "Baseline frozen ({0} dates)",
+"Ligne de base effacée": "Baseline cleared"
 }
