@@ -187,7 +187,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
   const datesOf = (r: GanttRow) => (r.start && r.end ? (r.start === r.end ? formatDay(r.start) : `${formatDay(r.start)} → ${formatDay(r.end)}`) : 'Sans date');
 
   return (
-    <div ref={box} className="relative overflow-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ maxHeight: 'calc(100vh - 300px)', minHeight: 220 }}>
+    <div ref={box} data-print-expand className="relative overflow-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ maxHeight: 'calc(100vh - 300px)', minHeight: 220 }}>
       <div style={{ display: 'grid', gridTemplateColumns: showNames ? `${NAME_W}px ${totalW}px` : `${totalW}px`, width: NAME_W + totalW }}>
         {/* En-tête : coin fixe + deux étages de dates */}
         {showNames && <div className="sticky left-0 top-0 z-30 flex items-end border-b border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 pb-1 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" style={{ height: HEAD_H * 2 }}>Nom</div>}

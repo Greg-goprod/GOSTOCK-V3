@@ -16,6 +16,7 @@ import PeriodControls from '../components/common/PeriodControls';
 import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
+import ExportMenu from '../components/pilote/ExportMenu';
 import { saveProjectAsTemplate } from '../components/pilote/templateActions';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
@@ -71,6 +72,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
     return (data?.projects ?? []).filter(p => isOverdue(p.ends_on, family.get(p.status_id) ?? null, today)).length
       + (data?.items ?? []).filter(i => i.kind !== 'phase' && isOverdue(i.ends_on, family.get(i.status_id) ?? null, today)).length;
   }, [data, today]);
+  const userNames = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   const people = useMemo(() => users.map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}`.trim() })).sort((a, b) => a.name.localeCompare(b.name, 'fr')), [users]);
   // Ouverture sur 2 niveaux, à chaque changement de regroupement
   useEffect(() => { setExpanded(defaultExpanded(model)); }, [grouping]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -185,6 +187,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
                 onSelect: () => { if (rights.update) void place(r); else openRow(r); },
               })) }]} />
           )}
+          <ExportMenu data={shownData} userName={id => userNames.get(id) ?? '—'} today={today} printable />
           <MenuButton id="gantt-more" menuLabel="Affichage" iconOnly ariaLabel="Plus d'options d'affichage" icon={<MoreHorizontal size={16} />}
             groups={[{ id: 'colorby', label: 'Couleur des barres', items: [
               { id: 'status', label: 'Par état', checked: colorBy === 'status', onSelect: () => setColorBy('status') },
@@ -212,6 +215,11 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
       <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
         onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
 
+      <div data-print-area>
+      <div className="print-only hidden mb-2">
+        <h1 className="text-lg font-bold">PILOTE — Gantt</h1>
+        <p className="text-xs">{`Imprimé le ${new Intl.DateTimeFormat('fr-CH').format(new Date(`${today}T12:00:00`))}${period ? ` · période du ${new Intl.DateTimeFormat('fr-CH').format(new Date(`${period.start}T12:00:00`))} au ${new Intl.DateTimeFormat('fr-CH').format(new Date(`${period.end}T12:00:00`))}` : ''}${hasFilters(filters) ? ' · filtres actifs' : ''}`}</p>
+      </div>
       {!period ? null : rows.length === 0 ? (
         hasFilters(filters)
           ? <MxEmpty icon={CalendarCheck} title="Aucun résultat" description="Aucune ligne ne correspond à ces filtres. Utilise « Tout afficher » pour revenir à la liste complète." />
@@ -221,6 +229,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
           onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline}
           showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} nonWorkingDays={nonWorkingDays} />
       )}
+      </div>
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />
       <ProjectForm data={data} target={projectTarget} readOnly={projectTarget?.mode === 'edit' && !rights.update} onClose={() => setProjectTarget(null)} onSaved={reload}

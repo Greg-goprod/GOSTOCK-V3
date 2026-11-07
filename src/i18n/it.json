@@ -3448,5 +3448,13 @@
 "Période du calendrier": "Periodo del calendario",
 "Aucun élément ne correspond à ces filtres. Utilise « Tout afficher » pour revenir à la liste complète.": "Nessun elemento corrisponde a questi filtri. Usa «Mostra tutto» per tornare all'elenco completo.",
 "Les éléments sans date n'apparaissent pas ici : place-les depuis le Gantt (« Sans date »). Les jours fériés et fermetures du calendrier de travail sont teintés en ambre.": "Gli elementi senza data non compaiono qui: collocali dal Gantt («Senza data»). I giorni festivi e le chiusure del calendario di lavoro sono colorati in ambra.",
-"{0} autres éléments ce jour, ouvrir la semaine": "altri {0} elementi in questo giorno, apri la settimana"
+"{0} autres éléments ce jour, ouvrir la semaine": "altri {0} elementi in questo giorno, apri la settimana",
+"Reprend ce qui est affiché (filtres compris)": "Riprende ciò che è visualizzato (filtri inclusi)",
+"Excel (projets et tâches)": "Excel (progetti e attività)",
+"CSV (tâches et jalons)": "CSV (attività e milestone)",
+"CSV (projets)": "CSV (progetti)",
+"Calendrier (.ics)": "Calendario (.ics)",
+"Imprimer / PDF": "Stampa / PDF",
+"Rien à exporter avec ces filtres": "Niente da esportare con questi filtri",
+"Export impossible": "Esportazione impossibile"
 }

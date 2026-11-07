@@ -11,6 +11,7 @@ import { MxSegmented } from '../components/mx/MxSegmented';
 import Button from '../components/common/Button';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
+import ExportMenu from '../components/pilote/ExportMenu';
 import { useViewFilters } from '../components/pilote/useViewFilters';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
@@ -39,6 +40,7 @@ const PiloteCalendar: React.FC = () => {
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
 
+  const userNames = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   const people = useMemo(() => users.map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}`.trim() })).sort((a, b) => a.name.localeCompare(b.name, 'fr')), [users]);
   const shown = useMemo(() => filterGantt(data ?? EMPTY, filters, today), [data, filters, today]);
   const events = useMemo(() => calendarEvents(shown, today), [shown, today]);
@@ -68,6 +70,7 @@ const PiloteCalendar: React.FC = () => {
           <h2 className="ml-1 text-base font-bold capitalize text-gray-900 dark:text-white" aria-live="polite" data-calendar-title>{title}</h2>
         </div>
         <div className="flex items-center gap-2">
+          <ExportMenu data={shown} userName={id => userNames.get(id) ?? '—'} today={today} printable />
           <MxSegmented aria-label="Période du calendrier" value={view} onChange={v => { if (v === 'week') setWeekStart(mondayOf(month === today.slice(0, 7) ? today : `${month}-01`)); setView(v as 'month' | 'week'); }}
             options={[{ value: 'month', label: 'Mois' }, { value: 'week', label: 'Semaine' }]} />
         </div>
@@ -78,7 +81,9 @@ const PiloteCalendar: React.FC = () => {
 
       {events.length === 0 && hasFilters(filters) && <MxEmpty icon={CalendarDays} title="Aucun résultat" description="Aucun élément ne correspond à ces filtres. Utilise « Tout afficher » pour revenir à la liste complète." />}
 
-      <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700" role="grid" aria-label={title}>
+      <div data-print-area>
+      <h2 className="print-only hidden mb-2 text-lg font-bold capitalize">{`PILOTE — Calendrier · ${title}`}</h2>
+      <div data-print-expand className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700" role="grid" aria-label={title}>
         <div className="min-w-[640px]">
           <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300" role="row">
             {weekdayNames.map(n => <div key={n} className="py-1.5" role="columnheader">{n}</div>)}
@@ -130,6 +135,7 @@ const PiloteCalendar: React.FC = () => {
             );
           })}
         </div>
+      </div>
       </div>
       <p className="text-xs text-gray-600 dark:text-gray-400">Les éléments sans date n'apparaissent pas ici : place-les depuis le Gantt (« Sans date »). Les jours fériés et fermetures du calendrier de travail sont teintés en ambre.</p>
 

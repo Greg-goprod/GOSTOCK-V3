@@ -3448,5 +3448,13 @@
 "Période du calendrier": "Calendar period",
 "Aucun élément ne correspond à ces filtres. Utilise « Tout afficher » pour revenir à la liste complète.": "No item matches these filters. Use “Show all” to go back to the full list.",
 "Les éléments sans date n'apparaissent pas ici : place-les depuis le Gantt (« Sans date »). Les jours fériés et fermetures du calendrier de travail sont teintés en ambre.": "Items without a date do not appear here: place them from the Gantt (“No date”). Public holidays and closures from the work calendar are tinted amber.",
-"{0} autres éléments ce jour, ouvrir la semaine": "{0} more items on this day, open the week"
+"{0} autres éléments ce jour, ouvrir la semaine": "{0} more items on this day, open the week",
+"Reprend ce qui est affiché (filtres compris)": "Exports what is shown (filters included)",
+"Excel (projets et tâches)": "Excel (projects and tasks)",
+"CSV (tâches et jalons)": "CSV (tasks and milestones)",
+"CSV (projets)": "CSV (projects)",
+"Calendrier (.ics)": "Calendar (.ics)",
+"Imprimer / PDF": "Print / PDF",
+"Rien à exporter avec ces filtres": "Nothing to export with these filters",
+"Export impossible": "Export failed"
 }

@@ -131,6 +131,19 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'exporter',
+        title: 'Exporter et imprimer',
+        steps: [
+          { text: 'Le bouton « Exporter » (Gantt, Tableau et Calendrier) reprend exactement ce qui est affiché : si tu as filtré, seuls ces éléments sont exportés.' },
+          { text: '« Excel » crée un classeur de deux feuilles (« Projets » et « Tâches et jalons ») avec état, priorité, dates, jours ouvrés, avancement, retard et assignés. Les « CSV » sont la même chose en texte, séparés par des points-virgules, lisibles par Excel (accents compris).' },
+          { text: '« Calendrier (.ics) » crée un fichier d\'événements « journée entière » (une tâche, une sous-tâche ou un jalon daté = un événement) que tu ouvres dans Outlook, Google Agenda, Apple Calendrier… C\'est un instantané du jour : il ne se met pas à jour tout seul, il faut en exporter un nouveau pour mettre ton agenda à jour.' },
+          { text: '« Imprimer / PDF » (Gantt et Calendrier) imprime seulement la vue, en paysage A4, avec un titre et la date. Dans la fenêtre d\'impression du navigateur, choisis « Enregistrer au format PDF » pour obtenir un fichier. Le Gantt s\'imprime sur la période affichée : règle l\'échelle avant d\'imprimer.' },
+        ],
+        problems: [
+          { if: 'Mon agenda n\'est pas à jour après un changement dans PILOTE.', then: 'Le fichier .ics est un instantané : exporte-le de nouveau, et supprime l\'ancien calendrier importé pour éviter les doublons.' },
+        ],
+      },
+      {
         id: 'filtrer',
         title: 'Chercher, filtrer et retrouver les retards',
         steps: [

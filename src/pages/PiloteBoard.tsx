@@ -13,6 +13,7 @@ import Button from '../components/common/Button';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
+import ExportMenu from '../components/pilote/ExportMenu';
 import { useViewFilters } from '../components/pilote/useViewFilters';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
@@ -72,10 +73,13 @@ const PiloteBoard: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <MxSegmented aria-label="Contenu du tableau" value={mode} onChange={v => setMode(v as BoardMode)} options={[{ value: 'items', label: 'Tâches et jalons' }, { value: 'projects', label: 'Projets' }]} />
-        {rights.create && mode === 'items' && data.projects.length > 0 && (
-          <Button icon={<Plus size={14} />} onClick={() => setItemTarget({ mode: 'new', kind: 'task' })}>Nouvelle tâche</Button>
-        )}
-        {rights.create && mode === 'projects' && <Button icon={<Plus size={14} />} onClick={() => setProjectTarget({ mode: 'new' })}>Nouveau projet</Button>}
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu data={shown} userName={id => userName.get(id) ?? '—'} today={today} />
+          {rights.create && mode === 'items' && data.projects.length > 0 && (
+            <Button icon={<Plus size={14} />} onClick={() => setItemTarget({ mode: 'new', kind: 'task' })}>Nouvelle tâche</Button>
+          )}
+          {rights.create && mode === 'projects' && <Button icon={<Plus size={14} />} onClick={() => setProjectTarget({ mode: 'new' })}>Nouveau projet</Button>}
+        </div>
       </div>
 
       <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
