@@ -32,6 +32,7 @@ interface CheckLine { id?: string; label: string; done: boolean }
 interface FormState {
   projectId: string; kind: ItemKind; parentId: string; name: string; status_id: string; priority: '' | ProjectPriority;
   starts_on: string; ends_on: string; description: string; members: string[];
+  estimate: string;   // heures estimées (texte saisi ; vide = non estimé)
 }
 
 const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 disabled:opacity-70';
@@ -52,6 +53,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
   const datesTouched = useRef(false);
   // Version de l'élément à l'ouverture de la fiche : on n'enregistre que si personne ne l'a modifié depuis (voir updateIfUnchanged)
   const version = useRef<string | null>(null);
+  const estimateInitial = useRef('');
   // Une dépendance ajoutée ou retirée DEPUIS cette fiche modifie l'élément elle-même : au prochain enregistrement, on repart de la version rechargée
   const versionStale = useRef(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
@@ -82,7 +84,9 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
         projectId: it.project_id, kind: it.kind, parentId: it.parent_id ?? '', name: it.name, status_id: it.status_id, priority: it.priority ?? '',
         starts_on: it.starts_on ?? '', ends_on: it.ends_on ?? '', description: it.description ?? '',
         members: data.itemMembers.filter(m => m.item_id === it.id).map(m => m.user_id),
+        estimate: it.estimate_hours === null || it.estimate_hours === undefined ? '' : String(it.estimate_hours),
       });
+      estimateInitial.current = it.estimate_hours === null || it.estimate_hours === undefined ? '' : String(it.estimate_hours);
       setChecks([]); setInitialChecks([]);
       void supabase.from('cp_item_checks').select('id, label, done, position').eq('item_id', it.id).order('position').order('created_at').then(({ data: rows, error }) => {
         if (error) return void toast.error(piloteError(error));
@@ -95,8 +99,9 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
       const projectId = target.projectId ?? parent?.project_id ?? data.projects[0]?.id ?? '';
       setForm({
         projectId, kind: target.kind && kinds.includes(target.kind) ? target.kind : kinds[0] ?? 'task', parentId: target.parentId ?? '', name: '', status_id: notStarted,
-        priority: '', starts_on: '', ends_on: '', description: '', members: [],
+        priority: '', starts_on: '', ends_on: '', description: '', members: [], estimate: '',
       });
+      estimateInitial.current = '';
       setChecks([]); setInitialChecks([]);
     }
     // Le formulaire repart de zéro à chaque ouverture
@@ -167,10 +172,15 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
     const end = milestone ? form.starts_on : form.ends_on;
     if (start && end && end < start) return void toast.error('La fin doit être après le début');
     if (needsParent && !form.parentId) return void toast.error('Choisis la tâche de cette sous-tâche');
-    const payload = {
+    // L'estimation n'est envoyée que si elle a changé : tant que la mise à jour de la base qui l'ajoute n'est pas appliquée, le reste de la fiche s'enregistre normalement
+    const estimateText = form.estimate.trim().replace(',', '.');
+    const estimate = estimateText === '' ? null : Number(estimateText);
+    if (estimate !== null && (!Number.isFinite(estimate) || estimate < 0 || estimate > 9999)) return void toast.error('Estimation : un nombre d\'heures entre 0 et 9 999');
+    const payload: Record<string, unknown> = {
       name: form.name.trim(), parent_id: form.parentId || null, status_id: form.status_id, priority: form.priority || null,
       starts_on: start || null, ends_on: end || null, description: form.description.trim() || null,
     };
+    if (form.estimate.trim() !== estimateInitial.current.trim()) payload.estimate_hours = estimate === null ? null : Math.round(estimate * 10) / 10;
     setSaving(true);
     try {
       let id = edited?.id ?? '';
@@ -280,6 +290,14 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
                 {(Object.keys(PRIORITY_LABEL) as ProjectPriority[]).map(p => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}
               </select>
             </div>
+            {form.kind !== 'milestone' && (
+              <div>
+                <label htmlFor="itm-estimate" className={labelClass}>Estimation (heures)</label>
+                <input id="itm-estimate" type="number" inputMode="decimal" min={0} max={9999} step={0.1} className={inputClass} value={form.estimate} disabled={readOnly}
+                  onChange={e => set({ estimate: e.target.value })} placeholder="Non estimé" />
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Pour la vue « Charge » : réparti sur les jours ouvrés, partagé entre les assignés.</p>
+              </div>
+            )}
             {form.kind === 'milestone' ? (
               <div className="sm:col-span-2">
                 <label htmlFor="itm-start" className={labelClass}>Date du jalon</label>

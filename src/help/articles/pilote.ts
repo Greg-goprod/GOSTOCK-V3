@@ -144,6 +144,21 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'charge',
+        title: 'Estimer les heures et suivre la charge de chacun',
+        who: 'Estimer : administrateur et responsable. Voir : toute personne qui voit les projets.',
+        steps: [
+          { text: 'Ouvre une tâche ou une sous-tâche et renseigne « Estimation (heures) ». Laisse vide si tu ne sais pas : la tâche n\'entre alors pas dans la charge. Estime les éléments les plus fins : une tâche qui a des sous-tâches n\'a pas besoin de la sienne (sinon ses heures s\'ajoutent à celles des sous-tâches).' },
+          { text: 'Dans l\'onglet « Charge », chaque ligne est une personne et chaque colonne une semaine (8 semaines, les flèches avancent de 4 semaines). Les heures d\'une tâche sont réparties sur ses jours ouvrés (sans week-ends, jours fériés ni fermetures) et partagées à parts égales entre ses assignés.' },
+          { text: 'Une case affiche « heures / capacité de la semaine » : vert jusqu\'à 80 %, orange jusqu\'à 100 %, rouge au-delà (surcharge). La capacité d\'une semaine avec un jour férié est réduite d\'autant (40 h → 32 h). Clique sur une case pour voir quelles tâches la composent et ouvrir leur fiche.' },
+          { text: 'La colonne « h / semaine » est la capacité de la personne (40 h par défaut) : change-la pour un temps partiel (modification réservée à qui peut modifier les projets). « À estimer » en bas liste les tâches assignées sans estimation, qui ne comptent pas encore.' },
+        ],
+        problems: [
+          { if: 'Une personne n\'apparaît pas dans la charge.', then: 'Seules les personnes qui sont dans l\'équipe d\'un projet, assignées à une tâche ou dont la capacité a été saisie apparaissent.' },
+          { if: 'Mes estimations ne comptent pas.', then: 'Il faut que la tâche soit assignée à quelqu\'un, qu\'elle ait une date, et qu\'elle ne soit pas annulée. Une tâche terminée compte (c\'est la charge réalisée de la période).' },
+        ],
+      },
+      {
         id: 'filtrer',
         title: 'Chercher, filtrer et retrouver les retards',
         steps: [

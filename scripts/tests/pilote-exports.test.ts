@@ -22,7 +22,7 @@ const data: GanttData = {
   members: [{ project_id: 'p1', user_id: 'u1', role: 'lead' }, { project_id: 'p1', user_id: 'u2', role: 'member' }],
   items: [
     item('a', 'p1', null, 'phase', 'Montage', 's1', null, null),
-    item('b', 'p1', 'a', 'task', 'Structures', 's2', '2027-03-01', '2027-03-07'),
+    item('b', 'p1', 'a', 'task', 'Structures', 's2', '2027-03-01', '2027-03-07', { estimate_hours: 12.5 }),
     item('c', 'p1', 'a', 'task', 'Éclairage, son et vidéo avec une désignation vraiment très longue pour forcer le pliage de ligne', 's1', '2027-03-08', '2027-03-12', { priority: 'low', description: 'À prévoir;\navec "guillemets"' }),
     item('d', 'p1', null, 'milestone', 'Ouverture', 's0', '2027-03-31', '2027-03-31'),
     item('e', 'p1', null, 'task', 'Annulée', 's3', '2027-04-01', '2027-04-02'),
@@ -44,6 +44,7 @@ eq('projet : avancement = feuilles terminées / feuilles comptées (Structures t
 const byName = (n: string) => items.find(r => r['Nom'] === n)!;
 eq('élément : parent, type, état, priorité', [byName('Éclairage, son et vidéo avec une désignation vraiment très longue pour forcer le pliage de ligne')['Parent'], byName('Structures')['Type'], byName('Structures')['État'], byName('Éclairage, son et vidéo avec une désignation vraiment très longue pour forcer le pliage de ligne')['Priorité']], ['Montage', 'Tâche', 'Terminé', 'Basse']);
 eq('jours ouvrés : 01.03 au 07.03 = 5 jours moins le férié du 05.03 (vendredi) = 4', byName('Structures')['Jours ouvrés'], 4);
+eq('estimation exportée en heures (vide si non estimé)', [byName('Structures')['Estimation (h)'], byName('Sans date')['Estimation (h)']], [12.5, '']);
 eq('terminé et passé : pas en retard', byName('Structures')['En retard'], 'Non');
 eq('élément en cours dont la fin (12.03) est passée : en retard', byName('Éclairage, son et vidéo avec une désignation vraiment très longue pour forcer le pliage de ligne')['En retard'], 'Oui');
 eq('assignés listés', byName('Éclairage, son et vidéo avec une désignation vraiment très longue pour forcer le pliage de ligne')['Assignés'], 'Ana Test, Bob Test');

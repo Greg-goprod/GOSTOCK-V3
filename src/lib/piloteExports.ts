@@ -45,7 +45,7 @@ export function buildExportRows(data: GanttData, userName: (id: string) => strin
     return {
       'Projet': projectName.get(i.project_id) ?? '', 'Parent': i.parent_id ? itemName.get(i.parent_id) ?? '' : '', 'Type': ITEM_KIND_LABEL[i.kind], 'Nom': i.name,
       'État': st?.name ?? '', 'Famille': st ? FAMILY_LABEL[st.family] : '', 'Priorité': i.priority ? PRIORITY_LABEL[i.priority] : '',
-      'Début': fmt(eff.start), 'Fin': fmt(eff.end), 'Jours ouvrés': days(eff.start, eff.end), 'Avancement (%)': pct(`i:${i.id}`),
+      'Début': fmt(eff.start), 'Fin': fmt(eff.end), 'Jours ouvrés': days(eff.start, eff.end), 'Estimation (h)': i.estimate_hours === null || i.estimate_hours === undefined ? '' : Number(i.estimate_hours), 'Avancement (%)': pct(`i:${i.id}`),
       'En retard': isOverdue(eff.end, st?.family ?? null, today) ? 'Oui' : 'Non', 'Assignés': (itemUsers.get(i.id) ?? []).join(', '), 'Description': i.description ?? '',
     };
   });

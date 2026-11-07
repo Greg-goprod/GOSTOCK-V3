@@ -28,7 +28,7 @@ const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Z
 // Regroupements proposés
 const GROUPING_CHOICES: Grouping[] = ['status', 'type'];
 const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type' };
-const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [] };
+const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [] };
 
 // PILOTE › Gantt (module payant) : projets et leurs éléments sur une échelle de temps
 // `embedded` : affiché comme onglet de la page Projets, qui porte déjà le titre et l'introduction

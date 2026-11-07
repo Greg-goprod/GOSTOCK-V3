@@ -33,7 +33,7 @@ const ExportMenu: React.FC<Props> = ({ data, userName, today, printable = false 
       actions={[
         { id: 'xlsx', label: 'Excel (projets et tâches)', icon: FileSpreadsheet, onSelect: run(async () => {
           const r = rows();
-          await downloadWorkbook([{ name: 'Projets', rows: r.projects, widths: [28, 14, 16, 14, 12, 12, 12, 12, 14, 10, 24, 40, 40] }, { name: 'Tâches et jalons', rows: r.items, widths: [24, 20, 12, 32, 16, 14, 12, 12, 12, 12, 14, 10, 28, 40] }], `pilote-${today}.xlsx`);
+          await downloadWorkbook([{ name: 'Projets', rows: r.projects, widths: [28, 14, 16, 14, 12, 12, 12, 12, 14, 10, 24, 40, 40] }, { name: 'Tâches et jalons', rows: r.items, widths: [24, 20, 12, 32, 16, 14, 12, 12, 12, 12, 12, 14, 10, 28, 40] }], `pilote-${today}.xlsx`);
         }) },
         { id: 'csv-items', label: 'CSV (tâches et jalons)', icon: FileText, onSelect: run(() => downloadText(toCsv(rows().items), `pilote-taches-${today}.csv`, 'text/csv;charset=utf-8')) },
         { id: 'csv-projects', label: 'CSV (projets)', icon: FileText, onSelect: run(() => downloadText(toCsv(rows().projects), `pilote-projets-${today}.csv`, 'text/csv;charset=utf-8')) },

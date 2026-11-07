@@ -29,6 +29,7 @@ export interface CpItem {
   id: string; project_id: string; parent_id: string | null; kind: ItemKind; name: string; description: string | null;
   status_id: string; priority: ProjectPriority | null; starts_on: string | null; ends_on: string | null; position: number;
   updated_at?: string;   // sert à repérer une modification faite entre-temps par quelqu'un d'autre (voir updateIfUnchanged)
+  estimate_hours?: number | null;   // heures estimées (vide : non estimé) ; sert à la vue « Charge »
 }
 export interface CpItemMember { item_id: string; user_id: string }
 // « Le successeur commence après la fin du prédécesseur »
@@ -76,6 +77,15 @@ export interface GanttData extends PiloteData {
   itemMembers: CpItemMember[];
   links: CpLink[];
   calendarDays: CpCalendarDay[];
+  capacities: CpCapacity[];
+}
+
+// Heures de travail par semaine d'une personne (40 par défaut quand rien n'est saisi)
+export interface CpCapacity { user_id: string; hours_per_week: number }
+// Lecture tolérante : tant que la migration de la charge n'est pas appliquée, la table n'existe pas → aucune capacité saisie
+export async function loadCapacities(): Promise<CpCapacity[]> {
+  const { data, error } = await supabase.from('cp_user_capacity').select('user_id, hours_per_week');
+  return error ? [] : ((data || []) as CpCapacity[]);
 }
 
 // Jours non travaillés de l'entreprise (fériés, fermetures) : le Gantt les teinte, la cascade des dépendances les évite
@@ -108,12 +118,13 @@ export async function loadPilote(): Promise<PiloteData> {
 }
 
 export async function loadGantt(): Promise<GanttData> {
-  const [base, items, itemMembers, links, calendarDays] = await Promise.all([
+  const [base, items, itemMembers, links, calendarDays, capacities] = await Promise.all([
     loadPilote(),
     supabase.from('cp_items').select('*').order('position').order('starts_on', { nullsFirst: false }).order('name'),
     supabase.from('cp_item_members').select('item_id, user_id'),
     supabase.from('cp_item_links').select('id, project_id, predecessor_id, successor_id'),
     loadCalendarDays(),
+    loadCapacities(),
   ]);
   const error = [items, itemMembers, links].map(r => r.error).find(Boolean);
   if (error) throw error;
@@ -125,7 +136,7 @@ export async function loadGantt(): Promise<GanttData> {
     ...base, items: keptItems,
     itemMembers: ((itemMembers.data || []) as CpItemMember[]).filter(m => keptIds.has(m.item_id)),
     links: ((links.data || []) as CpLink[]).filter(l => !templateIds.has(l.project_id)),
-    calendarDays,
+    calendarDays, capacities,
   };
 }
 
