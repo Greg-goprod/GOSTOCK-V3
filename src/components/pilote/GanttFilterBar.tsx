@@ -1,7 +1,7 @@
-import React from 'react';
-import { AlertTriangle, BookmarkPlus, Search, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertTriangle, BookmarkPlus, ChevronDown, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import MenuButton from '../common/MenuButton';
-import { hasFilters, NO_FILTERS, type GanttFilters, type SavedView } from '../../lib/ganttFilters';
+import { filterCount, hasFilters, NO_FILTERS, type GanttFilters, type SavedView } from '../../lib/ganttFilters';
 import { FAMILY_LABEL, FAMILY_ORDER, PRIORITY_LABEL, TYPE_LABEL, TYPE_ORDER, type ProjectPriority, type ProjectType, type StatusFamily } from '../../lib/pilote';
 
 interface Props {
@@ -20,6 +20,9 @@ const PRIORITIES: ProjectPriority[] = ['high', 'medium', 'low'];
 // Barre de recherche et de filtres du Gantt : un champ de recherche, un menu « Filtres », le raccourci « En retard » et les vues enregistrées
 const GanttFilterBar: React.FC<Props> = ({ filters, onChange, people, overdueCount, views, onApplyView, onSaveView, onDeleteView }) => {
   const set = (patch: Partial<GanttFilters>) => onChange({ ...filters, ...patch });
+  // Téléphone : la recherche reste visible, les filtres se déplient à la demande (sur grand écran, tout est toujours visible)
+  const [expanded, setExpanded] = useState(false);
+  const active = filterCount(filters) - (filters.query.trim() !== '' ? 1 : 0);
   const pick = <T extends string>(current: T | null, all: string, values: { id: T; label: string }[], apply: (v: T | null) => void) => [
     { id: 'all', label: all, checked: current === null, onSelect: () => apply(null) },
     ...values.map(v => ({ id: v.id, label: v.label, checked: current === v.id, onSelect: () => apply(v.id) })),
@@ -34,6 +37,13 @@ const GanttFilterBar: React.FC<Props> = ({ filters, onChange, people, overdueCou
           className="min-h-[44px] w-44 rounded-md border border-gray-300 bg-white py-1 pl-8 pr-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 lg:min-h-[28px]" />
       </label>
 
+      <button type="button" aria-expanded={expanded} aria-controls="gantt-filter-panel" onClick={() => setExpanded(v => !v)}
+        className="mx-btn mx-btn-secondary flex min-h-[44px] items-center gap-1.5 whitespace-nowrap px-2.5 py-1 text-[length:calc(12.5px*var(--mx-scale,1))] sm:hidden">
+        <SlidersHorizontal size={14} aria-hidden />
+        {active > 0 ? `Filtres (${active})` : 'Filtres'}
+        <ChevronDown size={14} aria-hidden className={expanded ? 'rotate-180' : ''} />
+      </button>
+      <div id="gantt-filter-panel" className={`${expanded ? 'flex' : 'hidden'} w-full flex-wrap items-center gap-2 sm:contents`}>
       <MenuButton id="gantt-person" menuLabel="Personne" prefix="Personne :" value={people.find(p => p.id === filters.userId)?.name ?? 'Toutes'}
         groups={[{ id: 'person', items: pick<string>(filters.userId, 'Toutes', people.map(p => ({ id: p.id, label: p.name })), v => set({ userId: v })) }]} />
       <MenuButton id="gantt-family" menuLabel="État" prefix="État :" value={filters.family ? FAMILY_LABEL[filters.family] : 'Tous'}
@@ -56,6 +66,8 @@ const GanttFilterBar: React.FC<Props> = ({ filters, onChange, people, overdueCou
           { id: 'save', label: 'Enregistrer la vue actuelle…', icon: BookmarkPlus, onSelect: onSaveView },
           ...views.map(v => ({ id: `del-${v.id}`, label: `Supprimer « ${v.name} »`, icon: Trash2, tone: 'danger' as const, onSelect: () => onDeleteView(v) })),
         ]} />
+
+      </div>
 
       {hasFilters(filters) && (
         <button type="button" onClick={() => onChange(NO_FILTERS)} className="text-sm font-medium text-primary-700 underline dark:text-primary-300">Tout afficher</button>

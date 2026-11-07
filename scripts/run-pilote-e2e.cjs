@@ -4,7 +4,7 @@
 const path = require('path'); const os = require('os'); const fs = require('fs'); const http = require('http'); const { spawn, spawnSync } = require('child_process');
 const root = path.join(__dirname, '..');
 const outDir = path.join(os.tmpdir(), 'pilote-e2e'); fs.mkdirSync(outDir, { recursive: true });
-const SCRIPTS = ['e2e-gantt-filtres', 'e2e-calendrier', 'e2e-modeles', 'e2e-tableau-calendrier', 'e2e-exports', 'e2e-charge', 'e2e-critique-base', 'e2e-synthese', 'e2e-groupe-historique'];
+const SCRIPTS = ['e2e-gantt-filtres', 'e2e-calendrier', 'e2e-modeles', 'e2e-tableau-calendrier', 'e2e-exports', 'e2e-charge', 'e2e-critique-base', 'e2e-synthese', 'e2e-groupe-historique', 'e2e-mobile'];
 const up = () => new Promise(res => { http.get('http://127.0.0.1:5197/', r => { r.resume(); res(true); }).on('error', () => res(false)); });
 (async () => {
   if (await up()) { console.log('ERREUR : le port 5197 est déjà utilisé. Ferme ce qui tourne dessus puis relance.'); process.exit(2); }
