@@ -7,11 +7,15 @@ import { buildGantt, defaultExpanded, undatedRows, visibleRows, withAddRows, typ
 import { isPreset, makePeriod, periodDays, type ViewPeriod } from '../lib/viewPeriod';
 import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights, type ProjectType, type CpProject } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
+import { useApp } from '../contexts/AppContext';
+import { confirmAction, promptAction } from '../lib/confirm';
+import { filterGantt, hasFilters, isOverdue, NO_FILTERS, parseSavedViews, SAVED_VIEWS_KEY, type GanttFilters, type SavedView } from '../lib/ganttFilters';
 import PageTitle from '../components/common/PageTitle';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PeriodControls from '../components/common/PeriodControls';
 import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
+import GanttFilterBar from '../components/pilote/GanttFilterBar';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
 import DuplicateProjectForm from '../components/pilote/DuplicateProjectForm';
@@ -37,6 +41,10 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const setColorBy = (v: ColorBy) => { setColorByState(v); try { localStorage.setItem('gomat-gantt-colorby', v); } catch { /* préférence facultative */ } };
   const setShowNames = (v: boolean) => { setShowNamesState(v); try { localStorage.setItem('gomat-gantt-names', v ? 'shown' : 'hidden'); } catch { /* préférence facultative */ } };
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Recherche et filtres (non mémorisés : on repart de tout afficher) ; vues enregistrées sur cet appareil
+  const [filters, setFilters] = useState<GanttFilters>(NO_FILTERS);
+  const [views, setViews] = useState<SavedView[]>(() => { try { return parseSavedViews(localStorage.getItem(SAVED_VIEWS_KEY)); } catch { return []; } });
+  const { users } = useApp();
   const [itemTarget, setItemTarget] = useState<ItemTarget | null>(null);
   const [projectTarget, setProjectTarget] = useState<ProjectTarget | null>(null);
   // Copie d'un projet : la fenêtre « Dupliquer », puis la copie s'ouvre dès que les données rechargées la contiennent
@@ -55,9 +63,19 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
     if (row) { setOpenAfter(null); setProjectTarget({ mode: 'edit', row }); }
   }, [data, openAfter]);
 
-  const model = useMemo(() => buildGantt(data ?? EMPTY, grouping, colorBy), [data, grouping, colorBy]);
+  const shownData = useMemo(() => filterGantt(data ?? EMPTY, filters, today), [data, filters, today]);
+  const model = useMemo(() => buildGantt(shownData, grouping, colorBy), [shownData, grouping, colorBy]);
+  // Lignes en retard dans TOUTES les données (le compteur ne dépend pas des filtres en cours)
+  const overdueCount = useMemo(() => {
+    const family = new Map((data?.statuses ?? []).map(st => [st.id, st.family]));
+    return (data?.projects ?? []).filter(p => isOverdue(p.ends_on, family.get(p.status_id) ?? null, today)).length
+      + (data?.items ?? []).filter(i => i.kind !== 'phase' && isOverdue(i.ends_on, family.get(i.status_id) ?? null, today)).length;
+  }, [data, today]);
+  const people = useMemo(() => users.map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}`.trim() })).sort((a, b) => a.name.localeCompare(b.name, 'fr')), [users]);
   // Ouverture sur 2 niveaux, à chaque changement de regroupement
   useEffect(() => { setExpanded(defaultExpanded(model)); }, [grouping]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Avec des filtres, tout se déplie pour montrer les résultats ; sans filtre, retour à l'ouverture sur 2 niveaux
+  useEffect(() => { setExpanded(hasFilters(filters) ? new Set(model.expandable) : defaultExpanded(model)); }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
   // Première arrivée des données : même ouverture
   const loaded = data !== null;
   useEffect(() => {
@@ -77,6 +95,20 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const rows = useMemo(() => (rights.create ? withAddRows(visibleRows(model, expanded), expanded) : visibleRows(model, expanded)), [model, expanded, rights.create]);
   const undated = useMemo(() => undatedRows(model), [model]);
   const projectName = useMemo(() => new Map((data?.projects ?? []).map(p => [p.id, p.name])), [data]);
+
+  const storeViews = (next: SavedView[]) => { setViews(next); try { localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next)); } catch { toast.error('Impossible d\'enregistrer la vue sur cet appareil'); } };
+  const saveView = async () => {
+    const name = (await promptAction('Nom de la vue', ''))?.trim();
+    if (!name) return;
+    if (views.some(v => v.name.toLowerCase() === name.toLowerCase()) && !(await confirmAction(`Remplacer la vue « ${name} » ?`))) return;
+    storeViews([...views.filter(v => v.name.toLowerCase() !== name.toLowerCase()), { id: crypto.randomUUID(), name, filters, grouping }]);
+    toast.success('Vue enregistrée');
+  };
+  const deleteView = async (v: SavedView) => {
+    if (!(await confirmAction(`Supprimer la vue « ${v.name} » ?`))) return;
+    storeViews(views.filter(x => x.id !== v.id));
+  };
+  const applyView = (v: SavedView) => { setGrouping(v.grouping); setFilters(v.filters); };
 
   const toggle = (key: string) => setExpanded(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const openRow = (row: GanttRow) => {
@@ -190,8 +222,13 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
         </div>
       </div>
 
+      <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
+        onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
+
       {!period ? null : rows.length === 0 ? (
-        <MxEmpty icon={CalendarCheck} title="Rien à afficher" description="Crée d'abord un projet dans PILOTE › Projets : il apparaîtra ici avec ses phases, tâches et jalons." />
+        hasFilters(filters)
+          ? <MxEmpty icon={CalendarCheck} title="Aucun résultat" description="Aucune ligne ne correspond à ces filtres. Utilise « Tout afficher » pour revenir à la liste complète." />
+          : <MxEmpty icon={CalendarCheck} title="Rien à afficher" description="Crée d'abord un projet dans PILOTE › Projets : il apparaîtra ici avec ses phases, tâches et jalons." />
       ) : (
         <GanttChart rows={rows} links={data.links} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
           onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline}

@@ -1,8 +1,9 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { dayFromNumber, dayNumberOf } from '../../lib/ganttModel';
 import { clipBar, isWeekend, linkPaths, makeHeader, makeScale, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
+import { isOverdue } from '../../lib/ganttFilters';
 import { allowedKinds, ITEM_KIND_LABEL, type ItemKind } from '../../lib/pilote';
 
 export const ROW_H = 36;
@@ -229,6 +230,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
                   className={`min-w-0 flex-1 truncate text-left text-[13px] ${r.kind === 'group' ? 'font-bold uppercase tracking-wide text-gray-700 dark:text-gray-200' : r.kind === 'project' ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                   {r.name}
                 </button>
+                {clickable && isOverdue(r.end, r.family, today) && <AlertTriangle size={14} role="img" aria-label="En retard" className="ml-1 shrink-0 text-danger-600" />}
                 {r.start === null && clickable && <span className="ml-1 shrink-0 rounded bg-gray-100 dark:bg-gray-700 px-1.5 text-[10px] text-gray-600 dark:text-gray-300">Sans date</span>}
                 {canCreate && canAddTo(r) && (
                   <button type="button" onClick={() => onAdd(r)} aria-label={`Ajouter dans ${r.name}`} title="Ajouter" className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-500 opacity-0 hover:bg-gray-200 focus:opacity-100 group-hover/row:opacity-100 dark:hover:bg-gray-600">
@@ -302,7 +304,8 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
               if (view.kind === 'end' && view.key === r.key) barW = Math.max(scale.px, barW + dx);
             }
             const pct = progressOf(r);
-            const title = `${kindLabel(r)} · ${r.name} · ${datesOf(r)}${pct === null ? '' : ` · ${Math.round(pct * 100)} %`}`;
+            const late = r.kind !== 'group' && isOverdue(r.end, r.family, today);
+            const title = `${kindLabel(r)} · ${r.name} · ${datesOf(r)}${pct === null ? '' : ` · ${Math.round(pct * 100)} %`}${late ? ' · En retard' : ''}`;
             const clickable = r.kind !== 'group';
             const draggable = canEdit && movable(r);
             const common = { 'aria-label': title, title, role: clickable ? 'button' : undefined, tabIndex: clickable ? 0 : undefined } as const;
@@ -317,7 +320,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
               const cx = left + barW / 2;
               return (
                 <div key={r.key} className={`absolute flex items-center ${view ? 'z-[8]' : 'z-[6]'}`} style={{ left: cx - 8, top: top + (ROW_H - 16) / 2, height: 16 }}>
-                  <div {...common} {...handle} className={`h-3.5 w-3.5 shrink-0 rotate-45 ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-[2px] outline-offset-2 focus-visible:outline focus-visible:outline-2`} style={{ background: r.color, marginLeft: 1, marginRight: 8, opacity: r.family === 'done' ? 0.55 : 1, touchAction: draggable ? 'none' : undefined }} />
+                  <div {...common} {...handle} className={`h-3.5 w-3.5 shrink-0 rotate-45 ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-[2px] outline-offset-2 focus-visible:outline focus-visible:outline-2`} style={{ background: r.color, marginLeft: 1, marginRight: 8, opacity: r.family === 'done' ? 0.55 : 1, boxShadow: late ? '0 0 0 2px #dc2626' : undefined, touchAction: draggable ? 'none' : undefined }} />
                   <span className="whitespace-nowrap text-[11px] text-gray-700 dark:text-gray-300">{r.name}</span>
                 </div>
               );
@@ -327,7 +330,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
               <div key={r.key} onMouseEnter={() => setHoverKey(r.key)} onMouseLeave={() => setHoverKey(k => (k === r.key ? null : k))} className={`absolute flex items-center ${view ? 'z-[8]' : 'z-[6]'}`} style={{ left, top: top + (ROW_H - h) / 2, height: h }}>
                 <div {...common} {...handle}
                   className={`group/bar relative select-none overflow-hidden ${draggable ? 'cursor-grab active:cursor-grabbing' : clickable ? 'cursor-pointer' : ''} ${clickable ? 'outline-offset-2 focus-visible:outline focus-visible:outline-2' : ''} ${view ? 'ring-2 ring-white/70 shadow-md' : ''}`}
-                  style={{ touchAction: draggable ? 'none' : undefined, width: barW, height: h, background: `${r.color}${summary ? '66' : '40'}`, border: `1px solid ${r.color}`, opacity: r.family === 'cancelled' ? 0.45 : 1, borderRadius: `${clipped.clippedLeft ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedLeft ? 0 : 6}px` }}>
+                  style={{ touchAction: draggable ? 'none' : undefined, width: barW, height: h, background: `${r.color}${summary ? '66' : '40'}`, border: `1px solid ${r.color}`, boxShadow: late ? '0 0 0 2px #dc2626' : undefined, opacity: r.family === 'cancelled' ? 0.45 : 1, borderRadius: `${clipped.clippedLeft ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedRight ? 0 : 6}px ${clipped.clippedLeft ? 0 : 6}px` }}>
                   {pct !== null && !summary && <div aria-hidden className="absolute inset-y-0 left-0" style={{ width: `${Math.round(pct * 100)}%`, background: r.color, opacity: 0.6 }} />}
                   {summary && pct !== null && <div aria-hidden className="absolute inset-y-0 left-0" style={{ width: `${Math.round(pct * 100)}%`, background: r.color }} />}
                   {!summary && barW >= 90 && <span className="pointer-events-none relative z-[1] block truncate px-1.5 text-[11px] font-medium leading-[inherit] text-gray-900 dark:text-white" style={{ lineHeight: `${h - 2}px` }}>{r.name}</span>}

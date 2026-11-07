@@ -117,6 +117,20 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'filtrer',
+        title: 'Chercher, filtrer et retrouver les retards',
+        steps: [
+          { text: 'Au-dessus du Gantt, le champ « Rechercher » cherche dans les noms et les descriptions (sans tenir compte des majuscules ni des accents). Si le nom d\'un projet correspond, tous ses éléments restent visibles.' },
+          { text: 'Les menus « Personne », « État », « Priorité » et « Type » réduisent la liste. Ils se combinent : par exemple « Personne : Marie » et « État : En cours ». Une phase ou un projet reste affiché tant qu\'un de ses éléments correspond.' },
+          { text: 'Une ligne est « en retard » quand sa date de fin est passée et qu\'elle n\'est ni terminée ni annulée : un triangle rouge apparaît dans la liste et la barre est cerclée de rouge. Le bouton « En retard (n) » affiche seulement ces lignes ; le nombre compte tous les projets et éléments, même ceux que tes filtres masquent.' },
+          { text: 'Ouvre « Vues » puis « Enregistrer la vue actuelle… » pour garder une combinaison de filtres (et le regroupement) sous un nom, par exemple « Mes retards ». Elle se réapplique d\'un clic. Les vues sont enregistrées sur l\'appareil que tu utilises : elles ne suivent pas ton compte sur un autre ordinateur.' },
+          { text: '« Tout afficher » efface la recherche et tous les filtres.' },
+        ],
+        problems: [
+          { if: 'Le Gantt est vide alors qu\'il y a des projets.', then: 'Des filtres sont probablement actifs : clique sur « Tout afficher ».' },
+        ],
+      },
+      {
         id: 'gestes',
         title: 'Déplacer et ajuster à la souris ou au clavier',
         who: 'Administrateur et responsable.',

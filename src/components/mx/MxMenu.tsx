@@ -297,7 +297,10 @@ const PANEL_BASE: CSSProperties = {
   border: 'var(--mx-border-w-thin) solid var(--mx-border)',
   borderRadius: 'var(--mx-radius-6)',
   boxShadow: 'var(--mx-elev-3)',
-  overflow: 'hidden',
+  // Une longue liste (ex. toutes les personnes d'une entreprise) défile au lieu de sortir de l'écran
+  maxHeight: 'min(70vh, 480px)',
+  overflowX: 'hidden',
+  overflowY: 'auto',
   padding: 'var(--mx-space-4) 0',
   outline: 'none',
 };
