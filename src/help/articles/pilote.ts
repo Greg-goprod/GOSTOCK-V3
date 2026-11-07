@@ -145,6 +145,21 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'modeles',
+        title: 'Utiliser et créer des modèles de projet',
+        who: 'Créer : administrateur et responsable. Voir : toute personne qui voit les projets.',
+        steps: [
+          { text: 'Sur la page « Projets », ouvre l\'onglet « Modèles ». Un modèle est un projet type : ses phases, tâches, jalons, dépendances et listes à cocher, sans équipe ni assignation. Il n\'apparaît ni dans le Gantt, ni dans la liste des projets, et n\'envoie aucun avis.' },
+          { text: 'Pour partir de zéro, clique sur « Ajouter les modèles de départ » : trois modèles sont créés (Montage d\'un événement, Recrutement, Conception / R&D). Rien n\'est créé sans ce clic, et ceux qui existent déjà ne sont pas recréés. Ce sont des bases à adapter à ton métier.' },
+          { text: 'Clique sur « Utiliser ce modèle », donne un nom et le jour de début : un vrai projet est créé, avec toutes ses dates décalées pour commencer ce jour-là. Il s\'ouvre aussitôt ; ajoute ensuite l\'équipe et les assignations.' },
+          { text: 'Pour faire un modèle de l\'un de tes projets, ouvre ce projet (« Modifier ») puis « Enregistrer comme modèle… » : le projet reste tel quel, et une copie sans équipe ni assignation rejoint « Modèles ».' },
+          { text: 'Pour changer un modèle : crée un projet depuis ce modèle, modifie-le, enregistre-le comme nouveau modèle, puis supprime l\'ancien (« Renommer » et « Supprimer » sont dans la carte du modèle).' },
+        ],
+        problems: [
+          { if: 'Je ne vois pas « Utiliser ce modèle ».', then: 'Il faut le droit de création sur les projets (administrateur ou responsable).' },
+        ],
+      },
+      {
         id: 'gestes',
         title: 'Déplacer et ajuster à la souris ou au clavier',
         who: 'Administrateur et responsable.',

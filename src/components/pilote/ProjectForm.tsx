@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, FileStack } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
@@ -24,6 +24,8 @@ interface Props {
   readOnly?: boolean;
   // Modification d'un projet existant : propose « Dupliquer… » (le parent ouvre la fenêtre de copie)
   onDuplicate?: (row: CpProject) => void;
+  // « Enregistrer comme modèle… » (droit de création) : copie le projet en modèle, sans équipe ni assignation
+  onSaveAsTemplate?: (row: CpProject) => void;
   // Arrivée par un avis de message : la discussion s'ouvre et vient à l'écran
   focus?: 'discussion';
 }
@@ -38,7 +40,7 @@ const inputClass = 'w-full rounded-md border border-gray-300 dark:border-gray-60
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 // Création / modification d'un projet : type, état, dates, équipe (responsables et membres), chantier de Logistique (type chantier)
-const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly = false, onDuplicate, focus }) => {
+const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly = false, onDuplicate, onSaveAsTemplate, focus }) => {
   const { users } = useApp();
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -217,7 +219,10 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
           {editedRow && <DocumentsSection projectId={editedRow.id} itemId={null} />}
           {editedRow && <DiscussionSection projectId={editedRow.id} itemId={null} autoOpen={focus === 'discussion'} />}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <div>{editedRow && onDuplicate && !readOnly && <Button variant="outline" icon={<Copy size={14} />} onClick={() => onDuplicate(editedRow)}>Dupliquer…</Button>}</div>
+            <div className="flex flex-wrap gap-2">
+              {editedRow && onDuplicate && !readOnly && <Button variant="outline" icon={<Copy size={14} />} onClick={() => onDuplicate(editedRow)}>Dupliquer…</Button>}
+              {editedRow && onSaveAsTemplate && !readOnly && <Button variant="outline" icon={<FileStack size={14} />} onClick={() => onSaveAsTemplate(editedRow)}>Enregistrer comme modèle…</Button>}
+            </div>
             <div className="flex gap-2">
             <Button variant="secondary" onClick={onClose}>{readOnly ? 'Fermer' : 'Annuler'}</Button>
             {!readOnly && <Button type="submit" loading={saving}>Enregistrer</Button>}

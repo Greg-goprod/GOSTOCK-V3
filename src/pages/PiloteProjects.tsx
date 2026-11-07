@@ -11,11 +11,12 @@ import ProjectsSection from '../components/pilote/ProjectsSection';
 import ItemDrawer from '../components/pilote/ItemDrawer';
 import MyTasks from '../components/pilote/MyTasks';
 import CalendarSettings from '../components/pilote/CalendarSettings';
+import TemplatesSection from '../components/pilote/TemplatesSection';
 import MenuButton from '../components/common/MenuButton';
 import PiloteGantt from './PiloteGantt';
 
-type Section = 'gantt' | 'projects' | 'mytasks' | 'statuses' | 'calendar';
-const VIEWS: Section[] = ['gantt', 'projects', 'mytasks'];
+type Section = 'gantt' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar';
+const VIEWS: Section[] = ['gantt', 'projects', 'mytasks', 'templates'];
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const Dot = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} />;
@@ -60,7 +61,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
   }, [itemParam]);
   useEffect(() => { if (projectParam) setSection('projects'); }, [projectParam]);
   const reload = useCallback(async () => {
-    try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], projects: [], members: [], sites: [] }); }
+    try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], projects: [], templates: [], members: [], sites: [] }); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
   const closeDeepItem = useCallback(() => setDeepItem(null), []);
@@ -94,6 +95,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
             { value: 'gantt', label: 'Gantt' },
             { value: 'projects', label: `Projets (${data.projects.length})` },
             { value: 'mytasks', label: 'Mes tâches' },
+            { value: 'templates', label: `Modèles (${data.templates.length})` },
           ]} />
           <MenuButton id="pilote-settings" menuLabel="Réglages des projets" iconOnly ariaLabel="Réglages des projets" icon={<Settings size={16} />}
             actions={[
@@ -111,6 +113,10 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
       )}
 
       {section === 'mytasks' && <MyTasks rights={rights} />}
+
+      {section === 'templates' && (
+        <TemplatesSection data={data} rights={rights} onChanged={reload} onCreated={id => { setSection('projects'); setParams(prev => { const next = new URLSearchParams(prev); next.set('project', id); return next; }, { replace: true }); }} />
+      )}
 
       {deepItem && (
         <ItemDrawer data={deepItem.data} target={{ mode: 'edit', itemId: deepItem.itemId }} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete}

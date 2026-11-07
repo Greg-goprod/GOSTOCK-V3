@@ -16,6 +16,7 @@ import { readMxViewMode, writeMxViewMode } from '../mx/mxViewModeStorage';
 import { ProjectCard } from './ProjectCard';
 import ProjectForm, { type ProjectTarget } from './ProjectForm';
 import DuplicateProjectForm from './DuplicateProjectForm';
+import { saveProjectAsTemplate } from './templateActions';
 
 interface Props {
   data: PiloteData;
@@ -178,7 +179,8 @@ const ProjectsSection: React.FC<Props> = ({ data, rights, onChanged, linkedProje
       )}
 
       <ProjectForm data={data} target={target} onClose={() => { setTarget(null); setFormFocus(undefined); }} onSaved={onChanged} readOnly={!rights.update} focus={formFocus}
-        onDuplicate={rights.create ? row => { setTarget(null); setDuplicating(row); } : undefined} />
+        onDuplicate={rights.create ? row => { setTarget(null); setDuplicating(row); } : undefined}
+        onSaveAsTemplate={rights.create ? row => { setTarget(null); void saveProjectAsTemplate(row).then(ok => { if (ok) void onChanged(); }); } : undefined} />
       <DuplicateProjectForm project={duplicating} onClose={() => setDuplicating(null)} onDone={id => { setDuplicating(null); setOpenAfter(id); void onChanged(); }} />
     </div>
   );

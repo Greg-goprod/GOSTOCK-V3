@@ -15,6 +15,8 @@ export interface CpProject {
   id: string; site_id: string | null; type: ProjectType; name: string; description: string | null;
   status_id: string; priority: ProjectPriority | null; color: string; starts_on: string | null; ends_on: string | null;
   link_mode: LinkMode; link_skip_weekends: boolean; updated_at?: string;
+  // Modèle de projet : il n'apparaît ni dans le Gantt ni dans les listes de projets (voir loadPilote), seulement dans « Modèles »
+  is_template?: boolean;
 }
 // Équipe d'un projet : « responsable » (lead) ou « membre ». Une tâche ne s'assigne qu'à quelqu'un de l'équipe.
 export type TeamRole = 'lead' | 'member';
@@ -63,6 +65,7 @@ export const PRIORITY_LABEL: Record<ProjectPriority, string> = { low: 'Basse', m
 export interface PiloteData {
   statuses: CpStatus[];
   projects: CpProject[];
+  templates: CpProject[];
   members: CpMember[];
   sites: CpSite[];
 }
@@ -93,9 +96,12 @@ export async function loadPilote(): Promise<PiloteData> {
   ]);
   const error = [statuses, projects, members, sites].map(r => r.error).find(Boolean);
   if (error) throw error;
+  // Les modèles sont rangés à part : le filtre se fait ici (et non dans la requête) pour que tout marche aussi avant l'ajout de la colonne
+  const all = (projects.data || []) as CpProject[];
   return {
     statuses: (statuses.data || []) as CpStatus[],
-    projects: (projects.data || []) as CpProject[],
+    projects: all.filter(p => !p.is_template),
+    templates: all.filter(p => p.is_template),
     members: (members.data || []) as CpMember[],
     sites: (sites.data || []) as CpSite[],
   };
@@ -111,7 +117,16 @@ export async function loadGantt(): Promise<GanttData> {
   ]);
   const error = [items, itemMembers, links].map(r => r.error).find(Boolean);
   if (error) throw error;
-  return { ...base, items: (items.data || []) as CpItem[], itemMembers: (itemMembers.data || []) as CpItemMember[], links: (links.data || []) as CpLink[], calendarDays };
+  // Rien d'un modèle dans le Gantt : ni ses éléments, ni ses dépendances
+  const templateIds = new Set(base.templates.map(t => t.id));
+  const keptItems = ((items.data || []) as CpItem[]).filter(i => !templateIds.has(i.project_id));
+  const keptIds = new Set(keptItems.map(i => i.id));
+  return {
+    ...base, items: keptItems,
+    itemMembers: ((itemMembers.data || []) as CpItemMember[]).filter(m => keptIds.has(m.item_id)),
+    links: ((links.data || []) as CpLink[]).filter(l => !templateIds.has(l.project_id)),
+    calendarDays,
+  };
 }
 
 export interface PiloteRights { create: boolean; update: boolean; delete: boolean }
@@ -256,6 +271,24 @@ export async function duplicateProject(args: { projectId: string; name: string; 
   });
   if (error) throw error;
   return data as string;
+}
+
+// Modèles de projet : un modèle est une copie sans équipe ni assignation (voir la migration 66). Les droits sont ceux de la personne.
+export async function saveAsTemplate(projectId: string, name: string): Promise<string> {
+  const { data, error } = await supabase.rpc('cp_save_as_template', { p_project: projectId, p_name: name });
+  if (error) throw error;
+  return data as string;
+}
+export async function createFromTemplate(templateId: string, name: string, start: string): Promise<string> {
+  const { data, error } = await supabase.rpc('cp_create_from_template', { p_template: templateId, p_name: name, p_start: start });
+  if (error) throw error;
+  return data as string;
+}
+// Crée, à la demande, les modèles de départ qui n'existent pas encore ; renvoie le nombre créé
+export async function seedStarterTemplates(): Promise<number> {
+  const { data, error } = await supabase.rpc('cp_seed_starter_templates');
+  if (error) throw error;
+  return Number(data ?? 0);
 }
 
 // Met à jour l'équipe d'un projet par différence : seules les personnes retirées sont supprimées (la base les désassigne alors

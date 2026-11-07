@@ -13,6 +13,7 @@ psql -q -f projects.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f items.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f links.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f calendar.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
+psql -q -f templates.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f team.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f notifications_pilote.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f duplicate.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true

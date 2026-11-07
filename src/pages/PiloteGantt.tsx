@@ -16,6 +16,7 @@ import PeriodControls from '../components/common/PeriodControls';
 import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
+import { saveProjectAsTemplate } from '../components/pilote/templateActions';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
 import DuplicateProjectForm from '../components/pilote/DuplicateProjectForm';
@@ -26,7 +27,7 @@ const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Z
 // Regroupements proposés
 const GROUPING_CHOICES: Grouping[] = ['status', 'type'];
 const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type' };
-const EMPTY: GanttData = { statuses: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [] };
+const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [] };
 
 // PILOTE › Gantt (module payant) : projets et leurs éléments sur une échelle de temps
 // `embedded` : affiché comme onglet de la page Projets, qui porte déjà le titre et l'introduction
@@ -238,7 +239,8 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />
       <ProjectForm data={data} target={projectTarget} readOnly={projectTarget?.mode === 'edit' && !rights.update} onClose={() => setProjectTarget(null)} onSaved={reload}
-        onDuplicate={rights.create ? row => { setProjectTarget(null); setDuplicating(row); } : undefined} />
+        onDuplicate={rights.create ? row => { setProjectTarget(null); setDuplicating(row); } : undefined}
+        onSaveAsTemplate={rights.create ? row => { setProjectTarget(null); void saveProjectAsTemplate(row).then(ok => { if (ok) void reload(); }); } : undefined} />
       <DuplicateProjectForm project={duplicating} onClose={() => setDuplicating(null)} onDone={id => { setDuplicating(null); setOpenAfter(id); void reload(); }} />
     </div>
   );
