@@ -8,8 +8,8 @@ import { isPreset, makePeriod, periodDays, type ViewPeriod } from '../lib/viewPe
 import { ITEM_KIND_LABEL, loadGantt, loadPiloteRights, piloteError, setDates, shiftItem, shiftProject, type GanttData, type ItemKind, type PiloteRights, type ProjectType, type CpProject } from '../lib/pilote';
 import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import { useApp } from '../contexts/AppContext';
-import { confirmAction, promptAction } from '../lib/confirm';
-import { filterGantt, hasFilters, isOverdue, NO_FILTERS, parseSavedViews, SAVED_VIEWS_KEY, type GanttFilters, type SavedView } from '../lib/ganttFilters';
+import { filterGantt, hasFilters, isOverdue } from '../lib/ganttFilters';
+import { useViewFilters } from '../components/pilote/useViewFilters';
 import PageTitle from '../components/common/PageTitle';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PeriodControls from '../components/common/PeriodControls';
@@ -42,9 +42,8 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const setColorBy = (v: ColorBy) => { setColorByState(v); try { localStorage.setItem('gomat-gantt-colorby', v); } catch { /* préférence facultative */ } };
   const setShowNames = (v: boolean) => { setShowNamesState(v); try { localStorage.setItem('gomat-gantt-names', v ? 'shown' : 'hidden'); } catch { /* préférence facultative */ } };
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // Recherche et filtres (non mémorisés : on repart de tout afficher) ; vues enregistrées sur cet appareil
-  const [filters, setFilters] = useState<GanttFilters>(NO_FILTERS);
-  const [views, setViews] = useState<SavedView[]>(() => { try { return parseSavedViews(localStorage.getItem(SAVED_VIEWS_KEY)); } catch { return []; } });
+  // Recherche, filtres et vues enregistrées (partagés avec le Tableau et le Calendrier)
+  const { filters, setFilters, views, saveView, deleteView, applyView } = useViewFilters(grouping, setGrouping);
   const { users } = useApp();
   const [itemTarget, setItemTarget] = useState<ItemTarget | null>(null);
   const [projectTarget, setProjectTarget] = useState<ProjectTarget | null>(null);
@@ -97,20 +96,6 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const undated = useMemo(() => undatedRows(model), [model]);
   const nonWorkingDays = useMemo(() => new Map((data?.calendarDays ?? []).map(d => [d.day, d.label])), [data]);
   const projectName = useMemo(() => new Map((data?.projects ?? []).map(p => [p.id, p.name])), [data]);
-
-  const storeViews = (next: SavedView[]) => { setViews(next); try { localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next)); } catch { toast.error('Impossible d\'enregistrer la vue sur cet appareil'); } };
-  const saveView = async () => {
-    const name = (await promptAction('Nom de la vue', ''))?.trim();
-    if (!name) return;
-    if (views.some(v => v.name.toLowerCase() === name.toLowerCase()) && !(await confirmAction(`Remplacer la vue « ${name} » ?`))) return;
-    storeViews([...views.filter(v => v.name.toLowerCase() !== name.toLowerCase()), { id: crypto.randomUUID(), name, filters, grouping }]);
-    toast.success('Vue enregistrée');
-  };
-  const deleteView = async (v: SavedView) => {
-    if (!(await confirmAction(`Supprimer la vue « ${v.name} » ?`))) return;
-    storeViews(views.filter(x => x.id !== v.id));
-  };
-  const applyView = (v: SavedView) => { setGrouping(v.grouping); setFilters(v.filters); };
 
   const toggle = (key: string) => setExpanded(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const openRow = (row: GanttRow) => {

@@ -117,6 +117,20 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'tableau-calendrier',
+        title: 'Le Tableau par état et le Calendrier',
+        steps: [
+          { text: 'Sur la page « Projets », l\'onglet « Tableau » range tes tâches et jalons en colonnes, une par état (Pas commencé, En cours, Terminé…). Le bouton « Projets » en haut du tableau affiche à la place les projets eux-mêmes.' },
+          { text: 'Pour changer l\'état d\'une carte, glisse-la dans une autre colonne (réservé à qui peut modifier), ou ouvre le menu « … » de la carte puis « Déplacer vers » : c\'est la méthode au clavier et au téléphone. Si quelqu\'un a modifié la carte entre-temps, elle n\'est pas écrasée : un message te le dit et le tableau se recharge.' },
+          { text: 'Un clic sur le nom d\'une carte ouvre sa fiche. Les phases n\'ont pas de carte (elles regroupent des tâches qui ont la leur). Un triangle rouge et une date en rouge signalent un retard.' },
+          { text: 'L\'onglet « Calendrier » montre les éléments datés sur un mois ou une semaine : chaque élément est une barre qui le suit d\'un bout à l\'autre, les week-ends sont grisés, les jours fériés et fermetures du calendrier de travail sont en ambre, et aujourd\'hui est entouré. S\'il y a trop d\'éléments un jour, « +n » ouvre la semaine.' },
+          { text: 'Les mêmes recherche, filtres (personne, état, priorité, type, en retard) et vues enregistrées que le Gantt sont proposés dans le Tableau et le Calendrier.' },
+        ],
+        problems: [
+          { if: 'Un élément n\'apparaît pas dans le Calendrier.', then: 'Il n\'a probablement pas de date : place-le depuis le Gantt (menu « Sans date »). Un filtre actif peut aussi le masquer : « Tout afficher ».' },
+        ],
+      },
+      {
         id: 'filtrer',
         title: 'Chercher, filtrer et retrouver les retards',
         steps: [
