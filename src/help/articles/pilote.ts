@@ -172,6 +172,18 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'synthese',
+        title: 'La Synthèse : l\'état de santé des projets',
+        steps: [
+          { text: 'L\'onglet « Synthèse » de la page « Projets » donne la vue d\'ensemble : projets en cours, projets en retard, éléments en retard, échéances sous 14 jours, personnes en surcharge sur 4 semaines et tâches à estimer.' },
+          { text: 'Le tableau « Santé des projets » les classe du plus risqué au moins risqué. « À risque » : le projet est en retard (sa fin est passée) ou un élément du chemin critique est en retard. « À surveiller » : au moins un élément est en retard, ou la fin a glissé par rapport à la ligne de base. « Dans les temps » : rien de tout cela. « Clos » : terminé ou annulé. La colonne « Pourquoi » donne les raisons.' },
+          { text: 'Dessous, les échéances des 14 prochains jours (tâches, sous-tâches et jalons pas terminés) et les surcharges des 4 prochaines semaines (voir « Charge »). Un clic sur un projet ou une échéance ouvre sa fiche.' },
+        ],
+        problems: [
+          { if: 'Un projet est « Dans les temps » alors que je le crois en retard.', then: 'La santé se calcule sur les dates et les états saisis : un élément dont l\'état n\'a pas été mis à jour reste « en cours » ; une tâche sans date n\'est jamais en retard.' },
+        ],
+      },
+      {
         id: 'filtrer',
         title: 'Chercher, filtrer et retrouver les retards',
         steps: [

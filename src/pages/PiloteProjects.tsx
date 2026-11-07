@@ -17,9 +17,10 @@ import PiloteGantt from './PiloteGantt';
 import PiloteBoard from './PiloteBoard';
 import PiloteCalendar from './PiloteCalendar';
 import PiloteWorkload from './PiloteWorkload';
+import PiloteDashboard from './PiloteDashboard';
 
-type Section = 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar';
-const VIEWS: Section[] = ['gantt', 'board', 'agenda', 'workload', 'projects', 'mytasks', 'templates'];
+type Section = 'dashboard' | 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar';
+const VIEWS: Section[] = ['dashboard', 'gantt', 'board', 'agenda', 'workload', 'projects', 'mytasks', 'templates'];
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const Dot = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} />;
@@ -95,6 +96,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <MxSegmented aria-label="Vues des projets" value={section} onChange={v => setSection(v as Section)} options={[
+            { value: 'dashboard', label: 'Synthèse' },
             { value: 'gantt', label: 'Gantt' },
             { value: 'board', label: 'Tableau' },
             { value: 'agenda', label: 'Calendrier' },
@@ -110,6 +112,8 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
             ]} />
         </div>
       )}
+
+      {section === 'dashboard' && <PiloteDashboard />}
 
       {section === 'gantt' && <PiloteGantt embedded />}
 
