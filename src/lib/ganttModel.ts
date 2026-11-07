@@ -187,6 +187,18 @@ export const xOfDay = (s: Scale, day: string | number) => ((typeof day === 'numb
 // Une barre couvre les jours de début et de fin inclus
 export const barBox = (s: Scale, start: string, end: string) => ({ left: xOfDay(s, start), width: Math.max((dayToNumber(end) - dayToNumber(start) + 1) * s.px, 3) });
 export const isWeekend = (n: number) => { const d = new Date(n * 86_400_000).getUTCDay(); return d === 0 || d === 6; };
+// Cases des jours non travaillés du calendrier (hors week-ends, déjà teintés à part)
+export const nonWorkingBoxes = (s: Scale, days: ReadonlySet<string>): { left: number; width: number; day: string }[] => {
+  const out: { left: number; width: number; day: string }[] = [];
+  if (s.px < 3 || days.size === 0) return out;
+  for (let i = 0; i < s.days; i++) {
+    const n = s.startDay + i;
+    if (isWeekend(n)) continue;
+    const day = numberToDay(n);
+    if (days.has(day)) out.push({ left: i * s.px, width: s.px, day });
+  }
+  return out;
+};
 export const weekendBoxes = (s: Scale): { left: number; width: number }[] => {
   const out: { left: number; width: number }[] = [];
   if (s.px < 3) return out;

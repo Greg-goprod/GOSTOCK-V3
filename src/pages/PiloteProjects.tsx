@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ListChecks, Settings } from 'lucide-react';
+import { ArrowLeft, CalendarOff, ListChecks, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { FAMILY_LABEL, FAMILY_ORDER, loadGantt, loadPilote, loadPiloteRights, piloteError, STATE_COLORS, type CpStatus, type GanttData, type PiloteData, type PiloteRights } from '../lib/pilote';
 import PageTitle from '../components/common/PageTitle';
@@ -10,10 +10,11 @@ import { CrudSection } from '../components/sitePlanning/CrudSection';
 import ProjectsSection from '../components/pilote/ProjectsSection';
 import ItemDrawer from '../components/pilote/ItemDrawer';
 import MyTasks from '../components/pilote/MyTasks';
+import CalendarSettings from '../components/pilote/CalendarSettings';
 import MenuButton from '../components/common/MenuButton';
 import PiloteGantt from './PiloteGantt';
 
-type Section = 'gantt' | 'projects' | 'mytasks' | 'statuses';
+type Section = 'gantt' | 'projects' | 'mytasks' | 'statuses' | 'calendar';
 const VIEWS: Section[] = ['gantt', 'projects', 'mytasks'];
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
@@ -72,7 +73,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
 
   if (!data) return <p className="text-gray-500 dark:text-gray-400 font-medium">Chargement…</p>;
 
-  const settingsOpen = section === 'statuses';
+  const settingsOpen = section === 'statuses' || section === 'calendar';
 
   return (
     <div className="space-y-4">
@@ -95,7 +96,10 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
             { value: 'mytasks', label: 'Mes tâches' },
           ]} />
           <MenuButton id="pilote-settings" menuLabel="Réglages des projets" iconOnly ariaLabel="Réglages des projets" icon={<Settings size={16} />}
-            actions={[{ id: 'statuses', label: `États d'avancement (${data.statuses.length})`, icon: ListChecks, onSelect: () => setSection('statuses') }]} />
+            actions={[
+              { id: 'statuses', label: `États d'avancement (${data.statuses.length})`, icon: ListChecks, onSelect: () => setSection('statuses') },
+              { id: 'calendar', label: 'Calendrier de travail', icon: CalendarOff, onSelect: () => setSection('calendar') },
+            ]} />
         </div>
       )}
 
@@ -112,6 +116,8 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
         <ItemDrawer data={deepItem.data} target={{ mode: 'edit', itemId: deepItem.itemId }} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete}
           focus={deepItem.focus} onClose={closeDeepItem} onSaved={refreshDeepItem} />
       )}
+
+      {section === 'calendar' && <CalendarSettings rights={rights} />}
 
       {section === 'statuses' && (
         <CrudSection<CpStatus>

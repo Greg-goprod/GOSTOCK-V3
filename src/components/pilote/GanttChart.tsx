@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { dayFromNumber, dayNumberOf } from '../../lib/ganttModel';
-import { clipBar, isWeekend, linkPaths, makeHeader, makeScale, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
+import { clipBar, isWeekend, linkPaths, makeHeader, makeScale, nonWorkingBoxes, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
 import { isOverdue } from '../../lib/ganttFilters';
 import { allowedKinds, ITEM_KIND_LABEL, type ItemKind } from '../../lib/pilote';
@@ -34,6 +34,8 @@ interface Props {
   onJump?: (row: GanttRow) => void;
   // Barre fantôme : survoler la frise sur une ligne SANS date propose une plage, un clic la donne à l'élément (droit de modification requis)
   onPlace?: (row: GanttRow, start: string, end: string) => Promise<void>;
+  // Jours fériés et fermetures de l'entreprise (date → libellé) : teintés en ambre, comme les week-ends le sont en gris
+  nonWorkingDays?: ReadonlyMap<string, string>;
 }
 
 const BAR_H: Record<GanttRow['kind'], number> = { group: 8, project: 22, phase: 18, task: 20, subtask: 14, milestone: 14, add: 0 };
@@ -85,7 +87,7 @@ const InlineAdd: React.FC<{ row: GanttRow; onCreate: Props['onCreate'] }> = ({ r
   );
 };
 
-const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate, showNames = true, onJump, onPlace }) => {
+const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate, showNames = true, onJump, onPlace, nonWorkingDays }) => {
   const box = useRef<HTMLDivElement>(null);
   // Colonne des noms plus étroite sur téléphone, pour laisser de la place aux barres
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
@@ -110,6 +112,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
   const scale = useMemo(() => makeScale(period, Math.max(width - NAME_W - 2, 120)), [period, width, NAME_W]);
   const header = useMemo(() => makeHeader(scale, locale), [scale, locale]);
   const weekends = useMemo(() => weekendBoxes(scale), [scale]);
+  const holidayBoxes = useMemo(() => nonWorkingBoxes(scale, new Set(nonWorkingDays?.keys() ?? [])), [scale, nonWorkingDays]);
   const totalW = scale.days * scale.px;
   const arrows = useMemo(() => linkPaths(rows, links, scale, ROW_H), [rows, links, scale]);
   const bodyH = rows.length * ROW_H;
@@ -246,6 +249,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
         {/* Barres */}
         <div className="relative" style={{ height: bodyH, backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H - 1}px, rgba(148,163,184,.25) ${ROW_H}px)` }}>
           {weekends.map((w, i) => <div key={i} aria-hidden className="absolute top-0 bg-gray-500/5 dark:bg-white/5" style={{ left: w.left, width: w.width, height: bodyH }} />)}
+          {holidayBoxes.map(h => <div key={h.day} aria-hidden data-non-working={h.day} className="absolute top-0 bg-amber-500/10 dark:bg-amber-400/10" style={{ left: h.left, width: h.width, height: bodyH }} />)}
           {arrows.length > 0 && (
             <svg aria-hidden className="pointer-events-none absolute left-0 top-0 z-[7]" width={totalW} height={bodyH} style={{ overflow: 'visible' }}>
               <defs>

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../contexts/AppContext';
 import { confirmAction } from '../../lib/confirm';
+import { workingDaysBetween } from '../../lib/holidays';
 import { addLink, allowedKinds, descendantsOf, ITEM_KIND_LABEL, LINK_MODE_LABEL, parentKindsFor, piloteError, removeLink, PRIORITY_LABEL, isConflict, saveItemMembers, TEAM_ROLE_LABEL, updateIfUnchanged, type GanttData, type ItemKind, type ProjectPriority } from '../../lib/pilote';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -55,6 +56,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
   const versionStale = useRef(false);
   const people = useMemo(() => users.filter(u => u.active !== false).sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`, 'fr')), [users]);
   // Seules les personnes de l'équipe du projet peuvent être assignées (règle de la base) ; responsables en premier
+  const nonWorking = useMemo(() => new Set((data.calendarDays ?? []).map(d => d.day)), [data.calendarDays]);
   const team = useMemo(() => {
     const roleOf = new Map(data.members.filter(m => m.project_id === form?.projectId).map(m => [m.user_id, m.role]));
     return people.filter(u => roleOf.has(u.id)).map(u => ({ ...u, role: roleOf.get(u.id) })).sort((a, b) => Number(b.role === 'lead') - Number(a.role === 'lead'));
@@ -287,6 +289,11 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
               <div className="sm:col-span-2">
                 <label htmlFor="itm-period" className={labelClass}>Période (début et fin)</label>
                 <DateRangeInput id="itm-period" className={inputClass} start={form.starts_on} end={form.ends_on} disabled={readOnly} onChange={(a, b) => { datesTouched.current = true; set({ starts_on: a, ends_on: b }); }} placeholder="Choisir le début et la fin" />
+                {form.starts_on && form.ends_on && form.ends_on >= form.starts_on && (
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400" data-working-days>
+                    {(() => { const n = workingDaysBetween(form.starts_on, form.ends_on, nonWorking); return `${n} jour${n > 1 ? 's' : ''} ouvré${n > 1 ? 's' : ''} (sans week-ends ni jours non travaillés)`; })()}
+                  </p>
+                )}
               </div>
             )}
             <div className="sm:col-span-2">

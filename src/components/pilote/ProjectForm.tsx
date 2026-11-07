@@ -209,7 +209,7 @@ const ProjectForm: React.FC<Props> = ({ data, target, onClose, onSaved, readOnly
               </select>
               <label className="mt-2 flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
                 <input type="checkbox" checked={form.link_skip_weekends} onChange={e => set({ link_skip_weekends: e.target.checked })} />
-                Éviter les week-ends (un élément décalé automatiquement ne commence pas un samedi ou un dimanche)
+                Éviter les week-ends et les jours non travaillés (un élément décalé automatiquement ne commence ni un samedi, ni un dimanche, ni un jour férié ou une fermeture du calendrier de travail)
               </label>
             </fieldset>
             </fieldset>

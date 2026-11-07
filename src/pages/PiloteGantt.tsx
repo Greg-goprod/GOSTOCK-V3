@@ -26,7 +26,7 @@ const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Z
 // Regroupements proposés
 const GROUPING_CHOICES: Grouping[] = ['status', 'type'];
 const GROUPING_LABEL: Record<Grouping, string> = { status: 'État', type: 'Type' };
-const EMPTY: GanttData = { statuses: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [] };
+const EMPTY: GanttData = { statuses: [], projects: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [] };
 
 // PILOTE › Gantt (module payant) : projets et leurs éléments sur une échelle de temps
 // `embedded` : affiché comme onglet de la page Projets, qui porte déjà le titre et l'introduction
@@ -94,6 +94,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
   const startDay = model.range ? (today < model.range.min ? model.range.min : today > model.range.max ? model.range.max : today) : today;
   const rows = useMemo(() => (rights.create ? withAddRows(visibleRows(model, expanded), expanded) : visibleRows(model, expanded)), [model, expanded, rights.create]);
   const undated = useMemo(() => undatedRows(model), [model]);
+  const nonWorkingDays = useMemo(() => new Map((data?.calendarDays ?? []).map(d => [d.day, d.label])), [data]);
   const projectName = useMemo(() => new Map((data?.projects ?? []).map(p => [p.id, p.name])), [data]);
 
   const storeViews = (next: SavedView[]) => { setViews(next); try { localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next)); } catch { toast.error('Impossible d\'enregistrer la vue sur cet appareil'); } };
@@ -232,7 +233,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
       ) : (
         <GanttChart rows={rows} links={data.links} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
           onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline}
-          showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} />
+          showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} nonWorkingDays={nonWorkingDays} />
       )}
 
       <ItemDrawer data={data} target={itemTarget} canUpdate={rights.update} canCreate={rights.create} canDelete={rights.delete} onClose={() => setItemTarget(null)} onSaved={reload} />

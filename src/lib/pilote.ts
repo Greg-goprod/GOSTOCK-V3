@@ -72,6 +72,16 @@ export interface GanttData extends PiloteData {
   items: CpItem[];
   itemMembers: CpItemMember[];
   links: CpLink[];
+  calendarDays: CpCalendarDay[];
+}
+
+// Jours non travaillés de l'entreprise (fériés, fermetures) : le Gantt les teinte, la cascade des dépendances les évite
+export interface CpCalendarDay { id: string; day: string; label: string; kind: 'holiday' | 'closure' }
+export const CALENDAR_KIND_LABEL: Record<CpCalendarDay['kind'], string> = { holiday: 'Jour férié', closure: 'Fermeture' };
+// Lecture tolérante : tant que la migration du calendrier n'est pas appliquée, la table n'existe pas → calendrier vide (rien ne casse)
+export async function loadCalendarDays(): Promise<CpCalendarDay[]> {
+  const { data, error } = await supabase.from('cp_calendar_days').select('id, day, label, kind').order('day');
+  return error ? [] : ((data || []) as CpCalendarDay[]);
 }
 
 export async function loadPilote(): Promise<PiloteData> {
@@ -92,15 +102,16 @@ export async function loadPilote(): Promise<PiloteData> {
 }
 
 export async function loadGantt(): Promise<GanttData> {
-  const [base, items, itemMembers, links] = await Promise.all([
+  const [base, items, itemMembers, links, calendarDays] = await Promise.all([
     loadPilote(),
     supabase.from('cp_items').select('*').order('position').order('starts_on', { nullsFirst: false }).order('name'),
     supabase.from('cp_item_members').select('item_id, user_id'),
     supabase.from('cp_item_links').select('id, project_id, predecessor_id, successor_id'),
+    loadCalendarDays(),
   ]);
   const error = [items, itemMembers, links].map(r => r.error).find(Boolean);
   if (error) throw error;
-  return { ...base, items: (items.data || []) as CpItem[], itemMembers: (itemMembers.data || []) as CpItemMember[], links: (links.data || []) as CpLink[] };
+  return { ...base, items: (items.data || []) as CpItem[], itemMembers: (itemMembers.data || []) as CpItemMember[], links: (links.data || []) as CpLink[], calendarDays };
 }
 
 export interface PiloteRights { create: boolean; update: boolean; delete: boolean }

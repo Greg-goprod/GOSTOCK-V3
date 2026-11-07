@@ -131,6 +131,20 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'calendrier',
+        title: 'Régler le calendrier de travail (jours fériés et fermetures)',
+        who: 'Administrateur et responsable.',
+        steps: [
+          { text: 'Sur la page « Projets », ouvre l\'icône des réglages (engrenage) puis « Calendrier de travail ». Les samedis et dimanches sont toujours non travaillés ; ici tu ajoutes les jours fériés et les fermetures de ton entreprise.' },
+          { text: 'Choisis l\'année, coche les jours fériés courants qui s\'appliquent chez toi (les 7 plus répandus en Suisse sont cochés d\'avance) puis clique sur « Ajouter ». Ce sont des propositions : les jours fériés changent selon le canton, vérifie la liste. Les fêtes mobiles (Pâques, Ascension, Pentecôte, Fête-Dieu, Jeûnes) sont calculées pour l\'année choisie.' },
+          { text: 'Pour une fermeture annuelle ou un pont, utilise « Ajouter un jour » : date, nom, type (« Jour férié » ou « Fermeture »). La corbeille retire un jour.' },
+          { text: 'Effets : ces jours sont teintés en ambre dans le Gantt ; une fiche indique son nombre de jours ouvrés (sans week-ends ni jours non travaillés) ; et le décalage automatique d\'une dépendance ne fait pas commencer un élément ces jours-là, si « Éviter les week-ends et les jours non travaillés » est coché dans le projet (case cochée par défaut).' },
+        ],
+        problems: [
+          { if: 'Un élément décalé commence quand même un jour férié.', then: 'Vérifie que la case « Éviter les week-ends et les jours non travaillés » est cochée dans les réglages de dépendances du projet (« Modifier le projet » › « Afficher les détails »), et que ce jour figure bien dans le calendrier de l\'année.' },
+        ],
+      },
+      {
         id: 'gestes',
         title: 'Déplacer et ajuster à la souris ou au clavier',
         who: 'Administrateur et responsable.',
