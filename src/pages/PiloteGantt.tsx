@@ -17,6 +17,9 @@ import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
 import ExportMenu from '../components/pilote/ExportMenu';
+import { useUndo } from '../components/pilote/useUndo';
+import { usePiloteShortcuts } from '../components/pilote/usePiloteShortcuts';
+import ShortcutsHelp from '../components/pilote/ShortcutsHelp';
 import { criticalPath } from '../lib/criticalPath';
 import { freezeBaseline, removeBaseline } from '../components/pilote/baselineActions';
 import { saveProjectAsTemplate } from '../components/pilote/templateActions';
@@ -101,6 +104,12 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
     if (p.preset !== 'custom') { try { localStorage.setItem('gomat-gantt-period', p.preset); } catch { /* préférence facultative */ } }
   };
 
+  usePiloteShortcuts({
+    '/': () => (document.querySelector('[role="search"] input[type="search"]') as HTMLInputElement | null)?.focus(),
+    n: () => { if (rights.create) setProjectTarget({ mode: 'new' }); },
+    t: () => { if (period) changePeriod(period.preset === 'custom' ? { preset: 'custom', start: today, end: dayFromNumber(dayNumberOf(today) + periodDays(period) - 1) } : makePeriod(period.preset, today)); },
+    'ctrl+z': () => void undoLast(),
+  });
   // Jour montré à l'ouverture : aujourd'hui s'il est dans le plan, sinon le bord le plus proche du plan (pour voir des barres tout de suite)
   const startDay = model.range ? (today < model.range.min ? model.range.min : today > model.range.max ? model.range.max : today) : today;
   const rows = useMemo(() => (rights.create ? withAddRows(visibleRows(model, expanded), expanded) : visibleRows(model, expanded)), [model, expanded, rights.create]);
@@ -128,16 +137,23 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
 
   // Gestes du Gantt : un seul enregistrement à la fois (une touche maintenue ne doit pas empiler des requêtes)
   const busy = useRef(false);
-  const run = async (action: () => Promise<void>, done: string) => {
+  const { push, undoLast } = useUndo(reload);
+  // Avec « undo », le geste est annulable (notification « Annuler » et Ctrl+Z) ; sans, simple confirmation
+  const run = async (action: () => Promise<void>, done: string, undo?: () => Promise<void>) => {
     if (busy.current) return;
     busy.current = true;
-    try { await action(); toast.success(done); await reload(); } catch (e) { toast.error(piloteError(e)); await reload(); } finally { busy.current = false; }
+    try { await action(); if (undo) push(done, undo); else toast.success(done); await reload(); } catch (e) { toast.error(piloteError(e)); await reload(); } finally { busy.current = false; }
   };
   const moveRow = (row: GanttRow, days: number) => run(
     () => (row.kind === 'project' ? shiftProject(row.id as string, days) : shiftItem(row.id as string, days)),
     days > 0 ? `Décalé de ${days} jour${days > 1 ? 's' : ''}` : `Avancé de ${-days} jour${days < -1 ? 's' : ''}`,
+    () => (row.kind === 'project' ? shiftProject(row.id as string, -days) : shiftItem(row.id as string, -days)),
   );
-  const resizeRow = (row: GanttRow, start: string, end: string) => run(() => setDates(row.kind === 'project' ? 'project' : 'item', row.id as string, start, end), 'Dates modifiées');
+  // Annuler un changement de dates remet les dates d'origine de CET élément ; les éléments liés déjà décalés par la dépendance ne sont pas restaurés
+  const resizeRow = (row: GanttRow, start: string, end: string) => run(
+    () => setDates(row.kind === 'project' ? 'project' : 'item', row.id as string, start, end), 'Dates modifiées',
+    row.ownStart && row.ownEnd ? () => setDates(row.kind === 'project' ? 'project' : 'item', row.id as string, row.ownStart as string, row.ownEnd as string) : undefined,
+  );
 
   // « + Nouveau » dans la liste : crée l'élément sous son parent, avec une semaine à partir du début du parent (ou d'aujourd'hui) pour qu'il apparaisse tout de suite
   const createInline = async (row: GanttRow, name: string, kind: ItemKind): Promise<boolean> => {
@@ -202,6 +218,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
                 onSelect: () => { if (rights.update) void place(r); else openRow(r); },
               })) }]} />
           )}
+          <ShortcutsHelp rows={[{ keys: '/', what: 'Chercher' }, { keys: 'n', what: 'Nouveau projet' }, { keys: 't', what: 'Revenir à aujourd\'hui' }, { keys: 'Ctrl+Z', what: 'Annuler le dernier geste (déplacement, dates)' }]} />
           <ExportMenu data={shownData} userName={id => userNames.get(id) ?? '—'} today={today} printable />
           <MenuButton id="gantt-more" menuLabel="Affichage" iconOnly ariaLabel="Plus d'options d'affichage" icon={<MoreHorizontal size={16} />}
             groups={[{ id: 'marks', label: 'Repères', items: [

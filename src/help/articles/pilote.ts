@@ -184,6 +184,19 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'historique-groupe',
+        title: 'Historique, modifications groupées, annuler et raccourcis',
+        steps: [
+          { text: 'Historique : ouvre une tâche ou un projet puis la section « Historique » (repliée au départ). Elle liste, du plus récent au plus ancien, qui a changé quoi et quand : nom, état, priorité, dates, estimation, parent… (la description indique seulement « modifiée »). Toute personne qui voit le projet peut la lire. Elle montre les 100 derniers changements.' },
+          { text: 'Modifications groupées (onglet « Tableau ») : coche la case de plusieurs cartes. Une barre apparaît : « État », « Priorité », « Assigner à » (une personne de l\'équipe du projet), « Décaler… » (de n jours, négatif pour avancer) et « Supprimer » (avec confirmation). Chaque action part en une seule requête ; si certaines cartes ne sont pas modifiables (droits), la notification indique « n sur m modifiés ».' },
+          { text: 'Annuler : après un changement d\'état (une carte ou plusieurs), un décalage groupé, un déplacement ou un changement de dates dans le Gantt, une notification propose « Annuler » pendant quelques secondes ; Ctrl+Z défait la dernière action de la vue (jusqu\'à 20). Limites : annuler des dates remet celles de cet élément mais pas celles des éléments liés que la dépendance avait déjà décalés ; une suppression ne s\'annule pas ; la pile d\'annulation se vide quand tu quittes la vue.' },
+          { text: 'Raccourcis (hors saisie et quand aucune fiche n\'est ouverte) : « / » cherche, « n » crée (projet dans le Gantt, tâche dans le Tableau), « t » revient à aujourd\'hui (Gantt et Calendrier), les flèches ← → changent de période (Calendrier), Ctrl+Z annule, « ? » affiche l\'aide. Le bouton clavier de la barre d\'outils ouvre la même aide.' },
+        ],
+        problems: [
+          { if: 'Un raccourci ne marche pas.', then: 'Il ne marche pas quand le curseur est dans un champ de texte, quand une fiche ou une fenêtre est ouverte, ou avec les touches Alt/Ctrl enfoncées (sauf Ctrl+Z).' },
+        ],
+      },
+      {
         id: 'filtrer',
         title: 'Chercher, filtrer et retrouver les retards',
         steps: [

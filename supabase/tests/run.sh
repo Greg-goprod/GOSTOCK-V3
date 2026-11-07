@@ -17,6 +17,7 @@ psql -q -f templates.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f charge.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f baseline.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f restore_pilote.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
+psql -q -f history.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f team.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f notifications_pilote.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f duplicate.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true

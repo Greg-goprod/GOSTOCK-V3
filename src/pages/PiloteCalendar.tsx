@@ -13,6 +13,8 @@ import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
 import ExportMenu from '../components/pilote/ExportMenu';
 import { useViewFilters } from '../components/pilote/useViewFilters';
+import { usePiloteShortcuts } from '../components/pilote/usePiloteShortcuts';
+import ShortcutsHelp from '../components/pilote/ShortcutsHelp';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [], baselines: [] };
@@ -57,6 +59,10 @@ const PiloteCalendar: React.FC = () => {
   const go = (delta: number) => (view === 'month' ? setMonth(m => shiftMonth(m, delta)) : setWeekStart(w => addDays(w, 7 * delta)));
   const goToday = () => { setMonth(today.slice(0, 7)); setWeekStart(mondayOf(today)); };
   const openWeek = (start: string) => { setWeekStart(start); setView('week'); };
+  usePiloteShortcuts({
+    '/': () => (document.querySelector('[role="search"] input[type="search"]') as HTMLInputElement | null)?.focus(),
+    t: goToday, ArrowLeft: () => go(-1), ArrowRight: () => go(1),
+  });
 
   if (!data) return <p className="text-gray-500 dark:text-gray-400 font-medium">Chargement…</p>;
 
@@ -70,6 +76,7 @@ const PiloteCalendar: React.FC = () => {
           <h2 className="ml-1 text-base font-bold capitalize text-gray-900 dark:text-white" aria-live="polite" data-calendar-title>{title}</h2>
         </div>
         <div className="flex items-center gap-2">
+          <ShortcutsHelp rows={[{ keys: '/', what: 'Chercher' }, { keys: 't', what: 'Revenir à aujourd\'hui' }, { keys: '←  →', what: 'Période précédente / suivante' }]} />
           <ExportMenu data={shown} userName={id => userNames.get(id) ?? '—'} today={today} printable />
           <MxSegmented aria-label="Période du calendrier" value={view} onChange={v => { if (v === 'week') setWeekStart(mondayOf(month === today.slice(0, 7) ? today : `${month}-01`)); setView(v as 'month' | 'week'); }}
             options={[{ value: 'month', label: 'Mois' }, { value: 'week', label: 'Semaine' }]} />
