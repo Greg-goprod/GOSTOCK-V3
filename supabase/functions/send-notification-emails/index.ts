@@ -371,6 +371,8 @@ const BACKUP_TABLES = [
   'cp_contractors', 'cp_site_config', 'cp_site_blocked_days', 'cp_site_zones', 'cp_site_phases', 'cp_site_teams', 'cp_site_interventions', 'cp_site_intervention_needs',
   // Projets PILOTE (R2b, R3a) : états d'abord, puis projets, puis éléments, responsables et listes à cocher
   'cp_statuses', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links', 'cp_comments', 'cp_documents', 'cp_notification_prefs',
+  // Calendrier de travail, capacités et lignes de base (migrations 65, 67, 68) : les lignes de base après les projets et les éléments
+  'cp_calendar_days', 'cp_user_capacity', 'cp_baseline_dates',
   'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const KEEP_BACKUPS = 12;
