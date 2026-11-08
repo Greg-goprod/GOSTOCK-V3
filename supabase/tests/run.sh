@@ -20,6 +20,7 @@ psql -q -f restore_pilote.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f budget.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f resources.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f p11.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
+psql -q -f p13.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f history.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f team.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true
 psql -q -f notifications_pilote.sql | grep -E "ECHEC|^ +[0-9]+ +\|" || true

@@ -373,8 +373,8 @@ const BACKUP_TABLES = [
   'cp_contractors', 'cp_site_config', 'cp_site_blocked_days', 'cp_site_zones', 'cp_site_phases', 'cp_site_teams', 'cp_site_interventions', 'cp_site_intervention_needs',
   // Projets PILOTE (R2b, R3a) : états d'abord, puis projets, puis éléments, responsables et listes à cocher
   'cp_statuses', 'cp_projects', 'cp_project_members', 'cp_items', 'cp_item_members', 'cp_item_checks', 'cp_item_links', 'cp_comments', 'cp_documents', 'cp_notification_prefs',
-  // Calendrier de travail, capacités, lignes de base (migrations 65, 67, 68), budget et taux horaires (71), matériel et véhicules des tâches (72) : après les projets, les éléments, les personnes, le matériel et les véhicules
-  'cp_calendar_days', 'cp_user_capacity', 'cp_baseline_dates', 'cp_budget_lines', 'cp_user_rates', 'cp_item_resources',
+  // Calendrier de travail, capacités, lignes de base (migrations 65, 67, 68), budget et taux horaires (71), matériel et véhicules des tâches (72), intervenants externes et temps passé (74) : après les projets, les éléments, les personnes, le matériel et les véhicules
+  'cp_calendar_days', 'cp_user_capacity', 'cp_baseline_dates', 'cp_budget_lines', 'cp_user_rates', 'cp_item_resources', 'cp_externals', 'cp_item_externals', 'cp_time_entries',
   'notification_recipients', 'notifications', 'notification_reads', 'audit_log',
 ];
 const KEEP_BACKUPS = 12;
