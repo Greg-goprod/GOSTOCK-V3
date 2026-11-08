@@ -205,13 +205,18 @@ export async function updateIfUnchanged(table: 'cp_items' | 'cp_projects', id: s
 // Discussion d'un projet (item = null) ou d'un élément : texte seulement, 4 000 caractères au plus. Les droits sont ceux de la base
 // (l'équipe du projet et les responsables écrivent ; chacun modifie et supprime les siens ; le droit de suppression modère).
 export const COMMENT_MAX = 4000;
-export interface CpComment { id: string; project_id: string; item_id: string | null; author_id: string | null; body: string; created_at: string; edited_at: string | null }
+export interface CpComment { id: string; project_id: string; item_id: string | null; author_id: string | null; body: string; created_at: string; edited_at: string | null; mentions?: string[] }
 export async function loadComments(projectId: string, itemId: string | null): Promise<CpComment[]> {
-  let query = supabase.from('cp_comments').select('id, project_id, item_id, author_id, body, created_at, edited_at').eq('project_id', projectId);
-  query = itemId ? query.eq('item_id', itemId) : query.is('item_id', null);
-  const { data, error } = await query.order('created_at', { ascending: true }).limit(500);
+  const read = async (columns: string) => {
+    let query = supabase.from('cp_comments').select(columns).eq('project_id', projectId);
+    query = itemId ? query.eq('item_id', itemId) : query.is('item_id', null);
+    return query.order('created_at', { ascending: true }).limit(500);
+  };
+  let { data, error } = await read('id, project_id, item_id, author_id, body, created_at, edited_at, mentions');
+  // Colonne des mentions absente (migration 73 pas encore appliquée) : on relit sans elle, la discussion continue de fonctionner
+  if (error && (error.code === '42703' || /mentions/.test(error.message))) ({ data, error } = await read('id, project_id, item_id, author_id, body, created_at, edited_at'));
   if (error) throw error;
-  return (data || []) as CpComment[];
+  return (data || []) as unknown as CpComment[];
 }
 export async function addComment(projectId: string, itemId: string | null, body: string): Promise<void> {
   const { error } = await supabase.from('cp_comments').insert({ project_id: projectId, item_id: itemId, body });
@@ -390,7 +395,7 @@ export const formatPeriod = (start: string | null, end: string | null, fmt: (d: 
 // Où mène un clic sur un avis PILOTE : la fiche de l'élément, sinon celle du projet ; un avis de message ouvre en plus la discussion.
 // Sans lien (avis antérieurs à la migration 61, ou avis qui ne vise rien de précis) : « Mes tâches », ou la liste des projets pour « ajouté à l'équipe ».
 export function piloteNotificationPath(n: { kind: string; cpProjectId?: string; cpItemId?: string }): string {
-  const focus = n.kind === 'cp_comment' ? '&focus=discussion' : '';
+  const focus = n.kind === 'cp_comment' || n.kind === 'cp_mention' ? '&focus=discussion' : '';
   if (n.cpItemId) return `/pilote/projets?item=${encodeURIComponent(n.cpItemId)}${focus}`;
   if (n.cpProjectId) return `/pilote/projets?project=${encodeURIComponent(n.cpProjectId)}${focus}`;
   return n.kind === 'cp_team_added' ? '/pilote/projets' : '/pilote/projets?section=mytasks';

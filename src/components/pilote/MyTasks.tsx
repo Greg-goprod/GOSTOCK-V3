@@ -6,6 +6,7 @@ import { formatPeriod, ITEM_KIND_LABEL, loadGantt, piloteError, type GanttData, 
 import { formatDay } from '../../lib/zurichTime';
 import { MxBadge } from '../mx/MxBadge';
 import ItemDrawer, { type ItemTarget } from './ItemDrawer';
+import { usePiloteLive } from './usePiloteLive';
 
 const TONE = { not_started: 'neutral', in_progress: 'info', done: 'success', cancelled: 'danger' } as const;
 const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
@@ -26,6 +27,7 @@ const MyTasks: React.FC<Props> = ({ rights }) => {
     try { setData(await loadGantt()); } catch (e) { toast.error(piloteError(e)); }
   }, []);
   useEffect(() => { void reload(); }, [reload]);
+  usePiloteLive(reload, !!target);
 
   const groups = useMemo(() => {
     const out: Record<Group, GanttData['items']> = { late: [], open: [], undated: [], closed: [] };

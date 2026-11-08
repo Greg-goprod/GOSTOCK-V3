@@ -14,6 +14,7 @@ import { MxSegmented } from '../components/mx/MxSegmented';
 import MenuButton from '../components/common/MenuButton';
 import Button from '../components/common/Button';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
+import { usePiloteLive } from '../components/pilote/usePiloteLive';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
 import ExportMenu from '../components/pilote/ExportMenu';
@@ -48,6 +49,7 @@ const PiloteBoard: React.FC = () => {
     try { setData(await loadGantt()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? EMPTY); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+  usePiloteLive(reload, !!itemTarget || !!projectTarget);
 
   const userName = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   const people = useMemo(() => [...userName].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, 'fr')), [userName]);

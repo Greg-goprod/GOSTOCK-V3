@@ -3650,5 +3650,19 @@
 "Tu n'as pas le droit de modifier cette tâche": "Du darfst diese Aufgabe nicht ändern",
 "Quantité refusée : de 1 à 9 999 (un véhicule : 1)": "Menge abgelehnt: von 1 bis 9 999 (ein Fahrzeug: 1)",
 "Véhicule supprimé": "Gelöschtes Fahrzeug",
-"Matériel ou véhicule à vérifier": "Material oder Fahrzeug prüfen"
+"Matériel ou véhicule à vérifier": "Material oder Fahrzeug prüfen",
+"On me mentionne dans une discussion": "Ich werde in einer Diskussion erwähnt",
+"Quelqu'un écrit @ suivi de ton nom. E-mail et push sont à activer ici si tu les veux.": "Jemand schreibt @ gefolgt von deinem Namen. E-Mail und Push aktivierst du hier, wenn du sie möchtest.",
+"Mon récapitulatif du jour": "Meine Tageszusammenfassung",
+"Un seul avis par jour ouvré : ce que tu dois terminer aujourd'hui, ce qui est en retard, tes avis non lus. Rien à signaler = rien reçu.": "Eine einzige Meldung pro Arbeitstag: was du heute abschliessen musst, was überfällig ist, deine ungelesenen Meldungen. Nichts zu melden = nichts erhalten.",
+"Heure du récapitulatif quotidien (administrateur)": "Uhrzeit der Tageszusammenfassung (Administrator)",
+"Un seul avis par personne et par jour ouvré (lundi à vendredi, hors fermetures du calendrier de travail), envoyé dans l'heure qui suit. Heure de Zurich ; 7 h 00 par défaut. Valable pour toute l'entreprise.": "Eine einzige Meldung pro Person und Arbeitstag (Montag bis Freitag, ausser Schliessungen des Arbeitskalenders), innerhalb der folgenden Stunde gesendet. Zürcher Zeit; standardmässig 7:00 Uhr. Gilt für das ganze Unternehmen.",
+"{0} h 00": "{0}:00 Uhr",
+"Récapitulatif quotidien à {0} h 00": "Tageszusammenfassung um {0}:00 Uhr",
+"Tu n'as pas le droit de changer ce réglage": "Du darfst diese Einstellung nicht ändern",
+"Écrire un message… (@ pour mentionner, Ctrl+Entrée pour envoyer)": "Nachricht schreiben … (@ zum Erwähnen, Strg+Enter zum Senden)",
+"Personnes à mentionner": "Zu erwähnende Personen",
+"Tu as été mentionné": "Du wurdest erwähnt",
+"Ton récapitulatif du jour": "Deine Tageszusammenfassung",
+"{0} t'a mentionné dans « {1} » : « {2} ».": "{0} hat dich in «{1}» erwähnt: «{2}»."
 }

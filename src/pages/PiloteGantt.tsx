@@ -10,6 +10,7 @@ import { dayFromNumber, dayNumberOf } from '../lib/ganttModel';
 import { useApp } from '../contexts/AppContext';
 import { filterGantt, hasFilters, isOverdue } from '../lib/ganttFilters';
 import { useViewFilters } from '../components/pilote/useViewFilters';
+import { usePiloteLive } from '../components/pilote/usePiloteLive';
 import PageTitle from '../components/common/PageTitle';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import PeriodControls from '../components/common/PeriodControls';
@@ -70,6 +71,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
     try { setData(await loadGantt()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? EMPTY); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+  usePiloteLive(reload, !!itemTarget || !!projectTarget);
 
   useEffect(() => {
     if (!openAfter || !data) return;

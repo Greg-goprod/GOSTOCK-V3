@@ -44,7 +44,7 @@ const GROUP_OF: Record<string, Group> = {
   maintenance_due: 'upkeep', vehicle_deadline: 'upkeep', warranty_end: 'upkeep', repair_late: 'upkeep', battery_end: 'upkeep',
   training_expiry: 'upkeep', rental_due: 'upkeep', ppe_renewal: 'upkeep', mission_end: 'upkeep',
   incident: 'incidents', tool_damaged: 'incidents',
-  cp_assigned: 'pilote', cp_team_added: 'pilote', cp_dates_changed: 'pilote', cp_due_soon: 'pilote', cp_overdue: 'pilote', cp_comment: 'pilote',
+  cp_assigned: 'pilote', cp_team_added: 'pilote', cp_dates_changed: 'pilote', cp_due_soon: 'pilote', cp_overdue: 'pilote', cp_comment: 'pilote', cp_mention: 'pilote', cp_digest: 'pilote',
 };
 
 const groupOf = (n: StockNotification): Group => GROUP_OF[n.kind] ?? 'other';

@@ -3650,5 +3650,19 @@
 "Tu n'as pas le droit de modifier cette tâche": "Non hai il diritto di modificare questa attività",
 "Quantité refusée : de 1 à 9 999 (un véhicule : 1)": "Quantità rifiutata: da 1 a 9 999 (un veicolo: 1)",
 "Véhicule supprimé": "Veicolo eliminato",
-"Matériel ou véhicule à vérifier": "Materiale o veicolo da verificare"
+"Matériel ou véhicule à vérifier": "Materiale o veicolo da verificare",
+"On me mentionne dans une discussion": "Mi menzionano in una discussione",
+"Quelqu'un écrit @ suivi de ton nom. E-mail et push sont à activer ici si tu les veux.": "Qualcuno scrive @ seguito dal tuo nome. E-mail e push si attivano qui se li vuoi.",
+"Mon récapitulatif du jour": "Il mio riepilogo del giorno",
+"Un seul avis par jour ouvré : ce que tu dois terminer aujourd'hui, ce qui est en retard, tes avis non lus. Rien à signaler = rien reçu.": "Un solo avviso per giorno lavorativo: cosa devi terminare oggi, cosa è in ritardo, i tuoi avvisi non letti. Niente da segnalare = niente ricevuto.",
+"Heure du récapitulatif quotidien (administrateur)": "Ora del riepilogo giornaliero (amministratore)",
+"Un seul avis par personne et par jour ouvré (lundi à vendredi, hors fermetures du calendrier de travail), envoyé dans l'heure qui suit. Heure de Zurich ; 7 h 00 par défaut. Valable pour toute l'entreprise.": "Un solo avviso per persona e per giorno lavorativo (da lunedì a venerdì, escluse le chiusure del calendario di lavoro), inviato nell'ora successiva. Ora di Zurigo; 7:00 per impostazione predefinita. Valido per tutta l'azienda.",
+"{0} h 00": "{0}:00",
+"Récapitulatif quotidien à {0} h 00": "Riepilogo giornaliero alle {0}:00",
+"Tu n'as pas le droit de changer ce réglage": "Non hai il diritto di modificare questa impostazione",
+"Écrire un message… (@ pour mentionner, Ctrl+Entrée pour envoyer)": "Scrivi un messaggio… (@ per menzionare, Ctrl+Invio per inviare)",
+"Personnes à mentionner": "Persone da menzionare",
+"Tu as été mentionné": "Sei stato menzionato",
+"Ton récapitulatif du jour": "Il tuo riepilogo del giorno",
+"{0} t'a mentionné dans « {1} » : « {2} ».": "{0} ti ha menzionato in «{1}»: «{2}»."
 }

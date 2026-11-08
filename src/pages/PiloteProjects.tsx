@@ -20,6 +20,7 @@ import PiloteCalendar from './PiloteCalendar';
 import PiloteWorkload from './PiloteWorkload';
 import PiloteDashboard from './PiloteDashboard';
 import PiloteBudget from './PiloteBudget';
+import { usePiloteLive } from '../components/pilote/usePiloteLive';
 
 type Section = 'dashboard' | 'budget' | 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar';
 const VIEWS: Section[] = ['dashboard', 'budget', 'gantt', 'board', 'agenda', 'workload', 'projects', 'mytasks', 'templates'];
@@ -78,6 +79,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); void loadBudgetRights().then(r => setCanBudget(r.read)); }, [reload]);
   useEffect(() => { if (isPilotage(section)) setLastPilotage(section); }, [section]);
+  usePiloteLive(reload, !!deepItem);
   const closeDeepItem = useCallback(() => setDeepItem(null), []);
   const refreshDeepItem = useCallback(async () => {
     const g = await loadGantt();

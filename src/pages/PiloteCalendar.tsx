@@ -10,6 +10,7 @@ import { MxEmpty } from '../components/mx/MxEmpty';
 import { MxSegmented } from '../components/mx/MxSegmented';
 import Button from '../components/common/Button';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
+import { usePiloteLive } from '../components/pilote/usePiloteLive';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
 import ExportMenu from '../components/pilote/ExportMenu';
 import { useViewFilters } from '../components/pilote/useViewFilters';
@@ -41,6 +42,7 @@ const PiloteCalendar: React.FC = () => {
     try { setData(await loadGantt()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? EMPTY); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+  usePiloteLive(reload, !!itemTarget);
 
   const userNames = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   const people = useMemo(() => users.map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}`.trim() })).sort((a, b) => a.name.localeCompare(b.name, 'fr')), [users]);

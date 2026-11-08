@@ -85,6 +85,8 @@ const KIND_LABEL: Record<string, { label: string; path: string; action: string }
   cp_due_soon: { label: 'PILOTE · Échéance proche', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
   cp_overdue: { label: 'PILOTE · En retard', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
   cp_comment: { label: 'PILOTE · Discussion', path: '/pilote/projets', action: 'Voir les projets' },
+  cp_mention: { label: 'PILOTE · Mention', path: '/pilote/projets', action: 'Voir les projets' },
+  cp_digest: { label: 'PILOTE · Récapitulatif', path: '/pilote/projets?section=mytasks', action: 'Ouvrir mes tâches' },
 };
 
 interface PendingEmail {

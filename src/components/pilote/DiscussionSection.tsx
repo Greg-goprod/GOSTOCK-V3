@@ -5,11 +5,13 @@ import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { confirmAction } from '../../lib/confirm';
 import { formatDateTime } from '../../lib/platformConsole';
+import { insertMention, mentionQuery, splitMentions, suggestPeople, type Person } from '../../lib/mentions';
 import { addComment, COMMENT_MAX, deleteComment, editComment, loadComments, piloteError, type CpComment } from '../../lib/pilote';
 import Button from '../common/Button';
 import { useProjectRights } from './useProjectRights';
 import { SectionHeader } from './SectionHeader';
 import { useSectionOpen } from './useSectionOpen';
+import { usePiloteLive } from './usePiloteLive';
 
 interface Props {
   projectId: string;
@@ -35,13 +37,30 @@ const DiscussionSection: React.FC<Props> = ({ projectId, itemId, autoOpen = fals
   const [sending, setSending] = useState(false);
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Mention en cours de frappe (« @An… ») : suggestions de personnes, choisies à la souris ou au clavier
+  const [caret, setCaret] = useState(0);
+  const [pick, setPick] = useState(0);
+  const [pickClosed, setPickClosed] = useState(false);
+  const area = useRef<HTMLTextAreaElement>(null);
 
   const names = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
+  // Personnes qu'on peut mentionner : les personnes actives, sauf soi-même
+  const people = useMemo<Person[]>(() => users.filter(u => u.active !== false && u.id !== profile?.id).map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}`.trim() })), [users, profile?.id]);
+  const query = pickClosed ? null : mentionQuery(draft, caret);
+  const suggestions = useMemo(() => (query ? suggestPeople(people, query.query) : []), [people, query]);
+  const choose = (p: Person) => {
+    if (!query) return;
+    const next = insertMention(draft, query.start, caret, p.name);
+    setDraft(next.text); setCaret(next.caret); setPick(0);
+    setPickClosed(true);   // le choix est fait : la liste reste fermée jusqu'à la prochaine frappe
+    requestAnimationFrame(() => { area.current?.focus(); area.current?.setSelectionRange(next.caret, next.caret); });
+  };
 
   const reload = useCallback(async () => {
     try { setMessages(await loadComments(projectId, itemId)); } catch (e) { toast.error(piloteError(e)); setMessages(prev => prev ?? []); }
   }, [projectId, itemId]);
   useEffect(() => { setMessages(null); setDraft(''); setEditing(null); void reload(); }, [reload]);
+  usePiloteLive(reload, isOpen === false || busyId !== null);
 
   const send = async () => {
     const body = draft.trim();
@@ -104,7 +123,13 @@ const DiscussionSection: React.FC<Props> = ({ projectId, itemId, autoOpen = fals
                         <Button size="sm" variant="secondary" onClick={() => setEditing(null)}>Annuler</Button>
                       </div>
                     </div>
-                  ) : <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100">{m.body}</p>}
+                  ) : (
+                    <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-900 dark:text-gray-100">
+                      {splitMentions(m.body, users.map(u => ({ id: u.id, name: `${u.first_name} ${u.last_name}`.trim() })), m.mentions ?? []).map((seg, i) => (
+                        seg.mention ? <mark key={i} data-mention className="rounded bg-primary-100 px-0.5 font-semibold text-primary-900 dark:bg-primary-900/40 dark:text-primary-100">{seg.text}</mark> : <React.Fragment key={i}>{seg.text}</React.Fragment>
+                      ))}
+                    </p>
+                  )}
                 </li>
               );
             })}
@@ -114,8 +139,29 @@ const DiscussionSection: React.FC<Props> = ({ projectId, itemId, autoOpen = fals
         {canWrite ? (
           <div className="space-y-2">
             <label htmlFor="cmt-body" className="sr-only">Écrire un message</label>
-            <textarea id="cmt-body" rows={3} maxLength={COMMENT_MAX} className={areaClass} value={draft} placeholder="Écrire un message… (Ctrl+Entrée pour envoyer)"
-              onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void send(); } }} />
+            <div className="relative">
+              <textarea id="cmt-body" ref={area} rows={3} maxLength={COMMENT_MAX} className={areaClass} value={draft} placeholder="Écrire un message… (@ pour mentionner, Ctrl+Entrée pour envoyer)"
+                role="combobox" aria-expanded={suggestions.length > 0} aria-controls="cmt-mentions" aria-autocomplete="list" aria-activedescendant={suggestions.length > 0 ? `cmt-mention-${pick}` : undefined}
+                onChange={e => { setDraft(e.target.value); setCaret(e.target.selectionStart ?? e.target.value.length); setPickClosed(false); setPick(0); }}
+                onSelect={e => setCaret((e.target as HTMLTextAreaElement).selectionStart ?? 0)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void send(); return; }
+                  if (suggestions.length === 0) return;
+                  if (e.key === 'ArrowDown') { e.preventDefault(); setPick(p => (p + 1) % suggestions.length); }
+                  else if (e.key === 'ArrowUp') { e.preventDefault(); setPick(p => (p - 1 + suggestions.length) % suggestions.length); }
+                  else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); choose(suggestions[pick]); }
+                  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setPickClosed(true); }
+                }} />
+              {suggestions.length > 0 && (
+                <ul id="cmt-mentions" role="listbox" aria-label="Personnes à mentionner" className="absolute bottom-full left-0 z-20 mb-1 max-h-48 w-64 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                  {suggestions.map((p, i) => (
+                    <li key={p.id} id={`cmt-mention-${i}`} role="option" aria-selected={i === pick} data-mention-option
+                      onMouseDown={e => { e.preventDefault(); choose(p); }} onMouseEnter={() => setPick(i)}
+                      className={`cursor-pointer px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 ${i === pick ? 'bg-primary-50 dark:bg-primary-900/30' : ''}`}>{p.name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-gray-500 dark:text-gray-400">{`${draft.length} / ${COMMENT_MAX}`}</span>
               <Button size="sm" icon={<Send size={14} />} disabled={!draft.trim()} loading={sending} onClick={() => void send()}>Envoyer</Button>

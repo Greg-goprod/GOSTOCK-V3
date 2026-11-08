@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import Card from '../common/Card';
+import { useAuth } from '../../contexts/AuthContext';
+import DigestHourSetting from './DigestHourSetting';
 
 interface Pref { kind: string; in_app: boolean; email: boolean; push: boolean }
 type Channel = 'in_app' | 'email' | 'push';
@@ -13,11 +15,14 @@ const LABEL: Record<string, { title: string; hint: string }> = {
   cp_due_soon: { title: 'Échéance proche', hint: 'Un élément à toi se termine aujourd\'hui ou demain (un avis par jour).' },
   cp_comment: { title: 'Un nouveau message dans une discussion', hint: 'Sur un projet de ton équipe, ou sur un élément qui t\'est assigné. Plusieurs messages rapprochés font un seul avis.' },
   cp_overdue: { title: 'Élément en retard', hint: 'Un élément à toi est en retard de 1 à 3 jours (un avis par jour, puis on arrête).' },
+  cp_mention: { title: 'On me mentionne dans une discussion', hint: 'Quelqu\'un écrit @ suivi de ton nom. E-mail et push sont à activer ici si tu les veux.' },
+  cp_digest: { title: 'Mon récapitulatif du jour', hint: 'Un seul avis par jour ouvré : ce que tu dois terminer aujourd\'hui, ce qui est en retard, tes avis non lus. Rien à signaler = rien reçu.' },
 };
 const CHANNELS: { id: Channel; label: string }[] = [{ id: 'in_app', label: 'Dans l\'application' }, { id: 'email', label: 'E-mail' }, { id: 'push', label: 'Push' }];
 
 // Choix de chaque personne : pour chaque type d'avis PILOTE, dans l'application / par e-mail / en push. Enregistré à chaque case cochée.
 const PilotePrefs: React.FC = () => {
+  const { can } = useAuth();
   const [prefs, setPrefs] = useState<Pref[] | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -72,6 +77,7 @@ const PilotePrefs: React.FC = () => {
           </tbody>
         </table>
       </div>
+      {can('settings') && <DigestHourSetting />}
     </Card>
   );
 };

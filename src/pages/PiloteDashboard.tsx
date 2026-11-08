@@ -7,6 +7,7 @@ import { loadGantt, loadPiloteRights, piloteError, type GanttData, type PiloteRi
 import { formatDay } from '../lib/zurichTime';
 import { MxEmpty } from '../components/mx/MxEmpty';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
+import { usePiloteLive } from '../components/pilote/usePiloteLive';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
@@ -32,6 +33,7 @@ const PiloteDashboard: React.FC = () => {
     try { setData(await loadGantt()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? EMPTY); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+  usePiloteLive(reload, !!itemTarget || !!projectTarget);
 
   const userName = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   const people = useMemo(() => {

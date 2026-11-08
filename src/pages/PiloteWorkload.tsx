@@ -10,6 +10,7 @@ import { MxEmpty } from '../components/mx/MxEmpty';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
+import { usePiloteLive } from '../components/pilote/usePiloteLive';
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const EMPTY: GanttData = { statuses: [], projects: [], templates: [], members: [], sites: [], items: [], itemMembers: [], links: [], calendarDays: [], capacities: [], baselines: [] };
@@ -49,6 +50,7 @@ const PiloteWorkload: React.FC = () => {
     try { setData(await loadGantt()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? EMPTY); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+  usePiloteLive(reload, !!itemTarget);
 
   const userName = useMemo(() => new Map(users.map(u => [u.id, `${u.first_name} ${u.last_name}`.trim()])), [users]);
   // Les personnes qui comptent : équipes de projets, assignations et capacités déjà saisies

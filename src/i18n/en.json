@@ -3650,5 +3650,19 @@
 "Tu n'as pas le droit de modifier cette tâche": "You are not allowed to change this task",
 "Quantité refusée : de 1 à 9 999 (un véhicule : 1)": "Quantity rejected: from 1 to 9,999 (a vehicle: 1)",
 "Véhicule supprimé": "Deleted vehicle",
-"Matériel ou véhicule à vérifier": "Equipment or vehicle to check"
+"Matériel ou véhicule à vérifier": "Equipment or vehicle to check",
+"On me mentionne dans une discussion": "I am mentioned in a discussion",
+"Quelqu'un écrit @ suivi de ton nom. E-mail et push sont à activer ici si tu les veux.": "Someone writes @ followed by your name. Turn on e-mail and push here if you want them.",
+"Mon récapitulatif du jour": "My daily summary",
+"Un seul avis par jour ouvré : ce que tu dois terminer aujourd'hui, ce qui est en retard, tes avis non lus. Rien à signaler = rien reçu.": "One notice per working day: what you must finish today, what is late, your unread notices. Nothing to report = nothing received.",
+"Heure du récapitulatif quotidien (administrateur)": "Daily summary time (administrator)",
+"Un seul avis par personne et par jour ouvré (lundi à vendredi, hors fermetures du calendrier de travail), envoyé dans l'heure qui suit. Heure de Zurich ; 7 h 00 par défaut. Valable pour toute l'entreprise.": "One notice per person per working day (Monday to Friday, except closures in the work calendar), sent within the following hour. Zurich time; 7:00 by default. Applies to the whole company.",
+"{0} h 00": "{0}:00",
+"Récapitulatif quotidien à {0} h 00": "Daily summary at {0}:00",
+"Tu n'as pas le droit de changer ce réglage": "You are not allowed to change this setting",
+"Écrire un message… (@ pour mentionner, Ctrl+Entrée pour envoyer)": "Write a message… (@ to mention, Ctrl+Enter to send)",
+"Personnes à mentionner": "People to mention",
+"Tu as été mentionné": "You were mentioned",
+"Ton récapitulatif du jour": "Your daily summary",
+"{0} t'a mentionné dans « {1} » : « {2} ».": "{0} mentioned you in \"{1}\": \"{2}\"."
 }
