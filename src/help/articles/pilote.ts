@@ -159,6 +159,21 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'ressources',
+        title: 'Matériel et véhicules d\'une tâche',
+        who: 'Rattacher : administrateur et responsable (droit de modifier les projets). Voir : toute personne qui voit les projets.',
+        steps: [
+          { text: 'Ouvre une tâche (ou un jalon, une sous-tâche), section « Matériel et véhicules ». Choisis « Matériel » ou « Véhicule », tape le début du nom (2 lettres au moins pour un article, une plaque pour un véhicule) puis « Ajouter ». Règle ensuite la quantité d\'un article (un véhicule compte pour 1) ; la corbeille retire le rattachement.' },
+          { text: 'GO-Mat compare avec Logistique sur les dates de la tâche (du premier au dernier jour) : stock libre après les demandes validées, les emprunts en cours et la maintenance, véhicule en maintenance, expertise ou service échus, véhicule déjà réservé. Il retire aussi ce que d\'AUTRES tâches PILOTE prévoient sur des jours qui se chevauchent : deux tâches qui veulent le même camion le même jour sont signalées toutes les deux.' },
+          { text: 'Un rattachement à vérifier s\'affiche sur fond ambre avec la raison dans la fiche, et un petit colis barré apparaît à côté du nom de la tâche dans le Gantt (survole-le pour lire la raison). Les tâches terminées ou annulées, les modèles et les tâches sans date ne comptent pas.' },
+          { text: 'C\'est UN AVERTISSEMENT : rien n\'est bloqué et RIEN n\'est réservé dans Logistique. Pour réserver vraiment, fais la demande de matériel ou de véhicule comme d\'habitude. Dupliquer un projet, l\'enregistrer comme modèle ou en créer un depuis un modèle garde le matériel et les véhicules (les avertissements se recalculent sur les nouvelles dates).' },
+        ],
+        problems: [
+          { if: 'Rien n\'est signalé alors que je sais que le stock manque.', then: 'Vérifie que la tâche a une date. Les avertissements se calculent avec ce que ton rôle peut lire de Logistique : sans accès aux sorties de matériel, les emprunts en cours ne sont pas comptés. Les kits et les formations ne sont pas encore rattachables.' },
+          { if: 'Un article que je cherche n\'apparaît pas.', then: 'Les articles retirés du service ne sont pas proposés ; il faut taper au moins 2 lettres de son nom.' },
+        ],
+      },
+      {
         id: 'budget',
         title: 'Budget d\'un projet et taux horaires',
         who: 'Réservé aux personnes qui ont le droit « budget » (administrateur et responsable par défaut). Les autres ne voient ni l\'onglet, ni les montants, ni les taux.',

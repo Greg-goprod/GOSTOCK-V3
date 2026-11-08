@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { loadResourceIssues, type ResourceIssue } from './resources';
 
 // PILOTE : projets, états et responsables. Les règles (même entreprise, lien chantier, dates…) sont vérifiées par la base.
 export type StatusFamily = 'not_started' | 'in_progress' | 'done' | 'cancelled';
@@ -79,6 +80,8 @@ export interface GanttData extends PiloteData {
   calendarDays: CpCalendarDay[];
   capacities: CpCapacity[];
   baselines: CpBaselineDate[];
+  // Matériel / véhicules à vérifier (cp_resource_issues) ; absent tant que la migration du matériel des tâches n'est pas appliquée
+  resourceIssues?: ResourceIssue[];
 }
 
 // Ligne de base : photo des dates d'un projet (item_id vide) et de ses éléments au moment où elle a été figée
@@ -137,7 +140,7 @@ export async function loadPilote(): Promise<PiloteData> {
 }
 
 export async function loadGantt(): Promise<GanttData> {
-  const [base, items, itemMembers, links, calendarDays, capacities, baselines] = await Promise.all([
+  const [base, items, itemMembers, links, calendarDays, capacities, baselines, resourceIssues] = await Promise.all([
     loadPilote(),
     supabase.from('cp_items').select('*').order('position').order('starts_on', { nullsFirst: false }).order('name'),
     supabase.from('cp_item_members').select('item_id, user_id'),
@@ -145,6 +148,7 @@ export async function loadGantt(): Promise<GanttData> {
     loadCalendarDays(),
     loadCapacities(),
     loadBaselines(),
+    loadResourceIssues(),
   ]);
   const error = [items, itemMembers, links].map(r => r.error).find(Boolean);
   if (error) throw error;
@@ -156,7 +160,7 @@ export async function loadGantt(): Promise<GanttData> {
     ...base, items: keptItems,
     itemMembers: ((itemMembers.data || []) as CpItemMember[]).filter(m => keptIds.has(m.item_id)),
     links: ((links.data || []) as CpLink[]).filter(l => !templateIds.has(l.project_id)),
-    calendarDays, capacities, baselines,
+    calendarDays, capacities, baselines, resourceIssues,
   };
 }
 

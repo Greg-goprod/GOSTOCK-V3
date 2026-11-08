@@ -21,6 +21,7 @@ import { useUndo } from '../components/pilote/useUndo';
 import { usePiloteShortcuts } from '../components/pilote/usePiloteShortcuts';
 import ShortcutsHelp from '../components/pilote/ShortcutsHelp';
 import { criticalPath } from '../lib/criticalPath';
+import { issuesByItem } from '../lib/resources';
 import { freezeBaseline, removeBaseline } from '../components/pilote/baselineActions';
 import { saveProjectAsTemplate } from '../components/pilote/templateActions';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
@@ -121,6 +122,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
     if (!showBaseline || !data || data.baselines.length === 0) return undefined;
     return new Map(data.baselines.map(b => [b.item_id ? `i:${b.item_id}` : `p:${b.project_id}`, { start: b.starts_on, end: b.ends_on }]));
   }, [showBaseline, data]);
+  const resourceIssues = useMemo(() => issuesByItem(data?.resourceIssues ?? []), [data]);
   const projectName = useMemo(() => new Map((data?.projects ?? []).map(p => [p.id, p.name])), [data]);
 
   const toggle = (key: string) => setExpanded(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
@@ -262,7 +264,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
       ) : (
         <GanttChart rows={rows} links={data.links} period={period} today={today} locale={LOCALES[getLanguage()]} expanded={expanded} canCreate={rights.create}
           onToggle={toggle} onOpen={openRow} onAdd={addIn} canEdit={rights.update} onMove={moveRow} onResize={resizeRow} onCreate={createInline}
-          showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} nonWorkingDays={nonWorkingDays} critical={critical} baselines={baselines} />
+          showNames={showNames} onJump={jumpTo} onPlace={rights.update ? placeAt : undefined} nonWorkingDays={nonWorkingDays} critical={critical} baselines={baselines} resourceIssues={resourceIssues} />
       )}
       </div>
 

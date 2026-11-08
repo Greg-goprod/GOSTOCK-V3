@@ -13,6 +13,7 @@ import StatusPicker from './StatusPicker';
 import DiscussionSection from './DiscussionSection';
 import DocumentsSection from './DocumentsSection';
 import HistorySection from './HistorySection';
+import ResourcesSection from './ResourcesSection';
 import DateInput, { DateRangeInput } from '../common/DateInput';
 
 export type ItemTarget = { mode: 'edit'; itemId: string } | { mode: 'new'; projectId?: string; parentId?: string | null; kind?: ItemKind };
@@ -419,6 +420,7 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
             </div>
           )}
 
+          {edited && <ResourcesSection itemId={edited.id} canEdit={canUpdate} hasDates={!!(edited.starts_on || edited.ends_on)} issueCount={(data.resourceIssues ?? []).filter(i => i.item_id === edited.id).length} onChanged={onSaved} />}
           {edited && <DocumentsSection projectId={edited.project_id} itemId={edited.id} />}
           {edited && <DiscussionSection projectId={edited.project_id} itemId={edited.id} autoOpen={focus === 'discussion'} />}
           {edited && <HistorySection kind="item" id={edited.id} statuses={data.statuses} itemName={i => data.items.find(x => x.id === i)?.name} />}

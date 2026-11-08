@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Plus, Route } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, PackageX, Plus, Route } from 'lucide-react';
 import { dayFromNumber, dayNumberOf } from '../../lib/ganttModel';
 import { clipBar, isWeekend, linkPaths, makeHeader, makeScale, nonWorkingBoxes, progressOf, weekendBoxes, xOfDay, type GanttRow } from '../../lib/ganttModel';
 import { formatDay } from '../../lib/zurichTime';
@@ -40,6 +40,8 @@ interface Props {
   critical?: { items: ReadonlySet<string>; links: ReadonlySet<string> };
   // Ligne de base : où chaque ligne était prévue (clé de ligne « p:… » / « i:… »), dessinée sous la barre avec l'écart de fin
   baselines?: ReadonlyMap<string, { start: string | null; end: string | null }>;
+  // Éléments dont le matériel ou le véhicule est à vérifier (identifiant d'élément → phrase) : un repère ambre dans la liste
+  resourceIssues?: ReadonlyMap<string, string>;
 }
 
 const BAR_H: Record<GanttRow['kind'], number> = { group: 8, project: 22, phase: 18, task: 20, subtask: 14, milestone: 14, add: 0 };
@@ -93,7 +95,7 @@ const InlineAdd: React.FC<{ row: GanttRow; onCreate: Props['onCreate'] }> = ({ r
   );
 };
 
-const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate, showNames = true, onJump, onPlace, nonWorkingDays, critical, baselines }) => {
+const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expanded, canCreate, onToggle, onOpen, onAdd, canEdit, onMove, onResize, onCreate, showNames = true, onJump, onPlace, nonWorkingDays, critical, baselines, resourceIssues }) => {
   const box = useRef<HTMLDivElement>(null);
   // Colonne des noms plus étroite sur téléphone, pour laisser de la place aux barres
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
@@ -241,6 +243,7 @@ const GanttChart: React.FC<Props> = ({ rows, links, period, today, locale, expan
                   className={`min-w-0 flex-1 truncate text-left text-[13px] ${r.kind === 'group' ? 'font-bold uppercase tracking-wide text-gray-700 dark:text-gray-200' : r.kind === 'project' ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                   {r.name}
                 </button>
+                {clickable && r.id && resourceIssues?.has(r.id) && r.kind !== 'project' && <PackageX size={14} role="img" aria-label="Matériel ou véhicule à vérifier" data-resource-issue={r.id} className="ml-1 shrink-0 text-amber-600"><title>{resourceIssues.get(r.id)}</title></PackageX>}
                 {clickable && r.id && critical?.items.has(r.id) && r.kind !== 'project' && <Route size={14} role="img" aria-label="Chemin critique" className="ml-1 shrink-0 text-orange-600" />}
                 {clickable && variance(r) !== 0 && <span data-variance={variance(r)} className={`ml-1 shrink-0 rounded px-1 text-[10px] font-semibold ${variance(r) > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'}`} title="Écart de fin avec la ligne de base">{`${variance(r) > 0 ? '+' : '−'}${Math.abs(variance(r))} j`}</span>}
                 {clickable && isOverdue(r.end, r.family, today) && <AlertTriangle size={14} role="img" aria-label="En retard" className="ml-1 shrink-0 text-danger-600" />}
