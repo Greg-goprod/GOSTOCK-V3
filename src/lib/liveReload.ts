@@ -6,7 +6,7 @@ export interface LiveController {
   setPaused(paused: boolean): void;
   dispose(): void;
 }
-interface Timers { set: (fn: () => void, ms: number) => unknown; clear: (handle: unknown) => void }
+export interface Timers { set: (fn: () => void, ms: number) => unknown; clear: (handle: unknown) => void }
 const realTimers: Timers = { set: (fn, ms) => setTimeout(fn, ms), clear: h => clearTimeout(h as ReturnType<typeof setTimeout>) };
 
 export function createLiveController(reload: () => void, delay = 400, timers: Timers = realTimers): LiveController {
@@ -35,6 +35,17 @@ export function createLiveController(reload: () => void, delay = 400, timers: Ti
       if (handle !== null) { timers.clear(handle); handle = null; }
     },
   };
+}
+
+export interface LiveHandle { setPaused(paused: boolean): void; stop(): void }
+
+// Démarre le suivi d'un écran : un contrôleur NEUF à chaque démarrage. React, en développement, monte puis démonte puis remonte chaque effet : un contrôleur déjà arrêté
+// (dispose) ne se réveille pas, il ne doit donc jamais être réutilisé par le remontage (sinon plus aucun rechargement n'a lieu après ce cycle).
+export function startLive(reload: () => void, subscribe: (notify: () => void) => () => void, paused = false, delay = 400, timers: Timers = realTimers): LiveHandle {
+  const controller = createLiveController(reload, delay, timers);
+  controller.setPaused(paused);
+  const unsubscribe = subscribe(() => controller.notify());
+  return { setPaused: p => controller.setPaused(p), stop() { controller.dispose(); unsubscribe(); } };
 }
 
 // Tables PILOTE dont les changements rechargent les écrans (les mêmes que celles ajoutées à la publication par la migration 73)

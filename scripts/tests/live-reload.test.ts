@@ -1,5 +1,5 @@
 // Contrôles du temps réel PILOTE (sans réseau ni horloge réelle) : regroupement des rafales, pause pendant qu'une fiche est ouverte, rattrapage.
-import { createLiveController, LIVE_TABLES } from '../../src/lib/liveReload';
+import { createLiveController, LIVE_TABLES, startLive } from '../../src/lib/liveReload';
 
 let fails = 0;
 const eq = (name: string, got: unknown, want: unknown) => { const ok = JSON.stringify(got) === JSON.stringify(want); if (!ok) fails++; console.log(ok ? 'OK    ' : 'ÉCHEC ', name, ok ? '' : `\n   obtenu ${JSON.stringify(got)}\n   attendu ${JSON.stringify(want)}`); };
@@ -34,6 +34,22 @@ function fake() {
   live.setPaused(true); live.setPaused(true); live.setPaused(false); live.setPaused(false); c.advance(5000); eq('pauses répétées sans effet de bord', n, 0); }
 { const c = fake(); let n = 0; const live = createLiveController(() => { n++; }, 400, c.timers);
   live.notify(); c.advance(400); live.notify(); c.advance(400); eq('deux événements espacés : deux rechargements', n, 2); }
+
+// Démarrage / arrêt / redémarrage (React en développement monte, démonte puis remonte chaque effet) : un suivi neuf doit recharger
+{ const c = fake(); let n = 0; let subs = 0; let unsubs = 0; let ping: (() => void) | null = null;
+  const subscribe = (notify: () => void) => { subs++; ping = notify; return () => { unsubs++; ping = null; }; };
+  const first = startLive(() => { n++; }, subscribe, false, 400, c.timers); first.stop();
+  startLive(() => { n++; }, subscribe, false, 400, c.timers);
+  ping!(); c.advance(400);
+  eq('après montage, démontage et remontage : un événement déclenche bien le rechargement', n, 1);
+  eq('abonnements : 2 créés, 1 retiré (celui du premier montage)', [subs, unsubs], [2, 1]); }
+{ const c = fake(); let n = 0; let ping: (() => void) | null = null;
+  const live = startLive(() => { n++; }, notify => { ping = notify; return () => {}; }, true, 400, c.timers);
+  ping!(); c.advance(5000); eq('démarré en pause (fiche déjà ouverte) : aucun rechargement', n, 0);
+  live.setPaused(false); c.advance(400); eq('puis un rattrapage à la reprise', n, 1); }
+{ const c = fake(); let n = 0; let ping: (() => void) | null = null; let unsubs = 0;
+  const live = startLive(() => { n++; }, notify => { ping = notify; return () => { unsubs++; }; }, false, 400, c.timers);
+  ping!(); live.stop(); c.advance(5000); eq('arrêt : le rechargement annoncé est annulé et l\'abonnement retiré', [n, unsubs], [0, 1]); }
 
 eq('tables suivies : celles de la publication (migration 73)', [...LIVE_TABLES], ['cp_projects', 'cp_items', 'cp_item_members', 'cp_project_members', 'cp_comments', 'cp_item_resources']);
 eq('aucune table sensible suivie', LIVE_TABLES.filter(t => /budget|rates|notifications|users/.test(t)), []);
