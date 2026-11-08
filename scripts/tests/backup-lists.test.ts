@@ -28,9 +28,10 @@ eq('sauvegarde automatique = écran (mêmes tables, même ordre)', edge, panel);
 const NOT_RESTORABLE = new Set(['organizations', 'audit_log']);
 eq('chaque table de la sauvegarde (sauf entreprise et journal) est dans la liste fermée de la restauration (' + lastRestore + ')', panel.filter(t => !NOT_RESTORABLE.has(t) && !allowed.includes(t)), []);
 eq('la liste fermée ne contient aucune table absente de la sauvegarde', allowed.filter(t => !panel.includes(t)), []);
-eq('les nouvelles tables PILOTE y sont', ['cp_calendar_days', 'cp_user_capacity', 'cp_baseline_dates', 'cp_budget_lines', 'cp_user_rates'].filter(t => !panel.includes(t) || !allowed.includes(t)), []);
+eq('les nouvelles tables PILOTE y sont', ['cp_calendar_days', 'cp_user_capacity', 'cp_baseline_dates', 'cp_budget_lines', 'cp_user_rates', 'cp_item_resources'].filter(t => !panel.includes(t) || !allowed.includes(t)), []);
 eq('ordre : lignes de base après projets et éléments, capacités après les personnes', [panel.indexOf('cp_baseline_dates') > panel.indexOf('cp_items'), panel.indexOf('cp_baseline_dates') > panel.indexOf('cp_projects'), panel.indexOf('cp_user_capacity') > panel.indexOf('users')], [true, true, true]);
 eq('ordre : lignes de budget après les projets, taux horaires après les personnes', [panel.indexOf('cp_budget_lines') > panel.indexOf('cp_projects'), panel.indexOf('cp_user_rates') > panel.indexOf('users')], [true, true]);
+eq('ordre : matériel des tâches après les éléments, le matériel et les véhicules', [panel.indexOf('cp_item_resources') > panel.indexOf('cp_items'), panel.indexOf('cp_item_resources') > panel.indexOf('equipment'), panel.indexOf('cp_item_resources') > panel.indexOf('vehicles')], [true, true, true]);
 eq('tables sensibles jamais dans la liste', ['organizations', 'audit_log', 'owner_admins', 'organization_modules', 'cp_document_trash'].filter(t => allowed.includes(t)), []);
 
 console.log(fails === 0 ? '\nTOUT VERT' : `\n${fails} ÉCHEC(S)`);
