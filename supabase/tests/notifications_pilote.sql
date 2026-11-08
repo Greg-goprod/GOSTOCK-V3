@@ -208,10 +208,12 @@ RESET ROLE;
 
 -- 8. Choix : chacun les siens, types connus seulement
 SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
-SELECT zz.check('U relit ses choix avec les valeurs par défaut pour le reste (6 types, dont le sien)', (SELECT count(*) FROM public.my_cp_notification_prefs()) = 6
+SELECT zz.check('U relit ses choix avec les valeurs par défaut pour le reste (8 types dont mention et récapitulatif, dont le sien)', (SELECT count(*) FROM public.my_cp_notification_prefs()) = 8
   AND (SELECT NOT email AND NOT push AND in_app FROM public.my_cp_notification_prefs() WHERE kind = 'cp_assigned')
   AND (SELECT in_app AND email AND push FROM public.my_cp_notification_prefs() WHERE kind = 'cp_due_soon')
-  AND (SELECT in_app AND NOT email AND push FROM public.my_cp_notification_prefs() WHERE kind = 'cp_dates_changed'));
+  AND (SELECT in_app AND NOT email AND push FROM public.my_cp_notification_prefs() WHERE kind = 'cp_dates_changed')
+  AND (SELECT in_app AND NOT email AND NOT push FROM public.my_cp_notification_prefs() WHERE kind = 'cp_mention')
+  AND (SELECT in_app AND NOT email AND NOT push FROM public.my_cp_notification_prefs() WHERE kind = 'cp_digest'));
 SELECT zz.check('type d''avis inconnu refusé', zz.raises($$INSERT INTO public.cp_notification_prefs (kind) VALUES ('cp_autre')$$) IS NOT NULL);
 SELECT zz.check('U ne choisit pas pour quelqu''un d''autre', zz.raises(format('INSERT INTO public.cp_notification_prefs (user_id, kind, in_app) VALUES (%L, ''cp_overdue'', false)', :'ua')) IS NOT NULL);
 RESET ROLE;
