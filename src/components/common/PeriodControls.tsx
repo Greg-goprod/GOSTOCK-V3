@@ -40,7 +40,7 @@ const PeriodControls: React.FC<Props> = ({ value, today, onChange, presets, chil
           <Button size="sm" variant="outline" onClick={() => onChange(periodAround(value, today))}>Aujourd'hui</Button>
           <Button size="sm" variant="outline" ariaLabel="Période suivante" icon={<ChevronRight size={14} />} onClick={() => onChange(shiftPeriod(value, 1))} />
         </div>
-        <span className="hidden text-xs text-gray-500 dark:text-gray-400 xl:inline">{`${formatDay(value.start)} → ${formatDay(value.end)}`}</span>
+        <span className="hidden text-xs text-gray-500 dark:text-gray-400 2xl:inline">{`${formatDay(value.start)} → ${formatDay(value.end)}`}</span>
         {children}
       </div>
     );

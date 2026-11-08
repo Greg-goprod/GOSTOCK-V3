@@ -103,12 +103,16 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   check('8 après l\'impression, tout est retiré (classe et style)', !(await page.evaluate(() => document.body.className)).includes('pilote-printing') && (await page.locator('style[data-print-style]').count()) === 0);
 
   // Tableau : menu d'export présent
-  await page.goto(BASE + '/pilote/projets'); const tab = page.getByRole('radio', { name: 'Tableau' }); await tab.waitFor({ timeout: 25000 }); await tab.click(); await page.waitForTimeout(500);
+  const viewButton = () => page.getByRole('button', { name: /^Vue : / });
+  const goView = async (name) => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); await b.click(); await page.getByRole('menuitemradio', { name }).click(); };
+  const viewItems = async () => { await viewButton().click(); const t = await page.getByRole('menuitemradio').allInnerTexts(); await page.keyboard.press('Escape'); return t.map(s => s.replace(/\s+/g, ' ').trim()); };
+  const viewLabel = async () => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); return ((await b.getAttribute('aria-label')) || '').replace(/^Vue : /, '').replace(/\. Changer de vue$/, ''); };
+  await page.goto(BASE + '/pilote/projets'); await goView('Tableau'); await page.waitForTimeout(500);
   await openMenu();
   check('9 le Tableau propose l\'export (sans « Imprimer / PDF »)', (await page.getByRole('menuitem', { name: 'CSV (projets)' }).count()) === 1 && (await page.getByRole('menuitem', { name: 'Imprimer / PDF' }).count()) === 0);
   await page.keyboard.press('Escape');
   // Calendrier : export + impression
-  await page.getByRole('radio', { name: 'Calendrier' }).click(); await page.waitForTimeout(500); await openMenu();
+  await goView('Calendrier'); await page.waitForTimeout(500); await openMenu();
   check('10 le Calendrier propose l\'export et « Imprimer / PDF »', (await page.getByRole('menuitem', { name: 'Excel (projets et tâches)' }).count()) === 1 && (await page.getByRole('menuitem', { name: 'Imprimer / PDF' }).count()) === 1);
   await page.evaluate(() => { window.print = () => {}; });
   await page.getByRole('menuitem', { name: 'Imprimer / PDF' }).click(); await page.waitForTimeout(400);

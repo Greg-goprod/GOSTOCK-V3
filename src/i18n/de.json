@@ -3751,5 +3751,10 @@
 "Temps réellement passé": "Tatsächlich aufgewendete Zeit",
 "{0} h valorisées sur {1} h saisies.": "{0} h bewertet von {1} h erfasst.",
 "{0} h de personnes sans taux horaire ne sont pas valorisées.": "{0} h von Personen ohne Stundensatz werden nicht bewertet.",
-"Aucun temps saisi dans ce projet.": "In diesem Projekt wurde keine Zeit erfasst."
+"Aucun temps saisi dans ce projet.": "In diesem Projekt wurde keine Zeit erfasst.",
+"Changer de vue": "Ansicht wechseln",
+"Vue : {0}. Changer de vue": "Ansicht: {0}. Ansicht wechseln",
+"En retard seulement ({0})": "Nur überfällige ({0})",
+"Listes": "Listen",
+"(sur cet appareil)": "(auf diesem Gerät)"
 }

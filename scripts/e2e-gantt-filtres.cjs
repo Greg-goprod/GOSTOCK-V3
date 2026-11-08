@@ -86,24 +86,24 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   n = await names();
   check('7 « En retard » : Montage scène et Prototype boîtier, pas Livraison ni Réglage', n.includes('Montage scène') && n.includes('Prototype boîtier') && !n.includes('Livraison faite') && !n.includes('Réglage lumière'), n.join(' | '));
   // + personne
-  await page.getByRole('button', { name: /^Personne/ }).click(); await page.getByRole('menuitemradio', { name: 'Autre Personne' }).click(); await page.waitForTimeout(500);
+  await page.getByRole('button', { name: /^Filtres/ }).click(); await page.getByLabel(/^Personne/).selectOption({ label: 'Autre Personne' }); await page.waitForTimeout(500);
   n = await names();
   check('8 En retard + Autre Personne : Beta > Prototype seulement', n.includes('Prototype boîtier') && !n.includes('Montage scène') && !n.includes('Projet Alpha'), n.join(' | '));
-  check('9 le menu Personne affiche la personne choisie', (await page.getByRole('button', { name: /Personne : Autre Personne/ }).count()) === 1);
+  check('9 le bouton « Filtres » compte les filtres actifs (en retard + personne = 2) et le panneau montre la personne choisie', (await page.getByRole('button', { name: 'Filtres (2)' }).count()) === 1 && (await page.getByLabel(/^Personne/).evaluate(e => e.options[e.selectedIndex].text)) === 'Autre Personne');
 
   // Vues enregistrées
-  await page.getByRole('button', { name: /^Vues/ }).click(); await page.getByRole('menuitem', { name: /Enregistrer la vue actuelle/ }).click();
+  await page.getByRole('button', { name: /Enregistrer la vue actuelle/ }).click();
   await page.getByRole('dialog').getByRole('textbox').fill('Retards de Autre'); await page.getByRole('button', { name: 'Valider' }).click(); await page.waitForTimeout(500);
   const stored = await page.evaluate(() => localStorage.getItem('gomat-gantt-views'));
   check('10 vue enregistrée sur l\'appareil avec ses filtres', !!stored && JSON.parse(stored).length === 1 && JSON.parse(stored)[0].filters.overdueOnly === true && JSON.parse(stored)[0].filters.userId === OTHER, stored);
   await page.getByRole('button', { name: 'Tout afficher' }).click(); await page.waitForTimeout(400);
-  check('11 « Tout afficher » remet tout à zéro', (await page.getByRole('button', { name: /Personne : Toutes/ }).count()) === 1 && (await names()).includes('Projet Alpha'));
+  check('11 « Tout afficher » remet tout à zéro (le bouton redevient « Filtres », la liste est complète)', (await page.getByRole('button', { name: 'Filtres', exact: true }).count()) === 1 && (await names()).includes('Projet Alpha'));
   await openGantt(); await expandAll();
-  await page.getByRole('button', { name: /^Vues \(1\)/ }).click(); await page.getByRole('menuitemradio', { name: 'Retards de Autre' }).click(); await page.waitForTimeout(500);
+  await page.getByRole('button', { name: /^Filtres/ }).click(); await page.getByRole('button', { name: 'Retards de Autre', exact: true }).click(); await page.waitForTimeout(500);
   n = await names();
   check('12 après rechargement, la vue réapplique les filtres', n.includes('Prototype boîtier') && !n.includes('Montage scène'), n.join(' | '));
   await page.screenshot({ path: process.argv[2] + '/p1-vue.png' });
-  await page.getByRole('button', { name: /^Vues/ }).click(); await page.getByRole('menuitem', { name: /Supprimer « Retards de Autre »/ }).click(); await page.getByRole('button', { name: 'Confirmer' }).click(); await page.waitForTimeout(400);
+  await page.getByRole('button', { name: /^Filtres/ }).click(); await page.getByRole('button', { name: /Supprimer « Retards de Autre »/ }).click(); await page.getByRole('button', { name: 'Confirmer' }).click(); await page.waitForTimeout(400);
   check('13 suppression de la vue', JSON.parse(await page.evaluate(() => localStorage.getItem('gomat-gantt-views'))).length === 0);
 
   check('14 aucune erreur JavaScript', errs.length === 0, errs.slice(0, 3).join(' | '));

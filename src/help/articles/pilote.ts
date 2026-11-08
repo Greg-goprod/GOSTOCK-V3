@@ -111,7 +111,7 @@ export const PILOTE: HelpArticle[] = [
         id: 'lire',
         title: 'Lire le Gantt',
         steps: [
-          { text: 'Ouvre « PILOTE », « Projets », puis l\'onglet « Gantt ». La liste est à gauche, les barres à droite ; la ligne rouge verticale est aujourd\'hui et les week-ends sont grisés.' },
+          { text: 'Ouvre « PILOTE », « Projets », puis choisis la vue « Gantt » dans le menu « Vue » (en haut à gauche). La liste est à gauche, les barres à droite ; la ligne rouge verticale est aujourd\'hui et les week-ends sont grisés.' },
           { text: 'Les projets sont rangés par « État » (par défaut) : ouvre « Grouper » pour choisir « Type ». Un groupe se plie et se déplie avec sa flèche.' },
           { text: 'Au départ, seuls les groupes et les projets sont visibles. Clique sur la flèche d\'un projet pour voir ses phases et tâches, ou ouvre le menu « … » : « Tout déplier » puis « Replier » (retour à l\'ouverture de départ).' },
           { text: 'Ouvre « Échelle » pour choisir la période affichée : 1 jour, 1 semaine, 2 semaines, 1 mois, 3 mois, 6 mois ou 1 année (le plan annuel), ou « Période libre… » avec le sélecteur de dates (1er clic = début, 2e clic = fin). Les flèches et « Aujourd\'hui » déplacent la fenêtre.' },
@@ -125,10 +125,10 @@ export const PILOTE: HelpArticle[] = [
         id: 'tableau-calendrier',
         title: 'Le Tableau par état et le Calendrier',
         steps: [
-          { text: 'Sur la page « Projets », l\'onglet « Tableau » range tes tâches et jalons en colonnes, une par état (Pas commencé, En cours, Terminé…). Le bouton « Projets » en haut du tableau affiche à la place les projets eux-mêmes.' },
+          { text: 'Sur la page « Projets », la vue « Tableau » (menu « Vue ») range tes tâches et jalons en colonnes, une par état (Pas commencé, En cours, Terminé…). Le bouton « Projets » en haut du tableau affiche à la place les projets eux-mêmes.' },
           { text: 'Pour changer l\'état d\'une carte, glisse-la dans une autre colonne (réservé à qui peut modifier), ou ouvre le menu « … » de la carte puis « Déplacer vers » : c\'est la méthode au clavier et au téléphone. Si quelqu\'un a modifié la carte entre-temps, elle n\'est pas écrasée : un message te le dit et le tableau se recharge.' },
           { text: 'Un clic sur le nom d\'une carte ouvre sa fiche. Les phases n\'ont pas de carte (elles regroupent des tâches qui ont la leur). Un triangle rouge et une date en rouge signalent un retard.' },
-          { text: 'L\'onglet « Calendrier » montre les éléments datés sur un mois ou une semaine : chaque élément est une barre qui le suit d\'un bout à l\'autre, les week-ends sont grisés, les jours fériés et fermetures du calendrier de travail sont en ambre, et aujourd\'hui est entouré. S\'il y a trop d\'éléments un jour, « +n » ouvre la semaine.' },
+          { text: 'La vue « Calendrier » (menu « Vue ») montre les éléments datés sur un mois ou une semaine : chaque élément est une barre qui le suit d\'un bout à l\'autre, les week-ends sont grisés, les jours fériés et fermetures du calendrier de travail sont en ambre, et aujourd\'hui est entouré. S\'il y a trop d\'éléments un jour, « +n » ouvre la semaine.' },
           { text: 'Les mêmes recherche, filtres (personne, état, priorité, type, en retard) et vues enregistrées que le Gantt sont proposés dans le Tableau et le Calendrier.' },
         ],
         problems: [
@@ -270,7 +270,7 @@ export const PILOTE: HelpArticle[] = [
         title: 'Historique, modifications groupées, annuler et raccourcis',
         steps: [
           { text: 'Historique : ouvre une tâche ou un projet puis la section « Historique » (repliée au départ). Elle liste, du plus récent au plus ancien, qui a changé quoi et quand : nom, état, priorité, dates, estimation, parent… (la description indique seulement « modifiée »). Toute personne qui voit le projet peut la lire. Elle montre les 100 derniers changements.' },
-          { text: 'Modifications groupées (onglet « Tableau ») : coche la case de plusieurs cartes. Une barre apparaît : « État », « Priorité », « Assigner à » (une personne de l\'équipe du projet), « Décaler… » (de n jours, négatif pour avancer) et « Supprimer » (avec confirmation). Chaque action part en une seule requête ; si certaines cartes ne sont pas modifiables (droits), la notification indique « n sur m modifiés ».' },
+          { text: 'Modifications groupées (vue « Tableau ») : coche la case de plusieurs cartes. Une barre apparaît : « État », « Priorité », « Assigner à » (une personne de l\'équipe du projet), « Décaler… » (de n jours, négatif pour avancer) et « Supprimer » (avec confirmation). Chaque action part en une seule requête ; si certaines cartes ne sont pas modifiables (droits), la notification indique « n sur m modifiés ».' },
           { text: 'Annuler : après un changement d\'état (une carte ou plusieurs), un décalage groupé, un déplacement ou un changement de dates dans le Gantt, une notification propose « Annuler » pendant quelques secondes ; Ctrl+Z défait la dernière action de la vue (jusqu\'à 20). Limites : annuler des dates remet celles de cet élément mais pas celles des éléments liés que la dépendance avait déjà décalés ; une suppression ne s\'annule pas ; la pile d\'annulation se vide quand tu quittes la vue.' },
           { text: 'Raccourcis (hors saisie et quand aucune fiche n\'est ouverte) : « / » cherche, « n » crée (projet dans le Gantt, tâche dans le Tableau), « t » revient à aujourd\'hui (Gantt et Calendrier), les flèches ← → changent de période (Calendrier), Ctrl+Z annule, « ? » affiche l\'aide. Le bouton clavier de la barre d\'outils ouvre la même aide.' },
         ],
@@ -284,9 +284,9 @@ export const PILOTE: HelpArticle[] = [
         steps: [
           { text: 'Au-dessus du Gantt, le champ « Rechercher » cherche dans les noms et les descriptions (sans tenir compte des majuscules ni des accents). Si le nom d\'un projet correspond, tous ses éléments restent visibles.' },
           { text: 'Les menus « Personne », « État », « Priorité » et « Type » réduisent la liste. Ils se combinent : par exemple « Personne : Marie » et « État : En cours ». Une phase ou un projet reste affiché tant qu\'un de ses éléments correspond.' },
-          { text: 'Une ligne est « en retard » quand sa date de fin est passée et qu\'elle n\'est ni terminée ni annulée : un triangle rouge apparaît dans la liste et la barre est cerclée de rouge. Le bouton « En retard (n) » affiche seulement ces lignes ; le nombre compte tous les projets et éléments, même ceux que tes filtres masquent.' },
-          { text: 'Ouvre « Vues » puis « Enregistrer la vue actuelle… » pour garder une combinaison de filtres (et le regroupement) sous un nom, par exemple « Mes retards ». Elle se réapplique d\'un clic. Les vues sont enregistrées sur l\'appareil que tu utilises : elles ne suivent pas ton compte sur un autre ordinateur.' },
-          { text: '« Tout afficher » efface la recherche et tous les filtres.' },
+          { text: 'Une ligne est « en retard » quand sa date de fin est passée et qu\'elle n\'est ni terminée ni annulée : un triangle rouge apparaît dans la liste et la barre est cerclée de rouge. La case « En retard seulement (n) » du panneau « Filtres » n\'affiche que ces lignes ; le nombre compte tous les projets et éléments, même ceux que tes filtres masquent.' },
+          { text: 'Ouvre « Filtres » : en bas du panneau, la section « Vues enregistrées » propose « Enregistrer la vue actuelle… » pour garder une combinaison de filtres (et le regroupement) sous un nom, par exemple « Mes retards ». Elle se réapplique d\'un clic. Les vues sont enregistrées sur l\'appareil que tu utilises : elles ne suivent pas ton compte sur un autre ordinateur.' },
+          { text: '« Tout afficher » (à côté de « Filtres » dès qu\'un filtre est actif) efface la recherche et tous les filtres.' },
         ],
         problems: [
           { if: 'Le Gantt est vide alors qu\'il y a des projets.', then: 'Des filtres sont probablement actifs : clique sur « Tout afficher ».' },
@@ -311,7 +311,7 @@ export const PILOTE: HelpArticle[] = [
         title: 'Utiliser et créer des modèles de projet',
         who: 'Créer : administrateur et responsable. Voir : toute personne qui voit les projets.',
         steps: [
-          { text: 'Sur la page « Projets », ouvre l\'onglet « Modèles ». Un modèle est un projet type : ses phases, tâches, jalons, dépendances et listes à cocher, sans équipe ni assignation. Il n\'apparaît ni dans le Gantt, ni dans la liste des projets, et n\'envoie aucun avis.' },
+          { text: 'Sur la page « Projets », choisis la vue « Modèles » dans le menu « Vue ». Un modèle est un projet type : ses phases, tâches, jalons, dépendances et listes à cocher, sans équipe ni assignation. Il n\'apparaît ni dans le Gantt, ni dans la liste des projets, et n\'envoie aucun avis.' },
           { text: 'Pour partir de zéro, clique sur « Ajouter les modèles de départ » : trois modèles sont créés (Montage d\'un événement, Recrutement, Conception / R&D). Rien n\'est créé sans ce clic, et ceux qui existent déjà ne sont pas recréés. Ce sont des bases à adapter à ton métier.' },
           { text: 'Clique sur « Utiliser ce modèle », donne un nom et le jour de début : un vrai projet est créé, avec toutes ses dates décalées pour commencer ce jour-là. Il s\'ouvre aussitôt ; ajoute ensuite l\'équipe et les assignations.' },
           { text: 'Pour faire un modèle de l\'un de tes projets, ouvre ce projet (« Modifier ») puis « Enregistrer comme modèle… » : le projet reste tel quel, et une copie sans équipe ni assignation rejoint « Modèles ».' },

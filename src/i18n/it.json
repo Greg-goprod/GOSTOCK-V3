@@ -3751,5 +3751,10 @@
 "Temps réellement passé": "Tempo effettivamente impiegato",
 "{0} h valorisées sur {1} h saisies.": "{0} h valorizzate su {1} h registrate.",
 "{0} h de personnes sans taux horaire ne sont pas valorisées.": "{0} h di persone senza tariffa oraria non sono valorizzate.",
-"Aucun temps saisi dans ce projet.": "Nessun tempo registrato in questo progetto."
+"Aucun temps saisi dans ce projet.": "Nessun tempo registrato in questo progetto.",
+"Changer de vue": "Cambia vista",
+"Vue : {0}. Changer de vue": "Vista: {0}. Cambia vista",
+"En retard seulement ({0})": "Solo in ritardo ({0})",
+"Listes": "Elenchi",
+"(sur cet appareil)": "(su questo dispositivo)"
 }

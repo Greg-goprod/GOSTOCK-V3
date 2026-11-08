@@ -12,6 +12,7 @@ import Button from '../components/common/Button';
 import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import { usePiloteLive } from '../components/pilote/usePiloteLive';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
+import { ToolbarPart } from '../components/pilote/PiloteToolbar';
 import ExportMenu from '../components/pilote/ExportMenu';
 import { useViewFilters } from '../components/pilote/useViewFilters';
 import { usePiloteShortcuts } from '../components/pilote/usePiloteShortcuts';
@@ -70,23 +71,21 @@ const PiloteCalendar: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* UNE seule ligne d'outils (celle de la page Projets) : période et recherche à gauche, export et Mois / Semaine à droite */}
+      <ToolbarPart side="left">
           <Button variant="outline" size="sm" onClick={() => go(-1)} ariaLabel={view === 'month' ? 'Mois précédent' : 'Semaine précédente'} icon={<ChevronLeft size={14} />} />
           <Button variant="outline" size="sm" onClick={goToday}>Aujourd'hui</Button>
           <Button variant="outline" size="sm" onClick={() => go(1)} ariaLabel={view === 'month' ? 'Mois suivant' : 'Semaine suivante'} icon={<ChevronRight size={14} />} />
           <h2 className="ml-1 text-base font-bold capitalize text-gray-900 dark:text-white" aria-live="polite" data-calendar-title>{title}</h2>
-        </div>
-        <div className="flex items-center gap-2">
+        <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
+          onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
+      </ToolbarPart>
+      <ToolbarPart side="right">
           <ShortcutsHelp rows={[{ keys: '/', what: 'Chercher' }, { keys: 't', what: 'Revenir à aujourd\'hui' }, { keys: '←  →', what: 'Période précédente / suivante' }]} />
           <ExportMenu data={shown} userName={id => userNames.get(id) ?? '—'} today={today} printable />
           <MxSegmented aria-label="Période du calendrier" value={view} onChange={v => { if (v === 'week') setWeekStart(mondayOf(month === today.slice(0, 7) ? today : `${month}-01`)); setView(v as 'month' | 'week'); }}
             options={[{ value: 'month', label: 'Mois' }, { value: 'week', label: 'Semaine' }]} />
-        </div>
-      </div>
-
-      <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
-        onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
+      </ToolbarPart>
 
       {events.length === 0 && hasFilters(filters) && <MxEmpty icon={CalendarDays} title="Aucun résultat" description="Aucun élément ne correspond à ces filtres. Utilise « Tout afficher » pour revenir à la liste complète." />}
 

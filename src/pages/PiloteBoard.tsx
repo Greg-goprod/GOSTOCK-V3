@@ -17,6 +17,7 @@ import ItemDrawer, { type ItemTarget } from '../components/pilote/ItemDrawer';
 import { usePiloteLive } from '../components/pilote/usePiloteLive';
 import ProjectForm, { type ProjectTarget } from '../components/pilote/ProjectForm';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
+import { ToolbarPart } from '../components/pilote/PiloteToolbar';
 import ExportMenu from '../components/pilote/ExportMenu';
 import { useViewFilters } from '../components/pilote/useViewFilters';
 import { useUndo } from '../components/pilote/useUndo';
@@ -138,20 +139,20 @@ const PiloteBoard: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* UNE seule ligne d'outils (celle de la page Projets) */}
+      <ToolbarPart side="left">
         <MxSegmented aria-label="Contenu du tableau" value={mode} onChange={v => { setSelected(new Set()); setMode(v as BoardMode); }} options={[{ value: 'items', label: 'Tâches et jalons' }, { value: 'projects', label: 'Projets' }]} />
-        <div className="flex flex-wrap items-center gap-2">
+        <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
+          onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
+      </ToolbarPart>
+      <ToolbarPart side="right">
           <ShortcutsHelp rows={[{ keys: '/', what: 'Chercher' }, { keys: 'n', what: 'Nouvelle tâche' }, { keys: 'Ctrl+Z', what: 'Annuler la dernière action' }]} />
           <ExportMenu data={shown} userName={id => userName.get(id) ?? '—'} today={today} />
           {rights.create && mode === 'items' && data.projects.length > 0 && (
             <Button icon={<Plus size={14} />} onClick={() => setItemTarget({ mode: 'new', kind: 'task' })}>Nouvelle tâche</Button>
           )}
           {rights.create && mode === 'projects' && <Button icon={<Plus size={14} />} onClick={() => setProjectTarget({ mode: 'new' })}>Nouveau projet</Button>}
-        </div>
-      </div>
-
-      <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
-        onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
+      </ToolbarPart>
 
       {chosen.length > 0 && (
         <div role="region" aria-label="Modifications groupées" data-bulk-bar className="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-md border border-primary-300 bg-primary-50 p-2 dark:border-primary-700 dark:bg-primary-900/30">

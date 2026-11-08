@@ -484,14 +484,14 @@ function abort(e) {
   });
   await step('B-mes-taches-ecran', 'Écran « Mes tâches » : le collaborateur voit SA tâche (projet C) et pas celle du responsable ; la fiche est en lecture seule', async () => {
     await open(collab, '/pilote/projets');
-    await collab.page.getByRole('radio', { name: /^Mes tâches/ }).click(); await collab.page.waitForTimeout(1800);
+    await collab.page.getByRole('button', { name: /^Vue : / }).click(); await collab.page.getByRole('menuitemradio', { name: /^Mes tâches/ }).click(); await collab.page.waitForTimeout(1800);
     ok(await collab.page.getByRole('button', { name: `${M} Tâche C1` }).first().isVisible(), 'sa tâche est absente de « Mes tâches »');
     ok(await collab.page.getByRole('button', { name: `${M} Tâche B1` }).count() === 0, 'la tâche d\'un autre apparaît dans « Mes tâches »');
     await collab.page.getByRole('button', { name: `${M} Tâche C1` }).first().click(); await collab.page.waitForTimeout(900);
     ok(await collab.page.getByRole('button', { name: 'Fermer' }).count() > 0 && await collab.page.getByRole('button', { name: 'Enregistrer' }).count() === 0, 'la fiche d\'un lecteur n\'est pas en lecture seule');
     await collab.page.getByRole('button', { name: 'Fermer' }).last().click();
     await open(staff, '/pilote/projets');
-    await staff.page.getByRole('radio', { name: /^Mes tâches/ }).click(); await staff.page.waitForTimeout(1500);
+    await staff.page.getByRole('button', { name: /^Vue : / }).click(); await staff.page.getByRole('menuitemradio', { name: /^Mes tâches/ }).click(); await staff.page.waitForTimeout(1500);
     ok(await staff.page.getByRole('button', { name: `${M} Tâche C1` }).count() === 0 && await staff.page.getByRole('button', { name: `${M} Tâche B1` }).count() === 0, 'le magasinier voit des tâches de test qui ne lui sont pas assignées');
   }, collab.page);
   await step('B-mes-taches-groupes', 'Groupes de « Mes tâches » : en retard / à faire / sans date / terminées', async () => {
@@ -503,7 +503,7 @@ function abort(e) {
     await mk('Sans date', {});
     await mk('Fini', { starts_on: '2020-02-03', ends_on: '2020-02-07', status_id: S.st.done });
     await open(resp, '/pilote/projets');
-    await resp.page.getByRole('radio', { name: /^Mes tâches/ }).click(); await resp.page.waitForTimeout(1800);
+    await resp.page.getByRole('button', { name: /^Vue : / }).click(); await resp.page.getByRole('menuitemradio', { name: /^Mes tâches/ }).click(); await resp.page.waitForTimeout(1800);
     const where = async name => resp.page.locator('section', { has: resp.page.getByRole('button', { name: `${M} ${name}` }) }).first().getAttribute('aria-label');
     const got = { Retard: await where('Retard'), Futur: await where('Futur'), 'Sans date': await where('Sans date'), Fini: await where('Fini') };
     ok(got.Retard === 'En retard' && got.Futur === 'À faire' && got['Sans date'] === 'Sans date' && got.Fini === 'Terminées ou annulées', `groupes = ${JSON.stringify(got)}`);

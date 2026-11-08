@@ -61,7 +61,9 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   });
   const results = []; const check = (name, ok, detail = '') => { results.push(ok); console.log(ok ? 'OK    ' : 'ÉCHEC ', name, ok ? '' : `— ${detail}`); };
 
-  const goView = async (name) => { await page.goto(BASE + '/pilote/projets'); const tab = page.getByRole('radio', { name }).or(page.getByRole('button', { name })).first(); await tab.waitFor({ timeout: 25000 }); await tab.click(); await page.waitForTimeout(600); };
+  const viewButton = () => page.getByRole('button', { name: /^Vue : / });
+  const selectView = async (name) => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); await b.click(); await page.getByRole('menuitemradio', { name }).click(); await page.waitForTimeout(600); };
+  const goView = async (name) => { await page.goto(BASE + '/pilote/projets'); await selectView(name); };
   const colOf = (name) => page.getByRole('listitem', { name: new RegExp('^' + name) });
   const cardNames = async (col) => (await col.locator('article button[title]').allInnerTexts()).map(s => s.trim());
 

@@ -280,7 +280,7 @@ function abort(e) {
   group = 'P4 Écran';
   await step('P4-ouverture', 'Responsable : PILOTE › Projets s\'ouvre, les projets de test s\'affichent, compteurs par état', async () => {
     await open(resp, '/pilote/projets');
-    ok(await resp.page.getByRole('radio', { name: /^Projets/ }).count(), 'écran des projets inaccessible');
+    ok(await resp.page.getByRole('button', { name: /^Vue : / }).count(), 'écran des projets inaccessible');
     // Le titre d'une carte (h3) : un simple getByText tomberait d'abord sur une option invisible d'un filtre
     ok(await resp.page.locator('h3', { hasText: `${M} Festival` }).first().isVisible(), 'projet de test absent');
     ok(await resp.page.locator('[aria-label="Projets par état"] button').count() === 4, 'compteurs par famille absents');
@@ -368,7 +368,7 @@ function abort(e) {
   }, resp.page);
   await step('P4-mes-taches', 'Onglet « Mes tâches » : la tâche assignée au responsable s\'affiche et ouvre sa fiche', async () => {
     await open(resp, '/pilote/projets');
-    await resp.page.getByRole('radio', { name: /^Mes tâches/ }).click(); await resp.page.waitForTimeout(1500);
+    await resp.page.getByRole('button', { name: /^Vue : / }).click(); await resp.page.getByRole('menuitemradio', { name: /^Mes tâches/ }).click(); await resp.page.waitForTimeout(1500);
     ok(await resp.page.getByRole('button', { name: `${M} Tâche équipe` }).first().isVisible(), 'tâche assignée absente de « Mes tâches »');
     await resp.page.getByRole('button', { name: `${M} Tâche équipe` }).first().click(); await resp.page.waitForTimeout(1000);
     ok(await resp.page.locator('#itm-name').inputValue() === `${M} Tâche équipe`, 'la fiche de la tâche ne s\'ouvre pas');
@@ -389,16 +389,16 @@ function abort(e) {
   }, resp.page);
   await step('U6-onglets', 'Page unique : vues Gantt / Projets / Mes tâches, plus d\'entrée « Gantt » dans la navigation, /pilote/gantt ouvre la vue Gantt', async () => {
     await open(resp, '/pilote/projets');
-    for (const n of [/^Gantt$/, /^Projets/, /^Mes tâches/]) ok(await resp.page.getByRole('radio', { name: n }).count() === 1, `vue absente : ${n}`);
+    await resp.page.getByRole('button', { name: /^Vue : / }).click(); for (const n of [/^Gantt$/, /^Projets/, /^Mes tâches/]) ok(await resp.page.getByRole('menuitemradio', { name: n }).count() === 1, `vue absente : ${n}`); await resp.page.keyboard.press('Escape');
     ok(await resp.page.getByRole('radio', { name: /^États/ }).count() === 0, 'les états ne devraient plus être un onglet');
     ok(await resp.page.locator('a[href="/pilote/gantt"]').count() === 0, 'la navigation propose encore une entrée « Gantt »');
-    ok(await resp.page.getByRole('radio', { name: /^Projets/ }).isChecked(), 'la vue « Projets » devrait être celle par défaut');
-    await resp.page.getByRole('radio', { name: /^Gantt$/ }).click(); await resp.page.waitForTimeout(2500);
+    ok(((await resp.page.getByRole('button', { name: /^Vue : / }).getAttribute('aria-label')) || '').startsWith('Vue : Projets'), 'la vue « Projets » devrait être celle par défaut');
+    await resp.page.getByRole('button', { name: /^Vue : / }).click(); await resp.page.getByRole('menuitemradio', { name: /^Gantt$/ }).click(); await resp.page.waitForTimeout(2500);
     ok(await resp.page.locator('button[aria-haspopup="menu"]').filter({ hasText: /Échelle/ }).first().isVisible(), 'la vue Gantt n\'affiche pas sa barre d\'outils');
-    await resp.page.getByRole('radio', { name: /^Projets/ }).click(); await resp.page.waitForTimeout(800);
+    await resp.page.getByRole('button', { name: /^Vue : / }).click(); await resp.page.getByRole('menuitemradio', { name: /^Projets/ }).click(); await resp.page.waitForTimeout(800);
     ok(await resp.page.getByRole('button', { name: 'Nouveau projet' }).first().isVisible(), '« Nouveau projet » absent de la vue Projets');
     await open(resp, '/pilote/gantt');
-    ok(await resp.page.getByRole('radio', { name: /^Gantt$/ }).isChecked(), '/pilote/gantt devrait ouvrir la vue Gantt');
+    ok(((await resp.page.getByRole('button', { name: /^Vue : / }).getAttribute('aria-label')) || '').startsWith('Vue : Gantt'), '/pilote/gantt devrait ouvrir la vue Gantt');
   }, resp.page);
   await step('P4-programmes-etats', 'Réglages : états d\'avancement derrière l\'icône, lignes visibles, états de base non supprimables, retour aux projets', async () => {
     await open(resp, '/pilote/projets');
@@ -409,12 +409,12 @@ function abort(e) {
     ok(/De base/.test(txt), 'mention « De base » absente');
     ok((await resp.page.locator('table tbody tr', { hasText: 'De base' }).getByRole('button', { name: 'Supprimer' }).count()) === 0, 'bouton Supprimer sur un état de base');
     await resp.page.getByRole('button', { name: 'Retour aux projets' }).click(); await resp.page.waitForTimeout(500);
-    ok(await resp.page.getByRole('radio', { name: /^Projets/ }).isChecked(), 'le retour ne ramène pas à la vue Projets');
+    ok(((await resp.page.getByRole('button', { name: /^Vue : / }).getAttribute('aria-label')) || '').startsWith('Vue : Projets'), 'le retour ne ramène pas à la vue Projets');
   }, resp.page);
   for (const c of readers) {
     await step(`P4-${c.who}-ecran`, `${c.who} : l\'écran s\'ouvre en lecture seule`, async () => {
       await open(c, '/pilote/projets');
-      ok(await c.page.getByRole('radio', { name: /^Projets/ }).count(), 'écran inaccessible');
+      ok(await c.page.getByRole('button', { name: /^Vue : / }).count(), 'écran inaccessible');
       ok((await c.page.getByRole('button', { name: 'Nouveau projet' }).count()) === 0, 'bouton « Nouveau projet » présent');
       ok((await c.page.getByRole('button', { name: 'Modifier' }).count()) === 0, 'bouton « Modifier » présent');
     }, c.page);

@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CalendarOff, ListChecks, Settings, Users } from 'lucide-react';
+import { ArrowLeft, CalendarOff, LayoutGrid, ListChecks, Settings, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { loadBudgetRights } from '../lib/budget';
 import { FAMILY_LABEL, FAMILY_ORDER, loadGantt, loadPilote, loadPiloteRights, piloteError, STATE_COLORS, type CpStatus, type GanttData, type PiloteData, type PiloteRights } from '../lib/pilote';
 import PageTitle from '../components/common/PageTitle';
 import { MxBadge } from '../components/mx/MxBadge';
-import { MxSegmented } from '../components/mx/MxSegmented';
 import { CrudSection } from '../components/sitePlanning/CrudSection';
 import ProjectsSection from '../components/pilote/ProjectsSection';
 import ItemDrawer from '../components/pilote/ItemDrawer';
@@ -23,13 +22,10 @@ import PiloteBudget from './PiloteBudget';
 import ExternalsAdmin from '../components/pilote/ExternalsAdmin';
 import RunningTimerBar from '../components/pilote/RunningTimerBar';
 import { usePiloteLive } from '../components/pilote/usePiloteLive';
+import { ToolbarSlotsProvider, type ToolbarSlots } from '../components/pilote/PiloteToolbar';
 
 type Section = 'dashboard' | 'budget' | 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar' | 'externals';
 const VIEWS: Section[] = ['dashboard', 'budget', 'gantt', 'board', 'agenda', 'workload', 'projects', 'mytasks', 'templates'];
-// « Pilotage » regroupe trois vues de pilotage du portefeuille : la synthèse, le budget et la charge (les adresses ?view=dashboard, budget et workload restent valables)
-type PilotageView = 'dashboard' | 'budget' | 'workload';
-const PILOTAGE: PilotageView[] = ['dashboard', 'budget', 'workload'];
-const isPilotage = (s: Section): s is PilotageView => (PILOTAGE as Section[]).includes(s);
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const Dot = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} />;
@@ -50,7 +46,10 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
   const [section, setSection] = useState<Section>(initialView ?? (VIEWS.includes(asked as Section) ? (asked as Section) : 'projects'));
   // Le budget est réservé aux personnes qui ont le droit « budget » : sans lui, la sous-vue n'est pas proposée
   const [canBudget, setCanBudget] = useState(false);
-  const [lastPilotage, setLastPilotage] = useState<PilotageView>('dashboard');
+  const [slots, setSlots] = useState<ToolbarSlots>({ left: null, right: null });
+  // Références stables : une fonction recréée à chaque rendu serait rappelée (nulle puis l'élément) et relancerait le rendu sans fin
+  const setLeft = useCallback((el: HTMLElement | null) => { if (el) setSlots(prev => (prev.left === el ? prev : { ...prev, left: el })); }, []);
+  const setRight = useCallback((el: HTMLElement | null) => { if (el) setSlots(prev => (prev.right === el ? prev : { ...prev, right: el })); }, []);
   const [deepItem, setDeepItem] = useState<{ itemId: string; data: GanttData; focus?: 'discussion' } | null>(null);
 
   const clearLink = useCallback(() => {
@@ -80,7 +79,6 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
     try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], projects: [], templates: [], members: [], sites: [] }); }
   }, []);
   useEffect(() => { void reload(); void loadPiloteRights().then(setRights); void loadBudgetRights().then(r => setCanBudget(r.read)); }, [reload]);
-  useEffect(() => { if (isPilotage(section)) setLastPilotage(section); }, [section]);
   usePiloteLive(reload, !!deepItem);
   const closeDeepItem = useCallback(() => setDeepItem(null), []);
   const refreshDeepItem = useCallback(async () => {
@@ -93,6 +91,20 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
   if (!data) return <p className="text-gray-500 dark:text-gray-400 font-medium">Chargement…</p>;
 
   const settingsOpen = section === 'statuses' || section === 'calendar' || section === 'externals';
+  // Menu des vues : un seul bouton qui dit où l'on est (remplace deux rangées d'onglets)
+  const VIEW_LABEL: Record<string, string> = {
+    dashboard: 'Synthèse', budget: 'Budget', workload: 'Charge', gantt: 'Gantt', board: 'Tableau', agenda: 'Calendrier',
+    projects: `Projets (${data.projects.length})`, mytasks: 'Mes tâches', templates: `Modèles (${data.templates.length})`,
+  };
+  const pick = (v: Section) => ({ id: v, label: VIEW_LABEL[v], checked: section === v, onSelect: () => setSection(v) });
+  const viewMenu = (
+    <MenuButton id="pilote-view" menuLabel="Changer de vue" ariaLabel={`Vue : ${VIEW_LABEL[section] ?? ''}. Changer de vue`} icon={<LayoutGrid size={14} />} value={VIEW_LABEL[section] ?? ''}
+      groups={[
+        { id: 'pilotage', label: 'Pilotage', items: [pick('dashboard'), ...(canBudget || section === 'budget' ? [pick('budget')] : []), pick('workload')] },
+        { id: 'views', label: 'Planification', items: [pick('gantt'), pick('board'), pick('agenda')] },
+        { id: 'lists', label: 'Listes', items: [pick('projects'), pick('mytasks'), pick('templates')] },
+      ]} />
+  );
 
   return (
     <div className="space-y-4">
@@ -110,16 +122,12 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
           <ArrowLeft size={14} aria-hidden /> Retour aux projets
         </button>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <MxSegmented aria-label="Vues des projets" value={isPilotage(section) ? 'pilotage' : section} onChange={v => setSection(v === 'pilotage' ? lastPilotage : v as Section)} options={[
-            { value: 'pilotage', label: 'Pilotage' },
-            { value: 'gantt', label: 'Gantt' },
-            { value: 'board', label: 'Tableau' },
-            { value: 'agenda', label: 'Calendrier' },
-            { value: 'projects', label: `Projets (${data.projects.length})` },
-            { value: 'mytasks', label: 'Mes tâches' },
-            { value: 'templates', label: `Modèles (${data.templates.length})` },
-          ]} />
+        // UNE seule ligne d'outils : la vue (menu), puis les outils de la vue (à gauche : chercher, filtrer, afficher ; à droite : exporter, créer), puis les réglages
+        <div className="relative flex flex-wrap items-center gap-2" data-pilote-toolbar>
+          {viewMenu}
+          <div ref={setLeft} className="contents" />
+          <div className="min-w-0 flex-1" />
+          <div ref={setRight} className="contents" />
           <MenuButton id="pilote-settings" menuLabel="Réglages des projets" iconOnly ariaLabel="Réglages des projets" icon={<Settings size={16} />}
             actions={[
               { id: 'statuses', label: `États d'avancement (${data.statuses.length})`, icon: ListChecks, onSelect: () => setSection('statuses') },
@@ -129,23 +137,17 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
         </div>
       )}
 
-      {!settingsOpen && isPilotage(section) && (
-        <MxSegmented aria-label="Pilotage" value={section} onChange={v => setSection(v as Section)} options={[
-          { value: 'dashboard', label: 'Synthèse' },
-          ...(canBudget || section === 'budget' ? [{ value: 'budget', label: 'Budget' }] : []),
-          { value: 'workload', label: 'Charge' },
-        ]} />
-      )}
-
       {section === 'dashboard' && <PiloteDashboard />}
 
       {section === 'budget' && <PiloteBudget />}
 
-      {section === 'gantt' && <PiloteGantt embedded />}
+      <ToolbarSlotsProvider value={slots}>
+        {section === 'gantt' && <PiloteGantt embedded />}
 
-      {section === 'board' && <PiloteBoard />}
+        {section === 'board' && <PiloteBoard />}
 
-      {section === 'agenda' && <PiloteCalendar />}
+        {section === 'agenda' && <PiloteCalendar />}
+      </ToolbarSlotsProvider>
 
       {section === 'workload' && <PiloteWorkload />}
 

@@ -17,6 +17,7 @@ import PeriodControls from '../components/common/PeriodControls';
 import MenuButton from '../components/common/MenuButton';
 import GanttChart from '../components/pilote/GanttChart';
 import GanttFilterBar from '../components/pilote/GanttFilterBar';
+import { ToolbarPart } from '../components/pilote/PiloteToolbar';
 import ExportMenu from '../components/pilote/ExportMenu';
 import { useUndo } from '../components/pilote/useUndo';
 import { usePiloteShortcuts } from '../components/pilote/usePiloteShortcuts';
@@ -205,14 +206,15 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
         </div>
       )}
 
-      {/* Une seule ligne d'outils, comme Notion : regroupement et échelle en menus, « sans date » et « nouveau » à droite */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* UNE seule ligne d'outils (celle de la page Projets) : à gauche chercher / filtrer / regrouper / période, à droite sans date, export, affichage, création */}
+      <ToolbarPart side="left">
+        <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
+          onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
           <MenuButton id="gantt-group" menuLabel="Regroupement" prefix="Grouper :" value={GROUPING_LABEL[grouping]}
             groups={[{ id: 'grouping', items: GROUPING_CHOICES.map(g => ({ id: g, label: GROUPING_LABEL[g], checked: grouping === g, onSelect: () => setGrouping(g) })) }]} />
           {period && <PeriodControls compact value={period} today={today} onChange={changePeriod} />}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      </ToolbarPart>
+      <ToolbarPart side="right">
           {undated.length > 0 && (
             <MenuButton id="gantt-undated" menuLabel="Éléments sans date" value={`Sans date (${undated.length})`}
               header={<p className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400">{rights.update ? 'Clique sur un élément pour le placer aujourd\'hui' : 'Éléments qui n\'ont pas encore de dates'}</p>}
@@ -248,11 +250,7 @@ const PiloteGantt: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => 
                 ] : []),
               ]} />
           )}
-        </div>
-      </div>
-
-      <GanttFilterBar filters={filters} onChange={setFilters} people={people} overdueCount={overdueCount} views={views}
-        onApplyView={applyView} onSaveView={() => void saveView()} onDeleteView={v => void deleteView(v)} />
+      </ToolbarPart>
 
       <div data-print-area>
       <div className="print-only hidden mb-2">

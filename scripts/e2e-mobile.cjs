@@ -84,12 +84,12 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   await page.goto(BASE + '/pilote/projets?view=gantt'); await page.waitForSelector('[role="search"]', { timeout: 20000 }); await page.waitForTimeout(800);
   const small = await page.evaluate(() => [...document.querySelectorAll('[role="search"] button, [role="search"] input')].map(e => { const r = e.getBoundingClientRect(); return [e.textContent.trim().slice(0, 20) || e.getAttribute('placeholder') || e.getAttribute('aria-label'), Math.round(r.width), Math.round(r.height)]; }).filter(([, w, h]) => w > 0 && (h < 40 || w < 40)));
   check('Gantt : les contrôles de recherche et de filtres ont une cible tactile d\'au moins 40 px de haut', small.every(([, , h]) => h >= 40), JSON.stringify(small));
-  check('téléphone : les filtres sont repliés au départ, la recherche reste visible', !(await page.locator('#gantt-filter-panel').isVisible()) && (await page.getByPlaceholder('Rechercher').isVisible()));
+  check('téléphone : les filtres sont repliés au départ, la recherche reste visible', (await page.locator('[data-filter-panel]').count()) === 0 && (await page.getByPlaceholder('Rechercher').isVisible()));
   await page.getByRole('button', { name: /^Filtres/ }).click(); await page.waitForTimeout(300);
-  check('téléphone : « Filtres » déplie personne, état, priorité, type, en retard et vues', (await page.locator('#gantt-filter-panel').isVisible()) && (await page.getByRole('button', { name: /^En retard/ }).isVisible()) && (await page.getByRole('button', { name: /^Vues/ }).isVisible()));
+  check('téléphone : « Filtres » déplie personne, état, priorité, type, en retard et vues enregistrées, dans la largeur de l\'écran', (await page.locator('[data-filter-panel] select').count()) === 4 && (await page.getByLabel(/En retard seulement/).isVisible()) && (await page.getByText('Vues enregistrées').isVisible()) && await page.locator('[data-filter-panel]').evaluate(e => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth + 1; }));
   await page.screenshot({ path: process.argv[2] + '/m-gantt-filtres.png' });
-  await page.getByRole('button', { name: /^En retard/ }).click(); await page.waitForTimeout(300);
-  check('téléphone : le bouton annonce le nombre de filtres actifs une fois replié', (await page.getByRole('button', { name: /^Filtres/ }).innerText()).trim().length > 0);
+  await page.getByLabel(/En retard seulement/).check(); await page.waitForTimeout(300); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  check('téléphone : le bouton annonce le nombre de filtres actifs une fois replié (Filtres (1))', (await page.getByRole('button', { name: /^Filtres/ }).innerText()).replace(/\s+/g, ' ').trim() === 'Filtres (1)');
   check('aucune erreur JavaScript', errs.length === 0, errs.slice(0, 3).join(' | '));
   console.log(`\n${results.filter(Boolean).length}/${results.length} OK`);
   await b.close();

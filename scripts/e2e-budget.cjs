@@ -85,16 +85,21 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   const txt = async (loc) => (await loc.innerText()).replace(/\s+/g, ' ').trim();
   const lastWrite = (table, method) => [...writes].reverse().find(w => w.table === table && w.method === method);
 
-  const goBudget = async () => { await page.goto(BASE + '/pilote/projets'); const top = page.getByRole('radio', { name: 'Pilotage', exact: true }); await top.waitFor({ timeout: 25000 }); await top.click(); const tab = page.getByRole('radio', { name: 'Budget', exact: true }); await tab.waitFor({ timeout: 15000 }); await tab.click(); await page.waitForSelector('[data-budget-summary]', { timeout: 15000 }); await page.waitForTimeout(500); };
+  const viewButton = () => page.getByRole('button', { name: /^Vue : / });
+  const goView = async (name) => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); await b.click(); await page.getByRole('menuitemradio', { name }).click(); };
+  const viewItems = async () => { await viewButton().click(); const t = await page.getByRole('menuitemradio').allInnerTexts(); await page.keyboard.press('Escape'); return t.map(s => s.replace(/\s+/g, ' ').trim()); };
+  const viewLabel = async () => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); return ((await b.getAttribute('aria-label')) || '').replace(/^Vue : /, '').replace(/\. Changer de vue$/, ''); };
+  const goBudget = async () => { await page.goto(BASE + '/pilote/projets'); await goView('Budget'); await page.waitForSelector('[data-budget-summary]', { timeout: 15000 }); await page.waitForTimeout(500); };
   const kpi = async (id) => (await txt(page.locator(`[data-kpi="${id}"] dd`))).replace(/\s*CHF$/, '');
 
   // 1. Navigation : un onglet « Pilotage » regroupe Synthèse, Budget et Charge
-  await page.goto(BASE + '/pilote/projets'); await page.getByRole('radio', { name: 'Pilotage', exact: true }).waitFor({ timeout: 25000 });
-  const topNames = await page.getByRole('radiogroup', { name: 'Vues des projets' }).getByRole('radio').allInnerTexts();
-  check('1 onglets principaux : Pilotage remplace Synthèse et Charge', topNames.map(s => s.replace(/\s*\(\d+\)/, '').trim()).join('|') === 'Pilotage|Gantt|Tableau|Calendrier|Projets|Mes tâches|Modèles', topNames.join('|'));
-  await page.getByRole('radio', { name: 'Pilotage', exact: true }).click(); await page.waitForTimeout(400);
-  const subNames = await page.getByRole('radiogroup', { name: 'Pilotage', exact: true }).getByRole('radio').allInnerTexts();
-  check('2 sous-vues de Pilotage : Synthèse, Budget, Charge', subNames.join('|') === 'Synthèse|Budget|Charge', subNames.join('|'));
+  await page.goto(BASE + '/pilote/projets'); await viewButton().waitFor({ timeout: 25000 });
+  const topNames = await viewItems();
+  check('1 menu des vues : Synthèse, Budget, Charge, Gantt, Tableau, Calendrier, Projets, Mes tâches, Modèles (une seule ligne d\'outils, plus d\'onglets)', topNames.map(s => s.replace(/\s*\(\d+\)/, '').trim()).join('|') === 'Synthèse|Budget|Charge|Gantt|Tableau|Calendrier|Projets|Mes tâches|Modèles', topNames.join('|'));
+  await viewButton().click(); await page.waitForTimeout(300);
+  const groupLabels = (await page.getByRole('menu').innerText()).replace(/\s+/g, ' ');
+  await page.keyboard.press('Escape');
+  check('2 le menu range les vues en trois groupes : Pilotage (Synthèse, Budget, Charge), Planification, Listes', /PILOTAGE Synthèse Budget Charge PLANIFICATION Gantt Tableau Calendrier LISTES Projets/i.test(groupLabels), groupLabels);
 
   await goBudget();
   // 2. Totaux : prévu 12000+5000+1000, engagé 8000+0+1200, réel 3500,25
@@ -173,16 +178,16 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
 
   // 8. Liens directs
   await page.goto(BASE + '/pilote/projets?view=budget'); await page.waitForSelector('[data-budget-summary]', { timeout: 20000 });
-  check('29 ?view=budget ouvre directement le budget, Pilotage sélectionné', (await page.getByRole('radio', { name: 'Pilotage', exact: true }).getAttribute('aria-checked')) === 'true' && (await page.getByRole('radio', { name: 'Budget', exact: true }).getAttribute('aria-checked')) === 'true');
+  check('29 ?view=budget ouvre directement le budget (vue affichée : Budget)', (await viewLabel()) === 'Budget');
   await page.goto(BASE + '/pilote/projets?view=dashboard'); await page.waitForSelector('[data-kpi]', { timeout: 20000 });
-  check('30 ?view=dashboard (ancien lien) ouvre la Synthèse', (await page.getByRole('radio', { name: 'Synthèse', exact: true }).getAttribute('aria-checked')) === 'true');
+  check('30 ?view=dashboard (ancien lien) ouvre la Synthèse', (await viewLabel()) === 'Synthèse');
   await page.goto(BASE + '/pilote/projets?view=workload'); await page.waitForSelector('table[aria-label="Charge par personne et par semaine"]', { timeout: 20000 });
-  check('31 ?view=workload (ancien lien) ouvre la Charge', (await page.getByRole('radio', { name: 'Charge', exact: true }).getAttribute('aria-checked')) === 'true');
+  check('31 ?view=workload (ancien lien) ouvre la Charge', (await viewLabel()) === 'Charge');
 
   // 9. Sans le droit « budget »
   budgetRights = new Set();
-  await page.goto(BASE + '/pilote/projets'); await page.getByRole('radio', { name: 'Pilotage', exact: true }).waitFor({ timeout: 25000 }); await page.getByRole('radio', { name: 'Pilotage', exact: true }).click(); await page.waitForTimeout(600);
-  const subNo = await page.getByRole('radiogroup', { name: 'Pilotage', exact: true }).getByRole('radio').allInnerTexts();
+  await page.goto(BASE + '/pilote/projets'); await viewButton().waitFor({ timeout: 25000 });
+  const subNo = (await viewItems()).slice(0, 2).map(s => s.replace(/\s*\(\d+\)/, '').trim());
   check('32 sans droit : pas d\'onglet Budget (Synthèse et Charge restent)', subNo.join('|') === 'Synthèse|Charge', subNo.join('|'));
   await page.goto(BASE + '/pilote/projets?view=budget'); const reserved = await page.getByText('Budget réservé').waitFor({ timeout: 10000 }).then(() => true, () => false); await page.waitForTimeout(500);
   check('33 sans droit, lien direct : message « Budget réservé », aucun montant affiché', reserved && (await page.locator('[data-budget-summary]').count()) === 0 && !/18'000|12'000/.test(await page.locator('body').innerText()));

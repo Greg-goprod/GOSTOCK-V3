@@ -69,7 +69,11 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   const results = []; const check = (name, ok, detail = '') => { results.push(ok); console.log(ok ? 'OK    ' : 'ÉCHEC ', name, ok ? '' : `— ${detail}`); };
 
 
-  await page.goto(BASE + '/pilote/projets'); const top = page.getByRole('radio', { name: 'Pilotage', exact: true }); await top.waitFor({ timeout: 25000 }); await top.click(); const tab = page.getByRole('radio', { name: 'Synthèse', exact: true }); await tab.waitFor({ timeout: 25000 }); await tab.click(); await page.waitForSelector('[data-kpi]', { timeout: 15000 }); await page.waitForTimeout(500);
+  const viewButton = () => page.getByRole('button', { name: /^Vue : / });
+  const goView = async (name) => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); await b.click(); await page.getByRole('menuitemradio', { name }).click(); };
+  const viewItems = async () => { await viewButton().click(); const t = await page.getByRole('menuitemradio').allInnerTexts(); await page.keyboard.press('Escape'); return t.map(s => s.replace(/\s+/g, ' ').trim()); };
+  const viewLabel = async () => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); return ((await b.getAttribute('aria-label')) || '').replace(/^Vue : /, '').replace(/\. Changer de vue$/, ''); };
+  await page.goto(BASE + '/pilote/projets'); await goView('Synthèse'); await page.waitForSelector('[data-kpi]', { timeout: 15000 }); await page.waitForTimeout(500);
   const kpi = async (k) => Number(await page.locator(`[data-kpi="${k}"]`).getAttribute('data-value'));
   check('1 projets en cours : 4 (le projet terminé n\'est pas compté)', (await kpi('running')) === 4, String(await kpi('running')));
   check('2 projets en retard : 1 (Beta)', (await kpi('late')) === 1);

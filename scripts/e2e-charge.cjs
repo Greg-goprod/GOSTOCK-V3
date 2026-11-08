@@ -65,7 +65,11 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   const results = []; const check = (name, ok, detail = '') => { results.push(ok); console.log(ok ? 'OK    ' : 'ÉCHEC ', name, ok ? '' : `— ${detail}`); };
 
 
-  const goWorkload = async () => { await page.goto(BASE + '/pilote/projets'); const top = page.getByRole('radio', { name: 'Pilotage', exact: true }); await top.waitFor({ timeout: 25000 }); await top.click(); const tab = page.getByRole('radio', { name: 'Charge', exact: true }); await tab.waitFor({ timeout: 25000 }); await tab.click(); await page.waitForSelector('table[aria-label="Charge par personne et par semaine"]', { timeout: 15000 }); await page.waitForTimeout(500); };
+  const viewButton = () => page.getByRole('button', { name: /^Vue : / });
+  const goView = async (name) => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); await b.click(); await page.getByRole('menuitemradio', { name }).click(); };
+  const viewItems = async () => { await viewButton().click(); const t = await page.getByRole('menuitemradio').allInnerTexts(); await page.keyboard.press('Escape'); return t.map(s => s.replace(/\s+/g, ' ').trim()); };
+  const viewLabel = async () => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); return ((await b.getAttribute('aria-label')) || '').replace(/^Vue : /, '').replace(/\. Changer de vue$/, ''); };
+  const goWorkload = async () => { await page.goto(BASE + '/pilote/projets'); await goView('Charge'); await page.waitForSelector('table[aria-label="Charge par personne et par semaine"]', { timeout: 15000 }); await page.waitForTimeout(500); };
   const cell = (user, weekStart) => page.locator(`tr[data-user="${user}"] button[data-week-start="${weekStart}"]`);
   const txt = async (loc) => (await loc.innerText()).replace(/\s+/g, ' ').trim();
 

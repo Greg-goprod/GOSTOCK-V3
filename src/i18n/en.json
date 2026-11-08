@@ -3751,5 +3751,10 @@
 "Temps réellement passé": "Time actually spent",
 "{0} h valorisées sur {1} h saisies.": "{0} h valued out of {1} h logged.",
 "{0} h de personnes sans taux horaire ne sont pas valorisées.": "{0} h from people without an hourly rate are not valued.",
-"Aucun temps saisi dans ce projet.": "No time logged in this project."
+"Aucun temps saisi dans ce projet.": "No time logged in this project.",
+"Changer de vue": "Change view",
+"Vue : {0}. Changer de vue": "View: {0}. Change view",
+"En retard seulement ({0})": "Overdue only ({0})",
+"Listes": "Lists",
+"(sur cet appareil)": "(on this device)"
 }

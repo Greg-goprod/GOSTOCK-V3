@@ -68,7 +68,7 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   const results = []; const check = (name, ok, detail = '') => { results.push(ok); console.log(ok ? 'OK    ' : 'ÉCHEC ', name, ok ? '' : `— ${detail}`); };
 
 
-  const goTemplates = async () => { await page.goto(BASE + '/pilote/projets'); await page.getByRole('radio', { name: /^Modèles/ }).or(page.getByRole('button', { name: /^Modèles/ })).first().waitFor({ timeout: 25000 }); await page.getByRole('radio', { name: /^Modèles/ }).or(page.getByRole('button', { name: /^Modèles/ })).first().click(); await page.waitForTimeout(500); };
+  const goTemplates = async () => { await page.goto(BASE + '/pilote/projets'); const b = page.getByRole('button', { name: /^Vue : / }); await b.waitFor({ timeout: 25000 }); await b.click(); await page.getByRole('menuitemradio', { name: /^Modèles/ }).click(); await page.waitForTimeout(500); };
 
   await goTemplates();
   check('1 onglet « Modèles (0) » et état vide', (await page.getByText('Aucun modèle', { exact: true }).count()) === 1 && (await page.getByText('Modèles (0)').count()) >= 1);
@@ -81,9 +81,9 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   await page.screenshot({ path: process.argv[2] + '/p3-modeles.png' });
 
   // Les modèles n'apparaissent nulle part ailleurs
-  await page.getByRole('radio', { name: /^Projets/ }).or(page.getByRole('button', { name: /^Projets/ })).first().click(); await page.waitForTimeout(500);
+  await page.getByRole('button', { name: /^Vue : / }).click(); await page.getByRole('menuitemradio', { name: /^Projets/ }).click(); await page.waitForTimeout(500);
   const body = (await page.locator('body').innerText());
-  check('5 la liste des projets ne montre aucun modèle (3 projets, pas 6)', /Projets \(2\)/.test(body) && !/Recrutement/.test(body.split('Modèles')[0] || '') , body.slice(0, 200).replace(/\s+/g, ' '));
+  check('5 la liste des projets ne montre aucun modèle (3 projets, pas 6)', /Projets \(2\)/.test(body) && (await page.getByRole('listitem').filter({ hasText: 'Recrutement' }).count()) === 0 && !/Montage d'un événement/.test(body), body.slice(0, 200).replace(/\s+/g, ' '));
   await page.goto(BASE + '/pilote/projets?view=gantt'); await page.waitForSelector('[role="search"]', { timeout: 25000 }); await page.waitForTimeout(600);
   await page.getByRole('button', { name: "Plus d'options d'affichage" }).click(); await page.getByRole('menuitem', { name: 'Tout déplier' }).click(); await page.waitForTimeout(400);
   const rowNames = (await page.locator('button[title*=" · "]').allInnerTexts()).map(s => s.trim());

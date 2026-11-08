@@ -60,7 +60,11 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   const results = []; const check = (name, ok, detail = '') => { results.push(ok); console.log(ok ? 'OK    ' : 'ÉCHEC ', name, ok ? '' : `— ${detail}`); };
 
 
-  const goBoard = async () => { await page.goto(BASE + '/pilote/projets'); const tab = page.getByRole('radio', { name: 'Tableau' }); await tab.waitFor({ timeout: 25000 }); await tab.click(); await page.waitForSelector('[data-card]', { timeout: 15000 }); await page.waitForTimeout(400); };
+  const viewButton = () => page.getByRole('button', { name: /^Vue : / });
+  const goView = async (name) => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); await b.click(); await page.getByRole('menuitemradio', { name }).click(); };
+  const viewItems = async () => { await viewButton().click(); const t = await page.getByRole('menuitemradio').allInnerTexts(); await page.keyboard.press('Escape'); return t.map(s => s.replace(/\s+/g, ' ').trim()); };
+  const viewLabel = async () => { const b = viewButton(); await b.waitFor({ timeout: 25000 }); return ((await b.getAttribute('aria-label')) || '').replace(/^Vue : /, '').replace(/\. Changer de vue$/, ''); };
+  const goBoard = async () => { await page.goto(BASE + '/pilote/projets'); await goView('Tableau'); await page.waitForSelector('[data-card]', { timeout: 15000 }); await page.waitForTimeout(400); };
   const colOf = (name) => page.getByRole('listitem', { name: new RegExp('^' + name) });
   const cardNames = async (col) => (await col.locator('article button[title]').allInnerTexts()).map(s => s.trim());
   const A = '22222222-0000-0000-0000-000000000001', B = '22222222-0000-0000-0000-000000000004', R = '22222222-0000-0000-0000-000000000002';
