@@ -11,6 +11,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const os = require('os');
 
 const arg = (k, d) => { const a = process.argv.find(x => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; };
 const PORT = arg('port', '9222');
@@ -143,6 +144,19 @@ async function clearTime(k) {
 }
 
 /* ------------------------------------------------------------------------- principal */
+// Une seule exécution à la fois : deux exécutions en même temps s'effacent mutuellement leurs données (le nettoyage de l'une supprime le projet de l'autre)
+const LOCK = path.join(os.tmpdir(), 'real-p13.lock');
+const START = new Date().toISOString();
+try {
+  const other = Number(fs.readFileSync(LOCK, 'utf8').trim());
+  let alive = false;
+  try { process.kill(other, 0); alive = other !== process.pid; } catch { alive = false; }
+  if (alive) { console.log(`ERREUR : une autre exécution de ce script tourne déjà (PID ${other}). Attends sa fin, ou arrête-la, puis relance. Rien n'a été touché.`); process.exit(4); }
+} catch { /* pas de verrou */ }
+fs.writeFileSync(LOCK, String(process.pid));
+const releaseLock = () => { try { if (fs.readFileSync(LOCK, 'utf8').trim() === String(process.pid)) fs.unlinkSync(LOCK); } catch { /* déjà retiré */ } };
+process.on('exit', releaseLock);
+process.on('SIGINT', () => { releaseLock(); process.exit(130); });
 (async () => {
   let browser;
   try { browser = await chromium.connectOverCDP(`http://127.0.0.1:${PORT}`); }
@@ -481,7 +495,7 @@ async function clearTime(k) {
   skip(11, 'Droits d\'un utilisateur ordinaire', 'demande la connexion du second compte (port 9223)');
 
   /* ---- rapport */
-  const lines = ['# Rapport du test réel PILOTE (script real-p13.cjs)', '', `- Application : ${base}`, `- Base : ${dbUrl}`, `- Commit : ${commit}`, `- Date : ${new Date().toISOString()}`, '', '| Étape | Titre | Statut | Détail |', '|---|---|---|---|'];
+  const lines = ['# Rapport du test réel PILOTE (script real-p13.cjs)', '', `- Application : ${base}`, `- Base : ${dbUrl}`, `- Commit : ${commit}`, `- Début : ${START} — fin : ${new Date().toISOString()} — PID ${process.pid}`, '', '| Étape | Titre | Statut | Détail |', '|---|---|---|---|'];
   for (const r of results) lines.push(`| ${r.id} | ${r.title} | ${r.status} | ${String(r.detail).replace(/\|/g, '/').slice(0, 300)} |`);
   if (notes.length) lines.push('', '## Remarques', ...notes.map(n => `- ${n}`));
   fs.writeFileSync(path.join(OUT, 'rapport.md'), lines.join('\n'), 'utf8');
