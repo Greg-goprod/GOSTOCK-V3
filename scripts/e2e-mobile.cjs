@@ -70,7 +70,7 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
 
 
 
-  const views = [['Synthèse', 'dashboard'], ['Gantt', 'gantt'], ['Tableau', 'board'], ['Calendrier', 'agenda'], ['Charge', 'workload'], ['Projets', 'projects'], ['Modèles', 'templates']];
+  const views = [['Synthèse', 'dashboard'], ['Gantt', 'gantt'], ['Tableau', 'board'], ['Calendrier', 'agenda'], ['Charge', 'workload'], ['Budget', 'budget'], ['Projets', 'projects'], ['Modèles', 'templates']];
   await page.goto(BASE + '/pilote/projets'); await page.waitForTimeout(1500);
   for (const [label, key] of views) {
     await page.goto(BASE + '/pilote/projets?view=' + (key === 'projects' ? 'projects' : key)); await page.waitForTimeout(1200);

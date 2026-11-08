@@ -149,13 +149,31 @@ export const PILOTE: HelpArticle[] = [
         who: 'Estimer : administrateur et responsable. Voir : toute personne qui voit les projets.',
         steps: [
           { text: 'Ouvre une tâche ou une sous-tâche et renseigne « Estimation (heures) ». Laisse vide si tu ne sais pas : la tâche n\'entre alors pas dans la charge. Estime les éléments les plus fins : une tâche qui a des sous-tâches n\'a pas besoin de la sienne (sinon ses heures s\'ajoutent à celles des sous-tâches).' },
-          { text: 'Dans l\'onglet « Charge », chaque ligne est une personne et chaque colonne une semaine (8 semaines, les flèches avancent de 4 semaines). Les heures d\'une tâche sont réparties sur ses jours ouvrés (sans week-ends, jours fériés ni fermetures) et partagées à parts égales entre ses assignés.' },
+          { text: 'Dans « Pilotage › Charge », chaque ligne est une personne et chaque colonne une semaine (8 semaines, les flèches avancent de 4 semaines). Les heures d\'une tâche sont réparties sur ses jours ouvrés (sans week-ends, jours fériés ni fermetures) et partagées à parts égales entre ses assignés.' },
           { text: 'Une case affiche « heures / capacité de la semaine » : vert jusqu\'à 80 %, orange jusqu\'à 100 %, rouge au-delà (surcharge). La capacité d\'une semaine avec un jour férié est réduite d\'autant (40 h → 32 h). Clique sur une case pour voir quelles tâches la composent et ouvrir leur fiche.' },
           { text: 'La colonne « h / semaine » est la capacité de la personne (40 h par défaut) : change-la pour un temps partiel (modification réservée à qui peut modifier les projets). « À estimer » en bas liste les tâches assignées sans estimation, qui ne comptent pas encore.' },
         ],
         problems: [
           { if: 'Une personne n\'apparaît pas dans la charge.', then: 'Seules les personnes qui sont dans l\'équipe d\'un projet, assignées à une tâche ou dont la capacité a été saisie apparaissent.' },
           { if: 'Mes estimations ne comptent pas.', then: 'Il faut que la tâche soit assignée à quelqu\'un, qu\'elle ait une date, et qu\'elle ne soit pas annulée. Une tâche terminée compte (c\'est la charge réalisée de la période).' },
+        ],
+      },
+      {
+        id: 'budget',
+        title: 'Budget d\'un projet et taux horaires',
+        who: 'Réservé aux personnes qui ont le droit « budget » (administrateur et responsable par défaut). Les autres ne voient ni l\'onglet, ni les montants, ni les taux.',
+        steps: [
+          { text: 'Ouvre « Pilotage › Budget ». Le haut de la page totalise tous les projets : prévu, engagé, réel et écart (prévu − réel). Le tableau en dessous donne les mêmes chiffres par projet, avec un état : « Dans le budget », « Presque atteint » (90 % du prévu ou plus déjà engagé ou payé), « Dépassé » (l\'engagé ou le réel dépasse le prévu) ou « Pas de budget ».' },
+          { text: 'Clique sur le nom d\'un projet pour voir son détail, puis « Nouvelle ligne » : une ligne par catégorie de dépense (matériel, prestataires, déplacements…). Saisis en francs suisses le prévu (ce que tu comptes dépenser), l\'engagé (commandé ou promis, pas encore payé) et le réel (déjà payé). Les montants vont de 0 à 99 999 999,99 ; la virgule, le point, les espaces et l\'apostrophe sont acceptés.' },
+          { text: 'Les montants sont saisis à la main : rien n\'est repris automatiquement des commandes fournisseurs. Un remboursement ou une note de crédit se déduit à la main du réel (les montants négatifs sont refusés).' },
+          { text: 'Main-d\'œuvre estimée : sous les lignes, GO-Mat multiplie les heures estimées des tâches (voir « Estimer les heures ») par le taux horaire des personnes assignées, à parts égales. Ce montant est indicatif et n\'est PAS ajouté aux lignes de budget. Les heures d\'un assigné sans taux, ou d\'une tâche sans assigné, sont comptées à part et jamais valorisées.' },
+          { text: 'Taux horaires : en bas de la page, saisis le coût d\'une heure de chaque personne (0 pour du bénévolat). Vide = pas de taux. L\'enregistrement se fait en quittant le champ ou avec Entrée. Il faut pouvoir créer et modifier le budget.' },
+          { text: '« Exporter (CSV) » télécharge toutes les lignes avec un total par projet, pour Excel.' },
+        ],
+        problems: [
+          { if: 'Je ne vois pas l\'onglet « Budget ».', then: 'Ton rôle n\'a pas le droit « budget » : un administrateur peut te l\'accorder (c\'est un droit à part, différent de celui des projets).' },
+          { if: 'Le total de la main-d\'œuvre me paraît trop haut.', then: 'Si une phase et ses tâches sont toutes deux estimées, leurs heures s\'additionnent : estime plutôt l\'un ou l\'autre.' },
+          { if: 'Les modifications du budget n\'apparaissent pas dans le journal d\'audit.', then: 'C\'est voulu : le journal est lisible par des personnes qui n\'ont pas le droit « budget », il ferait fuiter les montants et les taux.' },
         ],
       },
       {
@@ -175,7 +193,7 @@ export const PILOTE: HelpArticle[] = [
         id: 'synthese',
         title: 'La Synthèse : l\'état de santé des projets',
         steps: [
-          { text: 'L\'onglet « Synthèse » de la page « Projets » donne la vue d\'ensemble : projets en cours, projets en retard, éléments en retard, échéances sous 14 jours, personnes en surcharge sur 4 semaines et tâches à estimer.' },
+          { text: '« Pilotage › Synthèse » (page « Projets ») donne la vue d\'ensemble : projets en cours, projets en retard, éléments en retard, échéances sous 14 jours, personnes en surcharge sur 4 semaines et tâches à estimer.' },
           { text: 'Le tableau « Santé des projets » les classe du plus risqué au moins risqué. « À risque » : le projet est en retard (sa fin est passée) ou un élément du chemin critique est en retard. « À surveiller » : au moins un élément est en retard, ou la fin a glissé par rapport à la ligne de base. « Dans les temps » : rien de tout cela. « Clos » : terminé ou annulé. La colonne « Pourquoi » donne les raisons.' },
           { text: 'Dessous, les échéances des 14 prochains jours (tâches, sous-tâches et jalons pas terminés) et les surcharges des 4 prochaines semaines (voir « Charge »). Un clic sur un projet ou une échéance ouvre sa fiche.' },
         ],

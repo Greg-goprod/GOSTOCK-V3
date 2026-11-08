@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { confirmAction } from '../../lib/confirm';
 import { planningError, ZONE_COLORS } from '../../lib/sitePlanning';
+import { parseAmount } from '../../lib/budget';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import DateInput, { DateRangeInput } from '../common/DateInput';
@@ -13,7 +14,7 @@ import { MxEmpty } from '../mx/MxEmpty';
 export interface FieldDef {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'color' | 'select' | 'date' | 'daterange' | 'checkbox';
+  type: 'text' | 'textarea' | 'color' | 'select' | 'date' | 'daterange' | 'checkbox' | 'number';
   // Pour une couleur : palette proposée (par défaut, celle des zones du planning)
   palette?: string[];
   required?: boolean;
@@ -23,6 +24,9 @@ export interface FieldDef {
   endKey?: string;
   // Non modifiable une fois l'élément créé (ex. famille d'un état)
   lockedOnEdit?: boolean;
+  // Pour « number » : montant positif ou nul, jusqu'à deux décimales (virgule, point, espaces et apostrophes acceptés) ; valeur proposée à la création
+  max?: number;
+  initial?: string;
 }
 
 interface Props<T extends { id: string }> {
@@ -67,6 +71,7 @@ export function CrudSection<T extends { id: string }>({
       const current = row === 'new' ? undefined : (row as unknown as Record<string, unknown>)[f.key];
       if (f.type === 'checkbox') next[f.key] = row === 'new' ? true : Boolean(current);
       else if (f.type === 'color') next[f.key] = typeof current === 'string' ? current : (f.palette ?? ZONE_COLORS)[0];
+      else if (f.type === 'number') next[f.key] = typeof current === 'number' ? String(current).replace('.', ',') : row === 'new' ? (f.initial ?? '') : '';
       else next[f.key] = typeof current === 'string' ? current : '';
       if (f.type === 'daterange' && f.endKey) { const e = row === 'new' ? undefined : (row as unknown as Record<string, unknown>)[f.endKey]; next[f.endKey] = typeof e === 'string' ? e : ''; }
     }
@@ -80,6 +85,14 @@ export function CrudSection<T extends { id: string }>({
     const payload: Record<string, unknown> = {};
     for (const f of fields) {
       const v = values[f.key];
+      if (f.type === 'number') {
+        const text = String(v ?? '').trim();
+        if (text === '' && !f.required) { payload[f.key] = null; continue; }
+        const n = parseAmount(text, f.max);
+        if (n === null) return void toast.error(`${f.label} : entre un montant positif ou nul, avec deux décimales au plus`);
+        payload[f.key] = n;
+        continue;
+      }
       payload[f.key] = f.type === 'checkbox' ? Boolean(v) : (typeof v === 'string' && v.trim() === '' && !f.required ? null : typeof v === 'string' ? v.trim() : v);
       if (f.type === 'daterange' && f.endKey) { const e = values[f.endKey]; payload[f.endKey] = typeof e === 'string' && e.trim() !== '' ? e.trim() : null; }
     }
@@ -144,6 +157,8 @@ export function CrudSection<T extends { id: string }>({
                   ) : f.type === 'daterange' && f.endKey ? (
                     <DateRangeInput id={`crud-${f.key}`} className={inputClass} start={String(values[f.key] ?? '')} end={String(values[f.endKey] ?? '')}
                       onChange={(a, b) => setValues({ ...values, [f.key]: a, [f.endKey as string]: b })} placeholder="Choisir le début et la fin" />
+                  ) : f.type === 'number' ? (
+                    <input id={`crud-${f.key}`} className={inputClass} inputMode="decimal" autoComplete="off" value={String(values[f.key] ?? '')} required={f.required} onChange={e => setValues({ ...values, [f.key]: e.target.value })} />
                   ) : f.type === 'date' ? (
                     <DateInput id={`crud-${f.key}`} className={inputClass} value={String(values[f.key] ?? '')} onChange={e => setValues({ ...values, [f.key]: e.target.value })} />
                   ) : f.type === 'color' ? (

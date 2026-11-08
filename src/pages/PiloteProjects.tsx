@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CalendarOff, ListChecks, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { loadBudgetRights } from '../lib/budget';
 import { FAMILY_LABEL, FAMILY_ORDER, loadGantt, loadPilote, loadPiloteRights, piloteError, STATE_COLORS, type CpStatus, type GanttData, type PiloteData, type PiloteRights } from '../lib/pilote';
 import PageTitle from '../components/common/PageTitle';
 import { MxBadge } from '../components/mx/MxBadge';
@@ -18,9 +19,14 @@ import PiloteBoard from './PiloteBoard';
 import PiloteCalendar from './PiloteCalendar';
 import PiloteWorkload from './PiloteWorkload';
 import PiloteDashboard from './PiloteDashboard';
+import PiloteBudget from './PiloteBudget';
 
-type Section = 'dashboard' | 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar';
-const VIEWS: Section[] = ['dashboard', 'gantt', 'board', 'agenda', 'workload', 'projects', 'mytasks', 'templates'];
+type Section = 'dashboard' | 'budget' | 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar';
+const VIEWS: Section[] = ['dashboard', 'budget', 'gantt', 'board', 'agenda', 'workload', 'projects', 'mytasks', 'templates'];
+// « Pilotage » regroupe trois vues de pilotage du portefeuille : la synthèse, le budget et la charge (les adresses ?view=dashboard, budget et workload restent valables)
+type PilotageView = 'dashboard' | 'budget' | 'workload';
+const PILOTAGE: PilotageView[] = ['dashboard', 'budget', 'workload'];
+const isPilotage = (s: Section): s is PilotageView => (PILOTAGE as Section[]).includes(s);
 
 const NO_RIGHTS: PiloteRights = { create: false, update: false, delete: false };
 const Dot = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-3 w-3 rounded-full align-middle" style={{ background: color }} />;
@@ -39,6 +45,9 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
   const projectParam = params.get('project');
   const focus: 'discussion' | undefined = params.get('focus') === 'discussion' ? 'discussion' : undefined;
   const [section, setSection] = useState<Section>(initialView ?? (VIEWS.includes(asked as Section) ? (asked as Section) : 'projects'));
+  // Le budget est réservé aux personnes qui ont le droit « budget » : sans lui, la sous-vue n'est pas proposée
+  const [canBudget, setCanBudget] = useState(false);
+  const [lastPilotage, setLastPilotage] = useState<PilotageView>('dashboard');
   const [deepItem, setDeepItem] = useState<{ itemId: string; data: GanttData; focus?: 'discussion' } | null>(null);
 
   const clearLink = useCallback(() => {
@@ -67,7 +76,8 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
   const reload = useCallback(async () => {
     try { setData(await loadPilote()); } catch (e) { toast.error(piloteError(e)); setData(prev => prev ?? { statuses: [], projects: [], templates: [], members: [], sites: [] }); }
   }, []);
-  useEffect(() => { void reload(); void loadPiloteRights().then(setRights); }, [reload]);
+  useEffect(() => { void reload(); void loadPiloteRights().then(setRights); void loadBudgetRights().then(r => setCanBudget(r.read)); }, [reload]);
+  useEffect(() => { if (isPilotage(section)) setLastPilotage(section); }, [section]);
   const closeDeepItem = useCallback(() => setDeepItem(null), []);
   const refreshDeepItem = useCallback(async () => {
     const g = await loadGantt();
@@ -95,12 +105,11 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
         </button>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <MxSegmented aria-label="Vues des projets" value={section} onChange={v => setSection(v as Section)} options={[
-            { value: 'dashboard', label: 'Synthèse' },
+          <MxSegmented aria-label="Vues des projets" value={isPilotage(section) ? 'pilotage' : section} onChange={v => setSection(v === 'pilotage' ? lastPilotage : v as Section)} options={[
+            { value: 'pilotage', label: 'Pilotage' },
             { value: 'gantt', label: 'Gantt' },
             { value: 'board', label: 'Tableau' },
             { value: 'agenda', label: 'Calendrier' },
-            { value: 'workload', label: 'Charge' },
             { value: 'projects', label: `Projets (${data.projects.length})` },
             { value: 'mytasks', label: 'Mes tâches' },
             { value: 'templates', label: `Modèles (${data.templates.length})` },
@@ -113,7 +122,17 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
         </div>
       )}
 
+      {!settingsOpen && isPilotage(section) && (
+        <MxSegmented aria-label="Pilotage" value={section} onChange={v => setSection(v as Section)} options={[
+          { value: 'dashboard', label: 'Synthèse' },
+          ...(canBudget || section === 'budget' ? [{ value: 'budget', label: 'Budget' }] : []),
+          { value: 'workload', label: 'Charge' },
+        ]} />
+      )}
+
       {section === 'dashboard' && <PiloteDashboard />}
+
+      {section === 'budget' && <PiloteBudget />}
 
       {section === 'gantt' && <PiloteGantt embedded />}
 

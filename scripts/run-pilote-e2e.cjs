@@ -1,10 +1,10 @@
-// Lance le serveur de développement sur une base SIMULÉE (aucune donnée réelle, aucun accès à GO-MAT), puis les 6 scripts navigateur PILOTE.
+// Lance le serveur de développement sur une base SIMULÉE (aucune donnée réelle, aucun accès à GO-MAT), puis les scripts navigateur PILOTE.
 // Prérequis : « npm install » fait ; puis, une fois : « npm install --no-save playwright » et « npx playwright install chromium » (playwright n'est pas dans package.json).
 // Usage : node scripts/run-pilote-e2e.cjs        (captures, téléchargements et PDF dans %TEMP%\pilote-e2e)
 const path = require('path'); const os = require('os'); const fs = require('fs'); const http = require('http'); const { spawn, spawnSync } = require('child_process');
 const root = path.join(__dirname, '..');
 const outDir = path.join(os.tmpdir(), 'pilote-e2e'); fs.mkdirSync(outDir, { recursive: true });
-const SCRIPTS = ['e2e-gantt-filtres', 'e2e-calendrier', 'e2e-modeles', 'e2e-tableau-calendrier', 'e2e-exports', 'e2e-charge', 'e2e-critique-base', 'e2e-synthese', 'e2e-groupe-historique', 'e2e-mobile'];
+const SCRIPTS = ['e2e-gantt-filtres', 'e2e-calendrier', 'e2e-modeles', 'e2e-tableau-calendrier', 'e2e-exports', 'e2e-charge', 'e2e-critique-base', 'e2e-synthese', 'e2e-groupe-historique', 'e2e-budget', 'e2e-mobile'];
 // Playwright n'est pas déclaré dans package.json (comme pour les autres scripts navigateur du dépôt) : on le vérifie et on dit quoi faire
 try { require.resolve('playwright', { paths: [root, ...module.paths] }); } catch {
   console.log('ERREUR : le module « playwright » n\'est pas installé. Lance (sans modifier package.json) :\n  npm install --no-save playwright\n  npx playwright install chromium\npuis relance : node scripts/run-pilote-e2e.cjs');
