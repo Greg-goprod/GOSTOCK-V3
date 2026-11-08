@@ -15,6 +15,7 @@
 // Sauvegarde automatique : chaque mois, fichier complet dans le stockage privé « backups » (12 gardés).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
+import { pilotePath } from './paths.ts';
 
 // Pas de valeur par défaut : sans relais configuré, les identifiants SMTP ne partent nulle part (ils ne doivent jamais aller chez un autre produit)
 const RELAY_URL = Deno.env.get('SMTP_RELAY_URL');
@@ -142,8 +143,10 @@ const missingConfig = () =>
     ['SMTP_FROM_EMAIL', FROM_EMAIL],
   ].filter(([, value]) => !value).map(([name]) => name);
 
-function renderEmail(n: Pick<PendingEmail, 'kind' | 'title' | 'message' | 'created_at' | 'depot_name'>) {
-  const meta = KIND_LABEL[n.kind] ?? { label: 'Alerte', path: '/notifications', action: 'Ouvrir GO-Mat' };
+// `path` : lien précis (avis PILOTE : la fiche de l'élément ou du projet) ; sinon la page générale du type d'avis
+function renderEmail(n: Pick<PendingEmail, 'kind' | 'title' | 'message' | 'created_at' | 'depot_name'>, path?: string | null) {
+  const base = KIND_LABEL[n.kind] ?? { label: 'Alerte', path: '/notifications', action: 'Ouvrir GO-Mat' };
+  const meta = path ? { ...base, path } : base;
   const when = new Date(n.created_at).toLocaleString('fr-CH', { timeZone: 'Europe/Zurich', dateStyle: 'short', timeStyle: 'short' });
   const link = APP_URL
     ? `<p style="margin:24px 0 0"><a href="${APP_URL}${meta.path}" style="background:#6d3ee0;color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:600;display:inline-block">${meta.action}</a></p>`
@@ -243,8 +246,9 @@ Deno.serve(async (req) => {
 
   let sent = 0;
   let failed = 0;
+  const targets = await pilotePaths(supabase, ((pending ?? []) as PendingEmail[]).filter(n => n.kind.startsWith('cp_')).map(n => n.id));
   for (const n of (pending ?? []) as PendingEmail[]) {
-    const mail = renderEmail(n);
+    const mail = renderEmail(n, targets.get(n.id) ?? pilotePath(n.kind));
     const errors: string[] = [];
     let delivered = 0;
     for (const to of n.recipients) {
@@ -270,6 +274,20 @@ Deno.serve(async (req) => {
   return json({ notifications: pending?.length ?? 0, sent, failed, push: pushed, sms, backup, documents });
 });
 
+// Liens précis des avis PILOTE : l'élément ou le projet visé (colonnes cp_item_id / cp_project_id de la table des avis). En cas d'erreur de lecture,
+// on retombe sur le lien général du type d'avis : un e-mail ne doit jamais être perdu pour un lien.
+async function pilotePaths(supabase: Client, ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (ids.length === 0) return out;
+  const { data, error } = await supabase.from('notifications').select('id, kind, cp_item_id, cp_project_id').in('id', ids);
+  if (error) return out;
+  for (const r of (data ?? []) as { id: string; kind: string; cp_item_id: string | null; cp_project_id: string | null }[]) {
+    const path = pilotePath(r.kind, r.cp_item_id, r.cp_project_id);
+    if (path) out.set(r.id, path);
+  }
+  return out;
+}
+
 interface PendingPush {
   id: string;
   kind: string;
@@ -285,9 +303,10 @@ async function sendPush(supabase: Client) {
   if (error) return `erreur : ${error.message}`;
   let delivered = 0;
   const expired: string[] = [];
+  const targets = await pilotePaths(supabase, ((data ?? []) as PendingPush[]).filter(n => n.kind.startsWith('cp_')).map(n => n.id));
   for (const n of (data ?? []) as PendingPush[]) {
     const meta = KIND_LABEL[n.kind];
-    const payload = JSON.stringify({ title: n.title, body: n.message, url: meta?.path ?? '/notifications', tag: n.id });
+    const payload = JSON.stringify({ title: n.title, body: n.message, url: targets.get(n.id) ?? pilotePath(n.kind) ?? meta?.path ?? '/notifications', tag: n.id });
     for (const s of n.subscriptions) {
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 24 * 3600 });

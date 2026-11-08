@@ -20,6 +20,7 @@ import {
 } from '../types';
 import toast from 'react-hot-toast';
 
+import { messageOf } from '../lib/errorMessage';
 // Ligne de la table equipment (snake_case) → Equipment (camelCase)
 const mapEquipmentRow = (item: Record<string, any>): Equipment => ({
   id: item.id,
@@ -502,9 +503,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await refreshEquipmentData();
       
       toast.success('Quantités disponibles mises à jour avec succès');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors de la mise à jour des quantités:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
     }
   };
 
@@ -524,9 +525,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await refreshData();
       
       toast.success('Statuts des emprunts mis à jour avec succès');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors de la mise à jour des statuts d\'emprunt:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
     }
   };
 
@@ -559,9 +560,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       });
       
       return transformedData;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors du chargement des emprunts avec statuts:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
       return [];
     }
   };
@@ -579,9 +580,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (error) throw error;
       
       return data || [];
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors du chargement des équipements avec statuts:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
       return [];
     }
   };
@@ -602,9 +603,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await refreshData();
       
       toast.success('Statuts mis à jour avec succès');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors de la mise à jour des statuts:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
     }
   };
 
@@ -636,9 +637,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await refreshData();
       
       return data;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors de l\'emprunt:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
       return null;
     }
   };
@@ -668,9 +669,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await refreshData();
       
       return data;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors du retour:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
       return false;
     }
   };
@@ -701,9 +702,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await refreshData();
       
       return data;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors du marquage comme perdu:', error);
-      toast.error(`Erreur: ${error.message}`);
+      toast.error(`Erreur: ${messageOf(error)}`);
       return false;
     }
   };
@@ -773,7 +774,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
   // Un changement d'état « lu » est appliqué tout de suite à l'écran, puis confirmé par la base

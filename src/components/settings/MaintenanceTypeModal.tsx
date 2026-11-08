@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { MaintenanceType } from '../../types';
 import { Wrench, FileText, Palette } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface MaintenanceTypeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -74,9 +75,9 @@ const MaintenanceTypeModal: React.FC<MaintenanceTypeModalProps> = ({ isOpen, onC
         description: '',
         color: '#f59e0b'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving maintenance type:', error);
-      toast.error(error.message || 'Erreur lors de la sauvegarde');
+      toast.error(messageOf(error) || 'Erreur lors de la sauvegarde');
     } finally {
       setIsLoading(false);
     }

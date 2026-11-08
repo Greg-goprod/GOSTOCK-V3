@@ -3742,5 +3742,14 @@
 "· dont": "· di cui",
 "à toi": "tuo",
 "· estimé": "· stimato",
-"Pour prolonger la série, ouvre sa dernière occurrence.": "Per prolungare la serie, apri la sua ultima occorrenza."
+"Pour prolonger la série, ouvre sa dernière occurrence.": "Per prolungare la serie, apri la sua ultima occorrenza.",
+"Les assignations des tâches, intervenants externes compris (avec l'équipe)": "Le assegnazioni delle attività, inclusi i collaboratori esterni (con il team)",
+"Éviter les week-ends et les jours non travaillés": "Evita i fine settimana e i giorni non lavorativi",
+"Une occurrence qui tombe un jour non ouvré est avancée au prochain jour ouvré ; la durée est conservée.": "Un'occorrenza che cade in un giorno non lavorativo viene spostata al giorno lavorativo successivo; la durata resta invariata.",
+"{0} sous-tâche copiée avec chaque occurrence, au même écart que dans l'original.": "{0} sottoattività copiata con ogni occorrenza, con lo stesso scarto dell'originale.",
+"{0} sous-tâches copiées avec chaque occurrence, au même écart que dans l'original.": "{0} sottoattività copiate con ogni occorrenza, con lo stesso scarto dell'originale.",
+"Temps réellement passé": "Tempo effettivamente impiegato",
+"{0} h valorisées sur {1} h saisies.": "{0} h valorizzate su {1} h registrate.",
+"{0} h de personnes sans taux horaire ne sont pas valorisées.": "{0} h di persone senza tariffa oraria non sono valorizzate.",
+"Aucun temps saisi dans ce projet.": "Nessun tempo registrato in questo progetto."
 }

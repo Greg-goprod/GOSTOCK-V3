@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import { Equipment, Category, Supplier, EquipmentGroup, EquipmentSubgroup } from '../../types';
 import { Package, QrCode, Copy, AlertTriangle, Info, Folder as FolderIcon, FolderOpen as FolderOpenIcon, Tag as TagIcon } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface EditEquipmentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -274,9 +275,9 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
       
       toast.success(`${quantity} QR codes générés avec succès`);
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error generating QR codes:', error);
-      toast.error(error.message || 'Erreur lors de la génération des QR codes');
+      toast.error(messageOf(error) || 'Erreur lors de la génération des QR codes');
       return false;
     } finally {
       setIsGeneratingQRCodes(false);
@@ -346,9 +347,9 @@ const EditEquipmentModal: React.FC<EditEquipmentModalProps> = ({ isOpen, onClose
       await refreshEquipmentData();
       toast.success('Matériel modifié avec succès');
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating equipment:', error);
-      toast.error(error.message || 'Erreur lors de la modification');
+      toast.error(messageOf(error) || 'Erreur lors de la modification');
     } finally {
       setIsLoading(false);
     }

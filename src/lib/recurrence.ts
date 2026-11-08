@@ -3,6 +3,8 @@ import type { CpItem } from './pilote';
 // Répétition d'une tâche (sans affichage). La BASE fait le vrai calcul (cp_repeat_item) ; ce module donne le même aperçu avant de valider.
 // Mêmes règles : chaque occurrence se calcule depuis l'ORIGINE (pas de dérive d'un mois à l'autre), le quantième est recalé sur la fin du mois
 // (31 janvier → 28 février), 29 février → 28 février les années non bissextiles, la durée de l'élément est conservée.
+// Option « jours ouvrés » : une occurrence qui tombe un samedi, un dimanche ou un jour du calendrier de travail est avancée au premier jour ouvré
+// (au plus 366 jours d'avance, puis la date telle quelle), comme la base (cp_adjust_working_day).
 export type Freq = 'weekly' | 'monthly' | 'yearly';
 export const FREQ_LABEL: Record<Freq, string> = { weekly: 'Chaque semaine', monthly: 'Chaque mois', yearly: 'Chaque année' };
 export const FREQS: Freq[] = ['weekly', 'monthly', 'yearly'];
@@ -23,22 +25,35 @@ export function shiftDate(day: string, freq: Freq, k: number): string {
   return fromNum(Date.UTC(ny, nm, Math.min(d, daysIn(ny, nm))) / DAY);
 }
 
+const weekday = (iso: string) => new Date(toNum(iso) * DAY).getUTCDay();   // 0 = dimanche, 6 = samedi
+// Premier jour ouvré à partir de `day` (lui-même s'il l'est) : ni samedi, ni dimanche, ni jour du calendrier de travail
+export function nextWorkingDay(day: string, nonWorking: ReadonlySet<string>): string {
+  let n = toNum(day);
+  for (let i = 0; i <= 366; i++, n++) {
+    const iso = fromNum(n);
+    const wd = weekday(iso);
+    if (wd !== 0 && wd !== 6 && !nonWorking.has(iso)) return iso;
+  }
+  return day;
+}
+
 export interface Occurrence { start: string | null; end: string | null }
-// Les `count` occurrences ajoutées (la première répétition est la numéro 1)
-export function previewOccurrences(start: string | null, end: string | null, freq: Freq, count: number): Occurrence[] {
+// Les `count` occurrences ajoutées (la première répétition est la numéro 1). `nonWorking` : jours du calendrier de travail ; absent = on n'évite rien.
+export function previewOccurrences(start: string | null, end: string | null, freq: Freq, count: number, nonWorking?: ReadonlySet<string>): Occurrence[] {
   const out: Occurrence[] = [];
   for (let k = 1; k <= count; k++) {
-    const s = start ? shiftDate(start, freq, k) : null;
-    const e = end === null ? null : start ? fromNum(toNum(s as string) + (toNum(end) - toNum(start))) : shiftDate(end, freq, k);
+    let s = start ? shiftDate(start, freq, k) : null;
+    let e = end === null || start ? null : shiftDate(end, freq, k);
+    if (nonWorking) { if (s) s = nextWorkingDay(s, nonWorking); if (e) e = nextWorkingDay(e, nonWorking); }
+    if (end !== null && start) e = fromNum(toNum(s as string) + (toNum(end) - toNum(start)));
     out.push({ start: s, end: e });
   }
   return out;
 }
 
 // Raison pour laquelle un élément ne se répète pas, sinon null (la base refuse pour les mêmes raisons)
-export function cannotRepeat(item: CpItem, hasChildren: boolean): string | null {
+export function cannotRepeat(item: CpItem): string | null {
   if (item.kind === 'phase') return 'Une phase ne se répète pas : répète ses tâches une à une.';
-  if (hasChildren) return 'Cet élément a des sous-tâches, qui ne seraient pas copiées : répète-les ou duplique le projet.';
   if (!item.starts_on && !item.ends_on) return 'Donne d\'abord une date à cet élément.';
   return null;
 }

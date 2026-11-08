@@ -24,6 +24,8 @@ export function buildExportRows(data: GanttData, userName: (id: string) => strin
   const itemName = new Map(data.items.map(i => [i.id, i.name]));
   const itemUsers = new Map<string, string[]>();
   for (const m of data.itemMembers) { const l = itemUsers.get(m.item_id) ?? []; l.push(userName(m.user_id)); itemUsers.set(m.item_id, l); }
+  const itemExternals = new Map<string, string[]>();
+  for (const e of data.itemExternals ?? []) { const l = itemExternals.get(e.item_id) ?? []; l.push(e.label); itemExternals.set(e.item_id, l); }
   const days = (start: string | null, end: string | null) => (start && end ? workingDaysBetween(start, end, nonWorking) : '');
   const pct = (key: string) => { const p = progress.get(key); return p === null || p === undefined ? '' : Math.round(p * 100); };
 
@@ -46,7 +48,7 @@ export function buildExportRows(data: GanttData, userName: (id: string) => strin
       'Projet': projectName.get(i.project_id) ?? '', 'Parent': i.parent_id ? itemName.get(i.parent_id) ?? '' : '', 'Type': ITEM_KIND_LABEL[i.kind], 'Nom': i.name,
       'État': st?.name ?? '', 'Famille': st ? FAMILY_LABEL[st.family] : '', 'Priorité': i.priority ? PRIORITY_LABEL[i.priority] : '',
       'Début': fmt(eff.start), 'Fin': fmt(eff.end), 'Jours ouvrés': days(eff.start, eff.end), 'Estimation (h)': i.estimate_hours === null || i.estimate_hours === undefined ? '' : Number(i.estimate_hours), 'Avancement (%)': pct(`i:${i.id}`),
-      'En retard': isOverdue(eff.end, st?.family ?? null, today) ? 'Oui' : 'Non', 'Assignés': (itemUsers.get(i.id) ?? []).join(', '), 'Description': i.description ?? '',
+      'En retard': isOverdue(eff.end, st?.family ?? null, today) ? 'Oui' : 'Non', 'Assignés': (itemUsers.get(i.id) ?? []).join(', '), 'Intervenants externes': (itemExternals.get(i.id) ?? []).join(', '), 'Description': i.description ?? '',
     };
   });
   return { projects, items };
@@ -88,6 +90,8 @@ export function buildIcs(data: GanttData, userName: (id: string) => string, stam
   const project = new Map(data.projects.map(p => [p.id, p]));
   const users = new Map<string, string[]>();
   for (const m of data.itemMembers) { const l = users.get(m.item_id) ?? []; l.push(userName(m.user_id)); users.set(m.item_id, l); }
+  const externals = new Map<string, string[]>();
+  for (const e of data.itemExternals ?? []) { const l = externals.get(e.item_id) ?? []; l.push(e.label); externals.set(e.item_id, l); }
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//GO-Mat//PILOTE//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:GO-Mat PILOTE'];
   for (const i of data.items) {
     const p = project.get(i.project_id);
@@ -96,7 +100,7 @@ export function buildIcs(data: GanttData, userName: (id: string) => string, stam
     if (!start || !end) continue;
     const last = end < start ? start : end;
     const st = status.get(i.status_id);
-    const desc = [`Projet : ${p.name}`, `Type : ${ITEM_KIND_LABEL[i.kind]}`, st ? `État : ${st.name}` : '', i.priority ? `Priorité : ${PRIORITY_LABEL[i.priority]}` : '', (users.get(i.id)?.length ? `Assignés : ${users.get(i.id)!.join(', ')}` : ''), i.description ?? '']
+    const desc = [`Projet : ${p.name}`, `Type : ${ITEM_KIND_LABEL[i.kind]}`, st ? `État : ${st.name}` : '', i.priority ? `Priorité : ${PRIORITY_LABEL[i.priority]}` : '', (users.get(i.id)?.length ? `Assignés : ${users.get(i.id)!.join(', ')}` : ''), (externals.get(i.id)?.length ? `Intervenants externes : ${externals.get(i.id)!.join(', ')}` : ''), i.description ?? '']
       .filter(Boolean).join('\n');
     lines.push('BEGIN:VEVENT', `UID:gomat-item-${i.id}@gomat`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${compact(start)}`, `DTEND;VALUE=DATE:${compact(numberToDay(dayToNumber(last) + 1))}`,
       `SUMMARY:${icsText(`${i.name} (${p.name})`)}`, `DESCRIPTION:${icsText(desc)}`, `CATEGORIES:${icsText(p.name)}`, `STATUS:${st?.family === 'cancelled' ? 'CANCELLED' : 'CONFIRMED'}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');

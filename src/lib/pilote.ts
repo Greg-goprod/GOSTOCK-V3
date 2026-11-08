@@ -84,6 +84,8 @@ export interface GanttData extends PiloteData {
   baselines: CpBaselineDate[];
   // Matériel / véhicules à vérifier (cp_resource_issues) ; absent tant que la migration du matériel des tâches n'est pas appliquée
   resourceIssues?: ResourceIssue[];
+  // Intervenants externes par élément (« Nom (Société) ») ; absent tant que la migration 74 n'est pas appliquée. Sert aux exports.
+  itemExternals?: { item_id: string; label: string }[];
 }
 
 // Ligne de base : photo des dates d'un projet (item_id vide) et de ses éléments au moment où elle a été figée
@@ -141,8 +143,18 @@ export async function loadPilote(): Promise<PiloteData> {
   };
 }
 
+// Lecture tolérante : sans la migration 74, aucune table → aucun intervenant
+async function loadItemExternals(): Promise<{ item_id: string; label: string }[]> {
+  const { data, error } = await supabase.from('cp_item_externals').select('item_id, external:cp_externals(name, company)');
+  if (error) return [];
+  return ((data || []) as unknown as { item_id: string; external: { name: string; company: string | null } | { name: string; company: string | null }[] | null }[])
+    .map(r => ({ item_id: r.item_id, e: Array.isArray(r.external) ? r.external[0] : r.external }))
+    .filter(r => !!r.e)
+    .map(r => ({ item_id: r.item_id, label: r.e!.company ? `${r.e!.name} (${r.e!.company})` : r.e!.name }));
+}
+
 export async function loadGantt(): Promise<GanttData> {
-  const [base, items, itemMembers, links, calendarDays, capacities, baselines, resourceIssues] = await Promise.all([
+  const [base, items, itemMembers, links, calendarDays, capacities, baselines, resourceIssues, itemExternals] = await Promise.all([
     loadPilote(),
     supabase.from('cp_items').select('*').order('position').order('starts_on', { nullsFirst: false }).order('name'),
     supabase.from('cp_item_members').select('item_id, user_id'),
@@ -151,6 +163,7 @@ export async function loadGantt(): Promise<GanttData> {
     loadCapacities(),
     loadBaselines(),
     loadResourceIssues(),
+    loadItemExternals(),
   ]);
   const error = [items, itemMembers, links].map(r => r.error).find(Boolean);
   if (error) throw error;
@@ -163,6 +176,7 @@ export async function loadGantt(): Promise<GanttData> {
     itemMembers: ((itemMembers.data || []) as CpItemMember[]).filter(m => keptIds.has(m.item_id)),
     links: ((links.data || []) as CpLink[]).filter(l => !templateIds.has(l.project_id)),
     calendarDays, capacities, baselines, resourceIssues,
+    itemExternals: itemExternals.filter(e => keptIds.has(e.item_id)),
   };
 }
 

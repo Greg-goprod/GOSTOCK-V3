@@ -60,6 +60,14 @@ eq('CSV : guillemets doublés', csvItems.includes('"À prévoir;\navec ""guillem
 eq('CSV : une cellule qui commence par « = » est protégée contre l\'interprétation en formule', [csvItems.includes(";'=SUM(A1);"), csvItems.includes(';=SUM(A1);')], [true, false]);
 eq('CSV : un nombre négatif n\'est pas « protégé »', toCsv([{ a: -5, b: 'x' }]), '﻿a;b\r\n-5;x\r\n');
 eq('CSV vide : seulement le BOM', toCsv([]), '﻿');
+// Intervenants externes (migration 74) : une colonne à part, vide sans intervenant ; absente des données = vide
+{ const withExt = { ...data, itemExternals: [{ item_id: 'b', label: 'Jean Prestataire (Sono SA)' }, { item_id: 'b', label: 'Marie Électricienne' }] };
+  const r = buildExportRows(withExt, name, TODAY).items;
+  eq('externes : colonne « Intervenants externes » (plusieurs séparés par une virgule), vide pour les autres', [r.find(x => x['Nom'] === 'Structures')!['Intervenants externes'], r.find(x => x['Nom'] === 'Sans date')!['Intervenants externes']], ['Jean Prestataire (Sono SA), Marie Électricienne', '']);
+  eq('externes : sans données d\'intervenants (migration pas appliquée), la colonne existe et reste vide', byName('Structures')['Intervenants externes'], '');
+  eq('externes : les assignés par compte ne sont pas mélangés aux intervenants externes', r.find(x => x['Nom'] === 'Structures')!['Assignés'], byName('Structures')['Assignés']);
+  const icsExt = buildIcs(withExt, name, '20270320T100000Z').replace(/\r\n /g, '');
+  eq('ics : la description cite les intervenants externes', icsExt.includes('Intervenants externes : Jean Prestataire (Sono SA)\\, Marie Électricienne'), true); }
 
 // .ics
 const ics = buildIcs(data, name, '20270320T100000Z');

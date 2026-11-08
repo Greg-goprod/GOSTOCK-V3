@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { EquipmentSubgroup, EquipmentGroup } from '../../types';
 import { Layers, FileText, Palette, Folder as FolderIcon, FolderOpen as FolderOpenIcon } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface SubgroupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -80,9 +81,9 @@ const SubgroupModal: React.FC<SubgroupModalProps> = ({ isOpen, onClose, subgroup
         color: '#64748b',
         groupId: groups.length > 0 ? groups[0].id : ''
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving subgroup:', error);
-      toast.error(error.message || 'Erreur lors de la sauvegarde');
+      toast.error(messageOf(error) || 'Erreur lors de la sauvegarde');
     } finally {
       setIsLoading(false);
     }

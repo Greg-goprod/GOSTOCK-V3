@@ -76,7 +76,7 @@ const DuplicateProjectForm: React.FC<Props> = ({ project, onClose, onDone }) => 
             </label>
             <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
               <input id="dup-assign" type="checkbox" checked={copyTeam && copyAssignments} disabled={!copyTeam} onChange={e => setCopyAssignments(e.target.checked)} />
-              Les assignations des tâches (avec l'équipe)
+              Les assignations des tâches, intervenants externes compris (avec l'équipe)
             </label>
           </fieldset>
           <p className="text-xs text-gray-600 dark:text-gray-400">

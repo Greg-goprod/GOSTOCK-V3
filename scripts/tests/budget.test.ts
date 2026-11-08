@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Contrôles du budget par projet (sans affichage) : montants, totaux, niveaux d'alerte, valorisation des heures, export.
-import { budgetError, budgetLevel, buildBudgetRows, formatChf, laborByProject, laborOf, parseAmount, remainingToCommit, sumLines, totalsByProject, usedRatio, variance, type CpBudgetLine } from '../../src/lib/budget';
+import { actualLabor, budgetError, budgetLevel, buildBudgetRows, formatChf, laborByProject, laborOf, parseAmount, remainingToCommit, sumLines, totalsByProject, usedRatio, variance, type CpBudgetLine } from '../../src/lib/budget';
 import { toCsv } from '../../src/lib/piloteExports';
 import type { GanttData } from '../../src/lib/pilote';
 
@@ -115,6 +115,15 @@ eq('export CSV : écart négatif reste un nombre (pas de apostrophe)', csv.inclu
 eq('erreur : droit refusé', budgetError({ code: '42501', message: 'new row violates row-level security policy for table "cp_budget_lines"' }), "Tu n'as pas le droit de modifier le budget");
 eq('erreur : valeur refusée', budgetError({ code: '23514', message: 'violates check constraint' }).startsWith('Valeur refusée'), true);
 eq('erreur : inconnue', budgetError({ message: 'Projet introuvable' }), 'Projet introuvable');
+
+// Temps réellement passé : minutes par personne × taux horaire (centimes arrondis personne par personne)
+{ const rates = [{ user_id: 'u1', hourly_rate: 80 }, { user_id: 'u2', hourly_rate: 55.5 }] as any;
+  eq('temps réel : 2 h à 80 + 90 min à 55,50 = 160 + 83,25', actualLabor([{ user_id: 'u1', minutes: 120 }, { user_id: 'u2', minutes: 90 }], rates), { minutes: 210, valuedMinutes: 210, unvaluedMinutes: 0, cost: 243.25 });
+  eq('temps réel : une personne sans taux est comptée à part, jamais valorisée', actualLabor([{ user_id: 'u1', minutes: 60 }, { user_id: 'u9', minutes: 45 }], rates), { minutes: 105, valuedMinutes: 60, unvaluedMinutes: 45, cost: 80 });
+  eq('temps réel : aucun temps', actualLabor([], rates), { minutes: 0, valuedMinutes: 0, unvaluedMinutes: 0, cost: 0 });
+  eq('temps réel : un taux de 0 (bénévolat) est valorisé à 0, pas « sans taux »', actualLabor([{ user_id: 'u3', minutes: 60 }], [{ user_id: 'u3', hourly_rate: 0 }] as any), { minutes: 60, valuedMinutes: 60, unvaluedMinutes: 0, cost: 0 });
+  eq('temps réel : arrondi au centime par personne (7 min à 33,33 /h = 3,89)', actualLabor([{ user_id: 'u1', minutes: 7 }], [{ user_id: 'u1', hourly_rate: 33.33 }] as any).cost, 3.89);
+  eq('temps réel : minutes négatives ou illisibles ignorées (jamais de montant négatif)', actualLabor([{ user_id: 'u1', minutes: -30 }, { user_id: 'u2', minutes: NaN }], rates), { minutes: 0, valuedMinutes: 0, unvaluedMinutes: 0, cost: 0 }); }
 
 console.log(fails === 0 ? '\nTOUT VERT' : `\n${fails} ÉCHEC(S)`);
 process.exit(fails === 0 ? 0 : 1);

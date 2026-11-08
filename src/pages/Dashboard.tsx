@@ -29,6 +29,7 @@ import Button from '../components/common/Button';
 import { MxBadge } from '../components/mx/MxBadge';
 import PageTitle from '../components/common/PageTitle';
 
+import { messageOf } from '../lib/errorMessage';
 const Dashboard: React.FC = () => {
   const { unreadNotificationCount } = useApp();
   const { t } = useLanguage();
@@ -283,29 +284,29 @@ const Dashboard: React.FC = () => {
       setMaintenanceEquipment(sortedMaintenanceData as unknown as MaintenanceEquipment[]);
       setError(null);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching dashboard data:', error);
       
       let errorMessage = 'Une erreur est survenue lors du chargement des données';
       
-      if (error.message?.includes('Configuration Supabase manquante')) {
+      if (messageOf(error)?.includes('Configuration Supabase manquante')) {
         errorMessage = 'Configuration Supabase manquante. Configure tes variables d\'environnement.';
-      } else if (error.message?.includes('Variables d\'environnement Supabase non configurées')) {
+      } else if (messageOf(error)?.includes('Variables d\'environnement Supabase non configurées')) {
         errorMessage = 'Variables d\'environnement Supabase non configurées. Crée un fichier .env avec tes clés Supabase.';
-      } else if (error.message?.includes('Remplace les valeurs par défaut')) {
+      } else if (messageOf(error)?.includes('Remplace les valeurs par défaut')) {
         errorMessage = 'Remplace les valeurs par défaut dans le fichier .env par tes vraies valeurs Supabase.';
-      } else if (error.message?.includes('Connection timeout') || error.message?.includes('Délai de connexion') || error.message?.includes('Request timeout')) {
+      } else if (messageOf(error)?.includes('Connection timeout') || messageOf(error)?.includes('Délai de connexion') || messageOf(error)?.includes('Request timeout')) {
         errorMessage = 'Délai de connexion dépassé. Vérifie ta connexion internet et l\'URL Supabase.';
-      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('Impossible de se connecter')) {
+      } else if (messageOf(error)?.includes('Failed to fetch') || messageOf(error)?.includes('Impossible de se connecter')) {
         errorMessage = 'Impossible de se connecter au serveur. Vérifie ta connexion internet et les paramètres Supabase.';
-      } else if (error.message?.includes('Invalid URL')) {
+      } else if (messageOf(error)?.includes('Invalid URL')) {
         errorMessage = 'URL Supabase invalide. Vérifie ta configuration dans le fichier .env';
-      } else if (error.message?.includes('Clé API Supabase invalide')) {
+      } else if (messageOf(error)?.includes('Clé API Supabase invalide')) {
         errorMessage = 'Clé API Supabase invalide. Vérifie ta VITE_SUPABASE_ANON_KEY dans le fichier .env';
-      } else if (error.message?.includes('Serveur Supabase inaccessible')) {
-        errorMessage = error.message;
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (messageOf(error)?.includes('Serveur Supabase inaccessible')) {
+        errorMessage = messageOf(error);
+      } else if (messageOf(error)) {
+        errorMessage = messageOf(error);
       }
       
       setError(errorMessage);

@@ -13,13 +13,14 @@ const ST0 = '33333333-0000-0000-0000-000000000001', ST1 = '33333333-0000-0000-00
 const base = { organization_id: ORG, priority: null, color: '#6366f1', description: null, site_id: null, link_mode: 'overlap', link_skip_weekends: true, created_at: now, updated_at: now, estimate_hours: null, series_id: null, series_index: null };
 const it = (id, name, extra = {}) => ({ ...base, id, project_id: P1, parent_id: null, kind: 'task', name, position: 1, starts_on: '2026-11-09', ends_on: '2026-11-10', status_id: ST1, version: 1, ...extra });
 const IA = '22222222-0000-0000-0000-00000000000a', IP = '22222222-0000-0000-0000-00000000000b', IS = '22222222-0000-0000-0000-00000000000c', IB = '22222222-0000-0000-0000-00000000000d';
+const IC = '22222222-0000-0000-0000-00000000000e', ICC = '22222222-0000-0000-0000-00000000000f';
 const X1 = 'e1e1e1e1-0000-0000-0000-000000000001', X2 = 'e1e1e1e1-0000-0000-0000-000000000002', X3 = 'e1e1e1e1-0000-0000-0000-000000000003';
 const TABLES = {
   cp_statuses: [{ id: ST0, name: 'Pas commencé', family: 'not_started', color: '#999999', position: 0, is_system: true }, { id: ST1, name: 'En cours', family: 'in_progress', color: '#3b82f6', position: 1, is_system: true }, { id: ST2, name: 'Terminé', family: 'done', color: '#10b981', position: 2, is_system: true }],
   cp_projects: [{ ...base, id: P1, type: 'site', name: 'Projet Alpha', status_id: ST1, starts_on: day(-10), ends_on: day(60) }],
   cp_project_members: [{ project_id: P1, user_id: ME, role: 'lead' }],
   sites: [],
-  cp_items: [it(IA, 'Montage scène', { estimate_hours: 2 }), it(IP, 'Phase Alpha', { kind: 'phase', starts_on: '2026-11-02', ends_on: '2026-12-18' }), it(IS, 'Sans date', { starts_on: null, ends_on: null }), it(IB, 'Tâche B')],
+  cp_items: [it(IA, 'Montage scène', { estimate_hours: 2 }), it(IP, 'Phase Alpha', { kind: 'phase', starts_on: '2026-11-02', ends_on: '2026-12-18' }), it(IS, 'Sans date', { starts_on: null, ends_on: null }), it(IB, 'Tâche B'), it(IC, 'Parent S', { starts_on: '2026-11-16', ends_on: '2026-11-17' }), it(ICC, 'Enfant S', { kind: 'subtask', parent_id: IC, starts_on: '2026-11-16', ends_on: '2026-11-16' })],
   cp_item_members: [], cp_calendar_days: [], cp_user_capacity: [], cp_item_links: [], cp_item_checks: [], cp_comments: [], cp_documents: [], cp_budget_lines: [], cp_user_rates: [], cp_item_resources: [],
   cp_externals: [
     { id: X1, name: 'Jean Prestataire', company: 'Sono SA', note: null, active: true },
@@ -135,10 +136,15 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   check('7 53 répétitions : refusé', (await page.getByText('Entre un nombre entier de 1 à 52.').count()) === 1 && (await page.getByRole('button', { name: 'Créer', exact: true }).isDisabled()));
   await page.locator('#rep-count').fill('abc');
   check('8 texte : refusé', (await page.getByRole('button', { name: 'Créer', exact: true }).isDisabled()));
-  await page.locator('#rep-count').fill('3');
+  await page.locator('#rep-count').fill('3'); await page.waitForTimeout(200);
+  await page.locator('#rep-skip').check(); await page.waitForTimeout(200);
+  const previewSkip = await txt(page.locator('[data-repeat-preview]'));
+  check('8b option « éviter les week-ends » : samedi 09.01.2027 → lundi 11.01, durée conservée (11.01 → 12.01)', /11\.01\.2027 → 12\.01\.2027/.test(previewSkip) && !/09\.01\.2027/.test(previewSkip), previewSkip);
+  await page.locator('#rep-skip').uncheck(); await page.waitForTimeout(200);
+  check('8c l\'option décochée rend les dates brutes (09.01.2027 de nouveau)', /09\.01\.2027 → 10\.01\.2027/.test(await txt(page.locator('[data-repeat-preview]'))));
   await page.getByRole('button', { name: 'Créer 3 occurrences' }).click(); await page.waitForTimeout(1200);
   const rep = last('fn', 'cp_repeat_item');
-  check('9 la demande envoyée à la base : la tâche, « monthly », 3', !!rep && rep.args.p_item === IA && rep.args.p_freq === 'monthly' && rep.args.p_count === 3, JSON.stringify(rep));
+  check('9 la demande envoyée à la base : la tâche, « monthly », 3', !!rep && rep.args.p_item === IA && rep.args.p_freq === 'monthly' && rep.args.p_count === 3 && rep.args.p_skip_nonworking === false, JSON.stringify(rep));
   check('10 la fenêtre se ferme et l\'en-tête de la section annonce « 1 sur 4 »', (await page.getByRole('radiogroup', { name: 'Fréquence' }).count()) === 0 && /Répétition \(1 sur 4\)/.test(await txt(page.locator('[data-repeat]'))), await txt(page.locator('[data-repeat]')));
   check('11 la série a bien 4 éléments dans les données', TABLES.cp_items.filter(i => i.series_id).length === 4);
   await page.screenshot({ path: process.argv[2] + '/p13-repetition.png' });
@@ -157,7 +163,11 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   check('15 dernière occurrence : « Prolonger la série… » proposé', (await page.getByRole('button', { name: 'Prolonger la série…' }).count()) === 1 && (await page.getByRole('button', { name: /^Supprimer les/ }).count()) === 0);
   await page.getByRole('button', { name: 'Prolonger la série…' }).click(); await page.getByRole('radiogroup', { name: 'Fréquence' }).waitFor();
   check('16 prolonger : fenêtre titrée « Prolonger la série », de 1 à 52 répétitions possibles', (await page.getByRole('dialog').filter({ hasText: 'Prolonger la série' }).count()) >= 1 && /1 à 52/.test(await txt(page.locator('label[for="rep-count"]'))));
-  await page.getByRole('button', { name: 'Annuler' }).last().click(); await closeDrawer();
+  await page.locator('#rep-count').fill('1'); await page.locator('#rep-skip').check();
+  await page.getByRole('button', { name: 'Créer 1 occurrence' }).click(); await page.waitForTimeout(1200);
+  const repSkip = last('fn', 'cp_repeat_item');
+  check('16b prolonger avec l\'option cochée : la demande envoie « éviter les jours non ouvrés » (p_skip_nonworking = true) et p_count = 1', !!repSkip && repSkip.args.p_skip_nonworking === true && repSkip.args.p_count === 1, JSON.stringify(repSkip && repSkip.args));
+  await closeDrawer();
 
   // Éléments qu'on ne répète pas
   await openItem('Phase Alpha'); await ensureOpen('[data-repeat]', /Répétition/);
@@ -166,6 +176,11 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   await openItem('Sans date'); await ensureOpen('[data-repeat]', /Répétition/);
   check('18 sans date : « Donne d\'abord une date », pas de bouton', /Donne d'abord une date/.test(await txt(page.locator('[data-repeat-blocked]'))) && (await page.getByRole('button', { name: 'Répéter…' }).count()) === 0);
   await closeDrawer();
+  await openItem('Parent S'); await ensureOpen('[data-repeat]', /Répétition/);
+  check('18b une tâche qui a des sous-tâches se répète (plus de blocage) : bouton « Répéter… », aucun message de refus', (await page.getByRole('button', { name: 'Répéter…' }).count()) === 1 && (await page.locator('[data-repeat-blocked]').count()) === 0);
+  await page.getByRole('button', { name: 'Répéter…' }).click(); await page.getByRole('radiogroup', { name: 'Fréquence' }).waitFor();
+  check('18c la fenêtre annonce que la sous-tâche est copiée avec chaque occurrence', /1 sous-tâche copiée avec chaque occurrence, au même écart que dans l'original\./.test(await txt(page.locator('[data-repeat-children]'))), await txt(page.locator('[data-repeat-preview]')));
+  await page.getByRole('button', { name: 'Annuler' }).last().click(); await closeDrawer();
 
   /* ------------------------------------------------------ intervenants externes */
   await openItem('Montage scène'); await ensureOpen('[data-externals]', /Intervenants externes/);

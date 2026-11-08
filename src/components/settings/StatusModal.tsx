@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { StatusConfig } from '../../types';
 import { Settings, Palette } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface StatusModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -74,9 +75,9 @@ const StatusModal: React.FC<StatusModalProps> = ({ isOpen, onClose, status }) =>
         name: '',
         color: '#64748b'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving status:', error);
-      toast.error(error.message || 'Erreur lors de la sauvegarde');
+      toast.error(messageOf(error) || 'Erreur lors de la sauvegarde');
     } finally {
       setIsLoading(false);
     }

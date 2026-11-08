@@ -1,6 +1,6 @@
 // Contrôles de la répétition (sans affichage). Les cas de dates sont les MÊMES que ceux de supabase/tests/p13.sql : l'aperçu de l'écran
 // doit donner exactement les dates que la base calcule.
-import { cannotRepeat, maxRepeatFor, previewOccurrences, seriesInfo, shiftDate, type Freq } from '../../src/lib/recurrence';
+import { cannotRepeat, maxRepeatFor, nextWorkingDay, previewOccurrences, seriesInfo, shiftDate, type Freq } from '../../src/lib/recurrence';
 import type { CpItem } from '../../src/lib/pilote';
 
 let fails = 0;
@@ -30,15 +30,30 @@ eq('seulement une fin', line(null, '2027-03-05', 'weekly', 1), '-→2027-03-12')
 eq('52 répétitions hebdomadaires : la dernière est 52 semaines plus tard', previewOccurrences('2027-01-04', '2027-01-05', 'weekly', 52).slice(-1)[0], { start: '2028-01-03', end: '2028-01-04' });
 eq('aucune répétition : liste vide', previewOccurrences('2027-03-01', '2027-03-02', 'weekly', 0), []);
 
+// Option « jours ouvrés » : MÊMES cas que supabase/tests/p13.sql (82, 81) ; 31 mai 2027 = jour fermé du calendrier, 30 mai = dimanche
+const closed = new Set(['2027-05-31']);
+const lineSkip = (start: string | null, end: string | null, freq: Freq, count: number, nw?: ReadonlySet<string>) => previewOccurrences(start, end, freq, count, nw).map(o => `${o.start ?? '-'}→${o.end ?? '-'}`).join(' | ');
+eq('sans l\'option : dimanche et jour fermé ne sont pas évités', lineSkip('2027-04-30', '2027-05-04', 'monthly', 2), '2027-05-30→2027-06-03 | 2027-06-30→2027-07-04');
+eq('avec l\'option : dimanche 30 mai → lundi 31 (fermé) → mardi 1er juin ; durée de 4 jours conservée ; le 30 juin (mercredi) ne bouge pas', lineSkip('2027-04-30', '2027-05-04', 'monthly', 2, closed), '2027-06-01→2027-06-05 | 2027-06-30→2027-07-04');
+eq('avec l\'option mais sans jour fermé : dimanche → lundi', lineSkip('2027-04-30', '2027-05-04', 'monthly', 1, new Set()), '2027-05-31→2027-06-04');
+eq('avec l\'option : une fin seule est avancée elle aussi', lineSkip(null, '2027-05-02', 'weekly', 1, new Set()), '-→2027-05-10');
+eq('avec l\'option : un début seul', lineSkip('2027-05-01', null, 'weekly', 1, new Set()), '2027-05-10→-');
+eq('nextWorkingDay : un jour ouvré reste lui-même', nextWorkingDay('2027-06-02', new Set()), '2027-06-02');
+eq('nextWorkingDay : samedi → lundi', nextWorkingDay('2027-05-29', new Set()), '2027-05-31');
+eq('nextWorkingDay : dimanche + lundi fermé → mardi', nextWorkingDay('2027-05-30', closed), '2027-06-01');
+eq('nextWorkingDay : plusieurs jours fermés de suite', nextWorkingDay('2027-06-02', new Set(['2027-06-02', '2027-06-03', '2027-06-04'])), '2027-06-07');
+{ const all = new Set<string>(); for (let n = 0; n < 500; n++) all.add(new Date(Date.UTC(2027, 0, 1 + n)).toISOString().slice(0, 10));
+  eq('nextWorkingDay : aucun jour ouvré dans l\'année qui suit → la date telle quelle (comme la base)', nextWorkingDay('2027-01-01', all), '2027-01-01'); }
+
 // Éléments qu'on ne répète pas
 const item = (extra: Partial<CpItem>): CpItem => ({ id: 'i', project_id: 'p', parent_id: null, kind: 'task', name: 'T', description: null, status_id: 's', priority: null, starts_on: '2027-03-01', ends_on: '2027-03-02', position: 0, ...extra });
-eq('tâche datée : répétable', cannotRepeat(item({}), false), null);
-eq('phase : refusée', cannotRepeat(item({ kind: 'phase' }), false)?.startsWith('Une phase ne se répète pas'), true);
-eq('avec sous-tâches : refusée', cannotRepeat(item({}), true)?.includes('sous-tâches'), true);
-eq('sans aucune date : refusée', cannotRepeat(item({ starts_on: null, ends_on: null }), false)?.startsWith('Donne d\'abord une date'), true);
-eq('une seule date : répétable', [cannotRepeat(item({ ends_on: null }), false), cannotRepeat(item({ starts_on: null }), false)], [null, null]);
-eq('jalon : répétable', cannotRepeat(item({ kind: 'milestone' }), false), null);
-eq('sous-tâche : répétable', cannotRepeat(item({ kind: 'subtask' }), false), null);
+eq('tâche datée : répétable', cannotRepeat(item({})), null);
+eq('phase : refusée', cannotRepeat(item({ kind: 'phase' }))?.startsWith('Une phase ne se répète pas'), true);
+eq('avec sous-tâches : répétable (elles sont copiées, migration 75)', cannotRepeat(item({})), null);
+eq('sans aucune date : refusée', cannotRepeat(item({ starts_on: null, ends_on: null }))?.startsWith('Donne d\'abord une date'), true);
+eq('une seule date : répétable', [cannotRepeat(item({ ends_on: null })), cannotRepeat(item({ starts_on: null }))], [null, null]);
+eq('jalon : répétable', cannotRepeat(item({ kind: 'milestone' })), null);
+eq('sous-tâche : répétable', cannotRepeat(item({ kind: 'subtask' })), null);
 
 // Séries
 const s = (id: string, idx: number | null, series = 'S1') => item({ id, series_id: idx === null ? null : series, series_index: idx });

@@ -136,6 +136,31 @@ export function laborByProject(data: GanttData, rates: CpUserRate[]): Map<string
 }
 export const laborOf = (m: Map<string, Labor>, projectId: string): Labor => m.get(projectId) ?? NO_LABOR;
 
+// Temps RÉELLEMENT saisi sur un projet, valorisé au taux horaire de chaque personne (différent de l'estimation ci-dessus).
+// Une personne sans taux : son temps est compté à part, jamais valorisé. Les centimes sont arrondis personne par personne, puis additionnés.
+export interface TimeByUser { user_id: string; minutes: number }
+export interface ActualLabor { minutes: number; valuedMinutes: number; unvaluedMinutes: number; cost: number }
+export function actualLabor(time: TimeByUser[], rates: CpUserRate[]): ActualLabor {
+  const rateOf = new Map(rates.map(r => [r.user_id, r.hourly_rate]));
+  let minutes = 0, valued = 0, unvalued = 0, cents = 0;
+  for (const t of time) {
+    const m = Math.max(0, Math.round(Number(t.minutes) || 0));
+    minutes += m;
+    const rate = rateOf.get(t.user_id);
+    if (rate === undefined) unvalued += m;
+    else { valued += m; cents += Math.round(m * rate / 60 * 100); }
+  }
+  return { minutes, valuedMinutes: valued, unvaluedMinutes: unvalued, cost: cents / 100 };
+}
+
+// Temps saisi par personne sur un projet (réservé aux personnes qui ont le droit « budget » : la base répond vide aux autres).
+// null = fonction absente (migration 75 pas encore appliquée) : l'écran n'affiche alors rien de plus.
+export async function loadProjectTime(projectId: string): Promise<TimeByUser[] | null> {
+  const { data, error } = await supabase.rpc('cp_project_time_by_user', { p_project: projectId });
+  if (error) return null;
+  return ((data || []) as { user_id: string; minutes: number | string }[]).map(r => ({ user_id: r.user_id, minutes: Number(r.minutes) }));
+}
+
 /* -------------------------------------------------------------------- export */
 type Row = Record<string, string | number>;
 // Lignes pour l'export : une par ligne de budget, puis un total par projet. Les projets sans ligne n'apparaissent pas.

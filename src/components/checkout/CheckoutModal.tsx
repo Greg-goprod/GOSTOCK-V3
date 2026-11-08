@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import UserModal from '../users/UserModal';
 import DateInput from '../common/DateInput';
 
+import { messageOf } from '../../lib/errorMessage';
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -423,9 +424,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       };
 
       addEquipmentToCheckout(scanned);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error scanning equipment:', error);
-      toast.error(error.message || 'Erreur lors de la recherche');
+      toast.error(messageOf(error) || 'Erreur lors de la recherche');
     } finally {
       setIsLoading(false);
     }
@@ -522,9 +523,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       
       // Close modal
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating checkout:', error);
-      toast.error(error.message || 'Erreur lors de la création de la sortie');
+      toast.error(messageOf(error) || 'Erreur lors de la création de la sortie');
     } finally {
       setIsLoading(false);
     }

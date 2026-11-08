@@ -22,6 +22,7 @@ import { MxEntityViewToggle } from '../components/mx/MxEntityViewToggle';
 import { MxBadge } from '../components/mx/MxBadge';
 import { readMxViewMode, writeMxViewMode } from '../components/mx/mxViewModeStorage';
 
+import { messageOf } from '../lib/errorMessage';
 type ViewMode = 'grid' | 'list';
 type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'department' | 'role';
 type SortDirection = 'asc' | 'desc';
@@ -88,7 +89,7 @@ const Users: React.FC = () => {
         depositPaidOn: u.deposit_paid_on,
         depositReturnedOn: u.deposit_returned_on,
       })));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
     } finally {
@@ -128,9 +129,9 @@ const Users: React.FC = () => {
 
       setUsers(prev => prev.filter(user => user.id !== userToDelete.id));
       toast.success('Utilisateur supprimé avec succès');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error(error.message || 'Erreur lors de la suppression');
+      toast.error(messageOf(error) || 'Erreur lors de la suppression');
     }
   };
 

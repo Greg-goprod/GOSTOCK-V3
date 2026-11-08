@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { Category } from '../../types';
 import { Tag, FileText, Palette } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface CategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -76,9 +77,9 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
         description: '',
         color: '#64748b'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving category:', error);
-      toast.error(error.message || t('errorSavingCategory'));
+      toast.error(messageOf(error) || t('errorSavingCategory'));
     } finally {
       setIsLoading(false);
     }

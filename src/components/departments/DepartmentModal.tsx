@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Department } from '../../types';
 import { Building, FileText, Palette } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface DepartmentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -74,9 +75,9 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({ isOpen, onClose, depa
         description: '',
         color: '#64748b'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving department:', error);
-      toast.error(error.message || 'Erreur lors de la sauvegarde');
+      toast.error(messageOf(error) || 'Erreur lors de la sauvegarde');
     } finally {
       setIsLoading(false);
     }

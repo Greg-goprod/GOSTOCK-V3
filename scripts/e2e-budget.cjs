@@ -56,6 +56,8 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
     if (path.startsWith('/rest/v1/rpc/')) {
       const fn = path.split('/').pop();
       if (fn === 'rbac_has_any_permission') { const keys = (req.postDataJSON() || {}).p_keys || []; return json(keys.every(k => !k.startsWith('cp.budget:') || budgetRights.has(k.split(':')[1]))); }
+      // Temps réellement saisi (migration 75) : sur Alpha, 2 h 30 pour ME (taux 100) et 45 min pour une personne sans taux ; rien ailleurs
+      if (fn === 'cp_project_time_by_user') return json((req.postDataJSON() || {}).p_project === P1 ? [{ user_id: ME, minutes: 150 }, { user_id: OTHER, minutes: '45' }] : []);
       return json(fn in RPC ? RPC[fn] : null);
     }
     if (path.startsWith('/rest/v1/')) {
@@ -112,10 +114,14 @@ const filt = (rows, url) => { let out = rows; for (const [k, v] of url.searchPar
   check('10 détail du premier projet avec budget (Alpha) : 2 lignes', (await detail.getByRole('heading', { name: 'Projet Alpha' }).count()) === 1 && /Matériel/.test(await txt(detail)) && /Prestataires/.test(await txt(detail)));
   check('11 reste à engager 9\'000 et marge sur le réel 13\'499.75', /Reste à engager : 9'000 CHF/.test(await txt(page.locator('[data-budget-remaining]'))) && /Marge sur le réel : 13'499\.75 CHF/.test(await txt(page.locator('[data-budget-remaining]'))), await txt(page.locator('[data-budget-remaining]')));
   check('12 main-d\'œuvre Alpha : 50 h × 100 + 10 h × 100 + 10 h sans taux = 6\'000 valorisés', (await txt(page.locator('[data-labor-cost]'))).startsWith("6'000"), await txt(page.locator('[data-labor]')));
+  const actual = page.locator('[data-labor-actual]');
+  check('12b temps réellement passé (Alpha) : 2 h 30 × 100 = 250 CHF valorisées sur 3,3 h saisies ; 0,8 h sans taux non valorisées', (await actual.count()) === 1 && (await txt(page.locator('[data-labor-actual-cost]'))).startsWith('250') && /2,5 h valorisées sur 3,3 h saisies\./.test(await txt(actual)) && /0,8 h de personnes sans taux horaire ne sont pas valorisées\./.test(await txt(actual)), await txt(actual));
   check('13 les 10 h de l\'assigné sans taux sont signalées, pas devinées', /10 h d'assignés sans taux horaire ne sont pas valorisées/.test(await txt(page.locator('[data-labor]'))), await txt(page.locator('[data-labor]')));
   await page.getByRole('button', { name: 'Projet Beta', exact: true }).click(); await page.waitForTimeout(400);
   check('14 on passe au projet Beta : sa ligne « Divers »', /Divers/.test(await txt(detail)) && !/Matériel/.test(await txt(detail)));
   check('15 Beta : 30 h sans taux, rien de valorisé (0)', (await txt(page.locator('[data-labor-cost]'))).startsWith('0 ') && /30 h d'assignés sans taux horaire/.test(await txt(page.locator('[data-labor]'))), await txt(page.locator('[data-labor]')));
+  await page.waitForTimeout(500);
+  check('15b Beta : aucun temps saisi, annoncé comme tel (pas de montant inventé)', /Aucun temps saisi dans ce projet\./.test(await txt(page.locator('[data-labor-actual]'))), await txt(page.locator('[data-labor]')));
   await page.getByRole('button', { name: 'Projet Alpha', exact: true }).click(); await page.waitForTimeout(300);
 
   // 4. Ajouter une ligne

@@ -254,7 +254,7 @@ const Settings: React.FC = () => {
       
       await fetchSystemSettings();
       toast.success('Paramètre mis à jour avec succès');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating system setting:', error);
       toast.error('Erreur lors de la mise à jour du paramètre');
     }
@@ -275,7 +275,7 @@ const Settings: React.FC = () => {
       if (type === 'status_configs') {
         refreshData();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting item:', error);
       toast.error('Erreur lors de la suppression');
     }

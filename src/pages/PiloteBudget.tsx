@@ -7,9 +7,9 @@ import { downloadText } from '../lib/download';
 import { toCsv } from '../lib/piloteExports';
 import { loadGantt, piloteError, type GanttData } from '../lib/pilote';
 import {
-  budgetError, budgetLevel, buildBudgetRows, formatChf, laborByProject, laborOf, loadBudget, loadBudgetRights, MAX_AMOUNT, MAX_RATE,
+  actualLabor, budgetError, budgetLevel, buildBudgetRows, formatChf, laborByProject, laborOf, loadBudget, loadBudgetRights, loadProjectTime, MAX_AMOUNT, MAX_RATE,
   parseAmount, remainingToCommit, sumLines, totalsByProject, usedRatio, variance, EMPTY_TOTALS,
-  type BudgetData, type BudgetLevel, type BudgetRights, type CpBudgetLine,
+  type BudgetData, type BudgetLevel, type BudgetRights, type CpBudgetLine, type TimeByUser,
 } from '../lib/budget';
 import { CrudSection } from '../components/sitePlanning/CrudSection';
 import { EntityTable } from '../components/common/EntityTable';
@@ -67,6 +67,15 @@ const PiloteBudget: React.FC = () => {
   // Projet affiché en détail : celui qu'on a choisi, sinon le premier qui a un budget, sinon le premier
   const current = projects.find(p => p.id === selected) ?? projects.find(p => totals.has(p.id)) ?? projects[0] ?? null;
   const currentLines = current ? budget.lines.filter(l => l.project_id === current.id) : [];
+  // Temps réellement saisi sur le projet affiché (null = pas encore chargé ou fonction absente)
+  const [spent, setSpent] = useState<{ projectId: string; time: TimeByUser[] | null } | null>(null);
+  const currentId = current?.id ?? null;
+  useEffect(() => {
+    if (!currentId) return;
+    let alive = true;
+    void loadProjectTime(currentId).then(time => { if (alive) setSpent({ projectId: currentId, time }); });
+    return () => { alive = false; };
+  }, [currentId, data]);
 
   const saveRate = async (userId: string) => {
     const raw = (draft[userId] ?? '').trim();
@@ -98,6 +107,7 @@ const PiloteBudget: React.FC = () => {
   const canRate = rights.create && rights.update;
   const cur = current ? totals.get(current.id) ?? EMPTY_TOTALS : EMPTY_TOTALS;
   const curLabor = current ? laborOf(labor, current.id) : null;
+  const spentLabor = spent && spent.projectId === currentId && spent.time ? actualLabor(spent.time, budget.rates) : null;
 
   return (
     <div className="space-y-5">
@@ -196,6 +206,22 @@ const PiloteBudget: React.FC = () => {
               </>
             ) : (
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Aucune heure estimée dans ce projet (fiche d'une tâche › « Estimation »).</p>
+            )}
+            {spentLabor && (
+              <div className="mt-3 border-t border-gray-200 pt-3 dark:border-gray-700" data-labor-actual>
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Temps réellement passé</h4>
+                {spentLabor.minutes > 0 ? (
+                  <>
+                    <p className="mt-1 text-xl font-bold tabular-nums text-gray-900 dark:text-white" data-labor-actual-cost>{formatChf(spentLabor.cost)} <span className="text-sm font-medium text-gray-500">CHF</span></p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {`${hoursText(spentLabor.valuedMinutes / 60)} h valorisées sur ${hoursText(spentLabor.minutes / 60)} h saisies.`}
+                      {spentLabor.unvaluedMinutes > 0 && <> {`${hoursText(spentLabor.unvaluedMinutes / 60)} h de personnes sans taux horaire ne sont pas valorisées.`}</>}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Aucun temps saisi dans ce projet.</p>
+                )}
+              </div>
             )}
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Les heures d'une tâche sont partagées à parts égales entre ses assignés, puis multipliées par leur taux. Si une phase et ses tâches sont toutes deux estimées, les deux comptent (comme dans la Charge) :

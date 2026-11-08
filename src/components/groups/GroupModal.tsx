@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { EquipmentGroup } from '../../types';
 import { Users, FileText, Palette } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface GroupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -76,9 +77,9 @@ const GroupModal: React.FC<GroupModalProps> = ({ isOpen, onClose, group }) => {
         description: '',
         color: '#64748b'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving group:', error);
-      toast.error(error.message || t('error'));
+      toast.error(messageOf(error) || t('error'));
     } finally {
       setIsLoading(false);
     }

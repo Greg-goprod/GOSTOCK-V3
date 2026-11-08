@@ -11,6 +11,7 @@ import { Equipment, User as UserType } from '../types';
 import ReturnModal from '../components/checkout/ReturnModal';
 import PageTitle from '../components/common/PageTitle';
 
+import { messageOf } from '../lib/errorMessage';
 const Scan: React.FC = () => {
   const navigate = useNavigate();
   const [itemType, setItemType] = useState<'equipment' | 'user' | 'checkout' | 'delivery_note' | null>(null);
@@ -29,9 +30,9 @@ const Scan: React.FC = () => {
     
     try {
       await identifyQRCode(decodedText);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erreur lors de l'identification:", error);
-      setError(error.message || "Erreur lors de l'identification du QR code");
+      setError(messageOf(error) || "Erreur lors de l'identification du QR code");
       setItemType(null);
       setItem(null);
     } finally {
@@ -387,9 +388,9 @@ const Scan: React.FC = () => {
           returnDate: new Date().toISOString()
         });
         
-      } catch (error: any) {
+      } catch (error) {
         console.error('Erreur lors du retour:', error);
-        toast.error(error.message || 'Erreur lors du retour du matériel');
+        toast.error(messageOf(error) || 'Erreur lors du retour du matériel');
       } finally {
         setLoading(false);
       }

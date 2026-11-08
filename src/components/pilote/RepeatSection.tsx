@@ -15,6 +15,8 @@ interface Props {
   items: CpItem[];
   canCreate: boolean;
   canDelete: boolean;
+  // Jours du calendrier de travail (fériés, fermetures) : pour l'option « éviter les week-ends et jours non travaillés »
+  nonWorking: ReadonlySet<string>;
   // Recharge les données après un changement (la fiche repart alors de la version rechargée)
   onChanged: () => Promise<void>;
 }
@@ -24,27 +26,28 @@ const period = (s: string | null, e: string | null) => (s && e && s !== e ? `${f
 const inputClass = 'rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100';
 
 // Répétition d'une tâche : « chaque semaine / mois / année, n fois » ; les occurrences sont reliées en série. La base fait le calcul (cp_repeat_item).
-const RepeatSection: React.FC<Props> = ({ item, items, canCreate, canDelete, onChanged }) => {
+const RepeatSection: React.FC<Props> = ({ item, items, canCreate, canDelete, nonWorking, onChanged }) => {
   const { open, toggle } = useSectionOpen('repeat', false, false);
   const panelId = useId();
   const info = useMemo(() => seriesInfo(items, item), [items, item]);
-  const hasChildren = useMemo(() => items.some(i => i.parent_id === item.id), [items, item.id]);
-  const blocked = cannotRepeat(item, hasChildren);
+  const childCount = useMemo(() => items.filter(i => i.parent_id === item.id).length, [items, item.id]);
+  const blocked = cannotRepeat(item);
   const room = maxRepeatFor(info);
   const [dialog, setDialog] = useState(false);
   const [freq, setFreq] = useState<Freq>('weekly');
   const [count, setCount] = useState('4');
+  const [skip, setSkip] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const n = /^\d{1,2}$/.test(count.trim()) ? Number(count.trim()) : NaN;
   const valid = Number.isInteger(n) && n >= 1 && n <= Math.min(MAX_REPEAT, room);
-  const preview = valid ? previewOccurrences(item.starts_on, item.ends_on, freq, n) : [];
+  const preview = valid ? previewOccurrences(item.starts_on, item.ends_on, freq, n, skip ? nonWorking : undefined) : [];
   const canExtend = !info || info.isLast;
 
   const run = async () => {
     if (!valid || busy) return;
     setBusy(true);
-    const { error } = await supabase.rpc('cp_repeat_item', { p_item: item.id, p_freq: freq, p_count: n });
+    const { error } = await supabase.rpc('cp_repeat_item', { p_item: item.id, p_freq: freq, p_count: n, p_skip_nonworking: skip });
     setBusy(false);
     if (error) return void toast.error(recurrenceError(error));
     toast.success(`${n} occurrence${n > 1 ? 's' : ''} créée${n > 1 ? 's' : ''}`);
@@ -97,6 +100,10 @@ const RepeatSection: React.FC<Props> = ({ item, items, canCreate, canDelete, onC
             <input id="rep-count" inputMode="numeric" className={`${inputClass} w-24 text-right tabular-nums`} value={count} onChange={e => setCount(e.target.value)} />
             {!valid && <p role="alert" className="mt-1 text-xs text-danger-600">{`Entre un nombre entier de 1 à ${Math.min(MAX_REPEAT, room)}.`}</p>}
           </div>
+          <label className="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-200">
+            <input id="rep-skip" type="checkbox" checked={skip} onChange={e => setSkip(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600" />
+            <span>Éviter les week-ends et les jours non travaillés <span className="block text-xs text-gray-600 dark:text-gray-400">Une occurrence qui tombe un jour non ouvré est avancée au prochain jour ouvré ; la durée est conservée.</span></span>
+          </label>
           {valid && (
             <div className="rounded-md bg-gray-50 p-2 text-sm dark:bg-gray-800/60" data-repeat-preview>
               <p className="font-medium text-gray-900 dark:text-white">{`${n} nouvelle${n > 1 ? 's' : ''} occurrence${n > 1 ? 's' : ''} :`}</p>
@@ -105,6 +112,7 @@ const RepeatSection: React.FC<Props> = ({ item, items, canCreate, canDelete, onC
                 {preview.length > 4 && <li className="text-gray-500">…</li>}
                 {preview.length > 3 && <li>{period(preview[preview.length - 1].start, preview[preview.length - 1].end)}</li>}
               </ul>
+              {childCount > 0 && <p className="mt-2 text-xs text-gray-700 dark:text-gray-300" data-repeat-children>{`${childCount} sous-tâche${childCount > 1 ? 's' : ''} copiée${childCount > 1 ? 's' : ''} avec chaque occurrence, au même écart que dans l'original.`}</p>}
               <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">Chaque occurrence garde la même durée et copie le nom, la description, l'estimation, la liste à cocher, les personnes assignées, le matériel et les intervenants externes. Elle repart à « pas commencé ». Les dépendances ne sont pas copiées. Les personnes assignées ne reçoivent pas d'avis.</p>
             </div>
           )}

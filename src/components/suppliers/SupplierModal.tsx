@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Supplier } from '../../types';
 import { Building, User } from 'lucide-react';
 
+import { messageOf } from '../../lib/errorMessage';
 interface SupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -90,9 +91,9 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         website: '',
         lead_time_days: '7'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving supplier:', error);
-      toast.error(error.message || t('errorSavingSupplier'));
+      toast.error(messageOf(error) || t('errorSavingSupplier'));
     } finally {
       setIsLoading(false);
     }

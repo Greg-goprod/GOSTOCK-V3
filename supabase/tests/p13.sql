@@ -124,7 +124,8 @@ SELECT pg_temp.mk('R-parent', 'task', 'R-phase', '2027-03-01', '2027-03-05');
 SELECT pg_temp.mk('R-enfant', 'subtask', 'R-parent', '2027-03-01', '2027-03-02');
 SELECT pg_temp.mk('R-sans-date', 'task', NULL, NULL, NULL);
 SELECT zz.check('12 une phase ne se répète pas', pg_temp.rep('R-phase', 'weekly', 1) LIKE 'Une phase ne se répète pas%');
-SELECT zz.check('13 un élément qui a des sous-tâches ne se répète pas (elles ne seraient pas copiées)', pg_temp.rep('R-parent', 'weekly', 1) LIKE '%sous-tâches%');
+SELECT COALESCE(pg_temp.rep('R-parent', 'weekly', 1), 'ok') AS r13 \gset
+SELECT zz.check('13 un élément qui a des sous-tâches se répète (migration 75 : elles sont copiées, voir les contrôles 76 et suivants)', :'r13' = 'ok' AND (SELECT count(*) FROM public.cp_items WHERE name = 'R-enfant') = 2, :'r13' || ' / ' || (SELECT count(*) FROM public.cp_items WHERE name = 'R-enfant'));
 SELECT zz.check('14 une sous-tâche sans enfants se répète', pg_temp.rep('R-enfant', 'weekly', 1) IS NULL);
 SELECT zz.check('15 un élément sans aucune date ne se répète pas', pg_temp.rep('R-sans-date', 'weekly', 1) LIKE 'Donne d''abord une date%');
 SELECT zz.check('16 fréquence inconnue refusée', pg_temp.rep('R-hebdo', 'daily', 1) LIKE 'Fréquence inconnue%');
@@ -324,6 +325,95 @@ INSERT INTO public.users (organization_id, email, first_name, last_name, role) V
 INSERT INTO public.cp_time_entries (organization_id, item_id, user_id, work_date, minutes) VALUES (:ORG1::uuid, pg_temp.it('T-autre'), :'utemp'::uuid, :'today'::date, 20);
 DELETE FROM public.users WHERE id = :'utemp'::uuid;
 SELECT zz.check('75 supprimer une personne supprime son temps', (SELECT count(*) FROM public.cp_time_entries WHERE user_id = :'utemp'::uuid) = 0);
+
+/* ------------------------------------------------------------------ 76+. reprise des limites (migration 75) */
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
+SELECT pg_temp.mk('S-tache', 'task', NULL, '2027-05-03', '2027-05-07');
+SELECT pg_temp.mk('S-sub1', 'subtask', 'S-tache', '2027-05-03', '2027-05-04');
+SELECT pg_temp.mk('S-sub2', 'subtask', 'S-tache', '2027-05-06', '2027-05-07');
+INSERT INTO public.cp_externals (name, company) VALUES ('Ext S', 'Société S');
+SELECT id AS exs FROM public.cp_externals WHERE name = 'Ext S' \gset
+INSERT INTO public.cp_item_externals (item_id, external_id) VALUES (pg_temp.it('S-tache'), :'exs'::uuid), (pg_temp.it('S-sub1'), :'exs'::uuid);
+INSERT INTO public.cp_item_checks (item_id, label, done, position) VALUES (pg_temp.it('S-sub1'), 'Vérifier', true, 1);
+INSERT INTO public.cp_item_members (item_id, user_id) VALUES (pg_temp.it('S-sub1'), :'anne'::uuid);
+INSERT INTO public.cp_item_resources (item_id, kind, equipment_id, quantity) VALUES (pg_temp.it('S-sub2'), 'equipment', :'eq1'::uuid, 1);
+SELECT pg_temp.nc(:'anne'::uuid, 'cp_assigned') AS n_assigned_avant \gset
+SELECT public.cp_repeat_item(pg_temp.it('S-tache'), 'weekly', 2) AS rep76 \gset
+SELECT zz.check('76 répéter une tâche qui a des sous-tâches (appel à 3 paramètres) : chaque occurrence a ses deux sous-tâches', :rep76 = 2 AND (SELECT count(*) FROM public.cp_items WHERE name = 'S-sub1') = 3 AND (SELECT count(*) FROM public.cp_items WHERE name = 'S-sub2') = 3 AND (SELECT count(DISTINCT parent_id) FROM public.cp_items WHERE name IN ('S-sub1', 'S-sub2')) = 3);
+SELECT zz.check('77 mêmes écarts que l''original, par rapport à la nouvelle date de la tâche (occurrence 2 : tâche 10→14 mai, sous-tâches 10→11 et 13→14)',
+  (SELECT string_agg(c.name || ':' || c.starts_on || '→' || c.ends_on, ' ' ORDER BY c.name) FROM public.cp_items c JOIN public.cp_items p ON p.id = c.parent_id WHERE p.name = 'S-tache' AND p.series_index = 2) = 'S-sub1:2027-05-10→2027-05-11 S-sub2:2027-05-13→2027-05-14',
+  (SELECT string_agg(c.name || ':' || c.starts_on || '→' || c.ends_on, ' ' ORDER BY c.name) FROM public.cp_items c JOIN public.cp_items p ON p.id = c.parent_id WHERE p.name = 'S-tache' AND p.series_index = 2));
+SELECT zz.check('78 la copie reprend liste à cocher (décochée), personne, matériel et intervenant externe de la sous-tâche',
+  (SELECT count(*) FROM public.cp_item_checks k JOIN public.cp_items c ON c.id = k.item_id JOIN public.cp_items p ON p.id = c.parent_id WHERE c.name = 'S-sub1' AND p.series_index = 2 AND k.label = 'Vérifier' AND NOT k.done) = 1
+  AND (SELECT count(*) FROM public.cp_item_members m JOIN public.cp_items c ON c.id = m.item_id JOIN public.cp_items p ON p.id = c.parent_id WHERE c.name = 'S-sub1' AND p.series_index = 2 AND m.user_id = :'anne'::uuid) = 1
+  AND (SELECT count(*) FROM public.cp_item_resources r JOIN public.cp_items c ON c.id = r.item_id JOIN public.cp_items p ON p.id = c.parent_id WHERE c.name = 'S-sub2' AND p.series_index = 2 AND r.equipment_id = :'eq1'::uuid) = 1
+  AND (SELECT count(*) FROM public.cp_item_externals e JOIN public.cp_items c ON c.id = e.item_id JOIN public.cp_items p ON p.id = c.parent_id WHERE c.name = 'S-sub1' AND p.series_index = 2 AND e.external_id = :'exs'::uuid) = 1);
+SELECT zz.check('79 seule la tâche porte le lien de série : ni la série ni le rang n''apparaissent sur les sous-tâches ; l''original garde ses 2 sous-tâches',
+  (SELECT count(*) FROM public.cp_items WHERE name IN ('S-sub1', 'S-sub2') AND (series_id IS NOT NULL OR series_index IS NOT NULL)) = 0
+  AND (SELECT count(*) FROM public.cp_items WHERE parent_id = pg_temp.it('S-tache') AND series_id IS NULL) = 2 AND (SELECT count(*) FROM public.cp_items WHERE name = 'S-tache') = 3);
+SELECT zz.check('80 la copie n''envoie aucun avis d''assignation (la personne de la sous-tâche n''est pas prévenue 2 fois)', pg_temp.nc(:'anne'::uuid, 'cp_assigned') = :n_assigned_avant);
+
+-- Jours ouvrés (option) : 30 avril 2027 = vendredi ; le 30 mai est un dimanche, le 31 mai est fermé (calendrier), le 1er juin est un mardi
+RESET ROLE;
+SELECT set_config('app.org_guard_off', 'on', false);
+INSERT INTO public.cp_calendar_days (organization_id, day, label, kind) VALUES (:ORG1::uuid, '2027-05-31', 'Fermeture P13', 'closure');
+SELECT set_config('app.org_guard_off', '', false);
+SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
+SELECT pg_temp.mk('S-mois', 'task', NULL, '2027-04-30', '2027-05-04');
+SELECT pg_temp.mk('S-mois-sub', 'subtask', 'S-mois', '2027-05-01', '2027-05-01');
+SELECT pg_temp.mk('S-brut', 'task', NULL, '2027-04-30', '2027-05-04');
+SELECT public.cp_repeat_item(pg_temp.it('S-brut'), 'monthly', 2, false);
+SELECT public.cp_repeat_item(pg_temp.it('S-mois'), 'monthly', 2, true);
+SELECT zz.check('81 sans l''option : dimanche et jour fermé ne sont pas évités (30 mai → 3 juin)', pg_temp.ser('S-brut') = '2027-04-30→2027-05-04 | 2027-05-30→2027-06-03 | 2027-06-30→2027-07-04', pg_temp.ser('S-brut'));
+SELECT zz.check('82 avec l''option : 30 mai (dimanche) → 31 mai (fermé) → mardi 1er juin ; la durée de 4 jours est gardée ; 30 juin (mercredi) ne bouge pas', pg_temp.ser('S-mois') = '2027-04-30→2027-05-04 | 2027-06-01→2027-06-05 | 2027-06-30→2027-07-04', pg_temp.ser('S-mois'));
+SELECT zz.check('83 avec l''option, la sous-tâche suit la NOUVELLE date de la tâche (+1 jour : 2 juin, puis 1er juillet)',
+  (SELECT string_agg(c.starts_on::text, ' ' ORDER BY p.series_index) FROM public.cp_items c JOIN public.cp_items p ON p.id = c.parent_id WHERE c.name = 'S-mois-sub' AND p.series_index IN (2, 3)) = '2027-06-02 2027-07-01',
+  (SELECT string_agg(c.starts_on::text, ' ' ORDER BY p.series_index) FROM public.cp_items c JOIN public.cp_items p ON p.id = c.parent_id WHERE c.name = 'S-mois-sub' AND p.series_index IN (2, 3)));
+SELECT zz.check('84 une fréquence inconnue ou un nombre hors limites reste refusé avec le nouveau paramètre', pg_temp.rep('S-mois', 'daily', 1) LIKE 'Fréquence inconnue%' AND zz.raises($q$SELECT public.cp_repeat_item(pg_temp.it('S-brut'), 'weekly', 0, true)$q$) LIKE 'Répète de 1 à 52%');
+
+-- Dupliquer un projet : les intervenants externes suivent les assignations
+SELECT public.cp_duplicate_project(:'p1'::uuid, 'Copie avec assignations', NULL, true, true) AS dup_a \gset
+SELECT public.cp_duplicate_project(:'p1'::uuid, 'Copie sans assignations', NULL, true, false) AS dup_b \gset
+SELECT zz.check('85 copie AVEC assignations : les intervenants externes de la tâche et de sa sous-tâche sont copiés',
+  (SELECT count(*) FROM public.cp_item_externals e JOIN public.cp_items i ON i.id = e.item_id WHERE i.project_id = :'dup_a'::uuid AND e.external_id = :'exs'::uuid) >= 2);
+SELECT zz.check('86 copie SANS assignations : aucun intervenant externe copié (mais le matériel l''est toujours)',
+  (SELECT count(*) FROM public.cp_item_externals e JOIN public.cp_items i ON i.id = e.item_id WHERE i.project_id = :'dup_b'::uuid) = 0
+  AND (SELECT count(*) FROM public.cp_item_resources r JOIN public.cp_items i ON i.id = r.item_id WHERE i.project_id = :'dup_b'::uuid) >= 1);
+
+-- Sécurité
+SELECT zz.check('87 cp_shift_date et cp_pref_defaults ont un search_path fixé ; cp_shift_date n''est plus exécutable sans connexion',
+  (SELECT proconfig::text LIKE '%search_path%' FROM pg_proc WHERE oid = 'public.cp_shift_date(date, text, integer)'::regprocedure)
+  AND (SELECT proconfig::text LIKE '%search_path%' FROM pg_proc WHERE oid = 'public.cp_pref_defaults()'::regprocedure)
+  AND NOT has_function_privilege('anon', 'public.cp_shift_date(date, text, integer)', 'execute')
+  AND has_function_privilege('authenticated', 'public.cp_shift_date(date, text, integer)', 'execute')
+  AND NOT has_function_privilege('anon', 'public.cp_repeat_item(uuid, text, integer, boolean)', 'execute')
+  AND NOT has_function_privilege('anon', 'public.cp_project_time_by_user(uuid)', 'execute'));
+
+-- Temps par personne (valorisation du budget)
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', '', false);
+SELECT set_config('app.org_guard_off', 'on', false);
+INSERT INTO public.cp_time_entries (organization_id, item_id, user_id, work_date, minutes) VALUES
+  (:ORG1::uuid, pg_temp.it('S-sub1'), :'ua'::uuid, :'today'::date, 90),
+  (:ORG1::uuid, pg_temp.it('S-sub2'), :'ua'::uuid, :'today'::date, 30),
+  (:ORG1::uuid, pg_temp.it('S-sub1'), :'anne'::uuid, :'today'::date, 45);
+SELECT set_config('app.org_guard_off', '', false);
+SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
+SELECT zz.check('88 le temps par personne : 120 min pour l''administrateur, 45 pour Anne (le chronomètre en cours n''est pas compté)',
+  (SELECT string_agg(user_id || ':' || minutes, ' ' ORDER BY minutes DESC) FROM public.cp_project_time_by_user(:'p1'::uuid)) LIKE :'ua' || ':%' AND
+  (SELECT minutes FROM public.cp_project_time_by_user(:'p1'::uuid) WHERE user_id = :'ua'::uuid) >= 120 AND (SELECT minutes FROM public.cp_project_time_by_user(:'p1'::uuid) WHERE user_id = :'anne'::uuid) >= 45);
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', :U, false); SET ROLE authenticated;
+SELECT zz.check('89 une personne sans le droit « budget » n''obtient rien (le temps des autres reste personnel)', (SELECT count(*) FROM public.cp_project_time_by_user(:'p1'::uuid)) = 0);
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', :B, false); SET ROLE authenticated;
+SELECT zz.check('90 une autre entreprise n''obtient rien, même avec le droit « budget »', (SELECT count(*) FROM public.cp_project_time_by_user(:'p1'::uuid)) = 0);
+RESET ROLE;
+SELECT set_config('app.org_guard_off', 'on', false);
+DELETE FROM public.cp_calendar_days WHERE label = 'Fermeture P13';
+SELECT set_config('request.jwt.claim.sub', '', false);
+
 DELETE FROM public.cp_time_entries; DELETE FROM public.cp_item_externals; DELETE FROM public.cp_externals; DELETE FROM public.cp_item_resources; DELETE FROM public.cp_comments; DELETE FROM public.cp_item_members; DELETE FROM public.cp_item_checks; DELETE FROM public.cp_items; DELETE FROM public.cp_project_members; DELETE FROM public.cp_projects;
 DELETE FROM public.equipment WHERE name = 'Perceuse P13'; DELETE FROM public.vehicles WHERE plate = 'ZZ 1301'; DELETE FROM public.users WHERE email LIKE '%@p13.test';
 DELETE FROM public.notifications;

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { messageOf, nameOf } from './errorMessage';
 // Récupération des variables d'environnement avec validation
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -107,15 +108,15 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
           error: `Serveur Supabase inaccessible (HTTP ${healthResponse.status}). Vérifie que ton projet Supabase est actif.`
         };
       }
-    } catch (networkError: any) {
-      if (networkError.name === 'TimeoutError') {
+    } catch (networkError) {
+      if (nameOf(networkError) === 'TimeoutError') {
         return {
           success: false,
           error: 'Délai de connexion dépassé. Vérifie ta connexion internet et l\'URL Supabase.'
         };
       }
       
-      if (networkError.message?.includes('Failed to fetch')) {
+      if (messageOf(networkError)?.includes('Failed to fetch')) {
         return {
           success: false,
           error: 'Impossible de se connecter à Supabase. Vérifie ta connexion internet et que l\'URL Supabase est correcte.'
@@ -124,7 +125,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
 
       return {
         success: false,
-        error: `Erreur de connectivité réseau: ${networkError.message}`
+        error: `Erreur de connectivité réseau: ${messageOf(networkError)}`
       };
     }
     
@@ -170,8 +171,8 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
       console.log('📊 Données trouvées:', data?.length || 0, 'enregistrements');
       return { success: true };
       
-    } catch (fetchError: any) {
-      if (fetchError.name === 'AbortError' || fetchError.name === 'TimeoutError') {
+    } catch (fetchError) {
+      if (nameOf(fetchError) === 'AbortError' || nameOf(fetchError) === 'TimeoutError') {
         return {
           success: false,
           error: 'Délai de connexion dépassé. Vérifie ta connexion internet et l\'URL Supabase.'
@@ -181,25 +182,25 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
       throw fetchError;
     }
     
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Erreur lors du test de connexion:', error);
     
     // Gestion spécifique des erreurs de réseau
-    if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+    if (messageOf(error)?.includes('Failed to fetch') || nameOf(error) === 'TypeError') {
       return {
         success: false,
         error: 'Impossible de se connecter à Supabase. Vérifie ta connexion internet et que l\'URL Supabase est correcte.'
       };
     }
     
-    if (error.message?.includes('Invalid URL')) {
+    if (messageOf(error)?.includes('Invalid URL')) {
       return {
         success: false,
         error: 'URL Supabase invalide. Vérifie la valeur de VITE_SUPABASE_URL dans ton fichier .env'
       };
     }
 
-    if (error.name === 'TimeoutError') {
+    if (nameOf(error) === 'TimeoutError') {
       return {
         success: false,
         error: 'Délai de connexion dépassé. Le serveur Supabase ne répond pas.'
@@ -208,7 +209,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
     
     return { 
       success: false, 
-      error: error.message || 'Erreur de connexion inconnue' 
+      error: messageOf(error) || 'Erreur de connexion inconnue' 
     };
   }
 };
