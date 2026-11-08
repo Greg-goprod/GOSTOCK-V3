@@ -55,13 +55,26 @@ const skip = (id, title, why) => { results.push({ id, title, status: 'NON TESTÉ
 /* --------------------------------------------------------------- aides d'interface */
 const todayZurich = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(new Date());
 
+// Texte de l'interface dans la langue choisie : la clé française est cherchée dans src/i18n/<langue>.json (les menus changent de nom en allemand et en anglais)
+let LANG = 'fr';
+const dictionaries = {};
+const tr = (fr) => {
+  if (LANG === 'fr') return fr;
+  try {
+    dictionaries[LANG] = dictionaries[LANG] || JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src', 'i18n', `${LANG}.json`), 'utf8'));
+    return dictionaries[LANG][fr] || fr;
+  } catch { return fr; }
+};
+async function expandAll(p) {
+  await p.getByRole('button', { name: tr("Plus d'options d'affichage") }).click().catch(() => {});
+  await p.getByRole('menuitem', { name: tr('Tout déplier') }).click().catch(() => {});
+  await sleep(500);
+}
 async function goGantt() {
   await page.goto(`${base}/pilote/projets?view=gantt`);
   await page.waitForSelector('[role="search"]', { timeout: 25000 });
   await sleep(900);
-  await page.getByRole('button', { name: "Plus d'options d'affichage" }).click().catch(() => {});
-  await page.getByRole('menuitem', { name: 'Tout déplier' }).click().catch(() => {});
-  await sleep(500);
+  await expandAll(page);
 }
 const itemButtons = (name) => page.locator('button[title*=" · "]').filter({ hasText: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) });
 async function openNth(name, n = 0) {
@@ -119,6 +132,14 @@ async function openOccurrence(k) {
     await closeDrawer();
   }
   throw new Error(`occurrence ${k} de la série introuvable (${total} éléments « ${TASK} » affichés)`);
+}
+
+// Rouvre l'occurrence k et supprime toutes ses saisies de temps (les siennes)
+async function clearTime(k) {
+  await openOccurrence(k); await ensureOpen('[data-time]', /Temps passé/);
+  for (let i = 0; i < 8 && (await page.getByRole('button', { name: /^Supprimer la saisie/ }).count()); i++) { await page.getByRole('button', { name: /^Supprimer la saisie/ }).first().click(); await confirm(); }
+  must((await page.locator('[data-time-entry]').count()) === 0, `il reste du temps sur l'occurrence ${k}`);
+  await closeDrawer();
 }
 
 /* ------------------------------------------------------------------------- principal */
@@ -261,14 +282,13 @@ async function openOccurrence(k) {
     must((await page.locator('[role="timer"]').count()) === 1, 'pas exactement un chronomètre actif sur cette fiche');
     await page.locator('[data-timer-bar]').getByRole('button', { name: 'Arrêter' }).click(); await sleep(1500);
     must((await page.locator('[data-timer-bar]').count()) === 0, 'un chronomètre reste actif');
-    // l'occurrence 2 ne doit pas garder de temps (la suite compte sur une occurrence « intacte »)
-    await page.reload(); await page.getByRole('dialog').waitFor(); await sleep(800); await ensureOpen('[data-time]', /Temps passé/);
-    for (let i = 0; i < 6 && (await page.getByRole('button', { name: /^Supprimer la saisie/ }).count()); i++) { await page.getByRole('button', { name: /^Supprimer la saisie/ }).first().click(); await confirm(); }
-    await closeDrawer();
+    // l'occurrence 2 ne doit pas garder de temps (l'étape 3 compte sur une occurrence « intacte ») : on la rouvre et on supprime les saisies
+    await closeDrawer(); await clearTime(2);
   });
 
   /* ---- étape 3 : suppression des suivantes avec garde */
   await step(3, 'Supprimer les suivantes : 2 supprimées, 1 gardée (celle qui a du temps)', async () => {
+    await clearTime(2); await clearTime(4);
     await openOccurrence(3); await ensureOpen('[data-time]', /Temps passé/);
     await page.locator('#tm-dur').fill('30 min'); await page.locator('[data-time-form]').getByRole('button', { name: 'Ajouter' }).click(); await sleep(1500); await closeDrawer();
     await openOccurrence(1); await ensureOpen('[data-repeat]', /Répétition/);
@@ -300,7 +320,7 @@ async function openOccurrence(k) {
     const opt = (await page.locator('#ext-pick option').evaluateAll(os => os.map(o => [o.value, o.textContent.trim()]))).find(o => /ZZ Électricien/.test(o[1]));
     must(!!opt, 'ZZ Électricien absent de la liste des choix');
     await page.locator('#ext-pick').selectOption(opt[0]);
-    await page.getByRole('button', { name: 'Ajouter', exact: true }).last().click(); await sleep(1200);
+    await page.locator('[data-externals]').getByRole('button', { name: 'Ajouter', exact: true }).click(); await sleep(1200);
     must(/ZZ Électricien/.test(await txt(page.locator('[data-external-list]'))), 'il n\'est pas revenu sur la tâche');
     await closeDrawer();
   });
@@ -328,11 +348,45 @@ async function openOccurrence(k) {
     return `CSV : ${dl.suggestedFilename()}`;
   });
 
+  /* ---- étape 6 : matériel et véhicules */
+  await step(6, 'Matériel et véhicules : ajouter un article et un véhicule existants, noter les avertissements, retirer', async () => {
+    await openOccurrence(1);
+    const h = page.getByRole('button', { name: /Matériel et véhicules/ }).first();
+    if ((await h.getAttribute('aria-expanded')) !== 'true') await h.click();
+    await page.waitForSelector('[data-resources]', { timeout: 10000 }); await sleep(600);
+    const notes6 = [];
+    const addFirst = async (kindLabel, terms, label) => {
+      if (kindLabel === 'Véhicule') await page.getByRole('radio', { name: 'Véhicule', exact: true }).click();
+      const box = page.getByRole('searchbox', { name: kindLabel === 'Véhicule' ? 'Rechercher un véhicule' : 'Rechercher un article' });
+      for (const t of terms) {
+        await box.fill(t); await sleep(1200);
+        const first = page.locator('[data-resource-results] button[aria-label^="Ajouter "]').first();
+        if (await first.count()) {
+          const name = ((await first.getAttribute('aria-label')) || '').replace(/^Ajouter /, '');
+          await first.click(); await sleep(1500);
+          const li = page.locator('[data-resource-list] li').filter({ hasText: name }).first();
+          must((await li.count()) === 1, `${label} « ${name} » non affiché dans la liste après l'ajout`);
+          notes6.push(`${label} « ${name} » : ${(await li.getAttribute('data-issue')) ? 'AVERTISSEMENT : ' + (await txt(li)).slice(0, 160) : 'sans avertissement'}`);
+          return name;
+        }
+      }
+      notes6.push(`${label} : aucun résultat pour ${terms.join(', ')} (données de Logistique ?)`);
+      return null;
+    };
+    const eq = await addFirst('Matériel', ['pe', 'ma', 'ba', 'ca', 'li', 'sc'], 'matériel');
+    const ve = await addFirst('Véhicule', ['fo', 'ca', 'vw', 're', 'be', 'a'], 'véhicule');
+    for (const name of [eq, ve].filter(Boolean)) { await page.getByRole('button', { name: `Retirer ${name}` }).click(); await sleep(1200); }
+    must(eq || ve, `aucune ressource trouvée à ajouter : ${notes6.join(' ; ')}`);
+    return notes6.join(' ; ');
+  });
+
   /* ---- étape 7 : temps réel */
   await step(7, 'Temps réel : un renommage dans un onglet apparaît dans l\'autre sans recharger', async () => {
     const pageB = await ctx.newPage(); pageB.setDefaultTimeout(15000);
     try {
-      await pageB.goto(`${base}/pilote/projets?view=gantt`); await pageB.waitForSelector('[role="search"]', { timeout: 25000 }); await sleep(1500);
+      await pageB.goto(`${base}/pilote/projets?view=gantt`); await pageB.waitForSelector('[role="search"]', { timeout: 25000 }); await sleep(1000);
+      await expandAll(pageB); await sleep(1000);
+      must((await pageB.locator('button[title*=" · "]').filter({ hasText: new RegExp(`^${TASK}$`) }).count()) >= 1, 'la fenêtre B n\'affiche pas la tâche avant le test (Gantt replié ?)');
       await goGantt(); await openNth(TASK, 0);
       const renamed = `${TASK} (modifiée)`;
       await page.locator('#itm-name').fill(renamed); await save();
@@ -349,7 +403,7 @@ async function openOccurrence(k) {
   await step(9, 'Langues : sections traduites en allemand puis en anglais', async () => {
     const out = [];
     for (const [lang, words] of [['de', ['Wiederholung', 'Externe Beteiligte', 'Aufgewendete Zeit']], ['en', ['Repetition', 'External contributors', 'Time spent']]]) {
-      await page.evaluate(l => localStorage.setItem('gomat-language', l), lang);
+      await page.evaluate(l => localStorage.setItem('gomat-language', l), lang); LANG = lang;
       await goGantt(); await openNth(renamedOrTask(), 0); await sleep(800);
       const miss = [];
       for (const w of words) if ((await page.getByText(w, { exact: false }).count()) === 0) miss.push(w);
@@ -359,7 +413,7 @@ async function openOccurrence(k) {
     must(out.every(s => /ok$/.test(s)), out.join(' ; '));
     return out.join(' ; ');
   });
-  await page.evaluate(() => localStorage.setItem('gomat-language', 'fr')).catch(() => {});
+  LANG = 'fr'; await page.evaluate(() => localStorage.setItem('gomat-language', 'fr')).catch(() => {});
 
   /* ---- étape 10 : téléphone simulé */
   await step(10, 'Téléphone (390 px) : fiche, section « Temps passé », pas de défilement horizontal', async () => {
@@ -406,7 +460,6 @@ async function openOccurrence(k) {
   }
 
   /* ---- étapes non automatisées ici */
-  skip(6, 'Matériel et véhicules par tâche', 'non automatisé dans ce script : à faire avec les recettes de scripts/e2e-ressources.cjs');
   skip(8, 'Mentions (compte de test noreply@)', 'demande la connexion du second compte (port 9223, code envoyé par e-mail)');
   skip(11, 'Droits d\'un utilisateur ordinaire', 'demande la connexion du second compte (port 9223)');
 
