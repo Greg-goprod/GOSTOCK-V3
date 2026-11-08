@@ -103,6 +103,9 @@ SELECT set_config('request.jwt.claim.sub', :A, false); SET ROLE authenticated;
 SELECT pg_temp.mk('R-mois', 'task', NULL, '2027-01-31', '2027-02-02');
 SELECT COALESCE(pg_temp.rep('R-mois', 'monthly', 3), 'ok') AS r2 \gset
 SELECT zz.check('8 chaque mois depuis le 31 janvier : 28 fév., 31 mars, 30 avril ; durée de 2 jours conservée', :'r2' = 'ok' AND pg_temp.ser('R-mois') = '2027-01-31→2027-02-02 | 2027-02-28→2027-03-02 | 2027-03-31→2027-04-02 | 2027-04-30→2027-05-02', pg_temp.ser('R-mois'));
+SELECT pg_temp.mk('R-mois2', 'task', NULL, '2027-01-30', '2027-01-31');
+SELECT COALESCE(pg_temp.rep('R-mois2', 'monthly', 2), 'ok') AS r2b \gset
+SELECT zz.check('8b chaque mois du 30 au 31 janvier : la durée d''un jour est conservée (28 février → 1er mars), puis 30 → 31 mars', :'r2b' = 'ok' AND pg_temp.ser('R-mois2') = '2027-01-30→2027-01-31 | 2027-02-28→2027-03-01 | 2027-03-30→2027-03-31', pg_temp.ser('R-mois2'));
 SELECT pg_temp.mk('R-an', 'task', NULL, '2028-02-29', '2028-02-29');
 SELECT COALESCE(pg_temp.rep('R-an', 'yearly', 2), 'ok') AS r3 \gset
 SELECT zz.check('9 chaque année depuis le 29 février 2028 : 28 février 2029 et 2030', :'r3' = 'ok' AND pg_temp.ser('R-an') = '2028-02-29→2028-02-29 | 2029-02-28→2029-02-28 | 2030-02-28→2030-02-28', pg_temp.ser('R-an'));

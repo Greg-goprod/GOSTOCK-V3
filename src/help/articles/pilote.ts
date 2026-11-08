@@ -179,6 +179,49 @@ export const PILOTE: HelpArticle[] = [
         ],
       },
       {
+        id: 'repetition',
+        title: 'Répéter une tâche (chaque semaine, mois ou année)',
+        who: 'Répéter : administrateur et responsable (droits de création et de modification). Supprimer les suivantes : droit de suppression.',
+        steps: [
+          { text: 'Ouvre la tâche (elle doit avoir au moins une date), section « Répétition », puis « Répéter… ». Choisis « Chaque semaine », « Chaque mois » ou « Chaque année » et le nombre de répétitions (1 à 52). Un aperçu montre les premières dates et la dernière.' },
+          { text: 'Les occurrences sont créées d\'un coup. Chacune garde la même durée et copie le nom, la description, l\'estimation, la liste à cocher (décochée), les personnes assignées, le matériel, les véhicules et les intervenants externes. Elle repart à « pas commencé ». Les dépendances ne sont pas copiées, et les personnes assignées ne reçoivent pas un avis par occurrence.' },
+          { text: 'Chaque mois : le même quantième, recalé sur la fin du mois (le 31 janvier donne le 28 février, puis le 31 mars). Chaque année : le 29 février donne le 28 février les années non bissextiles. Les week-ends et les jours fériés ne sont pas évités : déplace ensuite les occurrences qui tombent mal.' },
+          { text: 'L\'en-tête « Répétition (3 sur 12) » dit où tu en es dans la série. Pour la prolonger, ouvre sa DERNIÈRE occurrence puis « Prolonger la série… » (200 occurrences au plus). « Supprimer les suivantes » retire les occurrences après celle-ci, sauf celles qui sont déjà commencées ou qui ont du temps saisi, des messages ou des documents : elles sont gardées et comptées.' },
+        ],
+        problems: [
+          { if: 'Le bouton « Répéter… » n\'apparaît pas.', then: 'Une phase ne se répète pas (répète ses tâches), ni un élément qui a des sous-tâches (elles ne seraient pas copiées), ni un élément sans aucune date. Il faut aussi les droits de création et de modification des projets.' },
+          { if: 'Je modifie une occurrence : les autres changent-elles ?', then: 'Non. Chaque occurrence est ensuite indépendante ; seul le lien « série » les relie, pour pouvoir les prolonger ou les supprimer ensemble.' },
+        ],
+      },
+      {
+        id: 'externes',
+        title: 'Intervenants externes (sans compte GO-Mat)',
+        who: 'Gérer et assigner : droit de modifier les projets. Voir : toute personne qui voit les projets.',
+        steps: [
+          { text: 'Dans une tâche, section « Intervenants externes » : choisis un intervenant existant puis « Ajouter », ou tape un nom (et une société) puis « Créer et ajouter ».' },
+          { text: 'La liste complète se gère dans l\'icône des réglages des projets › « Intervenants externes » : nom, société, note, actif ou non. Désactiver un intervenant le retire des choix sans l\'enlever des tâches où il est déjà ; le supprimer l\'enlève de toutes les tâches.' },
+        ],
+        result: 'Un intervenant externe est un NOM assigné à une tâche. Il ne se connecte pas, ne reçoit aucun avis et n\'apparaît pas dans la Charge ni dans les exports. Dupliquer un projet ne copie pas ses intervenants (répéter une tâche les copie).',
+        problems: [
+          { if: 'Je ne peux pas créer un intervenant : « existe déjà ».', then: 'Même nom et même société qu\'un intervenant existant (majuscules et espaces indifférents). Ajoute une société pour distinguer deux personnes de même nom.' },
+        ],
+      },
+      {
+        id: 'temps',
+        title: 'Temps passé : chronomètre et saisie',
+        who: 'Saisir : l\'équipe du projet et les personnes qui peuvent modifier les projets, pour leur propre temps. Voir tout le temps du projet : droit de modifier les projets.',
+        steps: [
+          { text: 'Dans une tâche, section « Temps passé ». « Démarrer le chronomètre » lance le décompte ; « Arrêter » enregistre la durée, mesurée par la base. Un seul chronomètre à la fois : en démarrer un autre arrête le premier. Tant qu\'il tourne, un bandeau en haut des vues PILOTE le rappelle, avec un bouton « Arrêter ».' },
+          { text: 'Ou saisis à la main : le jour (pas dans le futur), la durée et une note. La durée se tape comme tu veux : « 1 h 30 », « 1:30 », « 1,5 h », « 45 min » ou « 90 » (minutes). Un nombre décimal sans unité (« 1,5 ») est refusé : précise « 1,5 h » ou « 90 min ». De 1 minute à 24 heures par saisie.' },
+          { text: 'Tu modifies (crayon) ou supprimes (corbeille) tes propres saisies. La somme est comparée à l\'estimation de la tâche. Une personne qui peut modifier les projets voit le temps de toute l\'équipe, avec les noms, mais ne modifie que le sien.' },
+        ],
+        result: 'Le temps est une donnée personnelle : il n\'apparaît pas dans le journal d\'audit. Un chronomètre oublié est plafonné à 24 heures ; corrige-le ensuite avec le crayon. Un chronomètre à cheval sur minuit est compté au jour où il a démarré.',
+        problems: [
+          { if: 'Je ne vois ni chronomètre ni formulaire.', then: 'Tu saisis ton temps sur les tâches des projets dont tu fais partie. Demande à un responsable de t\'ajouter à l\'équipe.' },
+          { if: 'Le message « Un chronomètre est déjà en cours » apparaît.', then: 'Arrête d\'abord le chronomètre en cours (bandeau en haut), ou utilise « Démarrer ici (arrête l\'autre) ».' },
+        ],
+      },
+      {
         id: 'budget',
         title: 'Budget d\'un projet et taux horaires',
         who: 'Réservé aux personnes qui ont le droit « budget » (administrateur et responsable par défaut). Les autres ne voient ni l\'onglet, ni les montants, ni les taux.',

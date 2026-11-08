@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CalendarOff, ListChecks, Settings } from 'lucide-react';
+import { ArrowLeft, CalendarOff, ListChecks, Settings, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { loadBudgetRights } from '../lib/budget';
 import { FAMILY_LABEL, FAMILY_ORDER, loadGantt, loadPilote, loadPiloteRights, piloteError, STATE_COLORS, type CpStatus, type GanttData, type PiloteData, type PiloteRights } from '../lib/pilote';
@@ -20,9 +20,11 @@ import PiloteCalendar from './PiloteCalendar';
 import PiloteWorkload from './PiloteWorkload';
 import PiloteDashboard from './PiloteDashboard';
 import PiloteBudget from './PiloteBudget';
+import ExternalsAdmin from '../components/pilote/ExternalsAdmin';
+import RunningTimerBar from '../components/pilote/RunningTimerBar';
 import { usePiloteLive } from '../components/pilote/usePiloteLive';
 
-type Section = 'dashboard' | 'budget' | 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar';
+type Section = 'dashboard' | 'budget' | 'gantt' | 'board' | 'agenda' | 'workload' | 'projects' | 'mytasks' | 'templates' | 'statuses' | 'calendar' | 'externals';
 const VIEWS: Section[] = ['dashboard', 'budget', 'gantt', 'board', 'agenda', 'workload', 'projects', 'mytasks', 'templates'];
 // « Pilotage » regroupe trois vues de pilotage du portefeuille : la synthèse, le budget et la charge (les adresses ?view=dashboard, budget et workload restent valables)
 type PilotageView = 'dashboard' | 'budget' | 'workload';
@@ -90,7 +92,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
 
   if (!data) return <p className="text-gray-500 dark:text-gray-400 font-medium">Chargement…</p>;
 
-  const settingsOpen = section === 'statuses' || section === 'calendar';
+  const settingsOpen = section === 'statuses' || section === 'calendar' || section === 'externals';
 
   return (
     <div className="space-y-4">
@@ -100,6 +102,8 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
           Tes projets de toute nature (chantier, R&amp;D, conception, recrutement, administratif, évènement), avec leur état et leur équipe. « Mes tâches » rassemble ce qui t'est assigné.
         </p>
       </div>
+
+      <RunningTimerBar />
 
       {settingsOpen ? (
         <button type="button" onClick={() => setSection('projects')} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">
@@ -120,6 +124,7 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
             actions={[
               { id: 'statuses', label: `États d'avancement (${data.statuses.length})`, icon: ListChecks, onSelect: () => setSection('statuses') },
               { id: 'calendar', label: 'Calendrier de travail', icon: CalendarOff, onSelect: () => setSection('calendar') },
+              { id: 'externals', label: 'Intervenants externes', icon: Users, onSelect: () => setSection('externals') },
             ]} />
         </div>
       )}
@@ -161,6 +166,8 @@ const PiloteProjects: React.FC<{ initialView?: Section }> = ({ initialView }) =>
       )}
 
       {section === 'calendar' && <CalendarSettings rights={rights} />}
+
+      {section === 'externals' && <ExternalsAdmin rights={rights} />}
 
       {section === 'statuses' && (
         <CrudSection<CpStatus>

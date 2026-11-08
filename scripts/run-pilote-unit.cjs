@@ -2,7 +2,7 @@
 // Usage : node scripts/run-pilote-unit.cjs        (code de sortie 0 = tout vert)
 const path = require('path'); const os = require('os'); const fs = require('fs'); const { spawnSync } = require('child_process');
 const esbuild = require('esbuild');
-const TESTS = ['gantt-model', 'view-period', 'pilote-links', 'gantt-filters', 'holidays', 'board-calendar', 'pilote-exports', 'workload', 'critical-path', 'dashboard', 'backup-lists', 'history-text', 'budget', 'resources', 'mentions', 'live-reload'];
+const TESTS = ['gantt-model', 'view-period', 'pilote-links', 'gantt-filters', 'holidays', 'board-calendar', 'pilote-exports', 'workload', 'critical-path', 'dashboard', 'backup-lists', 'history-text', 'budget', 'resources', 'mentions', 'live-reload', 'recurrence', 'time-tracking'];
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'pilote-unit-'));
 let bad = 0;
 for (const name of TESTS) {

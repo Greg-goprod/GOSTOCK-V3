@@ -14,6 +14,9 @@ import DiscussionSection from './DiscussionSection';
 import DocumentsSection from './DocumentsSection';
 import HistorySection from './HistorySection';
 import ResourcesSection from './ResourcesSection';
+import ExternalsSection from './ExternalsSection';
+import TimeSection from './TimeSection';
+import RepeatSection from './RepeatSection';
 import DateInput, { DateRangeInput } from '../common/DateInput';
 
 export type ItemTarget = { mode: 'edit'; itemId: string } | { mode: 'new'; projectId?: string; parentId?: string | null; kind?: ItemKind };
@@ -421,6 +424,9 @@ const ItemDrawer: React.FC<Props> = ({ data, target, canUpdate, canCreate, canDe
           )}
 
           {edited && <ResourcesSection itemId={edited.id} canEdit={canUpdate} hasDates={!!(edited.starts_on || edited.ends_on)} issueCount={(data.resourceIssues ?? []).filter(i => i.item_id === edited.id).length} onChanged={onSaved} />}
+          {edited && <ExternalsSection itemId={edited.id} canEdit={canUpdate} />}
+          {edited && <TimeSection itemId={edited.id} estimateHours={edited.estimate_hours === null || edited.estimate_hours === undefined ? null : Number(edited.estimate_hours)} />}
+          {edited && <RepeatSection item={edited} items={data.items} canCreate={canCreate && canUpdate} canDelete={canDelete} onChanged={async () => { versionStale.current = true; await onSaved(); }} />}
           {edited && <DocumentsSection projectId={edited.project_id} itemId={edited.id} />}
           {edited && <DiscussionSection projectId={edited.project_id} itemId={edited.id} autoOpen={focus === 'discussion'} />}
           {edited && <HistorySection kind="item" id={edited.id} statuses={data.statuses} itemName={i => data.items.find(x => x.id === i)?.name} />}

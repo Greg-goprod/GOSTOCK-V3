@@ -4,7 +4,7 @@
 const path = require('path'); const os = require('os'); const fs = require('fs'); const http = require('http'); const { spawn, spawnSync } = require('child_process');
 const root = path.join(__dirname, '..');
 const outDir = path.join(os.tmpdir(), 'pilote-e2e'); fs.mkdirSync(outDir, { recursive: true });
-const SCRIPTS = ['e2e-gantt-filtres', 'e2e-calendrier', 'e2e-modeles', 'e2e-tableau-calendrier', 'e2e-exports', 'e2e-charge', 'e2e-critique-base', 'e2e-synthese', 'e2e-groupe-historique', 'e2e-budget', 'e2e-ressources', 'e2e-mentions', 'e2e-mobile'];
+const SCRIPTS = ['e2e-gantt-filtres', 'e2e-calendrier', 'e2e-modeles', 'e2e-tableau-calendrier', 'e2e-exports', 'e2e-charge', 'e2e-critique-base', 'e2e-synthese', 'e2e-groupe-historique', 'e2e-budget', 'e2e-ressources', 'e2e-mentions', 'e2e-recurrence-temps', 'e2e-mobile'];
 // Playwright n'est pas déclaré dans package.json (comme pour les autres scripts navigateur du dépôt) : on le vérifie et on dit quoi faire
 try { require.resolve('playwright', { paths: [root, ...module.paths] }); } catch {
   console.log('ERREUR : le module « playwright » n\'est pas installé. Lance (sans modifier package.json) :\n  npm install --no-save playwright\n  npx playwright install chromium\npuis relance : node scripts/run-pilote-e2e.cjs');

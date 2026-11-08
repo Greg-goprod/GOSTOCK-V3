@@ -31,6 +31,8 @@ export interface CpItem {
   status_id: string; priority: ProjectPriority | null; starts_on: string | null; ends_on: string | null; position: number;
   updated_at?: string;   // sert à repérer une modification faite entre-temps par quelqu'un d'autre (voir updateIfUnchanged)
   estimate_hours?: number | null;   // heures estimées (vide : non estimé) ; sert à la vue « Charge »
+  series_id?: string | null;        // série de répétitions (migration 74) : les occurrences d'une même tâche répétée
+  series_index?: number | null;     // rang dans la série, à partir de 1
 }
 export interface CpItemMember { item_id: string; user_id: string }
 // « Le successeur commence après la fin du prédécesseur »
