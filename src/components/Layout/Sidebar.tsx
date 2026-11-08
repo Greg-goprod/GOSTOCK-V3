@@ -38,7 +38,8 @@ const Sidebar: React.FC = () => {
     try { localStorage.setItem(LAST_PAGE_KEY, JSON.stringify({ ...lastPages(), [current]: pathname })); } catch { /* stockage indisponible */ }
   }, [current, pathname]);
 
-  const railLink = (s: NavSpace) => {
+  // `sub` : page d'un produit (sous son titre) : plus petite et plus discrète que le titre du produit
+  const railLink = (s: NavSpace, sub = false) => {
     const remembered = lastPages()[s.id];
     const target = remembered && s.links.some(l => remembered === l.to || remembered.startsWith(`${l.to}/`)) ? remembered : s.links[0].to;
     const active = s.id === current;
@@ -49,13 +50,18 @@ const Sidebar: React.FC = () => {
           aria-current={active ? 'page' : undefined}
           aria-label={s.label}
           title={s.label}
-          className={`relative flex w-[calc(68px*var(--mx-scale,1))] flex-col items-center gap-[calc(4px*var(--mx-scale,1))] rounded-md px-1 py-[calc(8px*var(--mx-scale,1))] text-[length:calc(11px*var(--mx-scale,1))] font-semibold leading-tight transition-colors ${
+          className={`relative flex flex-col items-center rounded-md px-1 transition-colors ${
+            sub
+              ? 'w-[calc(60px*var(--mx-scale,1))] gap-[calc(2px*var(--mx-scale,1))] py-[calc(6px*var(--mx-scale,1))] text-[length:calc(10px*var(--mx-scale,1))] font-medium'
+              : 'w-[calc(68px*var(--mx-scale,1))] gap-[calc(4px*var(--mx-scale,1))] py-[calc(8px*var(--mx-scale,1))] text-[length:calc(11px*var(--mx-scale,1))] font-semibold'
+          } ${
             active
-              ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300'
+              ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 font-semibold'
               : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          <s.icon aria-hidden="true" style={{ width: 'calc(20px * var(--mx-scale, 1))', height: 'calc(20px * var(--mx-scale, 1))' }} />
+          <s.icon aria-hidden="true" style={{ width: sub ? 'calc(18px * var(--mx-scale, 1))' : 'calc(20px * var(--mx-scale, 1))', height: sub ? 'calc(18px * var(--mx-scale, 1))' : 'calc(20px * var(--mx-scale, 1))' }} />
+          {sub && active && <span aria-hidden="true" className="absolute -left-[calc(5px*var(--mx-scale,1))] top-1/2 h-[calc(18px*var(--mx-scale,1))] w-[3px] -translate-y-1/2 rounded-full bg-primary-600 dark:bg-primary-400" />}
           <span className="text-center">{s.short}</span>
           {s.id === 'home' && alertCount > 0 && (
             <span className="absolute top-1 right-2 min-w-[16px] h-4 px-1 rounded-full bg-danger-600 text-white text-[10px] font-bold flex items-center justify-center" aria-label={`${alertCount} alerte(s)`}>
@@ -81,15 +87,17 @@ const Sidebar: React.FC = () => {
           aria-expanded={open}
           aria-controls={`rail-${id}`}
           title={product.label}
-          className={`relative flex w-[calc(72px*var(--mx-scale,1))] flex-col items-center gap-[calc(2px*var(--mx-scale,1))] rounded-md px-1 py-[calc(6px*var(--mx-scale,1))] text-[length:calc(10px*var(--mx-scale,1))] font-bold uppercase leading-tight tracking-wide transition-colors ${
-            hasCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300'
-          } hover:bg-gray-100 dark:hover:bg-gray-700`}
+          className={`relative flex w-[calc(74px*var(--mx-scale,1))] flex-col items-center gap-[calc(3px*var(--mx-scale,1))] rounded-lg px-1 py-[calc(8px*var(--mx-scale,1))] text-[length:calc(10px*var(--mx-scale,1))] font-extrabold uppercase leading-tight tracking-wide transition-colors ${
+            hasCurrent
+              ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400'
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600'
+          }`}
         >
-          <product.icon aria-hidden="true" style={{ width: 'calc(16px * var(--mx-scale, 1))', height: 'calc(16px * var(--mx-scale, 1))' }} />
+          <product.icon aria-hidden="true" style={{ width: 'calc(20px * var(--mx-scale, 1))', height: 'calc(20px * var(--mx-scale, 1))' }} />
           <span>{product.label}</span>
-          <ChevronDown aria-hidden="true" size={11} className={`absolute right-1 top-1.5 opacity-60 transition-transform ${open ? '' : '-rotate-90'}`} />
+          <ChevronDown aria-hidden="true" size={12} className={`absolute right-1 top-1.5 opacity-70 transition-transform ${open ? '' : '-rotate-90'}`} />
         </button>
-        {open && <ul id={`rail-${id}`} className="mt-[2px] flex flex-col items-center gap-[2px] border-l-2 border-primary-100 dark:border-primary-900/60 pl-[2px]">{items.map(railLink)}</ul>}
+        {open && <ul id={`rail-${id}`} className="mt-[calc(6px*var(--mx-scale,1))] mb-[calc(4px*var(--mx-scale,1))] flex flex-col items-center gap-[2px] border-l-2 border-primary-200 dark:border-primary-800 pl-[calc(5px*var(--mx-scale,1))]">{items.map(s => railLink(s, true))}</ul>}
       </li>
     );
   };
@@ -110,9 +118,9 @@ const Sidebar: React.FC = () => {
       </NavLink>
 
       <nav aria-label="Navigation principale" className="flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto pb-2">
-        <ul className="flex w-full flex-col items-center gap-[calc(6px*var(--mx-scale,1))]">{PRODUCTS.map(p => productGroup(p.id))}</ul>
+        <ul className="flex w-full flex-col items-center gap-[calc(14px*var(--mx-scale,1))] pt-[calc(2px*var(--mx-scale,1))]">{PRODUCTS.map(p => productGroup(p.id))}</ul>
         <div className="flex-1" />
-        <ul className="flex flex-col items-center gap-[2px]">{spaces.filter(s => BOTTOM_SPACES.includes(s.id)).map(railLink)}</ul>
+        <ul className="flex w-full flex-col items-center gap-[2px] border-t border-gray-200 dark:border-gray-700 pt-[calc(6px*var(--mx-scale,1))]">{spaces.filter(s => BOTTOM_SPACES.includes(s.id)).map(s => railLink(s, true))}</ul>
       </nav>
 
       {/* Compte, en bas du rail */}
