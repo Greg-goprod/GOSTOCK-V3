@@ -280,7 +280,9 @@ async function clearTime(k) {
     await openOccurrence(2); await ensureOpen('[data-time]', /Temps passé/);
     await page.getByRole('button', { name: /Démarrer ici/ }).click(); await sleep(1500);
     must((await page.locator('[role="timer"]').count()) === 1, 'pas exactement un chronomètre actif sur cette fiche');
-    await page.locator('[data-timer-bar]').getByRole('button', { name: 'Arrêter' }).click(); await sleep(1500);
+    // on arrête par le bouton de la fiche : le bandeau du haut est derrière le voile de la fiche ouverte, un clic dessus n'aboutit pas
+    await page.locator('[data-time]').getByRole('button', { name: 'Arrêter' }).click(); await sleep(1500);
+    await closeDrawer();
     must((await page.locator('[data-timer-bar]').count()) === 0, 'un chronomètre reste actif');
     // l'occurrence 2 ne doit pas garder de temps (l'étape 3 compte sur une occurrence « intacte ») : on la rouvre et on supprime les saisies
     await closeDrawer(); await clearTime(2);
@@ -383,19 +385,31 @@ async function clearTime(k) {
   /* ---- étape 7 : temps réel */
   await step(7, 'Temps réel : un renommage dans un onglet apparaît dans l\'autre sans recharger', async () => {
     const pageB = await ctx.newPage(); pageB.setDefaultTimeout(15000);
+    const seen = { wsEvent: null, refetch: null, visible: null };
+    let t0 = 0;
+    // écouteurs posés AVANT la navigation : sinon la connexion temps réel déjà ouverte n'est pas observée
+    pageB.on('websocket', ws => ws.on('framereceived', f => {
+      const payload = typeof f.payload === 'string' ? f.payload : '';
+      if (t0 && seen.wsEvent === null && /postgres_changes/.test(payload) && /cp_items/.test(payload)) seen.wsEvent = Math.round((Date.now() - t0) / 1000);
+    }));
+    pageB.on('request', r => { if (t0 && seen.refetch === null && /\/rest\/v1\/cp_items/.test(r.url()) && r.method() === 'GET') seen.refetch = Math.round((Date.now() - t0) / 1000); });
     try {
       await pageB.goto(`${base}/pilote/projets?view=gantt`); await pageB.waitForSelector('[role="search"]', { timeout: 25000 }); await sleep(1000);
-      await expandAll(pageB); await sleep(1000);
+      await expandAll(pageB); await sleep(1500);
       must((await pageB.locator('button[title*=" · "]').filter({ hasText: new RegExp(`^${TASK}$`) }).count()) >= 1, 'la fenêtre B n\'affiche pas la tâche avant le test (Gantt replié ?)');
       await goGantt(); await openNth(TASK, 0);
       const renamed = `${TASK} (modifiée)`;
+      t0 = Date.now();
       await page.locator('#itm-name').fill(renamed); await save();
       if (await page.getByRole('dialog').count()) await closeDrawer();
-      const t0 = Date.now(); let seen = false;
-      while (Date.now() - t0 < 120000 && !seen) { seen = (await pageB.locator('button[title*=" · "]').filter({ hasText: renamed }).count()) > 0; if (!seen) await sleep(2000); }
+      must((await page.locator('button[title*=" · "]').filter({ hasText: renamed }).count()) >= 1, 'le renommage n\'apparaît pas dans la fenêtre A elle-même (modification non enregistrée ?)');
+      while (Date.now() - t0 < 120000 && seen.visible === null) {
+        if ((await pageB.locator('button[title*=" · "]').filter({ hasText: renamed }).count()) > 0) seen.visible = Math.round((Date.now() - t0) / 1000); else await sleep(1500);
+      }
       await shot('etape7-fenetreB', pageB);
-      must(seen, 'la fenêtre B n\'a pas reçu le changement en 120 s sans rechargement (temps réel KO ou non activé)');
-      return `${Math.round((Date.now() - t0) / 1000)} s`;
+      const resume = `événement Realtime reçu par B : ${seen.wsEvent === null ? 'NON' : seen.wsEvent + ' s'} ; rechargement des données par B : ${seen.refetch === null ? 'NON' : seen.refetch + ' s'} ; nouveau nom visible dans B : ${seen.visible === null ? 'NON' : seen.visible + ' s'}`;
+      must(seen.visible !== null, resume + (seen.wsEvent === null ? ' → le serveur n\'a envoyé aucun événement (Realtime / règles d\'accès)' : seen.refetch === null ? ' → événement reçu mais l\'écran n\'a pas rechargé' : ' → données rechargées mais nom non affiché (Gantt replié après rechargement ?)'));
+      return resume;
     } finally { await pageB.close().catch(() => {}); }
   });
 
@@ -427,7 +441,10 @@ async function clearTime(k) {
     must(overflow <= 1, `défilement horizontal de ${overflow} px`);
     await page.locator('[data-time]').getByRole('button', { name: 'Démarrer le chronomètre' }).click(); await sleep(1200);
     must((await page.locator('[data-timer-bar]').count()) === 1, 'bandeau du chronomètre absent sur téléphone');
-    await page.locator('[data-timer-bar]').getByRole('button', { name: 'Arrêter' }).click(); await sleep(1200);
+    must((await page.locator('[data-time] [role="timer"]').count()) === 1, 'le chronomètre de la fiche ne tourne pas');
+    await page.locator('[data-time]').getByRole('button', { name: 'Arrêter' }).click(); await sleep(1200);
+    await closeDrawer();
+    must((await page.locator('[data-timer-bar]').count()) === 0, 'le bandeau reste affiché après l\'arrêt');
   });
   await page.setViewportSize({ width: original.w, height: original.h }).catch(() => {});
 
